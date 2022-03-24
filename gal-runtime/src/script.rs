@@ -48,6 +48,16 @@ impl Callable for Const {
 
 pub trait Evaluable {
     fn eval(&self, ctx: &mut Context<'_>) -> Value;
+
+    fn eval_bool(&self, ctx: &mut Context<'_>) -> bool {
+        match self.eval(ctx) {
+            Value::Bool(b) => b,
+            Value::Num(i) => i != 0,
+            Value::Str(s) => !s.is_empty(),
+            Value::Expr(_) => unreachable!(),
+        }
+    }
+
     fn eval_str(&self, ctx: &mut Context<'_>) -> String {
         match self.eval(ctx) {
             Value::Bool(b) => b.to_string(),

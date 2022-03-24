@@ -12,8 +12,8 @@ pub enum Value {
 
 #[derive(Debug)]
 pub struct Game {
-    pub title: Value,
-    pub author: Value,
+    pub title: String,
+    pub author: String,
     pub paras: Vec<Paragraph>,
 }
 
@@ -31,7 +31,7 @@ impl Game {
 #[derive(Debug)]
 pub struct Paragraph {
     pub tag: String,
-    pub title: Value,
+    pub title: String,
     pub actions: Vec<Action>,
     pub next: Value,
 }
@@ -45,6 +45,7 @@ pub enum Action {
 #[derive(Debug)]
 pub struct SwitchItem {
     pub text: String,
+    pub enabled: Value,
     pub action: Program,
 }
 
