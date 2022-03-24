@@ -19,10 +19,10 @@ pub enum Ref {
     Res(String),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Const {
     Bool(bool),
-    Number(i64),
+    Num(i64),
     Str(String),
 }
 
@@ -78,11 +78,11 @@ mod test {
 
         assert_eq!(
             gal::ConstParser::new().parse("114514").unwrap(),
-            Const::Number(114514)
+            Const::Num(114514)
         );
         assert_eq!(
             gal::ConstParser::new().parse("-1919810").unwrap(),
-            Const::Number(-1919810)
+            Const::Num(-1919810)
         );
 
         assert_eq!(

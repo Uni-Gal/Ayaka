@@ -1,24 +1,16 @@
 use gal_script::Program;
 use std::collections::HashMap;
+use std::sync::Arc;
 
+#[derive(Debug, Clone)]
 pub enum Value {
     Bool(bool),
     Num(i64),
     Str(String),
-    Expression(Program),
+    Expr(Arc<Program>),
 }
 
-impl std::fmt::Display for Value {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Bool(b) => b.fmt(f),
-            Self::Num(i) => i.fmt(f),
-            Self::Str(s) => s.fmt(f),
-            Self::Expression(_) => unimplemented!(),
-        }
-    }
-}
-
+#[derive(Debug)]
 pub struct Game {
     pub title: Value,
     pub author: Value,
@@ -36,6 +28,7 @@ impl Game {
     }
 }
 
+#[derive(Debug)]
 pub struct Paragraph {
     pub tag: String,
     pub title: Value,
@@ -43,24 +36,21 @@ pub struct Paragraph {
     pub next: Value,
 }
 
+#[derive(Debug)]
 pub enum Action {
     Text(Value),
     Switch(Vec<SwitchItem>),
 }
 
+#[derive(Debug)]
 pub struct SwitchItem {
     pub text: String,
     pub action: Program,
 }
 
+#[derive(Debug)]
 pub struct RawContext {
     pub cur_para: String,
     pub cur_act: usize,
     pub vars: HashMap<String, Value>,
-}
-
-impl RawContext {
-    pub fn find_var(&self, n: &str) -> Option<&Value> {
-        self.vars.get(n)
-    }
 }

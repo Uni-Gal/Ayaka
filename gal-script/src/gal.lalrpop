@@ -40,7 +40,7 @@ pub Id: String = <s:r"[A-Za-z]\w*"> => s.into();
 
 pub Const: Const = {
     <b:Bool> => Const::Bool(b),
-    <n:Num> => Const::Number(n),
+    <n:Num> => Const::Num(n),
     <s:Str> => Const::Str(s),
 }
 

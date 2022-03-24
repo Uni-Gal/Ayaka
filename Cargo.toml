@@ -1,7 +1,8 @@
 [workspace]
 members = [
-    "gal-primitive",
     "gal-script",
+    "gal-primitive",
+    "gal-runtime",
     "gal"
 ]
 
