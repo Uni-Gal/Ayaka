@@ -1,14 +1,11 @@
+use gal_script::Expr;
 use std::collections::HashMap;
-
-// TODO: script
-pub struct Expr;
 
 pub enum Value {
     Bool(bool),
     Int(i64),
     Float(f64),
     String(String),
-    // TODO: script
     Expression(Expr),
 }
 
@@ -49,7 +46,6 @@ pub struct Paragraph {
 }
 
 pub enum Action {
-    // TODO: formatting
     Text(String),
     Switch(Vec<Value>, Expr),
 }
