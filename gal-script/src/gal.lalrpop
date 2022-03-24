@@ -1,0 +1,45 @@
+use crate::*;
+use std::str::FromStr;
+
+grammar;
+
+pub FullExpr: Expr = {
+    "{" <s:Expr> "}" => s
+}
+
+pub Expr: Expr = {
+    <r:Ref> => Expr::Ref(r),
+    <i:Id> "(" <a:Exprs> ")" => Expr::Call(i, a),
+}
+
+pub Exprs: Vec<Expr> = {
+    <aa:Exprs> "," <a:Expr> => {
+        let mut args = aa;
+        args.push(a);
+        args
+    },
+    <a:Expr> => vec![a],
+}
+
+pub Ref: Ref = {
+    <i:Id> => Ref::Var(i),
+    "$" <i:Id> => Ref::Ctx(i),
+    "#" <i:Id> => Ref::Res(i),
+}
+
+pub Id: String = <s:r"[A-Za-z]\w*"> => s.into();
+
+pub Const: Const = {
+    <b:Bool> => Const::Bool(b),
+    <n:Num> => Const::Number(n),
+    <s:Str> => Const::Str(s),
+}
+
+pub Bool: bool = {
+    "true" => true,
+    "false" => false,
+}
+
+pub Num: i64 = <s:r"-?[0-9]+"> => i64::from_str(s).unwrap();
+
+pub Str: String = <s:r##""[^"\\]*(\\.[^"\\]*)*""##> => s[1..s.len() - 1].into();

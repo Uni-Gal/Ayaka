@@ -1,0 +1,11 @@
+[package]
+name = "gal-script"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+lalrpop-util = { version = "0.19", features = ["lexer"] }
+regex = "1"
+
+[build-dependencies]
+lalrpop = "0.19"
