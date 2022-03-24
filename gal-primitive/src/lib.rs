@@ -1,21 +1,19 @@
-use gal_script::Expr;
+use gal_script::Program;
 use std::collections::HashMap;
 
 pub enum Value {
     Bool(bool),
-    Int(i64),
-    Float(f64),
-    String(String),
-    Expression(Expr),
+    Num(i64),
+    Str(String),
+    Expression(Program),
 }
 
 impl std::fmt::Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Bool(b) => b.fmt(f),
-            Self::Int(i) => i.fmt(f),
-            Self::Float(fl) => fl.fmt(f),
-            Self::String(s) => s.fmt(f),
+            Self::Num(i) => i.fmt(f),
+            Self::Str(s) => s.fmt(f),
             Self::Expression(_) => unimplemented!(),
         }
     }
@@ -46,8 +44,13 @@ pub struct Paragraph {
 }
 
 pub enum Action {
-    Text(String),
-    Switch(Vec<Value>, Expr),
+    Text(Value),
+    Switch(Vec<SwitchItem>),
+}
+
+pub struct SwitchItem {
+    pub text: String,
+    pub action: Program,
 }
 
 pub struct RawContext {

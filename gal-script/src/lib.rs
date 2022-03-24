@@ -3,6 +3,9 @@ use lalrpop_util::lalrpop_mod;
 lalrpop_mod!(pub gal);
 
 #[derive(Debug, PartialEq, Eq)]
+pub struct Program(pub Vec<Expr>);
+
+#[derive(Debug, PartialEq, Eq)]
 pub enum Expr {
     Ref(Ref),
     Const(Const),
@@ -32,14 +35,32 @@ mod test {
     }
 
     #[test]
-    fn expr() {
-        assert_eq!(gal::FullExprParser::new().parse("{ a }").unwrap(), var("a"));
+    fn program() {
         assert_eq!(
-            gal::FullExprParser::new().parse("{ foo(a) }").unwrap(),
+            gal::ProgramParser::new()
+                .parse(
+                    "{
+                        foo(a);
+                        bar(a, b)
+                    }"
+                )
+                .unwrap(),
+            Program(vec![
+                Expr::Call("foo".into(), vec![var("a")]),
+                Expr::Call("bar".into(), vec![var("a"), var("b")])
+            ])
+        );
+    }
+
+    #[test]
+    fn expr() {
+        assert_eq!(gal::ExprParser::new().parse("a").unwrap(), var("a"));
+        assert_eq!(
+            gal::ExprParser::new().parse("foo(a)").unwrap(),
             Expr::Call("foo".into(), vec![var("a")])
         );
         assert_eq!(
-            gal::FullExprParser::new().parse("{ foo(a, b) }").unwrap(),
+            gal::ExprParser::new().parse("foo(a, b)").unwrap(),
             Expr::Call("foo".into(), vec![var("a"), var("b")])
         );
     }
