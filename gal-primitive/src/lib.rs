@@ -11,6 +11,18 @@ pub enum Value {
     Expr(Arc<Program>),
 }
 
+impl Value {
+    pub(crate) fn from_str(s: &str) -> Self {
+        if s.starts_with('{') && s.ends_with('}') {
+            Self::Expr(Arc::new(
+                ProgramParser::new().parse(&s[1..s.len() - 1]).unwrap(),
+            ))
+        } else {
+            Self::Str(s.into())
+        }
+    }
+}
+
 impl<'de> Deserialize<'de> for Value {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
@@ -24,7 +36,7 @@ impl<'de> Deserialize<'de> for Value {
             type Value = Value;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a boolean, integer, string value, or a piece of code.")
+                formatter.write_str("a boolean, integer, string value, or a piece of code")
             }
 
             fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
@@ -52,13 +64,7 @@ impl<'de> Deserialize<'de> for Value {
             where
                 E: Error,
             {
-                if v.starts_with('{') && v.ends_with('}') {
-                    Ok(Value::Expr(Arc::new(
-                        ProgramParser::new().parse(&v[1..v.len() - 1]).unwrap(),
-                    )))
-                } else {
-                    Ok(Value::Str(v.into()))
-                }
+                Ok(Value::from_str(v))
             }
         }
         deserializer.deserialize_any(ValueVisitor)
@@ -106,7 +112,7 @@ pub struct Paragraph {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(tag = "t", content = "c")]
+#[serde(untagged)]
 pub enum Action {
     Text(Value),
     Switch(Vec<SwitchItem>),

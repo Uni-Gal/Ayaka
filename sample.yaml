@@ -6,19 +6,21 @@ paras:
     tag: a
     title: Paragraph a
     actions:
-      -
-        t: Text
-        c: 123
-      -
-        t: Text
-        c: 456
+      - 123
+      - 456
     next: b
   -
     tag: b
     title: Paragraph b
     actions:
+      - 789
       -
-        t: Text
-        c: 789
+        -
+          text: Switch 1
+          enabled: true
+          action: ""
+        -
+          text: Switch 2
+          enabled: true
+          action: ""
     next: ""
-    

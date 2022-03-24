@@ -8,7 +8,7 @@ fn main() {
     while let Some(e) = ctx.next() {
         match e {
             Event::Text(s) => println!("{}", s),
-            Event::Switch(_) => unimplemented!(),
+            Event::Switch(items) => println!("Switches: {:?}", items),
         }
     }
 }
