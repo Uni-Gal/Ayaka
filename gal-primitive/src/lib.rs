@@ -19,7 +19,7 @@ pub struct Game {
 
 impl Game {
     pub fn find_para(&self, tag: &str) -> Option<&Paragraph> {
-        for p in self.paras.iter() {
+        for p in &self.paras {
             if p.tag == tag {
                 return Some(p);
             }
@@ -48,7 +48,7 @@ pub struct SwitchItem {
     pub action: Program,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct RawContext {
     pub cur_para: String,
     pub cur_act: usize,
