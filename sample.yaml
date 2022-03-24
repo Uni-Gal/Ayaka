@@ -1,0 +1,24 @@
+---
+title: Galgame sample
+author: Berrysoft
+paras:
+  -
+    tag: a
+    title: Paragraph a
+    actions:
+      -
+        t: Text
+        c: 123
+      -
+        t: Text
+        c: 456
+    next: b
+  -
+    tag: b
+    title: Paragraph b
+    actions:
+      -
+        t: Text
+        c: 789
+    next: ""
+    

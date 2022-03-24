@@ -1,6 +1,6 @@
-use gal_primitive::*;
-
 pub mod script;
+
+pub use gal_primitive::{Action, Game, Paragraph, RawContext, Value, VarMap};
 use script::Evaluable;
 
 #[derive(Debug)]
@@ -34,7 +34,13 @@ pub struct Context {
 
 impl Context {
     pub fn new(game: Game) -> Self {
-        Self::with_context(game, RawContext::default(), VarMap::default())
+        let mut ctx = RawContext::default();
+        ctx.cur_para = game
+            .paras
+            .first()
+            .map(|p| p.tag.clone())
+            .unwrap_or_default();
+        Self::with_context(game, ctx, VarMap::default())
     }
 
     pub fn with_context(game: Game, ctx: RawContext, vars: VarMap) -> Self {
@@ -61,14 +67,17 @@ impl Iterator for Context {
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(cur_para) = self.game.find_para(&self.ctx.cur_para) {
             if self.ctx.cur_act < cur_para.actions.len() {
-                match &cur_para.actions[self.ctx.cur_act] {
+                let res = match &cur_para.actions[self.ctx.cur_act] {
                     Action::Text(s) => Some(Event::Text(s.eval_str(&mut self.table))),
                     Action::Switch(items) => Some(Event::Switch(
                         items.iter().map(|item| item.text.clone()).collect(),
                     )),
-                }
+                };
+                self.ctx.cur_act += 1;
+                res
             } else {
                 self.ctx.cur_para = cur_para.next.eval_str(&mut self.table);
+                self.ctx.cur_act = 0;
                 self.next()
             }
         } else {
