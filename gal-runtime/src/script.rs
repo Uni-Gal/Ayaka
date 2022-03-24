@@ -2,11 +2,11 @@ use crate::*;
 use gal_script::*;
 
 pub trait Callable {
-    fn call(&self, ctx: &mut Context<'_>) -> Option<Value>;
+    fn call(&self, ctx: &mut VarTable) -> Option<Value>;
 }
 
 impl Callable for Program {
-    fn call(&self, ctx: &mut Context<'_>) -> Option<Value> {
+    fn call(&self, ctx: &mut VarTable) -> Option<Value> {
         ctx.locals.clear();
         let mut res = None;
         for expr in &self.0 {
@@ -17,7 +17,7 @@ impl Callable for Program {
 }
 
 impl Callable for Expr {
-    fn call(&self, ctx: &mut Context<'_>) -> Option<Value> {
+    fn call(&self, ctx: &mut VarTable) -> Option<Value> {
         match self {
             Self::Ref(r) => r.call(ctx),
             Self::Const(c) => c.call(ctx),
@@ -27,9 +27,9 @@ impl Callable for Expr {
 }
 
 impl Callable for Ref {
-    fn call(&self, ctx: &mut Context<'_>) -> Option<Value> {
+    fn call(&self, ctx: &mut VarTable) -> Option<Value> {
         match self {
-            Self::Var(n) => ctx.ctx.vars.get(n).map(|v| v.clone()),
+            Self::Var(n) => ctx.vars.get(n).map(|v| v.clone()),
             Self::Ctx(n) => ctx.locals.get(n).map(|v| v.clone()),
             Self::Res(_) => unimplemented!("Resources"),
         }
@@ -37,7 +37,7 @@ impl Callable for Ref {
 }
 
 impl Callable for Const {
-    fn call(&self, _ctx: &mut Context<'_>) -> Option<Value> {
+    fn call(&self, _ctx: &mut VarTable) -> Option<Value> {
         match self {
             Self::Bool(b) => Some(Value::Bool(*b)),
             Self::Num(n) => Some(Value::Num(*n)),
@@ -47,9 +47,9 @@ impl Callable for Const {
 }
 
 pub trait Evaluable {
-    fn eval(&self, ctx: &mut Context<'_>) -> Value;
+    fn eval(&self, ctx: &mut VarTable) -> Value;
 
-    fn eval_bool(&self, ctx: &mut Context<'_>) -> bool {
+    fn eval_bool(&self, ctx: &mut VarTable) -> bool {
         match self.eval(ctx) {
             Value::Bool(b) => b,
             Value::Num(i) => i != 0,
@@ -58,7 +58,7 @@ pub trait Evaluable {
         }
     }
 
-    fn eval_str(&self, ctx: &mut Context<'_>) -> String {
+    fn eval_str(&self, ctx: &mut VarTable) -> String {
         match self.eval(ctx) {
             Value::Bool(b) => b.to_string(),
             Value::Num(i) => i.to_string(),
@@ -69,7 +69,7 @@ pub trait Evaluable {
 }
 
 impl Evaluable for Value {
-    fn eval(&self, ctx: &mut Context<'_>) -> Value {
+    fn eval(&self, ctx: &mut VarTable) -> Value {
         match self {
             Value::Expr(p) => p.call(ctx).unwrap_or(Value::Str(String::new())),
             _ => self.clone(),

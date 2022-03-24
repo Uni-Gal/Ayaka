@@ -53,5 +53,6 @@ pub struct SwitchItem {
 pub struct RawContext {
     pub cur_para: String,
     pub cur_act: usize,
-    pub vars: HashMap<String, Value>,
 }
+
+pub type VarMap = HashMap<String, Value>;
