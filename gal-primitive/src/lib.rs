@@ -13,12 +13,9 @@ pub enum Value {
 
 impl Value {
     pub(crate) fn from_str(s: &str) -> Self {
-        if s.starts_with('{') && s.ends_with('}') {
-            Self::Expr(Arc::new(
-                ProgramParser::new().parse(&s[1..s.len() - 1]).unwrap(),
-            ))
-        } else {
-            Self::Str(s.into())
+        match ProgramParser::new().parse(s) {
+            Ok(p) => Self::Expr(Arc::new(p)),
+            Err(_) => Self::Str(s.into()),
         }
     }
 }

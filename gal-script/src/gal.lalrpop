@@ -18,6 +18,8 @@ pub Statement: Vec<Expr> = {
 
 pub Expr: Expr = {
     <r:Ref> => Expr::Ref(r),
+    <c:Const> => Expr::Const(c),
+    <r:Ref> "=" <e:Expr> => Expr::Assign(r, Box::new(e)),
     <i:Id> "(" <a:Exprs> ")" => Expr::Call(i, a),
 }
 

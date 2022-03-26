@@ -9,6 +9,7 @@ pub struct Program(pub Vec<Expr>);
 pub enum Expr {
     Ref(Ref),
     Const(Const),
+    Assign(Ref, Box<Expr>),
     Call(String, Vec<Expr>),
 }
 

@@ -17,9 +17,18 @@ paras:
         -
           text: Switch 1
           enabled: true
-          action: ""
+          action: |
+            { $s1 = true }
         -
           text: Switch 2
           enabled: true
-          action: ""
+          action: |
+            { $s2 = true }
+    next: c
+  -
+    tag: c
+    title: Paragraph c
+    actions:
+      - |
+        { if($s1, "s1", if($s2, "s2", "Not chosen!")) }
     next: ""
