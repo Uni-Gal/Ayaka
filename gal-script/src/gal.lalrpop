@@ -19,7 +19,8 @@ pub Statement: Vec<Expr> = {
 pub Expr: Expr = {
     <r:Ref> => Expr::Ref(r),
     <c:Const> => Expr::Const(c),
-    <r:Ref> "=" <e:Expr> => Expr::Assign(r, Box::new(e)),
+    <o:UnaryOp> <e:Expr> => Expr::Unary(o, Box::new(e)),
+    <lhs:Expr> <o:BinaryOp> <rhs:Expr> => Expr::Binary(Box::new(lhs), o, Box::new(rhs)),
     <i:Id> "(" <a:Exprs> ")" => Expr::Call(i, a),
 }
 
@@ -30,6 +31,40 @@ pub Exprs: Vec<Expr> = {
         args
     },
     <a:Expr> => vec![a],
+}
+
+pub UnaryOp: UnaryOp = {
+    "+" => UnaryOp::Positive,
+    "-" => UnaryOp::Negative,
+    "!" => UnaryOp::Not,
+}
+
+pub BinaryOp: BinaryOp = {
+    "+" => BinaryOp::Val(ValBinaryOp::Add),
+    "-" => BinaryOp::Val(ValBinaryOp::Minus),
+    "*" => BinaryOp::Val(ValBinaryOp::Mul),
+    "/" => BinaryOp::Val(ValBinaryOp::Div),
+    "%" => BinaryOp::Val(ValBinaryOp::Mod),
+    "&" => BinaryOp::Val(ValBinaryOp::And),
+    "&&" => BinaryOp::Logic(LogicBinaryOp::And),
+    "|" => BinaryOp::Val(ValBinaryOp::Or),
+    "||" => BinaryOp::Logic(LogicBinaryOp::Or),
+    "^" => BinaryOp::Val(ValBinaryOp::Xor),
+    "==" => BinaryOp::Logic(LogicBinaryOp::Eq),
+    "!=" => BinaryOp::Logic(LogicBinaryOp::Neq),
+    "<" => BinaryOp::Logic(LogicBinaryOp::Lt),
+    "<=" => BinaryOp::Logic(LogicBinaryOp::Le),
+    ">" => BinaryOp::Logic(LogicBinaryOp::Gt),
+    ">=" => BinaryOp::Logic(LogicBinaryOp::Ge),
+    "=" => BinaryOp::Assign,
+    "+=" => BinaryOp::Inplace(ValBinaryOp::Add),
+    "-=" => BinaryOp::Inplace(ValBinaryOp::Minus),
+    "*=" => BinaryOp::Inplace(ValBinaryOp::Mul),
+    "/=" => BinaryOp::Inplace(ValBinaryOp::Div),
+    "%=" => BinaryOp::Inplace(ValBinaryOp::Mod),
+    "&=" => BinaryOp::Inplace(ValBinaryOp::And),
+    "|=" => BinaryOp::Inplace(ValBinaryOp::Or),
+    "^=" => BinaryOp::Inplace(ValBinaryOp::Xor),
 }
 
 pub Ref: Ref = {
@@ -51,6 +86,6 @@ pub Bool: bool = {
     "false" => false,
 }
 
-pub Num: i64 = <s:r"-?[0-9]+"> => i64::from_str(s).unwrap();
+pub Num: i64 = <s:r"[0-9]+"> => i64::from_str(s).unwrap();
 
 pub Str: String = <s:r##""[^"\\]*(\\.[^"\\]*)*""##> => s[1..s.len() - 1].into();

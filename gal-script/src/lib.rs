@@ -9,8 +9,48 @@ pub struct Program(pub Vec<Expr>);
 pub enum Expr {
     Ref(Ref),
     Const(Const),
-    Assign(Ref, Box<Expr>),
+    Unary(UnaryOp, Box<Expr>),
+    Binary(Box<Expr>, BinaryOp, Box<Expr>),
     Call(String, Vec<Expr>),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum UnaryOp {
+    Positive,
+    Negative,
+    Not,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum BinaryOp {
+    Val(ValBinaryOp),
+    Logic(LogicBinaryOp),
+    Assign,
+    Inplace(ValBinaryOp),
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ValBinaryOp {
+    Add,
+    Minus,
+    Mul,
+    Div,
+    Mod,
+    And,
+    Or,
+    Xor,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum LogicBinaryOp {
+    And,
+    Or,
+    Eq,
+    Neq,
+    Lt,
+    Le,
+    Gt,
+    Ge,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -80,10 +120,6 @@ mod test {
         assert_eq!(
             gal::ConstParser::new().parse("114514").unwrap(),
             Const::Num(114514)
-        );
-        assert_eq!(
-            gal::ConstParser::new().parse("-1919810").unwrap(),
-            Const::Num(-1919810)
         );
 
         assert_eq!(

@@ -7,7 +7,16 @@ use script::Evaluable;
 pub enum Event {
     Text(String),
     // TODO: enabled
-    Switch(Vec<String>),
+    Switch {
+        allow_default: bool,
+        items: Vec<SwitchItem>,
+    },
+}
+
+#[derive(Debug)]
+pub struct SwitchItem {
+    pub text: String,
+    pub enabled: bool,
 }
 
 #[derive(Debug, Default)]
@@ -30,6 +39,7 @@ pub struct Context {
     pub game: Game,
     pub ctx: RawContext,
     pub table: VarTable,
+    cur_switch_bind: Option<gal_script::Ref>,
 }
 
 impl Context {
@@ -48,6 +58,7 @@ impl Context {
             game,
             ctx,
             table: VarTable::with_vars(vars),
+            cur_switch_bind: None,
         }
     }
 
@@ -59,6 +70,14 @@ impl Context {
         self.current_paragraph()
             .map(|p| &p.actions[self.ctx.cur_act])
     }
+
+    pub fn switch(&mut self, i: i64) {
+        use gal_script::Ref;
+        match self.cur_switch_bind.as_ref().unwrap() {
+            Ref::Ctx(n) => self.table.vars.insert(n.clone(), Value::Num(i)),
+            _ => unreachable!(),
+        };
+    }
 }
 
 impl Iterator for Context {
@@ -69,9 +88,23 @@ impl Iterator for Context {
             if self.ctx.cur_act < cur_para.actions.len() {
                 let res = match &cur_para.actions[self.ctx.cur_act] {
                     Action::Text(s) => Some(Event::Text(s.eval_str(&mut self.table))),
-                    Action::Switch(items) => Some(Event::Switch(
-                        items.iter().map(|item| item.text.clone()).collect(),
-                    )),
+                    Action::Switch {
+                        bind,
+                        allow_default,
+                        items,
+                    } => {
+                        self.cur_switch_bind = gal_script::gal::RefParser::new().parse(bind).ok();
+                        Some(Event::Switch {
+                            allow_default: *allow_default,
+                            items: items
+                                .iter()
+                                .map(|item| SwitchItem {
+                                    text: item.text.clone(),
+                                    enabled: item.enabled.eval_bool(&mut self.table),
+                                })
+                                .collect(),
+                        })
+                    }
                 };
                 self.ctx.cur_act += 1;
                 res

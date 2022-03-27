@@ -5,13 +5,24 @@ use std::sync::Arc;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
+    Unit,
     Bool(bool),
     Num(i64),
     Str(String),
     Expr(Arc<Program>),
 }
 
+impl Default for Value {
+    fn default() -> Self {
+        Self::Unit
+    }
+}
+
 impl Value {
+    pub(crate) fn bool_true() -> Self {
+        Self::Bool(true)
+    }
+
     pub(crate) fn from_str(s: &str) -> Self {
         match ProgramParser::new().parse(s) {
             Ok(p) => Self::Expr(Arc::new(p)),
@@ -34,6 +45,13 @@ impl<'de> Deserialize<'de> for Value {
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
                 formatter.write_str("a boolean, integer, string value, or a piece of code")
+            }
+
+            fn visit_unit<E>(self) -> Result<Self::Value, E>
+            where
+                E: Error,
+            {
+                Ok(Value::Unit)
             }
 
             fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
@@ -74,6 +92,7 @@ impl Serialize for Value {
         S: serde::Serializer,
     {
         match self {
+            Self::Unit => serializer.serialize_unit(),
             Self::Bool(b) => serializer.serialize_bool(*b),
             Self::Num(n) => serializer.serialize_i64(*n),
             Self::Str(s) => serializer.serialize_str(s),
@@ -112,13 +131,21 @@ pub struct Paragraph {
 #[serde(untagged)]
 pub enum Action {
     Text(Value),
-    Switch(Vec<SwitchItem>),
+    Switch {
+        #[serde(default)]
+        bind: String,
+        #[serde(default)]
+        allow_default: bool,
+        items: Vec<SwitchItem>,
+    },
 }
 
 #[derive(Debug, Deserialize)]
 pub struct SwitchItem {
     pub text: String,
+    #[serde(default = "Value::bool_true")]
     pub enabled: Value,
+    #[serde(default)]
     pub action: Value,
 }
 
