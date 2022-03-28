@@ -1,5 +1,6 @@
 use gal_script::{gal::ProgramParser, Program};
 use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -15,6 +16,17 @@ pub enum Value {
 impl Default for Value {
     fn default() -> Self {
         Self::Unit
+    }
+}
+
+impl From<RawValue> for Value {
+    fn from(v: RawValue) -> Self {
+        match v {
+            RawValue::Unit => Self::Unit,
+            RawValue::Bool(b) => Self::Bool(b),
+            RawValue::Num(i) => Self::Num(i),
+            RawValue::Str(s) => Self::Str(s),
+        }
     }
 }
 
@@ -101,6 +113,66 @@ impl Serialize for Value {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum RawValue {
+    Unit,
+    Bool(bool),
+    Num(i64),
+    Str(String),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ValueType {
+    Unit,
+    Bool,
+    Num,
+    Str,
+}
+
+impl Default for RawValue {
+    fn default() -> Self {
+        Self::Unit
+    }
+}
+
+impl RawValue {
+    pub fn get_type(&self) -> ValueType {
+        match self {
+            Self::Unit => ValueType::Unit,
+            Self::Bool(_) => ValueType::Bool,
+            Self::Num(_) => ValueType::Num,
+            Self::Str(_) => ValueType::Str,
+        }
+    }
+
+    pub fn get_bool(&self) -> bool {
+        match self {
+            Self::Unit => false,
+            Self::Bool(b) => *b,
+            Self::Num(i) => *i != 0,
+            Self::Str(s) => !s.is_empty(),
+        }
+    }
+
+    pub fn get_num(&self) -> i64 {
+        match self {
+            Self::Unit => 0,
+            Self::Bool(b) => *b as i64,
+            Self::Num(i) => *i,
+            Self::Str(s) => s.len() as i64,
+        }
+    }
+
+    pub fn get_str(&self) -> Cow<str> {
+        match self {
+            Self::Unit => Cow::default(),
+            Self::Bool(b) => b.to_string().into(),
+            Self::Num(i) => i.to_string().into(),
+            Self::Str(s) => s.as_str().into(),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct Game {
     pub title: String,
@@ -155,7 +227,7 @@ pub struct RawContext {
     pub cur_act: usize,
 }
 
-pub type VarMap = HashMap<String, Value>;
+pub type VarMap = HashMap<String, RawValue>;
 
 #[cfg(test)]
 mod test {

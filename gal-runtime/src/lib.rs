@@ -1,7 +1,7 @@
 pub mod script;
 
-pub use gal_primitive::{Action, Game, Paragraph, RawContext, Value, VarMap};
-use script::Evaluable;
+pub use gal_primitive::*;
+use script::Callable;
 
 #[derive(Debug)]
 pub enum Event {
@@ -76,7 +76,7 @@ impl Context {
     pub fn switch(&mut self, i: i64) {
         use gal_script::Ref;
         match self.cur_switch_bind.as_ref().unwrap() {
-            Ref::Ctx(n) => self.table.locals.insert(n.clone(), Value::Num(i)),
+            Ref::Ctx(n) => self.table.locals.insert(n.clone(), RawValue::Num(i)),
             _ => unreachable!(),
         };
     }
@@ -89,7 +89,7 @@ impl Iterator for Context {
         if let Some(cur_para) = self.game.find_para(&self.ctx.cur_para) {
             if self.ctx.cur_act < cur_para.actions.len() {
                 let res = match &cur_para.actions[self.ctx.cur_act] {
-                    Action::Text(s) => Some(Event::Text(s.eval_str(&mut self.table))),
+                    Action::Text(s) => Some(Event::Text(s.call(&mut self.table).get_str().into())),
                     Action::Switch {
                         bind,
                         allow_default,
@@ -102,7 +102,7 @@ impl Iterator for Context {
                                 .iter()
                                 .map(|item| SwitchItem {
                                     text: item.text.clone(),
-                                    enabled: item.enabled.eval_bool(&mut self.table),
+                                    enabled: item.enabled.call(&mut self.table).get_bool(),
                                 })
                                 .collect(),
                         })
@@ -111,7 +111,7 @@ impl Iterator for Context {
                 self.ctx.cur_act += 1;
                 res
             } else {
-                self.ctx.cur_para = cur_para.next.eval_str(&mut self.table);
+                self.ctx.cur_para = cur_para.next.call(&mut self.table).get_str().into();
                 self.ctx.cur_act = 0;
                 self.next()
             }

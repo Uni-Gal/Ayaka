@@ -1,22 +1,23 @@
 use crate::*;
 use gal_script::*;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum ValueType {
-    Unit,
-    Bool,
-    Num,
-    Str,
+pub trait Callable {
+    fn call(&self, ctx: &mut VarTable) -> RawValue;
 }
 
-pub trait Callable {
-    fn call(&self, ctx: &mut VarTable) -> Value;
+impl<T: Callable> Callable for Option<&T> {
+    fn call(&self, ctx: &mut VarTable) -> RawValue {
+        match self {
+            Some(c) => c.call(ctx),
+            None => RawValue::Unit,
+        }
+    }
 }
 
 impl Callable for Program {
-    fn call(&self, ctx: &mut VarTable) -> Value {
+    fn call(&self, ctx: &mut VarTable) -> RawValue {
         ctx.vars.clear();
-        let mut res = Value::Unit;
+        let mut res = RawValue::Unit;
         for expr in &self.0 {
             res = expr.call(ctx);
         }
@@ -25,19 +26,18 @@ impl Callable for Program {
 }
 
 impl Callable for Expr {
-    fn call(&self, ctx: &mut VarTable) -> Value {
+    fn call(&self, ctx: &mut VarTable) -> RawValue {
         match self {
             Self::Ref(r) => r.call(ctx),
             Self::Const(c) => c.call(ctx),
             Self::Unary(op, e) => match op {
-                UnaryOp::Positive => Value::Num(e.call(ctx).eval_num(ctx)),
-                UnaryOp::Negative => Value::Num(-e.call(ctx).eval_num(ctx)),
+                UnaryOp::Positive => RawValue::Num(e.call(ctx).get_num()),
+                UnaryOp::Negative => RawValue::Num(-e.call(ctx).get_num()),
                 UnaryOp::Not => match e.call(ctx) {
-                    Value::Unit => Value::Unit,
-                    Value::Bool(b) => Value::Bool(!b),
-                    Value::Num(i) => Value::Num(!i),
-                    Value::Str(_) => Value::Str(String::new()),
-                    Value::Expr(_) => unimplemented!(),
+                    RawValue::Unit => RawValue::Unit,
+                    RawValue::Bool(b) => RawValue::Bool(!b),
+                    RawValue::Num(i) => RawValue::Num(!i),
+                    RawValue::Str(_) => RawValue::Str(String::new()),
                 },
             },
             Self::Binary(lhs, op, rhs) => match op {
@@ -57,28 +57,28 @@ impl Callable for Expr {
     }
 }
 
-fn bin_val(ctx: &mut VarTable, lhs: &Expr, op: &ValBinaryOp, rhs: &Expr) -> Value {
+fn bin_val(ctx: &mut VarTable, lhs: &Expr, op: &ValBinaryOp, rhs: &Expr) -> RawValue {
     let lhs = lhs.call(ctx);
     let rhs = rhs.call(ctx);
-    let t = lhs.eval_type(ctx).max(rhs.eval_type(ctx));
+    let t = lhs.get_type().max(rhs.get_type());
     match t {
-        ValueType::Unit => Value::Unit,
-        ValueType::Bool => bin_bool_val(lhs.eval_bool(ctx), op, rhs.eval_bool(ctx)),
-        ValueType::Num => Value::Num(bin_num_val(lhs.eval_num(ctx), op, rhs.eval_num(ctx))),
-        ValueType::Str => bin_str_val(ctx, lhs, op, rhs),
+        ValueType::Unit => RawValue::Unit,
+        ValueType::Bool => bin_bool_val(lhs.get_bool(), op, rhs.get_bool()),
+        ValueType::Num => RawValue::Num(bin_num_val(lhs.get_num(), op, rhs.get_num())),
+        ValueType::Str => bin_str_val(lhs, op, rhs),
     }
 }
 
-fn bin_bool_val(lhs: bool, op: &ValBinaryOp, rhs: bool) -> Value {
+fn bin_bool_val(lhs: bool, op: &ValBinaryOp, rhs: bool) -> RawValue {
     match op {
         ValBinaryOp::Add
         | ValBinaryOp::Minus
         | ValBinaryOp::Mul
         | ValBinaryOp::Div
-        | ValBinaryOp::Mod => Value::Num(bin_num_val(lhs as i64, op, rhs as i64)),
-        ValBinaryOp::And => Value::Bool(lhs && rhs),
-        ValBinaryOp::Or => Value::Bool(lhs || rhs),
-        ValBinaryOp::Xor => Value::Bool(lhs ^ rhs),
+        | ValBinaryOp::Mod => RawValue::Num(bin_num_val(lhs as i64, op, rhs as i64)),
+        ValBinaryOp::And => RawValue::Bool(lhs && rhs),
+        ValBinaryOp::Or => RawValue::Bool(lhs || rhs),
+        ValBinaryOp::Xor => RawValue::Bool(lhs ^ rhs),
     }
 }
 
@@ -95,19 +95,19 @@ fn bin_num_val(lhs: i64, op: &ValBinaryOp, rhs: i64) -> i64 {
     }
 }
 
-fn bin_str_val(ctx: &mut VarTable, lhs: Value, op: &ValBinaryOp, rhs: Value) -> Value {
+fn bin_str_val(lhs: RawValue, op: &ValBinaryOp, rhs: RawValue) -> RawValue {
     match op {
-        ValBinaryOp::Add => Value::Str(lhs.eval_str(ctx) + &rhs.eval_str(ctx)),
+        ValBinaryOp::Add => RawValue::Str((lhs.get_str() + rhs.get_str()).into()),
         ValBinaryOp::Mul => match (
-            lhs.eval_type(ctx).max(ValueType::Num),
-            rhs.eval_type(ctx).max(ValueType::Num),
+            lhs.get_type().max(ValueType::Num),
+            rhs.get_type().max(ValueType::Num),
         ) {
             (ValueType::Str, ValueType::Str) => unimplemented!(),
             (ValueType::Num, ValueType::Str) => {
-                Value::Str(rhs.eval_str(ctx).repeat(lhs.eval_num(ctx) as usize))
+                RawValue::Str(rhs.get_str().repeat(lhs.get_num() as usize))
             }
             (ValueType::Str, ValueType::Num) => {
-                Value::Str(lhs.eval_str(ctx).repeat(rhs.eval_num(ctx) as usize))
+                RawValue::Str(lhs.get_str().repeat(rhs.get_num() as usize))
             }
             _ => unreachable!(),
         },
@@ -115,23 +115,23 @@ fn bin_str_val(ctx: &mut VarTable, lhs: Value, op: &ValBinaryOp, rhs: Value) -> 
     }
 }
 
-fn bin_logic(ctx: &mut VarTable, lhs: &Expr, op: &LogicBinaryOp, rhs: &Expr) -> Value {
+fn bin_logic(ctx: &mut VarTable, lhs: &Expr, op: &LogicBinaryOp, rhs: &Expr) -> RawValue {
     let res = match op {
-        LogicBinaryOp::And => lhs.call(ctx).eval_bool(ctx) && rhs.call(ctx).eval_bool(ctx),
-        LogicBinaryOp::Or => lhs.call(ctx).eval_bool(ctx) || rhs.call(ctx).eval_bool(ctx),
+        LogicBinaryOp::And => lhs.call(ctx).get_bool() && rhs.call(ctx).get_bool(),
+        LogicBinaryOp::Or => lhs.call(ctx).get_bool() || rhs.call(ctx).get_bool(),
         op => {
             let lhs = lhs.call(ctx);
             let rhs = rhs.call(ctx);
-            let t = lhs.eval_type(ctx).max(rhs.eval_type(ctx));
+            let t = lhs.get_type().max(rhs.get_type());
             match t {
                 ValueType::Unit => false,
-                ValueType::Bool => bin_ord_logic(&lhs.eval_bool(ctx), op, &rhs.eval_bool(ctx)),
-                ValueType::Num => bin_ord_logic(&lhs.eval_num(ctx), op, &rhs.eval_num(ctx)),
-                ValueType::Str => bin_ord_logic(&lhs.eval_str(ctx), op, &rhs.eval_str(ctx)),
+                ValueType::Bool => bin_ord_logic(&lhs.get_bool(), op, &rhs.get_bool()),
+                ValueType::Num => bin_ord_logic(&lhs.get_num(), op, &rhs.get_num()),
+                ValueType::Str => bin_ord_logic(&lhs.get_str(), op, &rhs.get_str()),
             }
         }
     };
-    Value::Bool(res)
+    RawValue::Bool(res)
 }
 
 fn bin_ord_logic<T: Ord>(lhs: &T, op: &LogicBinaryOp, rhs: &T) -> bool {
@@ -146,7 +146,7 @@ fn bin_ord_logic<T: Ord>(lhs: &T, op: &LogicBinaryOp, rhs: &T) -> bool {
     }
 }
 
-fn assign(ctx: &mut VarTable, e: &Expr, val: Value) -> Value {
+fn assign(ctx: &mut VarTable, e: &Expr, val: RawValue) -> RawValue {
     match e {
         Expr::Ref(r) => match r {
             Ref::Var(n) => ctx.vars.insert(n.into(), val),
@@ -155,96 +155,49 @@ fn assign(ctx: &mut VarTable, e: &Expr, val: Value) -> Value {
         },
         _ => unreachable!(),
     };
-    Value::Unit
+    RawValue::Unit
 }
 
-fn call(ctx: &mut VarTable, n: &str, args: &[Expr]) -> Value {
+fn call(ctx: &mut VarTable, n: &str, args: &[Expr]) -> RawValue {
     match n {
-        "if" => if args
-            .get(0)
-            .map(|e| e.call(ctx))
-            .unwrap_or_default()
-            .eval_bool(ctx)
-        {
+        "if" => if args.get(0).call(ctx).get_bool() {
             args.get(1)
         } else {
             args.get(2)
         }
-        .map(|e| e.call(ctx))
-        .unwrap_or_default(),
+        .call(ctx),
         _ => unimplemented!("Call functions"),
     }
 }
 
 impl Callable for Ref {
-    fn call(&self, ctx: &mut VarTable) -> Value {
+    fn call(&self, ctx: &mut VarTable) -> RawValue {
         match self {
-            Self::Var(n) => ctx.vars.get(n).map(|v| v.clone()).unwrap_or_default(),
-            Self::Ctx(n) => ctx.locals.get(n).map(|v| v.clone()).unwrap_or_default(),
+            Self::Var(n) => ctx.vars.get(n).cloned().unwrap_or_default(),
+            Self::Ctx(n) => ctx.locals.get(n).cloned().unwrap_or_default(),
             Self::Res(_) => unimplemented!("Resources"),
         }
     }
 }
 
 impl Callable for Const {
-    fn call(&self, _ctx: &mut VarTable) -> Value {
+    fn call(&self, _ctx: &mut VarTable) -> RawValue {
         match self {
-            Self::Bool(b) => Value::Bool(*b),
-            Self::Num(n) => Value::Num(*n),
-            Self::Str(s) => Value::Str(s.clone()),
+            Self::Bool(b) => RawValue::Bool(*b),
+            Self::Num(n) => RawValue::Num(*n),
+            Self::Str(s) => RawValue::Str(s.clone()),
         }
     }
 }
 
-pub trait Evaluable {
-    fn eval(&self, ctx: &mut VarTable) -> Value;
-
-    fn eval_bool(&self, ctx: &mut VarTable) -> bool {
-        match self.eval(ctx) {
-            Value::Unit => false,
-            Value::Bool(b) => b,
-            Value::Num(i) => i != 0,
-            Value::Str(s) => !s.is_empty(),
-            Value::Expr(_) => unreachable!(),
-        }
-    }
-
-    fn eval_num(&self, ctx: &mut VarTable) -> i64 {
-        match self.eval(ctx) {
-            Value::Unit => 0,
-            Value::Bool(b) => b as i64,
-            Value::Num(i) => i,
-            Value::Str(s) => s.len() as i64,
-            Value::Expr(_) => unreachable!(),
-        }
-    }
-
-    fn eval_str(&self, ctx: &mut VarTable) -> String {
-        match self.eval(ctx) {
-            Value::Unit => String::default(),
-            Value::Bool(b) => b.to_string(),
-            Value::Num(i) => i.to_string(),
-            Value::Str(s) => s.clone(),
-            Value::Expr(_) => unreachable!(),
-        }
-    }
-
-    fn eval_type(&self, ctx: &mut VarTable) -> ValueType {
-        match self.eval(ctx) {
-            Value::Unit => ValueType::Unit,
-            Value::Bool(_) => ValueType::Bool,
-            Value::Num(_) => ValueType::Num,
-            Value::Str(_) => ValueType::Str,
-            Value::Expr(_) => unreachable!(),
-        }
-    }
-}
-
-impl Evaluable for Value {
-    fn eval(&self, ctx: &mut VarTable) -> Value {
+impl Callable for Value {
+    fn call(&self, ctx: &mut VarTable) -> RawValue {
         match self {
-            Value::Expr(p) => p.call(ctx),
-            _ => self.clone(),
+            Self::Unit => RawValue::Unit,
+            Self::Bool(b) => RawValue::Bool(*b),
+            Self::Num(i) => RawValue::Num(*i),
+            Self::Str(s) => RawValue::Str(s.clone()),
+            Self::Expr(p) => p.call(ctx),
         }
     }
 }
