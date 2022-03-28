@@ -65,7 +65,7 @@ fn bin_val(ctx: &mut VarTable, lhs: &Expr, op: &ValBinaryOp, rhs: &Expr) -> Valu
         ValueType::Unit => Value::Unit,
         ValueType::Bool => bin_bool_val(lhs.eval_bool(ctx), op, rhs.eval_bool(ctx)),
         ValueType::Num => Value::Num(bin_num_val(lhs.eval_num(ctx), op, rhs.eval_num(ctx))),
-        ValueType::Str => bin_str_val(lhs, op, rhs),
+        ValueType::Str => bin_str_val(ctx, lhs, op, rhs),
     }
 }
 
@@ -95,8 +95,24 @@ fn bin_num_val(lhs: i64, op: &ValBinaryOp, rhs: i64) -> i64 {
     }
 }
 
-fn bin_str_val(lhs: Value, op: &ValBinaryOp, rhs: Value) -> Value {
-    unimplemented!()
+fn bin_str_val(ctx: &mut VarTable, lhs: Value, op: &ValBinaryOp, rhs: Value) -> Value {
+    match op {
+        ValBinaryOp::Add => Value::Str(lhs.eval_str(ctx) + &rhs.eval_str(ctx)),
+        ValBinaryOp::Mul => match (
+            lhs.eval_type(ctx).max(ValueType::Num),
+            rhs.eval_type(ctx).max(ValueType::Num),
+        ) {
+            (ValueType::Str, ValueType::Str) => unimplemented!(),
+            (ValueType::Num, ValueType::Str) => {
+                Value::Str(rhs.eval_str(ctx).repeat(lhs.eval_num(ctx) as usize))
+            }
+            (ValueType::Str, ValueType::Num) => {
+                Value::Str(lhs.eval_str(ctx).repeat(rhs.eval_num(ctx) as usize))
+            }
+            _ => unreachable!(),
+        },
+        _ => unimplemented!(),
+    }
 }
 
 fn bin_logic(ctx: &mut VarTable, lhs: &Expr, op: &LogicBinaryOp, rhs: &Expr) -> Value {
