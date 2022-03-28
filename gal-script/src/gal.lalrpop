@@ -114,10 +114,11 @@ pub Ref: Ref = {
 
 Id: String = <s:r"[A-Za-z]\w*"> => s.into();
 
-pub Const: Const = {
-    <b:Bool> => Const::Bool(b),
-    <n:Num> => Const::Num(n),
-    <s:Str> => Const::Str(s),
+pub Const: RawValue = {
+    "~" => RawValue::Unit,
+    <b:Bool> => RawValue::Bool(b),
+    <n:Num> => RawValue::Num(n),
+    <s:Str> => RawValue::Str(s),
 }
 
 Bool: bool = {

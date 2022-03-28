@@ -29,7 +29,7 @@ impl Callable for Expr {
     fn call(&self, ctx: &mut VarTable) -> RawValue {
         match self {
             Self::Ref(r) => r.call(ctx),
-            Self::Const(c) => c.call(ctx),
+            Self::Const(c) => c.clone(),
             Self::Unary(op, e) => match op {
                 UnaryOp::Positive => RawValue::Num(e.call(ctx).get_num()),
                 UnaryOp::Negative => RawValue::Num(-e.call(ctx).get_num()),
@@ -176,16 +176,6 @@ impl Callable for Ref {
             Self::Var(n) => ctx.vars.get(n).cloned().unwrap_or_default(),
             Self::Ctx(n) => ctx.locals.get(n).cloned().unwrap_or_default(),
             Self::Res(_) => unimplemented!("Resources"),
-        }
-    }
-}
-
-impl Callable for Const {
-    fn call(&self, _ctx: &mut VarTable) -> RawValue {
-        match self {
-            Self::Bool(b) => RawValue::Bool(*b),
-            Self::Num(n) => RawValue::Num(*n),
-            Self::Str(s) => RawValue::Str(s.clone()),
         }
     }
 }

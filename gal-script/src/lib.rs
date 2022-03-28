@@ -1,4 +1,5 @@
 use lalrpop_util::lalrpop_mod;
+use std::borrow::Cow;
 
 lalrpop_mod!(gal);
 
@@ -10,7 +11,7 @@ pub struct Program(pub Vec<Expr>);
 #[derive(Debug, PartialEq, Eq)]
 pub enum Expr {
     Ref(Ref),
-    Const(Const),
+    Const(RawValue),
     Unary(UnaryOp, Box<Expr>),
     Binary(Box<Expr>, BinaryOp, Box<Expr>),
     Call(String, Vec<Expr>),
@@ -62,11 +63,64 @@ pub enum Ref {
     Res(String),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Const {
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum RawValue {
+    Unit,
     Bool(bool),
     Num(i64),
     Str(String),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ValueType {
+    Unit,
+    Bool,
+    Num,
+    Str,
+}
+
+impl Default for RawValue {
+    fn default() -> Self {
+        Self::Unit
+    }
+}
+
+impl RawValue {
+    pub fn get_type(&self) -> ValueType {
+        match self {
+            Self::Unit => ValueType::Unit,
+            Self::Bool(_) => ValueType::Bool,
+            Self::Num(_) => ValueType::Num,
+            Self::Str(_) => ValueType::Str,
+        }
+    }
+
+    pub fn get_bool(&self) -> bool {
+        match self {
+            Self::Unit => false,
+            Self::Bool(b) => *b,
+            Self::Num(i) => *i != 0,
+            Self::Str(s) => !s.is_empty(),
+        }
+    }
+
+    pub fn get_num(&self) -> i64 {
+        match self {
+            Self::Unit => 0,
+            Self::Bool(b) => *b as i64,
+            Self::Num(i) => *i,
+            Self::Str(s) => s.len() as i64,
+        }
+    }
+
+    pub fn get_str(&self) -> Cow<str> {
+        match self {
+            Self::Unit => Cow::default(),
+            Self::Bool(b) => b.to_string().into(),
+            Self::Num(i) => i.to_string().into(),
+            Self::Str(s) => s.as_str().into(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -110,20 +164,25 @@ mod test {
 
     #[test]
     fn r#const() {
-        assert_eq!(ConstParser::new().parse("true").unwrap(), Const::Bool(true));
+        assert_eq!(ConstParser::new().parse("~").unwrap(), RawValue::Unit);
+
+        assert_eq!(
+            ConstParser::new().parse("true").unwrap(),
+            RawValue::Bool(true)
+        );
         assert_eq!(
             ConstParser::new().parse("false").unwrap(),
-            Const::Bool(false)
+            RawValue::Bool(false)
         );
 
         assert_eq!(
             ConstParser::new().parse("114514").unwrap(),
-            Const::Num(114514)
+            RawValue::Num(114514)
         );
 
         assert_eq!(
             ConstParser::new().parse("\"Hello world!\"").unwrap(),
-            Const::Str("Hello world!".into())
+            RawValue::Str("Hello world!".into())
         );
     }
 

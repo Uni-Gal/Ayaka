@@ -1,8 +1,9 @@
 use gal_script::{Program, ProgramParser};
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::Arc;
+
+pub use gal_script::RawValue;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Value {
@@ -109,66 +110,6 @@ impl Serialize for Value {
             Self::Num(n) => serializer.serialize_i64(*n),
             Self::Str(s) => serializer.serialize_str(s),
             Self::Expr(_) => unimplemented!(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum RawValue {
-    Unit,
-    Bool(bool),
-    Num(i64),
-    Str(String),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum ValueType {
-    Unit,
-    Bool,
-    Num,
-    Str,
-}
-
-impl Default for RawValue {
-    fn default() -> Self {
-        Self::Unit
-    }
-}
-
-impl RawValue {
-    pub fn get_type(&self) -> ValueType {
-        match self {
-            Self::Unit => ValueType::Unit,
-            Self::Bool(_) => ValueType::Bool,
-            Self::Num(_) => ValueType::Num,
-            Self::Str(_) => ValueType::Str,
-        }
-    }
-
-    pub fn get_bool(&self) -> bool {
-        match self {
-            Self::Unit => false,
-            Self::Bool(b) => *b,
-            Self::Num(i) => *i != 0,
-            Self::Str(s) => !s.is_empty(),
-        }
-    }
-
-    pub fn get_num(&self) -> i64 {
-        match self {
-            Self::Unit => 0,
-            Self::Bool(b) => *b as i64,
-            Self::Num(i) => *i,
-            Self::Str(s) => s.len() as i64,
-        }
-    }
-
-    pub fn get_str(&self) -> Cow<str> {
-        match self {
-            Self::Unit => Cow::default(),
-            Self::Bool(b) => b.to_string().into(),
-            Self::Num(i) => i.to_string().into(),
-            Self::Str(s) => s.as_str().into(),
         }
     }
 }

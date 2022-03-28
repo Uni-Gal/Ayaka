@@ -26,7 +26,7 @@ paras:
     title: Paragraph c
     actions:
       - >
-        { if($s == 1, "s1", if($s == 2, "s2", "Not chosen!")) }
+        { if($s == 1, "s1", if($s == 2, "s2", ~)) }
       - >
         { "s" + $s }
     next: ~
