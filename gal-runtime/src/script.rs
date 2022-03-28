@@ -1,6 +1,14 @@
 use crate::*;
 use gal_script::*;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+pub enum ValueType {
+    Unit,
+    Bool,
+    Num,
+    Str,
+}
+
 pub trait Callable {
     fn call(&self, ctx: &mut VarTable) -> Value;
 }
@@ -50,15 +58,76 @@ impl Callable for Expr {
 }
 
 fn bin_val(ctx: &mut VarTable, lhs: &Expr, op: &ValBinaryOp, rhs: &Expr) -> Value {
+    let lhs = lhs.call(ctx);
+    let rhs = rhs.call(ctx);
+    let t = lhs.eval_type(ctx).max(rhs.eval_type(ctx));
+    match t {
+        ValueType::Unit => Value::Unit,
+        ValueType::Bool => bin_bool_val(lhs.eval_bool(ctx), op, rhs.eval_bool(ctx)),
+        ValueType::Num => Value::Num(bin_num_val(lhs.eval_num(ctx), op, rhs.eval_num(ctx))),
+        ValueType::Str => bin_str_val(lhs, op, rhs),
+    }
+}
+
+fn bin_bool_val(lhs: bool, op: &ValBinaryOp, rhs: bool) -> Value {
+    match op {
+        ValBinaryOp::Add
+        | ValBinaryOp::Minus
+        | ValBinaryOp::Mul
+        | ValBinaryOp::Div
+        | ValBinaryOp::Mod => Value::Num(bin_num_val(lhs as i64, op, rhs as i64)),
+        ValBinaryOp::And => Value::Bool(lhs && rhs),
+        ValBinaryOp::Or => Value::Bool(lhs || rhs),
+        ValBinaryOp::Xor => Value::Bool(lhs ^ rhs),
+    }
+}
+
+fn bin_num_val(lhs: i64, op: &ValBinaryOp, rhs: i64) -> i64 {
+    match op {
+        ValBinaryOp::Add => lhs + rhs,
+        ValBinaryOp::Minus => lhs - rhs,
+        ValBinaryOp::Mul => lhs * rhs,
+        ValBinaryOp::Div => lhs / rhs,
+        ValBinaryOp::Mod => lhs % rhs,
+        ValBinaryOp::And => lhs & rhs,
+        ValBinaryOp::Or => lhs | rhs,
+        ValBinaryOp::Xor => lhs ^ rhs,
+    }
+}
+
+fn bin_str_val(lhs: Value, op: &ValBinaryOp, rhs: Value) -> Value {
     unimplemented!()
 }
 
 fn bin_logic(ctx: &mut VarTable, lhs: &Expr, op: &LogicBinaryOp, rhs: &Expr) -> Value {
     let res = match op {
-        LogicBinaryOp::Eq => lhs.call(ctx).eval_num(ctx) == rhs.call(ctx).eval_num(ctx),
-        _ => unimplemented!(),
+        LogicBinaryOp::And => lhs.call(ctx).eval_bool(ctx) && rhs.call(ctx).eval_bool(ctx),
+        LogicBinaryOp::Or => lhs.call(ctx).eval_bool(ctx) || rhs.call(ctx).eval_bool(ctx),
+        op => {
+            let lhs = lhs.call(ctx);
+            let rhs = rhs.call(ctx);
+            let t = lhs.eval_type(ctx).max(rhs.eval_type(ctx));
+            match t {
+                ValueType::Unit => false,
+                ValueType::Bool => bin_ord_logic(&lhs.eval_bool(ctx), op, &rhs.eval_bool(ctx)),
+                ValueType::Num => bin_ord_logic(&lhs.eval_num(ctx), op, &rhs.eval_num(ctx)),
+                ValueType::Str => bin_ord_logic(&lhs.eval_str(ctx), op, &rhs.eval_str(ctx)),
+            }
+        }
     };
     Value::Bool(res)
+}
+
+fn bin_ord_logic<T: Ord>(lhs: &T, op: &LogicBinaryOp, rhs: &T) -> bool {
+    match op {
+        LogicBinaryOp::Eq => lhs == rhs,
+        LogicBinaryOp::Neq => lhs != rhs,
+        LogicBinaryOp::Lt => lhs < rhs,
+        LogicBinaryOp::Le => lhs <= rhs,
+        LogicBinaryOp::Gt => lhs > rhs,
+        LogicBinaryOp::Ge => lhs >= rhs,
+        _ => unreachable!(),
+    }
 }
 
 fn assign(ctx: &mut VarTable, e: &Expr, val: Value) -> Value {
@@ -127,13 +196,7 @@ pub trait Evaluable {
     fn eval_num(&self, ctx: &mut VarTable) -> i64 {
         match self.eval(ctx) {
             Value::Unit => 0,
-            Value::Bool(b) => {
-                if b {
-                    1
-                } else {
-                    0
-                }
-            }
+            Value::Bool(b) => b as i64,
             Value::Num(i) => i,
             Value::Str(s) => s.len() as i64,
             Value::Expr(_) => unreachable!(),
@@ -146,6 +209,16 @@ pub trait Evaluable {
             Value::Bool(b) => b.to_string(),
             Value::Num(i) => i.to_string(),
             Value::Str(s) => s.clone(),
+            Value::Expr(_) => unreachable!(),
+        }
+    }
+
+    fn eval_type(&self, ctx: &mut VarTable) -> ValueType {
+        match self.eval(ctx) {
+            Value::Unit => ValueType::Unit,
+            Value::Bool(_) => ValueType::Bool,
+            Value::Num(_) => ValueType::Num,
+            Value::Str(_) => ValueType::Str,
             Value::Expr(_) => unreachable!(),
         }
     }
