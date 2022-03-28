@@ -14,10 +14,19 @@ fn main() {
                 allow_default,
                 items,
             } => {
-                println!("Switches: {:?}, please choose one:", items);
-                let mut s = String::default();
+                println!("Switches:");
+                for (i, item) in items.iter().enumerate() {
+                    if item.enabled {
+                        println!("-{}- {}", i + 1, item.text);
+                    } else {
+                        println!("-x- {}", item.text);
+                    }
+                }
+                println!("Pleese choose one:");
                 loop {
+                    let mut s = String::default();
                     stdin().read_line(&mut s).unwrap();
+                    s = s.replace("\r\n", "");
                     let i = s.parse::<usize>().unwrap();
                     let valid = if allow_default {
                         i <= items.len()
@@ -26,6 +35,7 @@ fn main() {
                     };
                     if valid {
                         ctx.switch(i as i64);
+                        break;
                     } else {
                         println!("Invalid switch, enter again!");
                     }

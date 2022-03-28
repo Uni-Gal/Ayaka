@@ -7,7 +7,7 @@ pub trait Callable {
 
 impl Callable for Program {
     fn call(&self, ctx: &mut VarTable) -> Value {
-        ctx.locals.clear();
+        ctx.vars.clear();
         let mut res = Value::Unit;
         for expr in &self.0 {
             res = expr.call(ctx);
@@ -21,22 +21,56 @@ impl Callable for Expr {
         match self {
             Self::Ref(r) => r.call(ctx),
             Self::Const(c) => c.call(ctx),
-            Self::Assign(r, e) => {
-                let val = e.call(ctx);
-                assign(ctx, r, val);
-                Value::Unit
-            }
+            Self::Unary(op, e) => match op {
+                UnaryOp::Positive => Value::Num(e.call(ctx).eval_num(ctx)),
+                UnaryOp::Negative => Value::Num(-e.call(ctx).eval_num(ctx)),
+                UnaryOp::Not => match e.call(ctx) {
+                    Value::Unit => Value::Unit,
+                    Value::Bool(b) => Value::Bool(!b),
+                    Value::Num(i) => Value::Num(!i),
+                    Value::Str(_) => Value::Str(String::new()),
+                    Value::Expr(_) => unimplemented!(),
+                },
+            },
+            Self::Binary(lhs, op, rhs) => match op {
+                BinaryOp::Val(op) => bin_val(ctx, lhs, op, rhs),
+                BinaryOp::Logic(op) => bin_logic(ctx, lhs, op, rhs),
+                BinaryOp::Assign => {
+                    let val = rhs.call(ctx);
+                    assign(ctx, lhs, val)
+                }
+                BinaryOp::Inplace(op) => {
+                    let val = bin_val(ctx, lhs, op, rhs);
+                    assign(ctx, lhs, val)
+                }
+            },
             Self::Call(n, args) => call(ctx, n, args),
         }
     }
 }
 
-fn assign(ctx: &mut VarTable, r: &Ref, val: Value) {
-    match r {
-        Ref::Var(n) => ctx.vars.insert(n.into(), val),
-        Ref::Ctx(n) => ctx.locals.insert(n.into(), val),
-        Ref::Res(_) => unimplemented!("Resources"),
+fn bin_val(ctx: &mut VarTable, lhs: &Expr, op: &ValBinaryOp, rhs: &Expr) -> Value {
+    unimplemented!()
+}
+
+fn bin_logic(ctx: &mut VarTable, lhs: &Expr, op: &LogicBinaryOp, rhs: &Expr) -> Value {
+    let res = match op {
+        LogicBinaryOp::Eq => lhs.call(ctx).eval_num(ctx) == rhs.call(ctx).eval_num(ctx),
+        _ => unimplemented!(),
     };
+    Value::Bool(res)
+}
+
+fn assign(ctx: &mut VarTable, e: &Expr, val: Value) -> Value {
+    match e {
+        Expr::Ref(r) => match r {
+            Ref::Var(n) => ctx.vars.insert(n.into(), val),
+            Ref::Ctx(n) => ctx.locals.insert(n.into(), val),
+            Ref::Res(_) => unimplemented!("Resources"),
+        },
+        _ => unreachable!(),
+    };
+    Value::Unit
 }
 
 fn call(ctx: &mut VarTable, n: &str, args: &[Expr]) -> Value {
@@ -86,6 +120,22 @@ pub trait Evaluable {
             Value::Bool(b) => b,
             Value::Num(i) => i != 0,
             Value::Str(s) => !s.is_empty(),
+            Value::Expr(_) => unreachable!(),
+        }
+    }
+
+    fn eval_num(&self, ctx: &mut VarTable) -> i64 {
+        match self.eval(ctx) {
+            Value::Unit => 0,
+            Value::Bool(b) => {
+                if b {
+                    1
+                } else {
+                    0
+                }
+            }
+            Value::Num(i) => i,
+            Value::Str(s) => s.len() as i64,
             Value::Expr(_) => unreachable!(),
         }
     }

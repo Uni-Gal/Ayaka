@@ -21,7 +21,9 @@ pub struct SwitchItem {
 
 #[derive(Debug, Default)]
 pub struct VarTable {
+    // Referenced by name
     pub vars: VarMap,
+    // Referenced by $name
     pub locals: VarMap,
 }
 
@@ -62,19 +64,19 @@ impl Context {
         }
     }
 
-    pub fn current_paragraph(&self) -> Option<&Paragraph> {
-        self.game.find_para(&self.ctx.cur_para)
-    }
+    // pub fn current_paragraph(&self) -> Option<&Paragraph> {
+    //     self.game.find_para(&self.ctx.cur_para)
+    // }
 
-    pub fn current_act(&self) -> Option<&Action> {
-        self.current_paragraph()
-            .map(|p| &p.actions[self.ctx.cur_act])
-    }
+    // pub fn current_act(&self) -> Option<&Action> {
+    //     self.current_paragraph()
+    //         .map(|p| &p.actions[self.ctx.cur_act])
+    // }
 
     pub fn switch(&mut self, i: i64) {
         use gal_script::Ref;
         match self.cur_switch_bind.as_ref().unwrap() {
-            Ref::Ctx(n) => self.table.vars.insert(n.clone(), Value::Num(i)),
+            Ref::Ctx(n) => self.table.locals.insert(n.clone(), Value::Num(i)),
             _ => unreachable!(),
         };
     }
