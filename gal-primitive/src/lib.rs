@@ -1,4 +1,4 @@
-use gal_script::{gal::ProgramParser, Program};
+use gal_script::{Program, ProgramParser};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 use std::collections::HashMap;

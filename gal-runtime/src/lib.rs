@@ -95,7 +95,7 @@ impl Iterator for Context {
                         allow_default,
                         items,
                     } => {
-                        self.cur_switch_bind = gal_script::gal::RefParser::new().parse(bind).ok();
+                        self.cur_switch_bind = gal_script::RefParser::new().parse(bind).ok();
                         Some(Event::Switch {
                             allow_default: *allow_default,
                             items: items

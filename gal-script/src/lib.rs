@@ -1,6 +1,8 @@
 use lalrpop_util::lalrpop_mod;
 
-lalrpop_mod!(pub gal);
+lalrpop_mod!(gal);
+
+pub use gal::*;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Program(pub Vec<Expr>);
@@ -78,7 +80,7 @@ mod test {
     #[test]
     fn program() {
         assert_eq!(
-            gal::ProgramParser::new()
+            ProgramParser::new()
                 .parse(
                     "{
                         foo(a);
@@ -95,52 +97,40 @@ mod test {
 
     #[test]
     fn expr() {
-        assert_eq!(gal::ExprParser::new().parse("a").unwrap(), var("a"));
+        assert_eq!(ExprParser::new().parse("a").unwrap(), var("a"));
         assert_eq!(
-            gal::ExprParser::new().parse("foo(a)").unwrap(),
+            ExprParser::new().parse("foo(a)").unwrap(),
             Expr::Call("foo".into(), vec![var("a")])
         );
         assert_eq!(
-            gal::ExprParser::new().parse("foo(a, b)").unwrap(),
+            ExprParser::new().parse("foo(a, b)").unwrap(),
             Expr::Call("foo".into(), vec![var("a"), var("b")])
         );
     }
 
     #[test]
     fn r#const() {
+        assert_eq!(ConstParser::new().parse("true").unwrap(), Const::Bool(true));
         assert_eq!(
-            gal::ConstParser::new().parse("true").unwrap(),
-            Const::Bool(true)
-        );
-        assert_eq!(
-            gal::ConstParser::new().parse("false").unwrap(),
+            ConstParser::new().parse("false").unwrap(),
             Const::Bool(false)
         );
 
         assert_eq!(
-            gal::ConstParser::new().parse("114514").unwrap(),
+            ConstParser::new().parse("114514").unwrap(),
             Const::Num(114514)
         );
 
         assert_eq!(
-            gal::ConstParser::new().parse("\"Hello world!\"").unwrap(),
+            ConstParser::new().parse("\"Hello world!\"").unwrap(),
             Const::Str("Hello world!".into())
         );
     }
 
     #[test]
     fn r#ref() {
-        assert_eq!(
-            gal::RefParser::new().parse("a").unwrap(),
-            Ref::Var("a".into())
-        );
-        assert_eq!(
-            gal::RefParser::new().parse("$a").unwrap(),
-            Ref::Ctx("a".into())
-        );
-        assert_eq!(
-            gal::RefParser::new().parse("#a").unwrap(),
-            Ref::Res("a".into())
-        );
+        assert_eq!(RefParser::new().parse("a").unwrap(), Ref::Var("a".into()));
+        assert_eq!(RefParser::new().parse("$a").unwrap(), Ref::Ctx("a".into()));
+        assert_eq!(RefParser::new().parse("#a").unwrap(), Ref::Res("a".into()));
     }
 }
