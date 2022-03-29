@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 lalrpop-util = { version = "0.19", features = ["lexer"] }
 regex = "1"
+serde = "1.0"
 
 [build-dependencies]
 lalrpop = "0.19"

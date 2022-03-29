@@ -6,7 +6,6 @@ use script::*;
 #[derive(Debug)]
 pub enum Event {
     Text(String),
-    // TODO: enabled
     Switch {
         allow_default: bool,
         items: Vec<SwitchItem>,
@@ -23,8 +22,8 @@ pub struct SwitchItem {
 pub struct Context<'a> {
     pub game: &'a Game,
     pub ctx: RawContext,
-    pub locals: VarMap,
     pub res: VarMap,
+    // TODO: it's too ugly
     cur_switch_bind: Option<gal_script::Ref>,
 }
 
@@ -36,14 +35,13 @@ impl<'a> Context<'a> {
             .first()
             .map(|p| p.tag.clone())
             .unwrap_or_default();
-        Self::with_context(game, ctx, VarMap::default())
+        Self::with_context(game, ctx)
     }
 
-    pub fn with_context(game: &'a Game, ctx: RawContext, locals: VarMap) -> Self {
+    pub fn with_context(game: &'a Game, ctx: RawContext) -> Self {
         Self {
             game,
             ctx,
-            locals,
             // TODO: load resources
             res: VarMap::default(),
             cur_switch_bind: None,
@@ -51,7 +49,7 @@ impl<'a> Context<'a> {
     }
 
     fn table(&mut self) -> VarTable {
-        VarTable::new(&mut self.locals, &self.res)
+        VarTable::new(&mut self.ctx.locals, &self.res)
     }
 
     pub fn current_paragraph(&self) -> Option<&'a Paragraph> {
@@ -66,7 +64,7 @@ impl<'a> Context<'a> {
     pub fn switch(&mut self, i: i64) {
         use gal_script::Ref;
         match self.cur_switch_bind.as_ref().unwrap() {
-            Ref::Ctx(n) => self.locals.insert(n.clone(), RawValue::Num(i)),
+            Ref::Ctx(n) => self.ctx.locals.insert(n.clone(), RawValue::Num(i)),
             _ => unreachable!(),
         };
     }
