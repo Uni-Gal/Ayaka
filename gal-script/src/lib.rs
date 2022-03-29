@@ -262,4 +262,60 @@ mod test {
         assert_eq!(RefParser::new().parse("$a").unwrap(), Ref::Ctx("a".into()));
         assert_eq!(RefParser::new().parse("#a").unwrap(), Ref::Res("a".into()));
     }
+
+    #[test]
+    fn serde_value() {
+        assert_eq!(
+            serde_yaml::from_str::<RawValue>("~").unwrap(),
+            RawValue::Unit
+        );
+
+        assert_eq!(
+            serde_yaml::from_str::<RawValue>("true").unwrap(),
+            RawValue::Bool(true)
+        );
+        assert_eq!(
+            serde_yaml::from_str::<RawValue>("false").unwrap(),
+            RawValue::Bool(false)
+        );
+
+        assert_eq!(
+            serde_yaml::from_str::<RawValue>("114514").unwrap(),
+            RawValue::Num(114514)
+        );
+        assert_eq!(
+            serde_yaml::from_str::<RawValue>("-1919810").unwrap(),
+            RawValue::Num(-1919810)
+        );
+
+        assert_eq!(
+            serde_yaml::from_str::<RawValue>("\"Hello world!\"").unwrap(),
+            RawValue::Str("Hello world!".into())
+        );
+
+        assert_eq!(serde_yaml::to_string(&RawValue::Unit).unwrap(), "---\n~\n");
+
+        assert_eq!(
+            serde_yaml::to_string(&RawValue::Bool(true)).unwrap(),
+            "---\ntrue\n"
+        );
+        assert_eq!(
+            serde_yaml::to_string(&RawValue::Bool(false)).unwrap(),
+            "---\nfalse\n"
+        );
+
+        assert_eq!(
+            serde_yaml::to_string(&RawValue::Num(114514)).unwrap(),
+            "---\n114514\n"
+        );
+        assert_eq!(
+            serde_yaml::to_string(&RawValue::Num(-1919)).unwrap(),
+            "---\n-1919\n"
+        );
+
+        assert_eq!(
+            serde_yaml::to_string(&RawValue::Str("aaa".into())).unwrap(),
+            "---\naaa\n"
+        );
+    }
 }

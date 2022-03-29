@@ -10,3 +10,6 @@ serde = "1.0"
 
 [build-dependencies]
 lalrpop = "0.19"
+
+[dev-dependencies]
+serde_yaml = "0.8"
