@@ -1,7 +1,7 @@
 pub mod script;
 
 pub use gal_primitive::*;
-use script::Callable;
+use script::*;
 
 #[derive(Debug)]
 pub enum Event {
@@ -19,33 +19,17 @@ pub struct SwitchItem {
     pub enabled: bool,
 }
 
-#[derive(Debug, Default)]
-pub struct VarTable {
-    // Referenced by name
-    pub vars: VarMap,
-    // Referenced by $name
-    pub locals: VarMap,
-}
-
-impl VarTable {
-    pub fn with_vars(vars: VarMap) -> Self {
-        Self {
-            vars,
-            locals: VarMap::default(),
-        }
-    }
-}
-
 #[derive(Debug)]
-pub struct Context {
-    pub game: Game,
+pub struct Context<'a> {
+    pub game: &'a Game,
     pub ctx: RawContext,
-    pub table: VarTable,
+    pub locals: VarMap,
+    pub res: VarMap,
     cur_switch_bind: Option<gal_script::Ref>,
 }
 
-impl Context {
-    pub fn new(game: Game) -> Self {
+impl<'a> Context<'a> {
+    pub fn new(game: &'a Game) -> Self {
         let mut ctx = RawContext::default();
         ctx.cur_para = game
             .paras
@@ -55,41 +39,47 @@ impl Context {
         Self::with_context(game, ctx, VarMap::default())
     }
 
-    pub fn with_context(game: Game, ctx: RawContext, vars: VarMap) -> Self {
+    pub fn with_context(game: &'a Game, ctx: RawContext, locals: VarMap) -> Self {
         Self {
             game,
             ctx,
-            table: VarTable::with_vars(vars),
+            locals,
+            // TODO: load resources
+            res: VarMap::default(),
             cur_switch_bind: None,
         }
     }
 
-    // pub fn current_paragraph(&self) -> Option<&Paragraph> {
-    //     self.game.find_para(&self.ctx.cur_para)
-    // }
+    fn table(&mut self) -> VarTable {
+        VarTable::new(&mut self.locals, &self.res)
+    }
 
-    // pub fn current_act(&self) -> Option<&Action> {
-    //     self.current_paragraph()
-    //         .map(|p| &p.actions[self.ctx.cur_act])
-    // }
+    pub fn current_paragraph(&self) -> Option<&'a Paragraph> {
+        self.game.find_para(&self.ctx.cur_para)
+    }
+
+    pub fn current_act(&self) -> Option<&'a Action> {
+        self.current_paragraph()
+            .and_then(|p| p.actions.get(self.ctx.cur_act))
+    }
 
     pub fn switch(&mut self, i: i64) {
         use gal_script::Ref;
         match self.cur_switch_bind.as_ref().unwrap() {
-            Ref::Ctx(n) => self.table.locals.insert(n.clone(), RawValue::Num(i)),
+            Ref::Ctx(n) => self.locals.insert(n.clone(), RawValue::Num(i)),
             _ => unreachable!(),
         };
     }
 }
 
-impl Iterator for Context {
+impl Iterator for Context<'_> {
     type Item = Event;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if let Some(cur_para) = self.game.find_para(&self.ctx.cur_para) {
-            if self.ctx.cur_act < cur_para.actions.len() {
-                let res = match &cur_para.actions[self.ctx.cur_act] {
-                    Action::Text(s) => Some(Event::Text(s.call(&mut self.table).get_str().into())),
+        if let Some(cur_para) = self.current_paragraph() {
+            if let Some(act) = self.current_act() {
+                let res = match act {
+                    Action::Text(s) => Some(Event::Text(self.table().call(s).get_str().into())),
                     Action::Switch {
                         bind,
                         allow_default,
@@ -102,7 +92,7 @@ impl Iterator for Context {
                                 .iter()
                                 .map(|item| SwitchItem {
                                     text: item.text.clone(),
-                                    enabled: item.enabled.call(&mut self.table).get_bool(),
+                                    enabled: self.table().call(&item.enabled).get_bool(),
                                 })
                                 .collect(),
                         })
@@ -111,7 +101,7 @@ impl Iterator for Context {
                 self.ctx.cur_act += 1;
                 res
             } else {
-                self.ctx.cur_para = cur_para.next.call(&mut self.table).get_str().into();
+                self.ctx.cur_para = self.table().call(&cur_para.next).get_str().into();
                 self.ctx.cur_act = 0;
                 self.next()
             }

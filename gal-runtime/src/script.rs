@@ -1,6 +1,26 @@
 use crate::*;
 use gal_script::*;
 
+pub struct VarTable<'a> {
+    pub locals: &'a mut VarMap,
+    pub res: &'a VarMap,
+    pub vars: VarMap,
+}
+
+impl<'a> VarTable<'a> {
+    pub fn new(locals: &'a mut VarMap, res: &'a VarMap) -> Self {
+        Self {
+            locals,
+            res,
+            vars: VarMap::default(),
+        }
+    }
+
+    pub fn call(&mut self, c: &impl Callable) -> RawValue {
+        c.call(self)
+    }
+}
+
 pub trait Callable {
     fn call(&self, ctx: &mut VarTable) -> RawValue;
 }
