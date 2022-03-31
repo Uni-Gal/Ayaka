@@ -211,3 +211,33 @@ impl Callable for Value {
         }
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::*;
+    use gal_script::*;
+
+    fn with_ctx(f: impl FnOnce(&mut VarTable)) {
+        let mut locals = VarMap::default();
+        let res = VarMap::default();
+        let mut ctx = VarTable::new(&mut locals, &res);
+        f(&mut ctx);
+    }
+
+    #[test]
+    fn value() {
+        with_ctx(|ctx| {
+            assert_eq!(Value::Unit.call(ctx), RawValue::Unit);
+
+            assert_eq!(Value::Bool(true).call(ctx), RawValue::Bool(true));
+            assert_eq!(Value::Bool(false).call(ctx), RawValue::Bool(false));
+
+            assert_eq!(Value::Num(114514).call(ctx), RawValue::Num(114514));
+
+            assert_eq!(
+                Value::Str("Hello world!".into()).call(ctx),
+                RawValue::Str("Hello world!".into())
+            );
+        });
+    }
+}
