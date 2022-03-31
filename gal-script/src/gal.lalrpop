@@ -3,17 +3,21 @@ use std::str::FromStr;
 
 grammar;
 
+Delimiter<T, D>: Vec<T> = {
+    <mut v:(<T> D)*> <e:T?> => match e {
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
+};
+
 pub Program: Program = {
     "{" <s:Statement> "}" => Program(s)
 }
 
-Statement: Vec<Expr> = {
-    <mut s:Statement> ";" <e:Expr> => {
-        s.push(e);
-        s
-    },
-    <e:Expr> => vec![e],
-}
+Statement: Vec<Expr> = Delimiter<Expr, ";">;
 
 pub Expr: Expr = {
     <o:UnaryOp> <e:Expr> => Expr::Unary(o, Box::new(e)),
@@ -23,13 +27,7 @@ pub Expr: Expr = {
     <i:Id> "(" <a:Exprs> ")" => Expr::Call(i, a),
 }
 
-Exprs: Vec<Expr> = {
-    <mut args:Exprs> "," <a:Expr> => {
-        args.push(a);
-        args
-    },
-    <a:Expr> => vec![a],
-}
+Exprs: Vec<Expr> = Delimiter<Expr, ",">;
 
 UnaryOp: UnaryOp = {
     "+" => UnaryOp::Positive,
