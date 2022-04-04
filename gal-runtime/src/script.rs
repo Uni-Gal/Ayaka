@@ -240,4 +240,67 @@ mod test {
             );
         });
     }
+
+    #[test]
+    fn vars() {
+        with_ctx(|ctx| {
+            assert_eq!(
+                ProgramParser::new()
+                    .parse(
+                        "{
+                            a = 0;
+                            a += 1;
+                            a += a;
+                            a
+                        }"
+                    )
+                    .unwrap()
+                    .call(ctx),
+                RawValue::Num(2)
+            );
+
+            assert_eq!(
+                ProgramParser::new().parse("{ a }").unwrap().call(ctx),
+                RawValue::Unit
+            );
+
+            assert_eq!(
+                ProgramParser::new()
+                    .parse(
+                        "{
+                            $a = 0;
+                            $a += 1;
+                            $a += a;
+                            $a
+                        }"
+                    )
+                    .unwrap()
+                    .call(ctx),
+                RawValue::Num(1)
+            );
+
+            assert_eq!(
+                ProgramParser::new().parse("{ $a }").unwrap().call(ctx),
+                RawValue::Num(1)
+            );
+        });
+    }
+
+    #[test]
+    fn if_test() {
+        with_ctx(|ctx| {
+            assert_eq!(
+                ProgramParser::new()
+                    .parse(
+                        r##"{
+                            if(1 + 1 + 4 + 5 + 1 + 4 == 16, "sodayo", ~)
+                        }"##
+                    )
+                    .unwrap()
+                    .call(ctx)
+                    .get_num(),
+                6
+            );
+        });
+    }
 }
