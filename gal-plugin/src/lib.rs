@@ -5,6 +5,12 @@ mod types;
 
 pub use bindings::Runtime;
 
+// avoid debug link error
+#[no_mangle]
+extern "C" fn __fp_host_resolve_async_value() {
+    unimplemented!()
+}
+
 #[cfg(test)]
 mod test {
     use super::Runtime;
