@@ -1,3 +1,4 @@
+use fp_bindgen::prelude::*;
 use lalrpop_util::lalrpop_mod;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
@@ -64,7 +65,7 @@ pub enum Ref {
     Res(String),
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serializable)]
 pub enum RawValue {
     Unit,
     Bool(bool),

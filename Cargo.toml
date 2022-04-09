@@ -3,7 +3,9 @@ members = [
     "gal-script",
     "gal-primitive",
     "gal-runtime",
-    "gal"
+    "gal",
+    "gal-protocol",
+    "plugins/format",
 ]
 
 resolver = "2"

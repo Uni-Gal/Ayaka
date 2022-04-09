@@ -6,3 +6,4 @@ edition = "2021"
 [dependencies]
 gal-script = { path = "../gal-script" }
 gal-primitive = { path = "../gal-primitive" }
+gal-plugin = { path = "../gal-plugin" }

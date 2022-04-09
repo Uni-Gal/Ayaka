@@ -1,0 +1,10 @@
+[package]
+name = "format"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+gal-bindings = { path = "../../gal-bindings" }

@@ -1,0 +1,16 @@
+[package]
+name = "gal-plugin"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = "1.0"
+fp-bindgen-support = { version = "1.0", features = ["async", "host"] }
+wasmer = { version = "2.2", default-features = false }
+wasmer-engine-universal = { version = "2.2", features = ["compiler"] }
+
+[target.'cfg(any(target_arch = "arm", target_arch = "aarch64"))'.dependencies]
+wasmer-compiler-cranelift = "2.2"
+
+[target.'cfg(not(any(target_arch = "arm", target_arch = "aarch64")))'.dependencies]
+wasmer-compiler-singlepass = "2.2"
