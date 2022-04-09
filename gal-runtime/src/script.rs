@@ -72,7 +72,7 @@ impl Callable for Expr {
                     assign(ctx, lhs, val)
                 }
             },
-            Self::Call(n, args) => call(ctx, n, args),
+            Self::Call(ns, name, args) => call(ctx, ns, name, args),
         }
     }
 }
@@ -178,15 +178,34 @@ fn assign(ctx: &mut VarTable, e: &Expr, val: RawValue) -> RawValue {
     RawValue::Unit
 }
 
-fn call(ctx: &mut VarTable, n: &str, args: &[Expr]) -> RawValue {
-    match n {
-        "if" => if args.get(0).call(ctx).get_bool() {
-            args.get(1)
-        } else {
-            args.get(2)
+fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
+    if ns.is_empty() {
+        match name {
+            "if" => if args.get(0).call(ctx).get_bool() {
+                args.get(1)
+            } else {
+                args.get(2)
+            }
+            .call(ctx),
+            _ => unimplemented!("intrinstics"),
         }
-        .call(ctx),
-        _ => unimplemented!("Call functions"),
+    } else {
+        use std::io::{BufReader, Read};
+        let path = format!(
+            "{}/../target/wasm32-unknown-unknown/debug/{}.wasm",
+            env!("CARGO_MANIFEST_DIR"),
+            ns
+        );
+        let reader = std::fs::File::open(path).unwrap();
+        let mut reader = BufReader::new(reader);
+        let mut buf = vec![];
+        reader.read_to_end(&mut buf).unwrap();
+        let runtime = gal_plugin::Runtime::new(&buf).unwrap();
+        todo!()
+        // match runtime
+        //     .dispatch(name.into(), args.iter().map(|e| e.call(ctx)).collect())
+        //     .unwrap()
+        //     .unwrap()
     }
 }
 

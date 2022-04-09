@@ -24,10 +24,15 @@ pub Expr: Expr = {
     <r:Ref> <o:AssignOp> <e:Expr> => Expr::Binary(Box::new(Expr::Ref(r)), o, Box::new(e)),
     Expr2,
     "(" <e:Expr> ")" => e,
-    <i:Id> "(" <a:Exprs> ")" => Expr::Call(i, a),
+    <i:FuncName> "(" <a:Exprs> ")" => Expr::Call(i.0, i.1, a),
 }
 
 Exprs: Vec<Expr> = Delimiter<Expr, ",">;
+
+FuncName: (String, String) = {
+    <i:Id> => (String::default(), i),
+    <ns:Id> "." <name:Id> => (ns, name),
+}
 
 UnaryOp: UnaryOp = {
     "+" => UnaryOp::Positive,

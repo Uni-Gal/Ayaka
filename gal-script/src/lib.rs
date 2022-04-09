@@ -16,7 +16,7 @@ pub enum Expr {
     Const(RawValue),
     Unary(UnaryOp, Box<Expr>),
     Binary(Box<Expr>, BinaryOp, Box<Expr>),
-    Call(String, Vec<Expr>),
+    Call(String, String, Vec<Expr>),
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -209,13 +209,13 @@ mod test {
                 .parse(
                     "{
                         foo(a);
-                        bar(a, b)
+                        foo.bar(a, b)
                     }"
                 )
                 .unwrap(),
             Program(vec![
-                Expr::Call("foo".into(), vec![var("a")]),
-                Expr::Call("bar".into(), vec![var("a"), var("b")])
+                Expr::Call(String::default(), "foo".into(), vec![var("a")]),
+                Expr::Call("foo".into(), "bar".into(), vec![var("a"), var("b")])
             ])
         );
     }
@@ -225,11 +225,11 @@ mod test {
         assert_eq!(ExprParser::new().parse("a").unwrap(), var("a"));
         assert_eq!(
             ExprParser::new().parse("foo(a)").unwrap(),
-            Expr::Call("foo".into(), vec![var("a")])
+            Expr::Call(String::default(), "foo".into(), vec![var("a")])
         );
         assert_eq!(
-            ExprParser::new().parse("foo(a, b)").unwrap(),
-            Expr::Call("foo".into(), vec![var("a"), var("b")])
+            ExprParser::new().parse("foo.bar(a, b)").unwrap(),
+            Expr::Call("foo".into(), "bar".into(), vec![var("a"), var("b")])
         );
     }
 
