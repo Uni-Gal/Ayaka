@@ -25,8 +25,7 @@ fn main() {
                 loop {
                     let mut s = String::default();
                     stdin().read_line(&mut s).unwrap();
-                    s = s.replace("\r\n", "");
-                    let i = s.parse::<usize>().unwrap();
+                    let i = s.trim().parse::<usize>().unwrap();
                     let valid = if allow_default {
                         i <= items.len()
                     } else {
