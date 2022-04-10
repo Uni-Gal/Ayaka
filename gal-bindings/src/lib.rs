@@ -1,7 +1,6 @@
 mod export;
 
 pub use export::*;
-pub use fp_bindgen::prelude::*;
 pub use fp_bindgen_support::*;
 
 use serde::{Deserialize, Serialize};
@@ -13,7 +12,7 @@ extern "C" fn __fp_host_resolve_async_value() {
     unreachable!()
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serializable)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RawValue {
     Unit,
     Bool(bool),

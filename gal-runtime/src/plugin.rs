@@ -60,7 +60,7 @@ fn create_import_object(store: &Store, env: &RuntimeInstanceData) -> ImportObjec
 }
 
 fn default_store() -> Store {
-    let compiler = wasmer::Singlepass::default();
+    let compiler = wasmer::Cranelift::default();
     let engine = wasmer::Universal::new(compiler).engine();
     Store::new(&engine)
 }
