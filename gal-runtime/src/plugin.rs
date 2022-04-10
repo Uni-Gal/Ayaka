@@ -10,6 +10,7 @@ use fp_bindgen_support::{
         runtime::RuntimeInstanceData,
     },
 };
+use std::path::Path;
 use wasmer::{imports, Function, ImportObject, Instance, Module, Store, WasmerEnv};
 
 pub struct Runtime {
@@ -64,32 +65,30 @@ fn default_store() -> Store {
     Store::new(&engine)
 }
 
-pub fn load_plugins() -> RuntimeMap {
+pub fn load_plugins(dir: impl AsRef<Path>, rel_to: impl AsRef<Path>) -> RuntimeMap {
     let store = default_store();
-    // TODO: read plugin path from yaml
-    std::fs::read_dir(format!(
-        "{}/../target/wasm32-unknown-unknown/release/",
-        env!("CARGO_MANIFEST_DIR")
-    ))
-    .unwrap()
-    .map(|f| f.unwrap().path())
-    .filter(|p| {
-        p.extension()
-            .map(|s| s.to_string_lossy())
-            .unwrap_or_default()
-            == "wasm"
-    })
-    .map(|p| {
-        let buf = std::fs::read(&p).unwrap();
-        let runtime = Runtime::new(&store, &buf).unwrap();
-        (
-            p.with_extension("")
-                .file_name()
+    let mut path = rel_to.as_ref().to_path_buf();
+    path.push(dir);
+    std::fs::read_dir(path)
+        .unwrap()
+        .map(|f| f.unwrap().path())
+        .filter(|p| {
+            p.extension()
                 .map(|s| s.to_string_lossy())
                 .unwrap_or_default()
-                .into_owned(),
-            runtime,
-        )
-    })
-    .collect()
+                == "wasm"
+        })
+        .map(|p| {
+            let buf = std::fs::read(&p).unwrap();
+            let runtime = Runtime::new(&store, &buf).unwrap();
+            (
+                p.with_extension("")
+                    .file_name()
+                    .map(|s| s.to_string_lossy())
+                    .unwrap_or_default()
+                    .into_owned(),
+                runtime,
+            )
+        })
+        .collect()
 }

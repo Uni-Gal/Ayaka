@@ -5,7 +5,7 @@ pub use gal_primitive::*;
 
 use plugin::*;
 use script::*;
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 type RuntimeMap = HashMap<String, Runtime>;
 
@@ -34,24 +34,24 @@ pub struct Context<'a> {
 }
 
 impl<'a> Context<'a> {
-    pub fn new(game: &'a Game) -> Self {
+    pub fn new(path: impl AsRef<Path>, game: &'a Game) -> Self {
         let mut ctx = RawContext::default();
         ctx.cur_para = game
             .paras
             .first()
             .map(|p| p.tag.clone())
             .unwrap_or_default();
-        Self::with_context(game, ctx)
+        Self::with_context(path, game, ctx)
     }
 
-    pub fn with_context(game: &'a Game, ctx: RawContext) -> Self {
+    pub fn with_context(path: impl AsRef<Path>, game: &'a Game, ctx: RawContext) -> Self {
         Self {
             game,
             ctx,
             // TODO: load resources
             res: VarMap::default(),
             cur_switch_bind: None,
-            modules: load_plugins(),
+            modules: load_plugins(&game.plugins, path),
         }
     }
 

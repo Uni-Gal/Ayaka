@@ -1,5 +1,6 @@
 title: Galgame sample
 author: Berrysoft
+plugins: target/wasm32-unknown-unknown/release/
 paras:
   -
     tag: a

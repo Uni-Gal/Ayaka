@@ -1,6 +1,7 @@
 use gal_script::{Program, ProgramParser};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 pub use gal_script::RawValue;
@@ -119,6 +120,7 @@ pub struct Game {
     pub title: String,
     pub author: String,
     pub paras: Vec<Paragraph>,
+    pub plugins: PathBuf,
 }
 
 impl Game {

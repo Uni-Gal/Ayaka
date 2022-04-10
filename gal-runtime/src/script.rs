@@ -230,7 +230,10 @@ mod test {
     fn with_ctx(f: impl FnOnce(&mut VarTable)) {
         let mut locals = VarMap::default();
         let res = VarMap::default();
-        let modules = load_plugins();
+        let modules = load_plugins(
+            "../target/wasm32-unknown-unknown/release/",
+            env!("CARGO_MANIFEST_DIR"),
+        );
         let mut ctx = VarTable::new(&mut locals, &res, &modules);
         f(&mut ctx);
     }
