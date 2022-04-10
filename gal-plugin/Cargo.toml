@@ -6,11 +6,4 @@ edition = "2021"
 [dependencies]
 gal-bindings = { path = "../gal-bindings" }
 fp-bindgen-support = { version = "1.0", features = ["async", "host"] }
-wasmer = { version = "2.2", default-features = false }
-wasmer-engine-universal = { version = "2.2", features = ["compiler"] }
-
-[target.'cfg(any(target_arch = "arm", target_arch = "aarch64"))'.dependencies]
-wasmer-compiler-cranelift = "2.2"
-
-[target.'cfg(not(any(target_arch = "arm", target_arch = "aarch64")))'.dependencies]
-wasmer-compiler-singlepass = "2.2"
+wasmer = { version = "2.2", default-features = false, features = ["universal", "singlepass"] }

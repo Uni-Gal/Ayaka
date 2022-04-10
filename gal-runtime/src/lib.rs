@@ -129,11 +129,7 @@ pub(crate) fn load_plugins() -> RuntimeMap {
             == "wasm"
     })
     .map(|p| {
-        use std::io::{BufReader, Read};
-        let reader = std::fs::File::open(&p).unwrap();
-        let mut reader = BufReader::new(reader);
-        let mut buf = vec![];
-        reader.read_to_end(&mut buf).unwrap();
+        let buf = std::fs::read(&p).unwrap();
         let runtime = gal_plugin::Runtime::new(&buf).unwrap();
         (
             p.with_extension("")
