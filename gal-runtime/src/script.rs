@@ -4,14 +4,16 @@ use gal_script::*;
 pub struct VarTable<'a> {
     pub locals: &'a mut VarMap,
     pub res: &'a VarMap,
+    pub modules: &'a RuntimeMap,
     pub vars: VarMap,
 }
 
 impl<'a> VarTable<'a> {
-    pub fn new(locals: &'a mut VarMap, res: &'a VarMap) -> Self {
+    pub fn new(locals: &'a mut VarMap, res: &'a VarMap, modules: &'a RuntimeMap) -> Self {
         Self {
             locals,
             res,
+            modules,
             vars: VarMap::default(),
         }
     }
@@ -190,17 +192,7 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
             _ => unimplemented!("intrinstics"),
         }
     } else {
-        use std::io::{BufReader, Read};
-        let path = format!(
-            "{}/../target/wasm32-unknown-unknown/release/{}.wasm",
-            env!("CARGO_MANIFEST_DIR"),
-            ns
-        );
-        let reader = std::fs::File::open(path).unwrap();
-        let mut reader = BufReader::new(reader);
-        let mut buf = vec![];
-        reader.read_to_end(&mut buf).unwrap();
-        let runtime = gal_plugin::Runtime::new(&buf).unwrap();
+        let runtime = ctx.modules.get(ns).unwrap();
         runtime
             .dispatch(name.into(), args.iter().map(|e| e.call(ctx)).collect())
             .unwrap()
@@ -238,7 +230,8 @@ mod test {
     fn with_ctx(f: impl FnOnce(&mut VarTable)) {
         let mut locals = VarMap::default();
         let res = VarMap::default();
-        let mut ctx = VarTable::new(&mut locals, &res);
+        let modules = load_plugins();
+        let mut ctx = VarTable::new(&mut locals, &res, &modules);
         f(&mut ctx);
     }
 
@@ -320,5 +313,23 @@ mod test {
                 6
             );
         });
+    }
+
+    #[test]
+    fn format() {
+        with_ctx(|ctx| {
+            assert_eq!(
+                ProgramParser::new()
+                    .parse(
+                        r##"{
+                            format.fmt("Hello {}!", 114514)
+                        }"##
+                    )
+                    .unwrap()
+                    .call(ctx)
+                    .get_str(),
+                "Hello 114514!"
+            )
+        })
     }
 }

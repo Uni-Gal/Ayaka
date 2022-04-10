@@ -1,7 +1,12 @@
 pub mod script;
 
 pub use gal_primitive::*;
+
+use gal_plugin::Runtime;
 use script::*;
+use std::collections::HashMap;
+
+type RuntimeMap = HashMap<String, Runtime>;
 
 #[derive(Debug)]
 pub enum Event {
@@ -18,13 +23,13 @@ pub struct SwitchItem {
     pub enabled: bool,
 }
 
-#[derive(Debug)]
 pub struct Context<'a> {
     pub game: &'a Game,
     pub ctx: RawContext,
     pub res: VarMap,
     // TODO: it's too ugly
     cur_switch_bind: Option<gal_script::Ref>,
+    modules: RuntimeMap,
 }
 
 impl<'a> Context<'a> {
@@ -45,11 +50,12 @@ impl<'a> Context<'a> {
             // TODO: load resources
             res: VarMap::default(),
             cur_switch_bind: None,
+            modules: load_plugins(),
         }
     }
 
     fn table(&mut self) -> VarTable {
-        VarTable::new(&mut self.ctx.locals, &self.res)
+        VarTable::new(&mut self.ctx.locals, &self.res, &self.modules)
     }
 
     pub fn current_paragraph(&self) -> Option<&'a Paragraph> {
@@ -107,4 +113,36 @@ impl Iterator for Context<'_> {
             None
         }
     }
+}
+
+pub(crate) fn load_plugins() -> RuntimeMap {
+    std::fs::read_dir(format!(
+        "{}/../target/wasm32-unknown-unknown/release/",
+        env!("CARGO_MANIFEST_DIR")
+    ))
+    .unwrap()
+    .map(|f| f.unwrap().path())
+    .filter(|p| {
+        p.extension()
+            .map(|s| s.to_string_lossy())
+            .unwrap_or_default()
+            == "wasm"
+    })
+    .map(|p| {
+        use std::io::{BufReader, Read};
+        let reader = std::fs::File::open(&p).unwrap();
+        let mut reader = BufReader::new(reader);
+        let mut buf = vec![];
+        reader.read_to_end(&mut buf).unwrap();
+        let runtime = gal_plugin::Runtime::new(&buf).unwrap();
+        (
+            p.with_extension("")
+                .file_name()
+                .map(|s| s.to_string_lossy())
+                .unwrap_or_default()
+                .into_owned(),
+            runtime,
+        )
+    })
+    .collect()
 }

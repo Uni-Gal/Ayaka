@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 gal-bindings = { path = "../gal-bindings" }
-serde = "1.0"
 fp-bindgen-support = { version = "1.0", features = ["async", "host"] }
 wasmer = { version = "2.2", default-features = false }
 wasmer-engine-universal = { version = "2.2", features = ["compiler"] }
