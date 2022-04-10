@@ -7,3 +7,6 @@ edition = "2021"
 gal-script = { path = "../gal-script" }
 gal-primitive = { path = "../gal-primitive" }
 wit-bindgen-wasmtime = { git = "https://github.com/bytecodealliance/wit-bindgen.git" }
+
+[dev-dependencies]
+lazy_static = "1.4"

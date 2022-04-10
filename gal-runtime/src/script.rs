@@ -227,14 +227,19 @@ impl Callable for Value {
 mod test {
     use crate::*;
     use gal_script::*;
+    use std::sync::Mutex;
+
+    lazy_static::lazy_static! {
+        static ref RUNTIME: Mutex<Runtime> = Mutex::new(load_plugins(
+            "../target/wasm32-unknown-unknown/release/",
+            env!("CARGO_MANIFEST_DIR"),
+        ));
+    }
 
     fn with_ctx(f: impl FnOnce(&mut VarTable)) {
         let mut locals = VarMap::default();
         let res = VarMap::default();
-        let mut runtime = load_plugins(
-            "../target/wasm32-unknown-unknown/release/",
-            env!("CARGO_MANIFEST_DIR"),
-        );
+        let mut runtime = RUNTIME.lock().unwrap();
         let mut ctx = VarTable::new(&mut locals, &res, &mut runtime);
         f(&mut ctx);
     }
