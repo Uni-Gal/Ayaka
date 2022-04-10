@@ -2,13 +2,18 @@ use gal_bindings::*;
 use rt_format::*;
 use std::collections::HashMap;
 
-#[fp_export_impl(gal_bindings)]
-fn dispatch(name: String, args: Vec<RawValue>) -> Option<RawValue> {
-    match name.as_str() {
-        "fmt" => Some(fmt(&args)),
-        _ => None,
+pub struct Guest;
+
+impl Export for Guest {
+    fn dispatch(name: String, args: Vec<RawValue>) -> Option<RawValue> {
+        match name.as_str() {
+            "fmt" => Some(fmt(&args)),
+            _ => None,
+        }
     }
 }
+
+decl_dispatch!(Guest);
 
 struct ValueWrap<'a>(&'a RawValue);
 

@@ -4,16 +4,16 @@ use gal_script::*;
 pub struct VarTable<'a> {
     pub locals: &'a mut VarMap,
     pub res: &'a VarMap,
-    pub modules: &'a RuntimeMap,
+    pub runtime: &'a mut Runtime,
     pub vars: VarMap,
 }
 
 impl<'a> VarTable<'a> {
-    pub fn new(locals: &'a mut VarMap, res: &'a VarMap, modules: &'a RuntimeMap) -> Self {
+    pub fn new(locals: &'a mut VarMap, res: &'a VarMap, runtime: &'a mut Runtime) -> Self {
         Self {
             locals,
             res,
-            modules,
+            runtime,
             vars: VarMap::default(),
         }
     }
@@ -192,9 +192,10 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
             _ => unimplemented!("intrinstics"),
         }
     } else {
-        let runtime = ctx.modules.get(ns).unwrap();
+        let args = args.iter().map(|e| e.call(ctx)).collect::<Vec<_>>();
+        let runtime = ctx.runtime.modules.get(ns).unwrap();
         runtime
-            .dispatch(name.into(), args.iter().map(|e| e.call(ctx)).collect())
+            .dispatch(&mut ctx.runtime.store, name, &args)
             .unwrap()
             .unwrap()
     }
@@ -230,11 +231,11 @@ mod test {
     fn with_ctx(f: impl FnOnce(&mut VarTable)) {
         let mut locals = VarMap::default();
         let res = VarMap::default();
-        let modules = load_plugins(
+        let mut runtime = load_plugins(
             "../target/wasm32-unknown-unknown/release/",
             env!("CARGO_MANIFEST_DIR"),
         );
-        let mut ctx = VarTable::new(&mut locals, &res, &modules);
+        let mut ctx = VarTable::new(&mut locals, &res, &mut runtime);
         f(&mut ctx);
     }
 

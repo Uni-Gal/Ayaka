@@ -1,0 +1,8 @@
+variant raw-value {
+    unit,
+    %bool(bool),
+    num(s64),
+    str(string),
+}
+
+dispatch: function(name: string, args: list<raw-value>) -> option<raw-value>

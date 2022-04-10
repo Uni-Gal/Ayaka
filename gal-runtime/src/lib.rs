@@ -6,8 +6,12 @@ pub use gal_primitive::*;
 use plugin::*;
 use script::*;
 use std::{collections::HashMap, path::Path};
+use wit_bindgen_wasmtime::wasmtime::Store;
 
-type RuntimeMap = HashMap<String, Runtime>;
+pub struct Runtime {
+    store: Store<()>,
+    modules: HashMap<String, Input>,
+}
 
 #[derive(Debug)]
 pub enum Event {
@@ -30,7 +34,7 @@ pub struct Context<'a> {
     pub res: VarMap,
     // TODO: it's too ugly
     cur_switch_bind: Option<gal_script::Ref>,
-    modules: RuntimeMap,
+    runtime: Runtime,
 }
 
 impl<'a> Context<'a> {
@@ -45,18 +49,19 @@ impl<'a> Context<'a> {
     }
 
     pub fn with_context(path: impl AsRef<Path>, game: &'a Game, ctx: RawContext) -> Self {
+        let runtime = load_plugins(&game.plugins, path);
         Self {
             game,
             ctx,
             // TODO: load resources
             res: VarMap::default(),
             cur_switch_bind: None,
-            modules: load_plugins(&game.plugins, path),
+            runtime,
         }
     }
 
     fn table(&mut self) -> VarTable {
-        VarTable::new(&mut self.ctx.locals, &self.res, &self.modules)
+        VarTable::new(&mut self.ctx.locals, &self.res, &mut self.runtime)
     }
 
     pub fn current_paragraph(&self) -> Option<&'a Paragraph> {
