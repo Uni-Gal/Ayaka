@@ -7,6 +7,12 @@ pub use fp_bindgen_support::*;
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
+#[cfg(not(target_arch = "wasm32"))]
+#[no_mangle]
+extern "C" fn __fp_host_resolve_async_value() {
+    unreachable!()
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Serializable)]
 pub enum RawValue {
     Unit,
