@@ -1,8 +1,0 @@
-[package]
-name = "gal-protocol"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-gal-script = { path = "../gal-script" }
-fp-bindgen = { version = "1.0", features = ["generators"] }

@@ -192,7 +192,7 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
     } else {
         use std::io::{BufReader, Read};
         let path = format!(
-            "{}/../target/wasm32-unknown-unknown/debug/{}.wasm",
+            "{}/../target/wasm32-unknown-unknown/release/{}.wasm",
             env!("CARGO_MANIFEST_DIR"),
             ns
         );
@@ -201,11 +201,10 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
         let mut buf = vec![];
         reader.read_to_end(&mut buf).unwrap();
         let runtime = gal_plugin::Runtime::new(&buf).unwrap();
-        todo!()
-        // match runtime
-        //     .dispatch(name.into(), args.iter().map(|e| e.call(ctx)).collect())
-        //     .unwrap()
-        //     .unwrap()
+        runtime
+            .dispatch(name.into(), args.iter().map(|e| e.call(ctx)).collect())
+            .unwrap()
+            .unwrap()
     }
 }
 

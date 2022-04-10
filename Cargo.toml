@@ -4,7 +4,6 @@ members = [
     "gal-primitive",
     "gal-runtime",
     "gal",
-    "gal-protocol",
     "plugins/format",
 ]
 

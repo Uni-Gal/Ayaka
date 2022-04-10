@@ -8,9 +8,4 @@ crate-type = ["cdylib"]
 
 [dependencies]
 rt-format = "0.3"
-
-[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-gal-script = { path = "../../gal-script" }
-
-[target.'cfg(target_arch = "wasm32")'.dependencies]
 gal-bindings = { path = "../../gal-bindings" }

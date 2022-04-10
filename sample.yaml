@@ -28,7 +28,7 @@ paras:
     actions:
       - Here is C.
       - >
-        { "s" + $s }
+        { format.fmt("s{}", $s) }
     next: ~
   -
     tag: d

@@ -4,13 +4,9 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+gal-bindings = { path = "../gal-bindings" }
 lalrpop-util = { version = "0.19", features = ["lexer"] }
 regex = "1"
-serde = "1.0"
-fp-bindgen = "1.0"
 
 [build-dependencies]
 lalrpop = "0.19"
-
-[dev-dependencies]
-serde_yaml = "0.8"

@@ -8,9 +8,6 @@ Cargo.lock
 .clangd
 .vs
 
-# bindings
-/gal-bindings
-
 # CMake
 CMakeCache.txt
 CMakeFiles
