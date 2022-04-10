@@ -1,9 +1,0 @@
-[package]
-name = "gal-plugin"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-gal-bindings = { path = "../gal-bindings" }
-fp-bindgen-support = { version = "1.0", features = ["async", "host"] }
-wasmer = { version = "2.2", default-features = false, features = ["universal", "singlepass"] }

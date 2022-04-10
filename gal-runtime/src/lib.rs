@@ -1,8 +1,9 @@
+pub mod plugin;
 pub mod script;
 
 pub use gal_primitive::*;
 
-use gal_plugin::Runtime;
+use plugin::*;
 use script::*;
 use std::collections::HashMap;
 
@@ -113,32 +114,4 @@ impl Iterator for Context<'_> {
             None
         }
     }
-}
-
-pub(crate) fn load_plugins() -> RuntimeMap {
-    std::fs::read_dir(format!(
-        "{}/../target/wasm32-unknown-unknown/release/",
-        env!("CARGO_MANIFEST_DIR")
-    ))
-    .unwrap()
-    .map(|f| f.unwrap().path())
-    .filter(|p| {
-        p.extension()
-            .map(|s| s.to_string_lossy())
-            .unwrap_or_default()
-            == "wasm"
-    })
-    .map(|p| {
-        let buf = std::fs::read(&p).unwrap();
-        let runtime = gal_plugin::Runtime::new(&buf).unwrap();
-        (
-            p.with_extension("")
-                .file_name()
-                .map(|s| s.to_string_lossy())
-                .unwrap_or_default()
-                .into_owned(),
-            runtime,
-        )
-    })
-    .collect()
 }
