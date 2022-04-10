@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 fp-bindgen = "1.0"
-fp-bindgen-support = { version = "1.0", features = ["async", "guest"] }
+fp-bindgen-support = { version = "1.0", features = ["guest"] }
 serde = "1.0"
 
 [dev-dependencies]

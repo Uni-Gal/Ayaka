@@ -5,12 +5,11 @@ use fp_bindgen_support::{
         mem::{
             deserialize_from_slice, export_to_guest_raw, import_from_guest_raw, serialize_to_vec,
         },
-        r#async::resolve_async_value,
         runtime::RuntimeInstanceData,
     },
 };
 use gal_bindings::*;
-use wasmer::{imports, Function, ImportObject, Instance, Module, Store, WasmerEnv};
+use wasmer::{imports, ImportObject, Instance, Module, Store, WasmerEnv};
 
 pub struct Runtime {
     module: Module,
@@ -67,8 +66,8 @@ impl Runtime {
 
 fn create_import_object(store: &Store, env: &RuntimeInstanceData) -> ImportObject {
     imports! {
-       "fp" => {
-           "__fp_host_resolve_async_value" => Function :: new_native_with_env (store , env . clone () , resolve_async_value) ,
-        }
+    //    "fp" => {
+    //        "__fp_host_resolve_async_value" => Function :: new_native_with_env (store , env . clone () , resolve_async_value) ,
+    //     }
     }
 }
