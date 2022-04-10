@@ -12,7 +12,7 @@ use wit_bindgen_wasmtime::wasmtime::Store;
 
 pub struct Runtime {
     store: Store<()>,
-    modules: HashMap<String, Input>,
+    modules: HashMap<String, Host>,
 }
 
 #[derive(Debug)]

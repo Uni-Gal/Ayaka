@@ -5,13 +5,13 @@ use wit_bindgen_wasmtime::{
     wasmtime::*,
 };
 
-pub struct Input {
+pub struct Host {
     canonical_abi_free: TypedFunc<(i32, i32, i32), ()>,
     canonical_abi_realloc: TypedFunc<(i32, i32, i32, i32), i32>,
     dispatch: TypedFunc<(i32, i32, i32, i32), (i32,)>,
     memory: Memory,
 }
-impl Input {
+impl Host {
     pub fn instantiate(
         mut store: impl AsContextMut<Data = ()>,
         module: &Module,
@@ -35,7 +35,7 @@ impl Input {
         let memory = instance
             .get_memory(&mut store, "memory")
             .ok_or_else(|| anyhow::anyhow!("`memory` export not a memory"))?;
-        Ok(Input {
+        Ok(Self {
             canonical_abi_free,
             canonical_abi_realloc,
             dispatch,
@@ -151,9 +151,8 @@ impl Input {
 }
 
 pub fn load_plugins(dir: impl AsRef<Path>, rel_to: impl AsRef<Path>) -> Runtime {
-    let engine = Engine::default();
-    let mut store = Store::new(&engine, ());
-    let mut linker = Linker::new(&engine);
+    let mut store = Store::<()>::default();
+    let mut linker = Linker::new(store.engine());
     let mut path = rel_to.as_ref().to_path_buf();
     path.push(dir);
     let modules = std::fs::read_dir(path)
@@ -167,8 +166,8 @@ pub fn load_plugins(dir: impl AsRef<Path>, rel_to: impl AsRef<Path>) -> Runtime 
         })
         .map(|p| {
             let buf = std::fs::read(&p).unwrap();
-            let module = Module::new(&engine, buf).unwrap();
-            let runtime = Input::instantiate(&mut store, &module, &mut linker).unwrap();
+            let module = Module::new(store.engine(), buf).unwrap();
+            let runtime = Host::instantiate(&mut store, &module, &mut linker).unwrap();
             (
                 p.with_extension("")
                     .file_name()
