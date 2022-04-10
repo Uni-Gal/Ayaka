@@ -2,19 +2,6 @@ use gal_bindings::*;
 use rt_format::*;
 use std::collections::HashMap;
 
-pub struct Guest;
-
-impl Export for Guest {
-    fn dispatch(name: String, args: Vec<RawValue>) -> Option<RawValue> {
-        match name.as_str() {
-            "fmt" => Some(fmt(&args)),
-            _ => None,
-        }
-    }
-}
-
-decl_dispatch!(Guest);
-
 struct ValueWrap<'a>(&'a RawValue);
 
 impl FormatArgument for ValueWrap<'_> {
@@ -86,7 +73,9 @@ impl FormatArgument for ValueWrap<'_> {
     }
 }
 
-fn fmt(args: &[RawValue]) -> RawValue {
+export!(fmt);
+
+fn fmt(args: Vec<RawValue>) -> RawValue {
     if args.is_empty() {
         RawValue::Unit
     } else {

@@ -8,7 +8,7 @@ use wit_bindgen_wasmtime::{
 pub struct Host {
     canonical_abi_free: TypedFunc<(i32, i32, i32), ()>,
     canonical_abi_realloc: TypedFunc<(i32, i32, i32, i32), i32>,
-    dispatch: TypedFunc<(i32, i32, i32, i32), (i32,)>,
+    instance: Instance,
     memory: Memory,
 }
 impl Host {
@@ -30,38 +30,34 @@ impl Host {
             instance.get_typed_func::<(i32, i32, i32), (), _>(&mut store, "canonical_abi_free")?;
         let canonical_abi_realloc = instance
             .get_typed_func::<(i32, i32, i32, i32), i32, _>(&mut store, "canonical_abi_realloc")?;
-        let dispatch =
-            instance.get_typed_func::<(i32, i32, i32, i32), (i32,), _>(&mut store, "dispatch")?;
         let memory = instance
             .get_memory(&mut store, "memory")
             .ok_or_else(|| anyhow::anyhow!("`memory` export not a memory"))?;
         Ok(Self {
             canonical_abi_free,
             canonical_abi_realloc,
-            dispatch,
+            instance,
             memory,
         })
     }
+
     pub fn dispatch(
         &self,
         mut caller: impl AsContextMut<Data = ()>,
         name: &str,
         args: &[RawValue],
-    ) -> Result<Option<RawValue>, Trap> {
-        let func_canonical_abi_free = &self.canonical_abi_free;
+    ) -> Result<RawValue, Trap> {
+        let func = self
+            .instance
+            .get_typed_func::<(i32, i32), (i32,), _>(&mut caller, &format!("__{}", name))?;
         let func_canonical_abi_realloc = &self.canonical_abi_realloc;
+        let func_canonical_abi_free = &self.canonical_abi_free;
         let memory = &self.memory;
-        let vec0 = name;
-        let ptr0 =
-            func_canonical_abi_realloc.call(&mut caller, (0, 0, 1, (vec0.len() as i32) * 1))?;
-        memory
-            .data_mut(&mut caller)
-            .store_many(ptr0, vec0.as_ref())?;
-        let vec2 = args;
-        let len2 = vec2.len() as i32;
-        let result2 = func_canonical_abi_realloc.call(&mut caller, (0, 0, 8, len2 * 16))?;
-        for (i, e) in vec2.into_iter().enumerate() {
-            let base = result2 + (i as i32) * 16;
+        let vec1 = args;
+        let len1 = vec1.len() as i32;
+        let result1 = func_canonical_abi_realloc.call(&mut caller, (0, 0, 8, len1 * 16))?;
+        for (i, e) in vec1.into_iter().enumerate() {
+            let base = result1 + (i as i32) * 16;
             {
                 match e {
                     RawValue::Unit => {
@@ -101,51 +97,44 @@ impl Host {
                         memory
                             .data_mut(&mut caller)
                             .store(base + 0, wit_bindgen_wasmtime::rt::as_i32(3i32) as u8)?;
-                        let vec1 = e;
-                        let ptr1 = func_canonical_abi_realloc
-                            .call(&mut caller, (0, 0, 1, (vec1.len() as i32) * 1))?;
+                        let vec0 = e;
+                        let ptr0 = func_canonical_abi_realloc
+                            .call(&mut caller, (0, 0, 1, (vec0.len() as i32) * 1))?;
                         memory
                             .data_mut(&mut caller)
-                            .store_many(ptr1, vec1.as_ref())?;
+                            .store_many(ptr0, vec0.as_ref())?;
                         memory.data_mut(&mut caller).store(
                             base + 12,
-                            wit_bindgen_wasmtime::rt::as_i32(vec1.len() as i32),
+                            wit_bindgen_wasmtime::rt::as_i32(vec0.len() as i32),
                         )?;
                         memory
                             .data_mut(&mut caller)
-                            .store(base + 8, wit_bindgen_wasmtime::rt::as_i32(ptr1))?;
+                            .store(base + 8, wit_bindgen_wasmtime::rt::as_i32(ptr0))?;
                     }
                 };
             }
         }
-        let (result3_0,) = self
-            .dispatch
-            .call(&mut caller, (ptr0, vec0.len() as i32, result2, len2))?;
-        let load4 = memory.data_mut(&mut caller).load::<i32>(result3_0 + 0)?;
-        let load5 = memory.data_mut(&mut caller).load::<i32>(result3_0 + 8)?;
-        let load6 = memory.data_mut(&mut caller).load::<i64>(result3_0 + 16)?;
-        let load7 = memory.data_mut(&mut caller).load::<i32>(result3_0 + 24)?;
-        Ok(match load4 {
-            0 => None,
-            1 => Some(match load5 {
-                0 => RawValue::Unit,
-                1 => RawValue::Bool(match load6 as i32 {
-                    0 => false,
-                    1 => true,
-                    _ => return Err(invalid_variant("bool")),
-                }),
-                2 => RawValue::Num(load6),
-                3 => RawValue::Str({
-                    let ptr8 = load6 as i32;
-                    let len8 = load7;
-
-                    let data8 = copy_slice(&mut caller, memory, ptr8, len8, 1)?;
-                    func_canonical_abi_free.call(&mut caller, (ptr8, len8 * 1, 1))?;
-                    String::from_utf8(data8).map_err(|_| Trap::new("invalid utf-8"))?
-                }),
-                _ => return Err(invalid_variant("RawValue")),
+        let (result2_0,) = func.call(&mut caller, (result1, len1))?;
+        let load3 = memory.data_mut(&mut caller).load::<i32>(result2_0 + 0)?;
+        let load4 = memory.data_mut(&mut caller).load::<i64>(result2_0 + 8)?;
+        let load5 = memory.data_mut(&mut caller).load::<i32>(result2_0 + 16)?;
+        Ok(match load3 {
+            0 => RawValue::Unit,
+            1 => RawValue::Bool(match load4 as i32 {
+                0 => false,
+                1 => true,
+                _ => return Err(invalid_variant("bool")),
             }),
-            _ => return Err(invalid_variant("Option")),
+            2 => RawValue::Num(load4),
+            3 => RawValue::Str({
+                let ptr6 = load4 as i32;
+                let len6 = load5;
+
+                let data6 = copy_slice(&mut caller, memory, ptr6, len6, 1)?;
+                func_canonical_abi_free.call(&mut caller, (ptr6, len6 * 1, 1))?;
+                String::from_utf8(data6).map_err(|_| Trap::new("invalid utf-8"))?
+            }),
+            _ => return Err(invalid_variant("RawValue")),
         })
     }
 }

@@ -197,7 +197,6 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
         runtime
             .dispatch(&mut ctx.runtime.store, name, &args)
             .unwrap()
-            .unwrap()
     }
 }
 
