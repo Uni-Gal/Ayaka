@@ -1,196 +1,86 @@
-mod export;
+pub use gal_primitive::*;
 
-pub use export::*;
+pub unsafe fn wit_bindgen_dispatch<T: Export>(arg0: i32, arg1: i32, arg2: i32, arg3: i32) -> i32 {
+    let len0 = arg1 as usize;
+    let base2 = arg2;
+    let len2 = arg3;
+    let mut result2 = Vec::with_capacity(len2 as usize);
+    for i in 0..len2 {
+        let base = base2 + i * 16;
+        result2.push(match i32::from(*((base + 0) as *const u8)) {
+            0 => RawValue::Unit,
+            1 => RawValue::Bool(match i32::from(*((base + 8) as *const u8)) {
+                0 => false,
+                1 => true,
+                _ => panic!("invalid enum discriminant"),
+            }),
+            2 => RawValue::Num(*((base + 8) as *const i64)),
+            3 => RawValue::Str({
+                let len1 = *((base + 12) as *const i32) as usize;
 
-use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
-
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub enum RawValue {
-    Unit,
-    Bool(bool),
-    Num(i64),
-    Str(String),
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub enum ValueType {
-    Unit,
-    Bool,
-    Num,
-    Str,
-}
-
-impl Default for RawValue {
-    fn default() -> Self {
-        Self::Unit
+                String::from_utf8(Vec::from_raw_parts(
+                    *((base + 8) as *const i32) as *mut _,
+                    len1,
+                    len1,
+                ))
+                .unwrap()
+            }),
+            _ => panic!("invalid enum discriminant"),
+        });
     }
-}
+    std::alloc::dealloc(
+        base2 as *mut _,
+        std::alloc::Layout::from_size_align_unchecked((len2 as usize) * 16, 8),
+    );
+    let result3 = T::dispatch(
+        String::from_utf8(Vec::from_raw_parts(arg0 as *mut _, len0, len0)).unwrap(),
+        result2,
+    );
+    let (result7_0, result7_1, result7_2, result7_3) = match result3 {
+        None => (0i32, 0i32, 0i64, 0i32),
+        Some(e) => {
+            let (result6_0, result6_1, result6_2) = match e {
+                RawValue::Unit => (0i32, 0i64, 0i32),
+                RawValue::Bool(e) => {
+                    let result4 = match e {
+                        false => 0i32,
+                        true => 1i32,
+                    };
 
-impl RawValue {
-    pub fn get_type(&self) -> ValueType {
-        match self {
-            Self::Unit => ValueType::Unit,
-            Self::Bool(_) => ValueType::Bool,
-            Self::Num(_) => ValueType::Num,
-            Self::Str(_) => ValueType::Str,
+                    (1i32, i64::from(result4), 0i32)
+                }
+                RawValue::Num(e) => (2i32, wit_bindgen_rust::rt::as_i64(e), 0i32),
+                RawValue::Str(e) => {
+                    let vec5 = (e.into_bytes()).into_boxed_slice();
+                    let ptr5 = vec5.as_ptr() as i32;
+                    let len5 = vec5.len() as i32;
+                    core::mem::forget(vec5);
+
+                    (3i32, i64::from(ptr5), len5)
+                }
+            };
+
+            (1i32, result6_0, result6_1, result6_2)
         }
-    }
-
-    pub fn get_bool(&self) -> bool {
-        match self {
-            Self::Unit => false,
-            Self::Bool(b) => *b,
-            Self::Num(i) => *i != 0,
-            Self::Str(s) => !s.is_empty(),
-        }
-    }
-
-    pub fn get_num(&self) -> i64 {
-        match self {
-            Self::Unit => 0,
-            Self::Bool(b) => *b as i64,
-            Self::Num(i) => *i,
-            Self::Str(s) => s.len() as i64,
-        }
-    }
-
-    pub fn get_str(&self) -> Cow<str> {
-        match self {
-            Self::Unit => Cow::default(),
-            Self::Bool(b) => b.to_string().into(),
-            Self::Num(i) => i.to_string().into(),
-            Self::Str(s) => s.as_str().into(),
-        }
-    }
+    };
+    let ptr8 = RET_AREA.as_mut_ptr() as i32;
+    *((ptr8 + 24) as *mut i32) = result7_3;
+    *((ptr8 + 16) as *mut i64) = result7_2;
+    *((ptr8 + 8) as *mut i32) = result7_1;
+    *((ptr8 + 0) as *mut i32) = result7_0;
+    ptr8
 }
-
-impl<'de> Deserialize<'de> for RawValue {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        use serde::de::Error;
-
-        struct ValueVisitor;
-
-        impl<'de> serde::de::Visitor<'de> for ValueVisitor {
-            type Value = RawValue;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a boolean, integer, string value, or a piece of code")
-            }
-
-            fn visit_unit<E>(self) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                Ok(RawValue::Unit)
-            }
-
-            fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                Ok(RawValue::Bool(v))
-            }
-
-            fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                Ok(RawValue::Num(v))
-            }
-
-            fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                Ok(RawValue::Num(v as i64))
-            }
-
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                Ok(RawValue::Str(v.into()))
-            }
-        }
-        deserializer.deserialize_any(ValueVisitor)
-    }
+pub trait Export {
+    fn dispatch(name: String, args: Vec<RawValue>) -> Option<RawValue>;
 }
+static mut RET_AREA: [i64; 4] = [0; 4];
 
-impl Serialize for RawValue {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match self {
-            Self::Unit => serializer.serialize_unit(),
-            Self::Bool(b) => serializer.serialize_bool(*b),
-            Self::Num(n) => serializer.serialize_i64(*n),
-            Self::Str(s) => serializer.serialize_str(s),
+#[macro_export]
+macro_rules! decl_dispatch {
+    ($t:ty) => {
+        #[no_mangle]
+        unsafe extern "C" fn dispatch(arg0: i32, arg1: i32, arg2: i32, arg3: i32) -> i32 {
+            $crate::wit_bindgen_dispatch::<$t>(arg0, arg1, arg2, arg3)
         }
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::*;
-
-    #[test]
-    fn serde_value() {
-        assert_eq!(
-            serde_yaml::from_str::<RawValue>("~").unwrap(),
-            RawValue::Unit
-        );
-
-        assert_eq!(
-            serde_yaml::from_str::<RawValue>("true").unwrap(),
-            RawValue::Bool(true)
-        );
-        assert_eq!(
-            serde_yaml::from_str::<RawValue>("false").unwrap(),
-            RawValue::Bool(false)
-        );
-
-        assert_eq!(
-            serde_yaml::from_str::<RawValue>("114514").unwrap(),
-            RawValue::Num(114514)
-        );
-        assert_eq!(
-            serde_yaml::from_str::<RawValue>("-1919810").unwrap(),
-            RawValue::Num(-1919810)
-        );
-
-        assert_eq!(
-            serde_yaml::from_str::<RawValue>("\"Hello world!\"").unwrap(),
-            RawValue::Str("Hello world!".into())
-        );
-
-        assert_eq!(serde_yaml::to_string(&RawValue::Unit).unwrap(), "---\n~\n");
-
-        assert_eq!(
-            serde_yaml::to_string(&RawValue::Bool(true)).unwrap(),
-            "---\ntrue\n"
-        );
-        assert_eq!(
-            serde_yaml::to_string(&RawValue::Bool(false)).unwrap(),
-            "---\nfalse\n"
-        );
-
-        assert_eq!(
-            serde_yaml::to_string(&RawValue::Num(114514)).unwrap(),
-            "---\n114514\n"
-        );
-        assert_eq!(
-            serde_yaml::to_string(&RawValue::Num(-1919)).unwrap(),
-            "---\n-1919\n"
-        );
-
-        assert_eq!(
-            serde_yaml::to_string(&RawValue::Str("aaa".into())).unwrap(),
-            "---\naaa\n"
-        );
-    }
+    };
 }

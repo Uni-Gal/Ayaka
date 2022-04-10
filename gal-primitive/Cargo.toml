@@ -4,8 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-gal-script = { path = "../gal-script" }
-serde = { version = "1.0", features = ["derive"] }
+serde = "1.0"
 
 [dev-dependencies]
 serde_yaml = "0.8"

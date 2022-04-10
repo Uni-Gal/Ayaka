@@ -3,7 +3,7 @@ use lalrpop_util::lalrpop_mod;
 lalrpop_mod!(gal);
 
 pub use gal::*;
-pub use gal_bindings::*;
+pub use gal_primitive::*;
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Program(pub Vec<Expr>);

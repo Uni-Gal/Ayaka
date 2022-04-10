@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-gal-bindings = { path = "../gal-bindings" }
+gal-primitive = { path = "../gal-primitive" }
 lalrpop-util = { version = "0.19", features = ["lexer"] }
 regex = "1"
 

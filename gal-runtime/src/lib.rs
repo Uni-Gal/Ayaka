@@ -1,7 +1,9 @@
+pub mod config;
 pub mod plugin;
 pub mod script;
 
-pub use gal_primitive::*;
+pub use config::*;
+pub use gal_script::RawValue;
 
 use plugin::*;
 use script::*;

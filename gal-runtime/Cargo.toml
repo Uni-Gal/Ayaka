@@ -5,8 +5,9 @@ edition = "2021"
 
 [dependencies]
 gal-script = { path = "../gal-script" }
-gal-primitive = { path = "../gal-primitive" }
+serde = { version = "1.0", features = ["derive"] }
 wit-bindgen-wasmtime = { git = "https://github.com/bytecodealliance/wit-bindgen.git" }
 
 [dev-dependencies]
+serde_yaml = "0.8"
 lazy_static = "1.4"
