@@ -49,7 +49,7 @@ impl Host {
     ) -> Result<RawValue, Trap> {
         let func = self
             .instance
-            .get_typed_func::<(i32, i32), (i32,), _>(&mut caller, &format!("__{}", name))?;
+            .get_typed_func::<(i32, i32), (i32,), _>(&mut caller, name)?;
         let func_canonical_abi_realloc = &self.canonical_abi_realloc;
         let func_canonical_abi_free = &self.canonical_abi_free;
         let memory = &self.memory;

@@ -5,4 +5,4 @@ variant raw-value {
     str(string),
 }
 
-dispatch: function(name: string, args: list<raw-value>) -> option<raw-value>
+dispatch: function(args: list<raw-value>) -> raw-value

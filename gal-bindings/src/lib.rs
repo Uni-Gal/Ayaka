@@ -1,7 +1,7 @@
 pub use concat_idents::concat_idents;
 pub use gal_primitive::*;
 
-pub unsafe fn wit_bindgen_dispatch(arg0: i32, arg1: i32, f: fn(Vec<RawValue>) -> RawValue) -> i32 {
+pub unsafe fn __export(arg0: i32, arg1: i32, f: fn(Vec<RawValue>) -> RawValue) -> i32 {
     let base1 = arg0;
     let len1 = arg1;
     let mut result1 = Vec::with_capacity(len1 as usize);
@@ -11,21 +11,18 @@ pub unsafe fn wit_bindgen_dispatch(arg0: i32, arg1: i32, f: fn(Vec<RawValue>) ->
             0 => RawValue::Unit,
             1 => RawValue::Bool(match i32::from(*((base + 8) as *const u8)) {
                 0 => false,
-                1 => true,
-                _ => panic!("invalid enum discriminant"),
+                _ => true,
             }),
             2 => RawValue::Num(*((base + 8) as *const i64)),
-            3 => RawValue::Str({
+            _ => RawValue::Str({
                 let len0 = *((base + 12) as *const i32) as usize;
 
-                String::from_utf8(Vec::from_raw_parts(
+                String::from_utf8_unchecked(Vec::from_raw_parts(
                     *((base + 8) as *const i32) as *mut _,
                     len0,
                     len0,
                 ))
-                .unwrap()
             }),
-            _ => panic!("invalid enum discriminant"),
         });
     }
     std::alloc::dealloc(
@@ -66,9 +63,9 @@ static mut RET_AREA: [i64; 4] = [0; 4];
 macro_rules! export {
     ($name:ident) => {
         $crate::concat_idents!(fn_name = __, $name {
-            #[no_mangle]
+            #[export_name = stringify!($name)]
             unsafe extern "C" fn fn_name(arg0: i32, arg1: i32) -> i32 {
-                $crate::wit_bindgen_dispatch(arg0, arg1, $name)
+                $crate::__export(arg0, arg1, $name)
             }
         });
     };
