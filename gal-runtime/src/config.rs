@@ -146,10 +146,10 @@ pub enum Action {
     Text(Value),
     Switch {
         #[serde(default)]
-        bind: String,
-        #[serde(default)]
         allow_default: bool,
         items: Vec<SwitchItem>,
+        #[serde(default)]
+        default_action: Value,
     },
 }
 

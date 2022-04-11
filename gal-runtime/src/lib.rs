@@ -3,7 +3,7 @@ pub mod plugin;
 pub mod script;
 
 pub use config::*;
-pub use gal_script::RawValue;
+pub use gal_script::{Expr, RawValue};
 
 use plugin::*;
 use script::*;
@@ -15,27 +15,10 @@ pub struct Runtime {
     modules: HashMap<String, Host>,
 }
 
-#[derive(Debug)]
-pub enum Event {
-    Text(String),
-    Switch {
-        allow_default: bool,
-        items: Vec<SwitchItem>,
-    },
-}
-
-#[derive(Debug)]
-pub struct SwitchItem {
-    pub text: String,
-    pub enabled: bool,
-}
-
 pub struct Context<'a> {
     pub game: &'a Game,
     pub ctx: RawContext,
     pub res: VarMap,
-    // TODO: it's too ugly
-    cur_switch_bind: Option<gal_script::Ref>,
     runtime: Runtime,
 }
 
@@ -57,7 +40,6 @@ impl<'a> Context<'a> {
             ctx,
             // TODO: load resources
             res: VarMap::default(),
-            cur_switch_bind: None,
             runtime,
         }
     }
@@ -75,43 +57,19 @@ impl<'a> Context<'a> {
             .and_then(|p| p.actions.get(self.ctx.cur_act))
     }
 
-    pub fn switch(&mut self, i: i64) {
-        use gal_script::Ref;
-        match self.cur_switch_bind.as_ref().unwrap() {
-            Ref::Ctx(n) => self.ctx.locals.insert(n.clone(), RawValue::Num(i)),
-            _ => unreachable!(),
-        };
+    pub fn call(&mut self, expr: &impl Callable) -> RawValue {
+        self.table().call(expr)
     }
 }
 
-impl Iterator for Context<'_> {
-    type Item = Event;
+impl<'a> Iterator for Context<'a> {
+    type Item = &'a Action;
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(cur_para) = self.current_paragraph() {
             if let Some(act) = self.current_act() {
-                let res = match act {
-                    Action::Text(s) => Some(Event::Text(self.table().call(s).get_str().into())),
-                    Action::Switch {
-                        bind,
-                        allow_default,
-                        items,
-                    } => {
-                        self.cur_switch_bind = gal_script::RefParser::new().parse(bind).ok();
-                        Some(Event::Switch {
-                            allow_default: *allow_default,
-                            items: items
-                                .iter()
-                                .map(|item| SwitchItem {
-                                    text: item.text.clone(),
-                                    enabled: self.table().call(&item.enabled).get_bool(),
-                                })
-                                .collect(),
-                        })
-                    }
-                };
                 self.ctx.cur_act += 1;
-                res
+                Some(act)
             } else {
                 self.ctx.cur_para = self.table().call(&cur_para.next).get_str().into();
                 self.ctx.cur_act = 0;

@@ -15,12 +15,15 @@ paras:
     actions:
       - 789
       -
-        bind: $s
         items:
           -
             text: To C
+            action: >
+              { $s = 1 }
           -
             text: To D
+            action: >
+              { $s = 2 }
     next: >
       { if($s == 1, "c", if($s == 2, "d")) }
   -
