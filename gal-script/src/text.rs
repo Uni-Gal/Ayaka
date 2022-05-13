@@ -28,6 +28,7 @@ pub enum Line {
 pub enum Command {
     Pause,
     Exec(Program),
+    Switch(String, Program, Option<Program>),
 }
 
 struct Peakable<T: Iterator> {
@@ -254,6 +255,24 @@ impl<'a> TextParser<'a> {
     }
 }
 
+fn concat_params(toks: &[RichToken]) -> String {
+    let mut str = String::new();
+    for tok in toks {
+        match tok {
+            RichToken::Char(c) => str.push(*c),
+            RichToken::Text(s) => str.push_str(s),
+            RichToken::Command(_, _) => {
+                panic!("Cannot embed command in another command.")
+            }
+        }
+    }
+    str
+}
+
+fn parse_program(toks: &[RichToken]) -> Program {
+    ProgramParser::new().parse(&concat_params(toks)).unwrap()
+}
+
 impl<'a> Iterator for TextParser<'a> {
     type Item = Line;
 
@@ -278,18 +297,17 @@ impl<'a> Iterator for TextParser<'a> {
                             }
                             "exec" => {
                                 assert_eq!(params.len(), 1);
-                                let program = params[0]
-                                    .iter()
-                                    .map(|tok| match tok {
-                                        RichToken::Char(c) => c.to_string(),
-                                        RichToken::Text(s) => s.to_string(),
-                                        RichToken::Command(_, _) => unimplemented!(),
-                                    })
-                                    .collect::<Vec<_>>()
-                                    .join("");
-                                Command::Exec(ProgramParser::new().parse(&program).unwrap())
+                                Command::Exec(parse_program(&params[0]))
                             }
-                            _ => unimplemented!(),
+                            "switch" => {
+                                assert!(params.len() == 2 || params.len() == 3);
+                                Command::Switch(
+                                    concat_params(&params[0]),
+                                    parse_program(&params[1]),
+                                    params.get(2).map(|toks| parse_program(toks)),
+                                )
+                            }
+                            _ => panic!("Invalid command \"{}\"", name),
                         };
                         self.lexer.next();
                         return Some(Line::Cmd(cmd));
@@ -342,5 +360,19 @@ mod test {
             )])))])
         );
         TextParser::new(r##"\exec{format.fmt("Hello {}", "world!")}"##).parse();
+    }
+
+    #[test]
+    fn switch() {
+        assert_eq!(
+            TextParser::new(r##"\switch{hello}{"Hello world!"}"##).parse(),
+            Text(vec![Line::Cmd(Command::Switch(
+                "hello".to_string(),
+                Program(vec![Expr::Const(RawValue::Str("Hello world!".to_string()))]),
+                None
+            ))])
+        );
+
+        TextParser::new(r##"\switch{hello}{$s = 2}{a == b}"##).parse();
     }
 }
