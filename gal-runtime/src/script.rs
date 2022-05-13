@@ -210,15 +210,25 @@ impl Callable for Ref {
     }
 }
 
-impl Callable for Value {
+impl Callable for Line {
     fn call(&self, ctx: &mut VarTable) -> RawValue {
         match self {
-            Self::Unit => RawValue::Unit,
-            Self::Bool(b) => RawValue::Bool(*b),
-            Self::Num(i) => RawValue::Num(*i),
-            Self::Str(s) => RawValue::Str(s.clone()),
-            Self::Expr(p) => p.call(ctx),
+            Line::Str(s) => RawValue::Str(s.clone()),
+            Line::Cmd(c) => match c {
+                Command::Exec(p) => p.call(ctx),
+                _ => RawValue::Unit,
+            },
         }
+    }
+}
+
+impl Callable for Text {
+    fn call(&self, ctx: &mut VarTable) -> RawValue {
+        let mut value = RawValue::Unit;
+        for line in &self.0 {
+            value = bin_str_val(value, &ValBinaryOp::Add, line.call(ctx));
+        }
+        value
     }
 }
 
@@ -244,34 +254,17 @@ mod test {
     }
 
     #[test]
-    fn value() {
-        with_ctx(|ctx| {
-            assert_eq!(Value::Unit.call(ctx), RawValue::Unit);
-
-            assert_eq!(Value::Bool(true).call(ctx), RawValue::Bool(true));
-            assert_eq!(Value::Bool(false).call(ctx), RawValue::Bool(false));
-
-            assert_eq!(Value::Num(114514).call(ctx), RawValue::Num(114514));
-
-            assert_eq!(
-                Value::Str("Hello world!".into()).call(ctx),
-                RawValue::Str("Hello world!".into())
-            );
-        });
-    }
-
-    #[test]
     fn vars() {
         with_ctx(|ctx| {
             assert_eq!(
                 ProgramParser::new()
                     .parse(
-                        "{
+                        "
                             a = 0;
                             a += 1;
                             a += a;
                             a
-                        }"
+                        "
                     )
                     .unwrap()
                     .call(ctx),
@@ -286,12 +279,12 @@ mod test {
             assert_eq!(
                 ProgramParser::new()
                     .parse(
-                        "{
+                        "
                             $a = 0;
                             $a += 1;
                             $a += a;
                             $a
-                        }"
+                        "
                     )
                     .unwrap()
                     .call(ctx),
@@ -311,9 +304,9 @@ mod test {
             assert_eq!(
                 ProgramParser::new()
                     .parse(
-                        r##"{
+                        r##"
                             if(1 + 1 + 4 + 5 + 1 + 4 == 16, "sodayo", ~)
-                        }"##
+                        "##
                     )
                     .unwrap()
                     .call(ctx)
@@ -329,9 +322,9 @@ mod test {
             assert_eq!(
                 ProgramParser::new()
                     .parse(
-                        r##"{
+                        r##"
                             format.fmt("Hello {}!", 114514)
-                        }"##
+                        "##
                     )
                     .unwrap()
                     .call(ctx)

@@ -15,9 +15,10 @@ paras:
     actions:
       - 789
       - >
-      Choose where to go:
-      \switch{To C}{$s = 1}
-      \switch{To D}{$s = 2}
+        Choose where to go:
+        \switch{To C}{$s = 1}
+        \switch{To D}{$s = 2}
+        \switch{To E}{}{false}
     next: \exec{if($s == 1, "c", if($s == 2, "d"))}
   -
     tag: c
@@ -25,10 +26,8 @@ paras:
     actions:
       - Here is C.
       - \exec{format.fmt("s{}", $s)}
-    next: ~
   -
     tag: d
     title: Paragraph d
     actions:
       - Here is D.
-    next: ~

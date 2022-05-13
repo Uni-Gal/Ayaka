@@ -3,7 +3,8 @@ pub mod plugin;
 pub mod script;
 
 pub use config::*;
-pub use gal_script::{Expr, RawValue};
+use gal_script::TextParser;
+pub use gal_script::{Command, Expr, Line, RawValue, Text};
 
 use plugin::*;
 use script::*;
@@ -52,7 +53,7 @@ impl<'a> Context<'a> {
         self.game.find_para(&self.ctx.cur_para)
     }
 
-    pub fn current_act(&self) -> Option<&'a Action> {
+    pub fn current_text(&self) -> Option<&'a String> {
         self.current_paragraph()
             .and_then(|p| p.actions.get(self.ctx.cur_act))
     }
@@ -63,15 +64,25 @@ impl<'a> Context<'a> {
 }
 
 impl<'a> Iterator for Context<'a> {
-    type Item = &'a Action;
+    type Item = Text;
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(cur_para) = self.current_paragraph() {
-            if let Some(act) = self.current_act() {
+            if let Some(act) = self.current_text() {
                 self.ctx.cur_act += 1;
-                Some(act)
+                Some(TextParser::new(act).parse())
             } else {
-                self.ctx.cur_para = self.table().call(&cur_para.next).get_str().into();
+                self.ctx.cur_para = cur_para
+                    .next
+                    .as_ref()
+                    .map(|next| {
+                        TextParser::new(&next)
+                            .parse()
+                            .call(&mut self.table())
+                            .get_str()
+                            .into()
+                    })
+                    .unwrap_or_default();
                 self.ctx.cur_act = 0;
                 self.next()
             }
