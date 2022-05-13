@@ -133,18 +133,21 @@ impl<'a> Iterator for TextLexer<'a> {
 
 struct TextRichLexer<'a> {
     lexer: Peakable<TextLexer<'a>>,
+    in_param: usize,
 }
 
 impl<'a> TextRichLexer<'a> {
     pub fn new(text: &'a str) -> Self {
         Self {
             lexer: Peakable::new(TextLexer::new(text)),
+            in_param: 0,
         }
     }
 
     fn parse_spec_char(&mut self, c: char) -> RichToken<'a> {
         match c {
             '\\' => self.parse_escape_or_command(),
+            '{' | '}' if self.in_param > 0 => RichToken::Char(c),
             _ => panic!("Illegal char \"{}\"", c),
         }
     }
@@ -154,7 +157,13 @@ impl<'a> TextRichLexer<'a> {
             match tok {
                 Token::Space => RichToken::Char(' '),
                 Token::SpecChar(c) => RichToken::Char(c),
-                Token::Text(name) => self.parse_params(name),
+                Token::Text(name) => {
+                    if self.in_param > 0 {
+                        unimplemented!()
+                    } else {
+                        self.parse_params(name)
+                    }
+                }
             }
         } else {
             panic!("Single \"\\\"")
@@ -188,16 +197,23 @@ impl<'a> TextRichLexer<'a> {
 
     fn parse_param(&mut self) -> Vec<RichToken<'a>> {
         assert_eq!(self.lexer.next(), Some(Token::SpecChar('{')));
+        self.in_param += 1;
         let mut tokens = vec![];
         while let Some(tok) = self.lexer.next() {
             match tok {
                 Token::Space => tokens.push(RichToken::Char(' ')),
                 Token::SpecChar(c) => {
-                    if c == '}' {
-                        break;
-                    } else {
-                        tokens.push(self.parse_spec_char(c));
-                    }
+                    match c {
+                        '{' => self.in_param += 1,
+                        '}' => {
+                            self.in_param -= 1;
+                            if self.in_param == 0 {
+                                break;
+                            }
+                        }
+                        _ => {}
+                    };
+                    tokens.push(self.parse_spec_char(c));
                 }
                 Token::Text(s) => tokens.push(RichToken::Text(s)),
             }
@@ -262,21 +278,16 @@ impl<'a> Iterator for TextParser<'a> {
                             }
                             "exec" => {
                                 assert_eq!(params.len(), 1);
-                                Command::Exec(
-                                    ProgramParser::new()
-                                        .parse(
-                                            &params[0]
-                                                .iter()
-                                                .map(|tok| match tok {
-                                                    RichToken::Char(c) => c.to_string(),
-                                                    RichToken::Text(s) => s.to_string(),
-                                                    RichToken::Command(_, _) => unimplemented!(),
-                                                })
-                                                .collect::<Vec<_>>()
-                                                .join(""),
-                                        )
-                                        .unwrap(),
-                                )
+                                let program = params[0]
+                                    .iter()
+                                    .map(|tok| match tok {
+                                        RichToken::Char(c) => c.to_string(),
+                                        RichToken::Text(s) => s.to_string(),
+                                        RichToken::Command(_, _) => unimplemented!(),
+                                    })
+                                    .collect::<Vec<_>>()
+                                    .join("");
+                                Command::Exec(ProgramParser::new().parse(&program).unwrap())
                             }
                             _ => unimplemented!(),
                         };
@@ -325,11 +336,11 @@ mod test {
             )])))])
         );
         assert_eq!(
-            TextParser::new(r##"\exec{"Hello world!\{\}"}"##).parse(),
+            TextParser::new(r##"\exec{"Hello world!{}"}"##).parse(),
             Text(vec![Line::Cmd(Command::Exec(Program(vec![Expr::Const(
                 RawValue::Str("Hello world!{}".to_string())
             )])))])
         );
-        TextParser::new(r##"\exec{format.fmt("Hello \{\}", "world!")}"##).parse();
+        TextParser::new(r##"\exec{format.fmt("Hello {}", "world!")}"##).parse();
     }
 }
