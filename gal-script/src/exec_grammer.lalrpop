@@ -1,4 +1,4 @@
-use crate::*;
+use super::*;
 use std::str::FromStr;
 
 grammar;
@@ -13,11 +13,7 @@ Delimiter<T, D>: Vec<T> = {
     }
 };
 
-pub Program: Program = {
-    "{" <s:Statement> "}" => Program(s)
-}
-
-Statement: Vec<Expr> = Delimiter<Expr, ";">;
+pub Program: Program = Delimiter<Expr, ";"> => Program(<>);
 
 pub Expr: Expr = {
     <o:UnaryOp> <e:Expr> => Expr::Unary(o, Box::new(e)),

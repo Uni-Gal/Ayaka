@@ -1,0 +1,30 @@
+use crate::{exec::*, text::*};
+
+grammar;
+
+pub Text: Text = {
+    <mut t:Text> "\\" <c:Command> => {
+        t.0.push(c);
+        t
+    },
+    "\\" <c:Command> => Text(vec![c]),
+    r##"[^\\\{\}\[\]]*"## => Text(vec![Line::Text(<>.into())]),
+}
+
+Command: Line = {
+    "pause" => Line::Pause,
+    <e:Escape> => Line::SpecChar(e),
+    "exec" <p:Param> => Line::Exec(ProgramParser::new().parse(&p).unwrap()),
+}
+
+Param: String = {
+    "{" <t:Text> "}" => t.to_string(),
+}
+
+Escape: char = {
+    "\\" => '\\',
+    "[" => '[',
+    "]" => ']',
+    "{" => '{',
+    "}" => '}',
+}
