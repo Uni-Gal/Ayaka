@@ -8,8 +8,10 @@ pub struct Game {
     #[serde(skip)]
     pub root_path: PathBuf,
     pub title: String,
+    #[serde(default)]
     pub author: String,
     pub paras: Vec<Paragraph>,
+    #[serde(default)]
     pub plugins: PathBuf,
 }
 

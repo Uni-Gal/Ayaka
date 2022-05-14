@@ -1,5 +1,5 @@
 use crate::exec::*;
-use std::{error::Error, fmt::Display, str::Chars};
+use std::{error::Error, fmt::Display, str::CharIndices};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Loc(pub usize, pub usize);
@@ -171,16 +171,11 @@ pub struct Text(pub Vec<Line>);
 struct Peakable<T: Iterator> {
     iter: T,
     head: Option<T::Item>,
-    readed: usize,
 }
 
 impl<T: Iterator> Peakable<T> {
     pub fn new(iter: T) -> Self {
-        Self {
-            iter,
-            head: None,
-            readed: 0,
-        }
+        Self { iter, head: None }
     }
 
     pub fn peak(&mut self) -> Option<&T::Item> {
@@ -196,10 +191,47 @@ impl<T: Iterator> Peakable<T> {
 
     pub fn next(&mut self) -> Option<T::Item> {
         if let Some(c) = self.head.take() {
-            self.readed += 1;
             Some(c)
         } else if let Some(c) = self.iter.next() {
-            self.readed += 1;
+            Some(c)
+        } else {
+            None
+        }
+    }
+}
+
+struct PeakableChars<'a> {
+    iter: CharIndices<'a>,
+    head: Option<char>,
+    readed: usize,
+}
+
+impl<'a> PeakableChars<'a> {
+    pub fn new(s: &'a str) -> Self {
+        Self {
+            iter: s.char_indices(),
+            head: None,
+            readed: 0,
+        }
+    }
+
+    pub fn peak(&mut self) -> Option<char> {
+        if self.head.is_none() {
+            if let Some((_, item)) = self.iter.next() {
+                self.head = Some(item);
+            } else {
+                return None;
+            }
+        }
+        self.head.clone()
+    }
+
+    pub fn next(&mut self) -> Option<char> {
+        if let Some(c) = self.head.take() {
+            self.readed = self.iter.offset();
+            Some(c)
+        } else if let Some((index, c)) = self.iter.next() {
+            self.readed = index;
             Some(c)
         } else {
             None
@@ -220,14 +252,14 @@ const fn is_special_char(c: char) -> bool {
 
 struct TextLexer<'a> {
     text: &'a str,
-    chars: Peakable<Chars<'a>>,
+    chars: PeakableChars<'a>,
 }
 
 impl<'a> TextLexer<'a> {
     pub fn new(text: &'a str) -> Self {
         Self {
             text,
-            chars: Peakable::new(text.chars()),
+            chars: PeakableChars::new(text),
         }
     }
 
@@ -254,7 +286,7 @@ impl<'a> Iterator for TextLexer<'a> {
             return Some(Token::space(Loc(cur, self.chars.readed())));
         }
         let cur = self.chars.readed();
-        while let Some(&c) = self.chars.peak() {
+        while let Some(c) = self.chars.peak() {
             if is_special_char(c) {
                 if self.chars.readed() - cur > 0 {
                     return Some(Token::text(
@@ -477,10 +509,24 @@ impl<'a> TextParser<'a> {
         let program = self.concat_params(toks)?;
         match ProgramParser::new().parse(&program) {
             Ok(p) => Ok(p),
-            Err(e) => self.err(
-                Loc::from_locs(toks.iter().map(|tok| tok.loc)),
-                ParseErrorType::InvalidProgram(e.to_string()),
-            )?,
+            Err(e) => {
+                use lalrpop_util::ParseError as ExecParseError;
+
+                let loc = Loc::from_locs(toks.iter().map(|tok| tok.loc));
+                let loc = match &e {
+                    ExecParseError::InvalidToken { location } => {
+                        Loc(loc.0 + location, loc.0 + location + 1)
+                    }
+                    ExecParseError::UnrecognizedEOF {
+                        location: _,
+                        expected: _,
+                    } => Loc(loc.1, loc.1 + 1),
+                    ExecParseError::UnrecognizedToken { token, expected: _ }
+                    | ExecParseError::ExtraToken { token } => Loc(loc.0 + token.0, loc.0 + token.2),
+                    ExecParseError::User { error: _ } => loc,
+                };
+                self.err(loc, ParseErrorType::InvalidProgram(e.to_string()))?
+            }
         }
     }
 

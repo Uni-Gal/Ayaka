@@ -1,14 +1,17 @@
+#![feature(round_char_boundary)]
+
 pub mod config;
 pub mod plugin;
 pub mod script;
 
 pub use config::*;
 pub use gal_script::{Command, Expr, Line, RawValue, Text};
-use gal_script::{ParseError, TextParser};
+use gal_script::{Loc, ParseError, TextParser};
 
 use plugin::*;
 use script::*;
 use std::{collections::HashMap, path::Path};
+use unicode_width::UnicodeWidthStr;
 use wit_bindgen_wasmtime::wasmtime::Store;
 
 pub struct Runtime {
@@ -71,18 +74,24 @@ impl<'a> Context<'a> {
         const FREE_LEN: usize = 20;
 
         let loc = e.loc();
-        let pre_len = loc.0.min(FREE_LEN);
-        let post_len = (text.len() - loc.1).min(FREE_LEN);
+        let loc = Loc(
+            text.floor_char_boundary(loc.0),
+            text.ceil_char_boundary(loc.1),
+        );
+        let pre = text.floor_char_boundary(loc.0 - loc.0.min(FREE_LEN));
+        let post = text.ceil_char_boundary(loc.1 + (text.len() - loc.1).min(FREE_LEN));
+
+        let para_name = self.current_paragraph().unwrap().title.escape_default();
+        let act_num = self.ctx.cur_act + 1;
+        let show_code = &text[pre..post];
+        let pre_code = &text[pre..loc.0];
+        let error_code = &text[loc.0..loc.1];
         format!(
-            "Parse error on paragraph \"{}\", act {}:\n    {}\n    {}\n{}",
-            self.ctx.cur_para.escape_default(),
-            self.ctx.cur_act + 1,
-            &text[loc.0 - pre_len..loc.1 + post_len],
+            "Parse error on paragraph \"{para_name}\", act {act_num}:\n    {show_code}\n    {}\n{e}\n",
             repeat(' ')
-                .take(pre_len)
-                .chain(repeat('^').take(loc.1 - loc.0))
+                .take(UnicodeWidthStr::width_cjk(pre_code))
+                .chain(repeat('^').take(UnicodeWidthStr::width_cjk(error_code)))
                 .collect::<String>(),
-            e
         )
     }
 

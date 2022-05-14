@@ -7,6 +7,7 @@ edition = "2021"
 gal-script = { path = "../gal-script" }
 serde = { version = "1.0", features = ["derive"] }
 wit-bindgen-wasmtime = { git = "https://github.com/bytecodealliance/wit-bindgen.git" }
+unicode-width = "0.1"
 
 [dev-dependencies]
 serde_yaml = "0.8"
