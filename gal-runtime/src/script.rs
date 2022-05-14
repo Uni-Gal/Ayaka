@@ -210,25 +210,19 @@ impl Callable for Ref {
     }
 }
 
-impl Callable for Line {
-    fn call(&self, ctx: &mut VarTable) -> RawValue {
-        match self {
-            Line::Str(s) => RawValue::Str(s.clone()),
-            Line::Cmd(c) => match c {
-                Command::Exec(p) => p.call(ctx),
-                _ => RawValue::Unit,
-            },
-        }
-    }
-}
-
 impl Callable for Text {
     fn call(&self, ctx: &mut VarTable) -> RawValue {
-        let mut value = RawValue::Unit;
+        let mut str = String::new();
         for line in &self.0 {
-            value = bin_str_val(value, &ValBinaryOp::Add, line.call(ctx));
+            match line {
+                Line::Str(s) => str.push_str(s),
+                Line::Cmd(c) => match c {
+                    Command::Exec(p) => str.push_str(&p.call(ctx).get_str()),
+                    _ => {}
+                },
+            }
         }
-        value
+        RawValue::Str(str)
     }
 }
 
