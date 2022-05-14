@@ -3,8 +3,8 @@ pub mod plugin;
 pub mod script;
 
 pub use config::*;
-use gal_script::TextParser;
 pub use gal_script::{Command, Expr, Line, RawValue, Text};
+use gal_script::{ParseError, TextParser};
 
 use plugin::*;
 use script::*;
@@ -61,56 +61,79 @@ impl<'a> Context<'a> {
     pub fn call(&mut self, expr: &impl Callable) -> RawValue {
         self.table().call(expr)
     }
-}
 
-fn parse_text_rich_error(text: &str) -> Text {
-    match TextParser::new(text).parse() {
-        Ok(t) => t,
-        Err(e) => {
-            use std::iter::repeat;
-            const FREE_LEN: usize = 20;
+    fn rich_error(&self, text: &str, e: &ParseError) -> String {
+        use std::iter::repeat;
+        const FREE_LEN: usize = 20;
 
-            let loc = e.loc();
-            let pre_len = loc.0.min(FREE_LEN);
-            let post_len = (text.len() - loc.1).min(FREE_LEN);
-            eprintln!(
-                "Parse error:\n    {}\n    {}\n{}",
-                &text[loc.0 - pre_len..loc.1 + post_len],
-                repeat(' ')
-                    .take(pre_len)
-                    .chain(repeat('^').take(loc.1 - loc.0))
-                    .collect::<String>(),
-                e
-            );
-            panic!("{}", e);
+        let loc = e.loc();
+        let pre_len = loc.0.min(FREE_LEN);
+        let post_len = (text.len() - loc.1).min(FREE_LEN);
+        format!(
+            "Parse error on paragraph \"{}\", act {}:\n    {}\n    {}\n{}",
+            self.ctx.cur_para.escape_default(),
+            self.ctx.cur_act,
+            &text[loc.0 - pre_len..loc.1 + post_len],
+            repeat(' ')
+                .take(pre_len)
+                .chain(repeat('^').take(loc.1 - loc.0))
+                .collect::<String>(),
+            e
+        )
+    }
+
+    fn parse_text_rich_error(&self, text: &str) -> Text {
+        match TextParser::new(text).parse() {
+            Ok(t) => t,
+            Err(e) => {
+                eprintln!("{}", self.rich_error(text, &e));
+                panic!("{}", e);
+            }
         }
     }
-}
 
-impl<'a> Iterator for Context<'a> {
-    type Item = Text;
+    fn check_text_rich_error(&self, text: &str) -> bool {
+        if let Err(e) = TextParser::new(text).parse() {
+            eprintln!("{}", self.rich_error(text, &e));
+            false
+        } else {
+            true
+        }
+    }
 
-    fn next(&mut self) -> Option<Self::Item> {
+    pub fn next_run(&mut self) -> Option<Text> {
         if let Some(cur_para) = self.current_paragraph() {
             if let Some(act) = self.current_text() {
                 self.ctx.cur_act += 1;
-                Some(parse_text_rich_error(act))
+                Some(self.parse_text_rich_error(act))
             } else {
                 self.ctx.cur_para = cur_para
                     .next
                     .as_ref()
                     .map(|next| {
-                        parse_text_rich_error(next)
-                            .call(&mut self.table())
+                        self.call(&self.parse_text_rich_error(next))
                             .get_str()
                             .into()
                     })
                     .unwrap_or_default();
                 self.ctx.cur_act = 0;
-                self.next()
+                self.next_run()
             }
         } else {
             None
         }
+    }
+
+    pub fn check(&self) -> bool {
+        let mut succeed = true;
+        for para in &self.game.paras {
+            for act in &para.actions {
+                succeed &= self.check_text_rich_error(act);
+            }
+            if let Some(next) = &para.next {
+                succeed &= self.check_text_rich_error(next);
+            }
+        }
+        succeed
     }
 }

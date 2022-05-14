@@ -6,7 +6,7 @@ fn main() {
     let reader = std::fs::File::open(&filename).unwrap();
     let game: Game = serde_yaml::from_reader(reader).unwrap();
     let mut ctx = Context::new(PathBuf::from(filename).parent().unwrap(), &game);
-    while let Some(text) = ctx.next() {
+    while let Some(text) = ctx.next_run() {
         let mut item_index = 0;
         let mut item_actions = vec![];
         for line in text.0 {
