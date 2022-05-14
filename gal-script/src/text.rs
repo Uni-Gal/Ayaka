@@ -1,44 +1,106 @@
 use crate::exec::*;
 use std::{error::Error, fmt::Display, str::Chars};
 
-#[derive(Debug, PartialEq, Eq)]
-pub struct Text(pub Vec<Line>);
+#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+pub struct Loc(usize, usize);
+
+impl Loc {
+    pub fn from_locs(locs: impl Iterator<Item = Loc>) -> Self {
+        let mut start = 0;
+        let mut end = 0;
+        for loc in locs {
+            start = loc.0.min(start);
+            end = loc.1.max(end);
+        }
+        Self(start, end)
+    }
+}
 
 #[derive(Debug, PartialEq, Eq)]
-enum Token<'a> {
+struct Token<'a> {
+    loc: Loc,
+    tok: TokenType<'a>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum TokenType<'a> {
     Space,
     SpecChar(char),
     Text(&'a str),
 }
 
+impl<'a> Token<'a> {
+    pub fn space(loc: Loc) -> Self {
+        Self {
+            loc,
+            tok: TokenType::Space,
+        }
+    }
+
+    pub fn spec_char(loc: Loc, c: char) -> Self {
+        Self {
+            loc,
+            tok: TokenType::SpecChar(c),
+        }
+    }
+
+    pub fn text(loc: Loc, s: &'a str) -> Self {
+        Self {
+            loc,
+            tok: TokenType::Text(s),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
-enum RichToken<'a> {
+struct RichToken<'a> {
+    loc: Loc,
+    tok: RichTokenType<'a>,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum RichTokenType<'a> {
     Char(char),
     Text(&'a str),
     Command(&'a str, Vec<Vec<RichToken<'a>>>),
 }
 
+impl<'a> RichToken<'a> {
+    pub fn char(loc: Loc, c: char) -> Self {
+        Self {
+            loc,
+            tok: RichTokenType::Char(c),
+        }
+    }
+
+    pub fn text(loc: Loc, s: &'a str) -> Self {
+        Self {
+            loc,
+            tok: RichTokenType::Text(s),
+        }
+    }
+
+    pub fn command(loc: Loc, n: &'a str, params: Vec<Vec<RichToken<'a>>>) -> Self {
+        Self {
+            loc,
+            tok: RichTokenType::Command(n, params),
+        }
+    }
+}
+
 #[derive(Debug, PartialEq, Eq)]
 pub struct ParseError {
-    filename: String,
-    col: usize,
-    row: usize,
+    loc: Loc,
     err: ParseErrorType,
 }
 
 impl ParseError {
-    // TODO: filename & loc support.
-    pub fn new(err: ParseErrorType) -> Self {
-        Self {
-            filename: String::new(),
-            col: 0,
-            row: 0,
-            err,
-        }
+    pub fn new(loc: Loc, err: ParseErrorType) -> Self {
+        Self { loc, err }
     }
 
-    pub fn loc(&self) -> (usize, usize) {
-        (self.col, self.row)
+    pub fn loc(&self) -> Loc {
+        self.loc
     }
 
     pub fn error(&self) -> &ParseErrorType {
@@ -48,11 +110,7 @@ impl ParseError {
 
 impl Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "{}:{}:{}:{}",
-            self.filename, self.col, self.row, self.err
-        )
+        self.err.fmt(f)
     }
 }
 
@@ -105,6 +163,9 @@ pub enum Command {
         enabled: Option<Program>,
     },
 }
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct Text(pub Vec<Line>);
 
 struct Peakable<T: Iterator> {
     iter: T,
@@ -168,12 +229,17 @@ impl<'a> TextLexer<'a> {
             chars: Peakable::new(text.chars()),
         }
     }
+
+    pub fn err(&self, loc: Loc, err: ParseErrorType) -> ParseResult<!> {
+        Err(ParseError::new(loc, err))
+    }
 }
 
 impl<'a> Iterator for TextLexer<'a> {
     type Item = Token<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
+        let cur = self.chars.readed();
         let mut has_whitespace = false;
         while let Some(c) = self.chars.peak() {
             if c.is_whitespace() {
@@ -184,23 +250,32 @@ impl<'a> Iterator for TextLexer<'a> {
             }
         }
         if has_whitespace {
-            return Some(Token::Space);
+            return Some(Token::space(Loc(cur, self.chars.readed())));
         }
         let cur = self.chars.readed();
         while let Some(&c) = self.chars.peak() {
             if is_special_char(c) {
                 if self.chars.readed() - cur > 0 {
-                    return Some(Token::Text(&self.text[cur..self.chars.readed()]));
+                    return Some(Token::text(
+                        Loc(cur, self.chars.readed()),
+                        &self.text[cur..self.chars.readed()],
+                    ));
                 } else {
                     self.chars.next();
-                    return Some(Token::SpecChar(c));
+                    return Some(Token::spec_char(
+                        Loc(self.chars.readed() - 1, self.chars.readed()),
+                        c,
+                    ));
                 }
             } else {
                 self.chars.next();
             }
         }
         if self.chars.readed() - cur > 0 {
-            Some(Token::Text(&self.text[cur..self.chars.readed()]))
+            Some(Token::text(
+                Loc(cur, self.chars.readed()),
+                &self.text[cur..self.chars.readed()],
+            ))
         } else {
             None
         }
@@ -220,69 +295,81 @@ impl<'a> TextRichLexer<'a> {
         }
     }
 
-    fn err(&self, err: ParseErrorType) -> ParseResult<!> {
-        Err(ParseError::new(err))
+    fn err(&self, loc: Loc, err: ParseErrorType) -> ParseResult<!> {
+        self.lexer.iter.err(loc, err)
     }
 
-    fn parse_spec_char(&mut self, c: char) -> ParseResult<RichToken<'a>> {
+    fn parse_spec_char(&mut self, loc: Loc, c: char) -> ParseResult<RichToken<'a>> {
         match c {
-            '\\' => self.parse_escape_or_command(),
-            '{' | '}' if self.in_param > 0 => Ok(RichToken::Char(c)),
-            _ => self.err(ParseErrorType::IllegalChar(c))?,
+            '\\' => self.parse_escape_or_command(loc),
+            '{' | '}' if self.in_param > 0 => Ok(RichToken::char(loc, c)),
+            _ => self.err(loc, ParseErrorType::IllegalChar(c))?,
         }
     }
 
-    fn parse_escape_or_command(&mut self) -> ParseResult<RichToken<'a>> {
+    fn parse_escape_or_command(&mut self, prev_loc: Loc) -> ParseResult<RichToken<'a>> {
         if let Some(tok) = self.lexer.next() {
-            match tok {
-                Token::Space => Ok(RichToken::Char(' ')),
-                Token::SpecChar(c) => Ok(RichToken::Char(c)),
-                Token::Text(name) => {
+            match tok.tok {
+                TokenType::Space => Ok(RichToken::char(tok.loc, ' ')),
+                TokenType::SpecChar(c) => Ok(RichToken::char(tok.loc, c)),
+                TokenType::Text(name) => {
                     if self.in_param > 0 {
-                        self.err(ParseErrorType::CmdInCmd)?
+                        self.err(tok.loc, ParseErrorType::CmdInCmd)?
                     } else {
-                        self.parse_params(name)
+                        self.parse_params(Loc::from_locs([prev_loc, tok.loc].into_iter()), name)
                     }
                 }
             }
         } else {
-            self.err(ParseErrorType::CmdNotFound)?
+            self.err(prev_loc, ParseErrorType::CmdNotFound)?
         }
     }
 
-    fn parse_params(&mut self, name: &'a str) -> ParseResult<RichToken<'a>> {
+    fn parse_params(&mut self, prev_loc: Loc, name: &'a str) -> ParseResult<RichToken<'a>> {
         if let Some(tok) = self.lexer.peak() {
-            match tok {
-                Token::Space => {
+            let loc = tok.loc;
+            match &tok.tok {
+                TokenType::Space => {
                     self.lexer.next();
-                    Ok(RichToken::Command(name, vec![]))
+                    Ok(RichToken::command(prev_loc, name, vec![]))
                 }
-                &Token::SpecChar(c) => match c {
-                    '\\' => Ok(RichToken::Command(name, vec![])),
+                &TokenType::SpecChar(c) => match c {
+                    '\\' => Ok(RichToken::command(prev_loc, name, vec![])),
                     '{' => {
                         let mut params = vec![];
-                        while self.lexer.peak() == Some(&Token::SpecChar('{')) {
-                            params.push(self.parse_param()?);
+                        let mut locs = vec![prev_loc];
+                        while let Some(tok) = self.lexer.peak() {
+                            if tok.tok == TokenType::SpecChar('{') {
+                                self.lexer.next();
+                                let param = self.parse_param()?;
+                                locs.push(Loc::from_locs(param.iter().map(|tok| tok.loc)));
+                                params.push(param);
+                            } else {
+                                break;
+                            }
                         }
-                        Ok(RichToken::Command(name, params))
+                        Ok(RichToken::command(
+                            Loc::from_locs(locs.into_iter()),
+                            name,
+                            params,
+                        ))
                     }
-                    _ => self.err(ParseErrorType::IllegalChar(c))?,
+                    _ => self.err(loc, ParseErrorType::IllegalChar(c))?,
                 },
-                Token::Text(_) => self.err(ParseErrorType::CmdNotFound)?,
+                TokenType::Text(_) => self.err(loc, ParseErrorType::CmdNotFound)?,
             }
         } else {
-            Ok(RichToken::Command(name, vec![]))
+            Ok(RichToken::command(prev_loc, name, vec![]))
         }
     }
 
     fn parse_param(&mut self) -> ParseResult<Vec<RichToken<'a>>> {
-        assert_eq!(self.lexer.next(), Some(Token::SpecChar('{')));
         self.in_param += 1;
         let mut tokens = vec![];
         while let Some(tok) = self.lexer.next() {
-            match tok {
-                Token::Space => tokens.push(RichToken::Char(' ')),
-                Token::SpecChar(c) => {
+            match tok.tok {
+                TokenType::Space => tokens.push(RichToken::char(tok.loc, ' ')),
+                TokenType::SpecChar(c) => {
                     match c {
                         '{' => self.in_param += 1,
                         '}' => {
@@ -293,9 +380,9 @@ impl<'a> TextRichLexer<'a> {
                         }
                         _ => {}
                     };
-                    tokens.push(self.parse_spec_char(c)?);
+                    tokens.push(self.parse_spec_char(tok.loc, c)?);
                 }
-                Token::Text(s) => tokens.push(RichToken::Text(s)),
+                TokenType::Text(s) => tokens.push(RichToken::text(tok.loc, s)),
             }
         }
         Ok(tokens)
@@ -307,10 +394,10 @@ impl<'a> Iterator for TextRichLexer<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(tok) = self.lexer.next() {
-            match tok {
-                Token::Space => Some(Ok(RichToken::Char(' '))),
-                Token::SpecChar(c) => Some(self.parse_spec_char(c)),
-                Token::Text(s) => Some(Ok(RichToken::Text(s))),
+            match tok.tok {
+                TokenType::Space => Some(Ok(RichToken::char(tok.loc, ' '))),
+                TokenType::SpecChar(c) => Some(self.parse_spec_char(tok.loc, c)),
+                TokenType::Text(s) => Some(Ok(RichToken::text(tok.loc, s))),
             }
         } else {
             None
@@ -333,29 +420,31 @@ impl<'a> TextParser<'a> {
         Ok(Text(self.try_collect()?))
     }
 
-    fn err(&self, err: ParseErrorType) -> ParseResult<!> {
-        Err(ParseError::new(err))
+    fn err(&self, loc: Loc, err: ParseErrorType) -> ParseResult<!> {
+        self.lexer.iter.err(loc, err)
     }
 
     fn parse_next(&mut self) -> ParseResult<Option<Line>> {
         let mut str = String::new();
         while let Some(tok) = self.lexer.peak() {
             match tok {
-                Ok(tok) => match tok {
-                    RichToken::Char(c) => {
+                Ok(tok) => match &tok.tok {
+                    RichTokenType::Char(c) => {
                         str.push(*c);
                         self.lexer.next();
                     }
-                    RichToken::Text(s) => {
+                    RichTokenType::Text(s) => {
                         str.push_str(s);
                         self.lexer.next();
                     }
-                    RichToken::Command(_, _) => {
+                    RichTokenType::Command(_, _) => {
                         if str.is_empty() {
-                            let (name, params) = if let Some(Ok(RichToken::Command(name, params))) =
-                                self.lexer.next()
+                            let (loc, name, params) = if let Some(Ok(RichToken {
+                                loc,
+                                tok: RichTokenType::Command(name, params),
+                            })) = self.lexer.next()
                             {
-                                (name.to_string(), params)
+                                (loc, name.to_string(), params)
                             } else {
                                 unreachable!()
                             };
@@ -363,28 +452,28 @@ impl<'a> TextParser<'a> {
                             let cmd = match name.as_str() {
                                 "pause" => {
                                     if params_count > 0 {
-                                        self.err(ParseErrorType::InvalidParamsCount(
-                                            name,
-                                            params_count,
-                                        ))?;
+                                        self.err(
+                                            loc,
+                                            ParseErrorType::InvalidParamsCount(name, params_count),
+                                        )?;
                                     }
                                     Command::Pause
                                 }
                                 "exec" => {
                                     if params_count != 1 {
-                                        self.err(ParseErrorType::InvalidParamsCount(
-                                            name,
-                                            params_count,
-                                        ))?;
+                                        self.err(
+                                            loc,
+                                            ParseErrorType::InvalidParamsCount(name, params_count),
+                                        )?;
                                     }
                                     Command::Exec(self.parse_program(&params[0])?)
                                 }
                                 "switch" => {
                                     if params_count != 2 && params_count != 3 {
-                                        self.err(ParseErrorType::InvalidParamsCount(
-                                            name,
-                                            params_count,
-                                        ))?;
+                                        self.err(
+                                            loc,
+                                            ParseErrorType::InvalidParamsCount(name, params_count),
+                                        )?;
                                     }
                                     let enabled = match params.get(2) {
                                         Some(toks) => Some(self.parse_program(toks)?),
@@ -396,7 +485,7 @@ impl<'a> TextParser<'a> {
                                         enabled,
                                     }
                                 }
-                                _ => self.err(ParseErrorType::InvalidCmd(name))?,
+                                _ => self.err(loc, ParseErrorType::InvalidCmd(name))?,
                             };
                             return Ok(Some(Line::Cmd(cmd)));
                         } else {
@@ -419,10 +508,10 @@ impl<'a> TextParser<'a> {
     fn concat_params(&self, toks: &[RichToken]) -> ParseResult<String> {
         let mut str = String::new();
         for tok in toks {
-            match tok {
-                RichToken::Char(c) => str.push(*c),
-                RichToken::Text(s) => str.push_str(s),
-                RichToken::Command(_, _) => self.err(ParseErrorType::CmdInCmd)?,
+            match &tok.tok {
+                RichTokenType::Char(c) => str.push(*c),
+                RichTokenType::Text(s) => str.push_str(s),
+                RichTokenType::Command(_, _) => self.err(tok.loc, ParseErrorType::CmdInCmd)?,
             }
         }
         Ok(str)
@@ -432,7 +521,10 @@ impl<'a> TextParser<'a> {
         let program = self.concat_params(toks)?;
         match ProgramParser::new().parse(&program) {
             Ok(p) => Ok(p),
-            Err(e) => self.err(ParseErrorType::InvalidProgram(e.to_string()))?,
+            Err(e) => self.err(
+                Loc::from_locs(toks.iter().map(|tok| tok.loc)),
+                ParseErrorType::InvalidProgram(e.to_string()),
+            )?,
         }
     }
 }
@@ -514,7 +606,7 @@ mod test {
     fn error() {
         assert_eq!(
             TextParser::new(r##"\switch{\exec{114514}}"##).parse(),
-            Err(ParseError::new(ParseErrorType::CmdInCmd))
+            Err(ParseError::new(Loc(9, 13), ParseErrorType::CmdInCmd))
         );
     }
 
@@ -522,7 +614,7 @@ mod test {
     fn lf() {
         assert_eq!(
             TextParser::new(" \n ").parse().unwrap(),
-            Text(vec![Line::Str(" ".to_string())])
+            Text(vec![Line::Str(String::default())])
         );
     }
 }
