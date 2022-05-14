@@ -410,7 +410,7 @@ impl<'a> TextParser<'a> {
             }
         }
         if !str.is_empty() {
-            Ok(Some(Line::Str(str)))
+            Ok(Some(Line::Str(str.trim().to_string())))
         } else {
             Ok(None)
         }
@@ -515,6 +515,14 @@ mod test {
         assert_eq!(
             TextParser::new(r##"\switch{\exec{114514}}"##).parse(),
             Err(ParseError::new(ParseErrorType::CmdInCmd))
+        );
+    }
+
+    #[test]
+    fn lf() {
+        assert_eq!(
+            TextParser::new(" \n ").parse().unwrap(),
+            Text(vec![Line::Str(" ".to_string())])
         );
     }
 }
