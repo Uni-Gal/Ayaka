@@ -35,6 +35,7 @@ fn main() -> Result<()> {
                 Line::Str(s) => print!("{}", s),
                 Line::Cmd(c) => match c {
                     Command::Pause => println!(),
+                    Command::Par => println!(),
                     Command::Exec(p) => print!("{}", ctx.call(&p).get_str()),
                     Command::Switch {
                         text: stext,

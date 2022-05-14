@@ -156,6 +156,7 @@ pub enum Line {
 #[derive(Debug, PartialEq, Eq)]
 pub enum Command {
     Pause,
+    Par,
     Exec(Program),
     Switch {
         text: String,
@@ -442,46 +443,7 @@ impl<'a> TextParser<'a> {
                             } else {
                                 unreachable!()
                             };
-                            let params_count = params.len();
-                            let cmd = match name.as_str() {
-                                "pause" => {
-                                    if params_count > 0 {
-                                        self.err(
-                                            loc,
-                                            ParseErrorType::InvalidParamsCount(name, params_count),
-                                        )?;
-                                    }
-                                    Command::Pause
-                                }
-                                "exec" => {
-                                    if params_count != 1 {
-                                        self.err(
-                                            loc,
-                                            ParseErrorType::InvalidParamsCount(name, params_count),
-                                        )?;
-                                    }
-                                    Command::Exec(self.parse_program(&params[0])?)
-                                }
-                                "switch" => {
-                                    if params_count != 2 && params_count != 3 {
-                                        self.err(
-                                            loc,
-                                            ParseErrorType::InvalidParamsCount(name, params_count),
-                                        )?;
-                                    }
-                                    let enabled = match params.get(2) {
-                                        Some(toks) => Some(self.parse_program(toks)?),
-                                        None => None,
-                                    };
-                                    Command::Switch {
-                                        text: self.concat_params(&params[0])?,
-                                        action: self.parse_program(&params[1])?,
-                                        enabled,
-                                    }
-                                }
-                                _ => self.err(loc, ParseErrorType::InvalidCmd(name))?,
-                            };
-                            return Ok(Some(Line::Cmd(cmd)));
+                            return Ok(Some(self.parse_command(loc, name, params)?));
                         } else {
                             break;
                         }
@@ -520,6 +482,57 @@ impl<'a> TextParser<'a> {
                 ParseErrorType::InvalidProgram(e.to_string()),
             )?,
         }
+    }
+
+    fn check_params_count(
+        &self,
+        count: usize,
+        min: usize,
+        max: usize,
+        loc: Loc,
+        name: String,
+    ) -> ParseResult<()> {
+        if count < min || count > max {
+            self.err(loc, ParseErrorType::InvalidParamsCount(name, count))?;
+        }
+        Ok(())
+    }
+
+    fn parse_command(
+        &self,
+        loc: Loc,
+        name: String,
+        params: Vec<Vec<RichToken>>,
+    ) -> ParseResult<Line> {
+        let params_count = params.len();
+        let cmd = match name.as_str() {
+            "pause" => {
+                self.check_params_count(params_count, 0, 0, loc, name)?;
+                Command::Pause
+            }
+            "par" => {
+                self.check_params_count(params_count, 0, 0, loc, name)?;
+                Command::Par
+            }
+            "exec" => {
+                self.check_params_count(params_count, 1, 1, loc, name)?;
+                Command::Exec(self.parse_program(&params[0])?)
+            }
+            "switch" => {
+                self.check_params_count(params_count, 2, 3, loc, name)?;
+                let enabled = match params.get(2) {
+                    Some(toks) => Some(self.parse_program(toks)?),
+                    None => None,
+                };
+                Command::Switch {
+                    text: self.concat_params(&params[0])?,
+                    action: self.parse_program(&params[1])?,
+                    enabled,
+                }
+            }
+            _ => self.err(loc, ParseErrorType::InvalidCmd(name))?,
+        };
+        Ok(Line::Cmd(cmd))
     }
 }
 
