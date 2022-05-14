@@ -28,7 +28,11 @@ pub enum Line {
 pub enum Command {
     Pause,
     Exec(Program),
-    Switch(String, Program, Option<Program>),
+    Switch {
+        text: String,
+        action: Program,
+        enabled: Option<Program>,
+    },
 }
 
 struct Peakable<T: Iterator> {
@@ -301,11 +305,11 @@ impl<'a> Iterator for TextParser<'a> {
                             }
                             "switch" => {
                                 assert!(params.len() == 2 || params.len() == 3);
-                                Command::Switch(
-                                    concat_params(&params[0]),
-                                    parse_program(&params[1]),
-                                    params.get(2).map(|toks| parse_program(toks)),
-                                )
+                                Command::Switch {
+                                    text: concat_params(&params[0]),
+                                    action: parse_program(&params[1]),
+                                    enabled: params.get(2).map(|toks| parse_program(toks)),
+                                }
                             }
                             _ => panic!("Invalid command \"{}\"", name),
                         };
@@ -366,11 +370,11 @@ mod test {
     fn switch() {
         assert_eq!(
             TextParser::new(r##"\switch{hello}{"Hello world!"}"##).parse(),
-            Text(vec![Line::Cmd(Command::Switch(
-                "hello".to_string(),
-                Program(vec![Expr::Const(RawValue::Str("Hello world!".to_string()))]),
-                None
-            ))])
+            Text(vec![Line::Cmd(Command::Switch {
+                text: "hello".to_string(),
+                action: Program(vec![Expr::Const(RawValue::Str("Hello world!".to_string()))]),
+                enabled: None
+            })])
         );
 
         TextParser::new(r##"\switch{hello}{$s = 2}{a == b}"##).parse();

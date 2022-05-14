@@ -15,7 +15,11 @@ fn main() {
                 Line::Cmd(c) => match c {
                     Command::Pause => println!(),
                     Command::Exec(p) => print!("{}", ctx.call(&p).get_str()),
-                    Command::Switch(stext, action, enabled) => {
+                    Command::Switch {
+                        text: stext,
+                        action,
+                        enabled,
+                    } => {
                         let enabled = enabled.map(|p| ctx.call(&p).get_bool()).unwrap_or(true);
                         if enabled {
                             print!("\n-{}- {}", item_index + 1, stext);
