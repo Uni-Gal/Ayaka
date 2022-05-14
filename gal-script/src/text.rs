@@ -1,5 +1,5 @@
 use crate::exec::*;
-use std::str::Chars;
+use std::{error::Error, fmt::Display, str::Chars};
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Text(pub Vec<Line>);
@@ -17,6 +17,77 @@ enum RichToken<'a> {
     Text(&'a str),
     Command(&'a str, Vec<Vec<RichToken<'a>>>),
 }
+
+#[derive(Debug, PartialEq, Eq)]
+pub struct ParseError {
+    filename: String,
+    col: usize,
+    row: usize,
+    err: ParseErrorType,
+}
+
+impl ParseError {
+    // TODO: filename & loc support.
+    pub fn new(err: ParseErrorType) -> Self {
+        Self {
+            filename: String::new(),
+            col: 0,
+            row: 0,
+            err,
+        }
+    }
+
+    pub fn loc(&self) -> (usize, usize) {
+        (self.col, self.row)
+    }
+
+    pub fn error(&self) -> &ParseErrorType {
+        &self.err
+    }
+}
+
+impl Display for ParseError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}:{}:{}:{}",
+            self.filename, self.col, self.row, self.err
+        )
+    }
+}
+
+impl Error for ParseError {}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum ParseErrorType {
+    IllegalChar(char),
+    CmdNotFound,
+    CmdInCmd,
+    InvalidCmd(String),
+    InvalidParamsCount(String, usize),
+    InvalidProgram(String),
+}
+
+impl Display for ParseErrorType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::IllegalChar(c) => write!(f, "Illegal char \"{}\".", c.escape_default())?,
+            Self::CmdNotFound => write!(f, "Command not found after \"\\\".")?,
+            Self::CmdInCmd => write!(f, "Embedded command is not supported.")?,
+            Self::InvalidCmd(name) => write!(f, "Invalid commmand \"{}\"", name.escape_default())?,
+            Self::InvalidParamsCount(name, count) => write!(
+                f,
+                "Invalid params count {} for \"{}\"",
+                count,
+                name.escape_default()
+            )?,
+            Self::InvalidProgram(err) => write!(f, "Program parse error: {}", err)?,
+        }
+        Ok(())
+    }
+}
+
+pub type ParseResult<T> = std::result::Result<T, ParseError>;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Line {
@@ -149,58 +220,62 @@ impl<'a> TextRichLexer<'a> {
         }
     }
 
-    fn parse_spec_char(&mut self, c: char) -> RichToken<'a> {
+    fn err(&self, err: ParseErrorType) -> ParseResult<!> {
+        Err(ParseError::new(err))
+    }
+
+    fn parse_spec_char(&mut self, c: char) -> ParseResult<RichToken<'a>> {
         match c {
             '\\' => self.parse_escape_or_command(),
-            '{' | '}' if self.in_param > 0 => RichToken::Char(c),
-            _ => panic!("Illegal char \"{}\"", c),
+            '{' | '}' if self.in_param > 0 => Ok(RichToken::Char(c)),
+            _ => self.err(ParseErrorType::IllegalChar(c))?,
         }
     }
 
-    fn parse_escape_or_command(&mut self) -> RichToken<'a> {
+    fn parse_escape_or_command(&mut self) -> ParseResult<RichToken<'a>> {
         if let Some(tok) = self.lexer.next() {
             match tok {
-                Token::Space => RichToken::Char(' '),
-                Token::SpecChar(c) => RichToken::Char(c),
+                Token::Space => Ok(RichToken::Char(' ')),
+                Token::SpecChar(c) => Ok(RichToken::Char(c)),
                 Token::Text(name) => {
                     if self.in_param > 0 {
-                        unimplemented!()
+                        self.err(ParseErrorType::CmdInCmd)?
                     } else {
                         self.parse_params(name)
                     }
                 }
             }
         } else {
-            panic!("Single \"\\\"")
+            self.err(ParseErrorType::CmdNotFound)?
         }
     }
 
-    fn parse_params(&mut self, name: &'a str) -> RichToken<'a> {
+    fn parse_params(&mut self, name: &'a str) -> ParseResult<RichToken<'a>> {
         if let Some(tok) = self.lexer.peak() {
             match tok {
                 Token::Space => {
                     self.lexer.next();
-                    RichToken::Command(name, vec![])
+                    Ok(RichToken::Command(name, vec![]))
                 }
-                Token::SpecChar(c) => match c {
-                    '\\' => RichToken::Command(name, vec![]),
+                &Token::SpecChar(c) => match c {
+                    '\\' => Ok(RichToken::Command(name, vec![])),
                     '{' => {
                         let mut params = vec![];
                         while self.lexer.peak() == Some(&Token::SpecChar('{')) {
-                            params.push(self.parse_param());
+                            params.push(self.parse_param()?);
                         }
-                        RichToken::Command(name, params)
+                        Ok(RichToken::Command(name, params))
                     }
-                    _ => panic!("Illegal char \"{}\"", c),
+                    _ => self.err(ParseErrorType::IllegalChar(c))?,
                 },
-                Token::Text(_) => unreachable!("Cannot put text directly after command"),
+                Token::Text(_) => self.err(ParseErrorType::CmdNotFound)?,
             }
         } else {
-            RichToken::Command(name, vec![])
+            Ok(RichToken::Command(name, vec![]))
         }
     }
 
-    fn parse_param(&mut self) -> Vec<RichToken<'a>> {
+    fn parse_param(&mut self) -> ParseResult<Vec<RichToken<'a>>> {
         assert_eq!(self.lexer.next(), Some(Token::SpecChar('{')));
         self.in_param += 1;
         let mut tokens = vec![];
@@ -218,24 +293,24 @@ impl<'a> TextRichLexer<'a> {
                         }
                         _ => {}
                     };
-                    tokens.push(self.parse_spec_char(c));
+                    tokens.push(self.parse_spec_char(c)?);
                 }
                 Token::Text(s) => tokens.push(RichToken::Text(s)),
             }
         }
-        tokens
+        Ok(tokens)
     }
 }
 
 impl<'a> Iterator for TextRichLexer<'a> {
-    type Item = RichToken<'a>;
+    type Item = ParseResult<RichToken<'a>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         if let Some(tok) = self.lexer.next() {
             match tok {
-                Token::Space => Some(RichToken::Char(' ')),
+                Token::Space => Some(Ok(RichToken::Char(' '))),
                 Token::SpecChar(c) => Some(self.parse_spec_char(c)),
-                Token::Text(s) => Some(RichToken::Text(s)),
+                Token::Text(s) => Some(Ok(RichToken::Text(s))),
             }
         } else {
             None
@@ -254,77 +329,122 @@ impl<'a> TextParser<'a> {
         }
     }
 
-    pub fn parse(self) -> Text {
-        Text(self.collect())
+    pub fn parse(mut self) -> ParseResult<Text> {
+        Ok(Text(self.try_collect()?))
     }
-}
 
-fn concat_params(toks: &[RichToken]) -> String {
-    let mut str = String::new();
-    for tok in toks {
-        match tok {
-            RichToken::Char(c) => str.push(*c),
-            RichToken::Text(s) => str.push_str(s),
-            RichToken::Command(_, _) => {
-                panic!("Cannot embed command in another command.")
-            }
-        }
+    fn err(&self, err: ParseErrorType) -> ParseResult<!> {
+        Err(ParseError::new(err))
     }
-    str
-}
 
-fn parse_program(toks: &[RichToken]) -> Program {
-    ProgramParser::new().parse(&concat_params(toks)).unwrap()
-}
-
-impl<'a> Iterator for TextParser<'a> {
-    type Item = Line;
-
-    fn next(&mut self) -> Option<Self::Item> {
+    fn parse_next(&mut self) -> ParseResult<Option<Line>> {
         let mut str = String::new();
         while let Some(tok) = self.lexer.peak() {
             match tok {
-                RichToken::Char(c) => {
-                    str.push(*c);
-                    self.lexer.next();
-                }
-                RichToken::Text(s) => {
-                    str.push_str(s);
-                    self.lexer.next();
-                }
-                RichToken::Command(name, params) => {
-                    if str.is_empty() {
-                        let cmd = match *name {
-                            "pause" => {
-                                assert!(params.is_empty());
-                                Command::Pause
-                            }
-                            "exec" => {
-                                assert_eq!(params.len(), 1);
-                                Command::Exec(parse_program(&params[0]))
-                            }
-                            "switch" => {
-                                assert!(params.len() == 2 || params.len() == 3);
-                                Command::Switch {
-                                    text: concat_params(&params[0]),
-                                    action: parse_program(&params[1]),
-                                    enabled: params.get(2).map(|toks| parse_program(toks)),
-                                }
-                            }
-                            _ => panic!("Invalid command \"{}\"", name),
-                        };
+                Ok(tok) => match tok {
+                    RichToken::Char(c) => {
+                        str.push(*c);
                         self.lexer.next();
-                        return Some(Line::Cmd(cmd));
-                    } else {
-                        return Some(Line::Str(str));
                     }
+                    RichToken::Text(s) => {
+                        str.push_str(s);
+                        self.lexer.next();
+                    }
+                    RichToken::Command(_, _) => {
+                        if str.is_empty() {
+                            let (name, params) = if let Some(Ok(RichToken::Command(name, params))) =
+                                self.lexer.next()
+                            {
+                                (name.to_string(), params)
+                            } else {
+                                unreachable!()
+                            };
+                            let params_count = params.len();
+                            let cmd = match name.as_str() {
+                                "pause" => {
+                                    if params_count > 0 {
+                                        self.err(ParseErrorType::InvalidParamsCount(
+                                            name,
+                                            params_count,
+                                        ))?;
+                                    }
+                                    Command::Pause
+                                }
+                                "exec" => {
+                                    if params_count != 1 {
+                                        self.err(ParseErrorType::InvalidParamsCount(
+                                            name,
+                                            params_count,
+                                        ))?;
+                                    }
+                                    Command::Exec(self.parse_program(&params[0])?)
+                                }
+                                "switch" => {
+                                    if params_count != 2 && params_count != 3 {
+                                        self.err(ParseErrorType::InvalidParamsCount(
+                                            name,
+                                            params_count,
+                                        ))?;
+                                    }
+                                    let enabled = match params.get(2) {
+                                        Some(toks) => Some(self.parse_program(toks)?),
+                                        None => None,
+                                    };
+                                    Command::Switch {
+                                        text: self.concat_params(&params[0])?,
+                                        action: self.parse_program(&params[1])?,
+                                        enabled,
+                                    }
+                                }
+                                _ => self.err(ParseErrorType::InvalidCmd(name))?,
+                            };
+                            return Ok(Some(Line::Cmd(cmd)));
+                        } else {
+                            break;
+                        }
+                    }
+                },
+                Err(_) => {
+                    self.lexer.next().unwrap()?;
                 }
             }
         }
         if !str.is_empty() {
-            Some(Line::Str(str))
+            Ok(Some(Line::Str(str)))
         } else {
-            None
+            Ok(None)
+        }
+    }
+
+    fn concat_params(&self, toks: &[RichToken]) -> ParseResult<String> {
+        let mut str = String::new();
+        for tok in toks {
+            match tok {
+                RichToken::Char(c) => str.push(*c),
+                RichToken::Text(s) => str.push_str(s),
+                RichToken::Command(_, _) => self.err(ParseErrorType::CmdInCmd)?,
+            }
+        }
+        Ok(str)
+    }
+
+    fn parse_program(&self, toks: &[RichToken]) -> ParseResult<Program> {
+        let program = self.concat_params(toks)?;
+        match ProgramParser::new().parse(&program) {
+            Ok(p) => Ok(p),
+            Err(e) => self.err(ParseErrorType::InvalidProgram(e.to_string()))?,
+        }
+    }
+}
+
+impl<'a> Iterator for TextParser<'a> {
+    type Item = ParseResult<Line>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.parse_next() {
+            Ok(Some(res)) => Some(Ok(res)),
+            Ok(None) => None,
+            Err(e) => Some(Err(e)),
         }
     }
 }
@@ -336,15 +456,15 @@ mod test {
     #[test]
     fn basic() {
         assert_eq!(
-            TextParser::new("\\\\").parse(),
+            TextParser::new("\\\\").parse().unwrap(),
             Text(vec![Line::Str("\\".to_string())])
         );
         assert_eq!(
-            TextParser::new("\\{").parse(),
+            TextParser::new("\\{").parse().unwrap(),
             Text(vec![Line::Str("{".to_string())])
         );
         assert_eq!(
-            TextParser::new("\\pause").parse(),
+            TextParser::new("\\pause").parse().unwrap(),
             Text(vec![Line::Cmd(Command::Pause)])
         );
     }
@@ -352,24 +472,32 @@ mod test {
     #[test]
     fn exec() {
         assert_eq!(
-            TextParser::new(r##"\exec{"Hello world!"}"##).parse(),
+            TextParser::new(r##"\exec{"Hello world!"}"##)
+                .parse()
+                .unwrap(),
             Text(vec![Line::Cmd(Command::Exec(Program(vec![Expr::Const(
                 RawValue::Str("Hello world!".to_string())
             )])))])
         );
         assert_eq!(
-            TextParser::new(r##"\exec{"Hello world!{}"}"##).parse(),
+            TextParser::new(r##"\exec{"Hello world!{}"}"##)
+                .parse()
+                .unwrap(),
             Text(vec![Line::Cmd(Command::Exec(Program(vec![Expr::Const(
                 RawValue::Str("Hello world!{}".to_string())
             )])))])
         );
-        TextParser::new(r##"\exec{format.fmt("Hello {}", "world!")}"##).parse();
+        TextParser::new(r##"\exec{format.fmt("Hello {}", "world!")}"##)
+            .parse()
+            .unwrap();
     }
 
     #[test]
     fn switch() {
         assert_eq!(
-            TextParser::new(r##"\switch{hello}{"Hello world!"}"##).parse(),
+            TextParser::new(r##"\switch{hello}{"Hello world!"}"##)
+                .parse()
+                .unwrap(),
             Text(vec![Line::Cmd(Command::Switch {
                 text: "hello".to_string(),
                 action: Program(vec![Expr::Const(RawValue::Str("Hello world!".to_string()))]),
@@ -377,6 +505,16 @@ mod test {
             })])
         );
 
-        TextParser::new(r##"\switch{hello}{$s = 2}{a == b}"##).parse();
+        TextParser::new(r##"\switch{hello}{$s = 2}{a == b}"##)
+            .parse()
+            .unwrap();
+    }
+
+    #[test]
+    fn error() {
+        assert_eq!(
+            TextParser::new(r##"\switch{\exec{114514}}"##).parse(),
+            Err(ParseError::new(ParseErrorType::CmdInCmd))
+        );
     }
 }

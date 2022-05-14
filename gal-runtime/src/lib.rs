@@ -70,7 +70,7 @@ impl<'a> Iterator for Context<'a> {
         if let Some(cur_para) = self.current_paragraph() {
             if let Some(act) = self.current_text() {
                 self.ctx.cur_act += 1;
-                Some(TextParser::new(act).parse())
+                Some(TextParser::new(act).parse().unwrap())
             } else {
                 self.ctx.cur_para = cur_para
                     .next
@@ -78,6 +78,7 @@ impl<'a> Iterator for Context<'a> {
                     .map(|next| {
                         TextParser::new(&next)
                             .parse()
+                            .unwrap()
                             .call(&mut self.table())
                             .get_str()
                             .into()

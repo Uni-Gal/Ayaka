@@ -14,7 +14,7 @@ paras:
     title: Paragraph b
     actions:
       - 789
-      - >
+      - |
         Choose where to go:
         \switch{To C}{$s = 1}
         \switch{To D}{$s = 2}
