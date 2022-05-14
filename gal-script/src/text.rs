@@ -2,11 +2,11 @@ use crate::exec::*;
 use std::{error::Error, fmt::Display, str::Chars};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub struct Loc(usize, usize);
+pub struct Loc(pub usize, pub usize);
 
 impl Loc {
     pub fn from_locs(locs: impl Iterator<Item = Loc>) -> Self {
-        let mut start = 0;
+        let mut start = usize::MAX;
         let mut end = 0;
         for loc in locs {
             start = loc.0.min(start);
@@ -337,22 +337,16 @@ impl<'a> TextRichLexer<'a> {
                     '\\' => Ok(RichToken::command(prev_loc, name, vec![])),
                     '{' => {
                         let mut params = vec![];
-                        let mut locs = vec![prev_loc];
                         while let Some(tok) = self.lexer.peak() {
                             if tok.tok == TokenType::SpecChar('{') {
                                 self.lexer.next();
                                 let param = self.parse_param()?;
-                                locs.push(Loc::from_locs(param.iter().map(|tok| tok.loc)));
                                 params.push(param);
                             } else {
                                 break;
                             }
                         }
-                        Ok(RichToken::command(
-                            Loc::from_locs(locs.into_iter()),
-                            name,
-                            params,
-                        ))
+                        Ok(RichToken::command(prev_loc, name, params))
                     }
                     _ => self.err(loc, ParseErrorType::IllegalChar(c))?,
                 },
