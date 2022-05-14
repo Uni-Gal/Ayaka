@@ -272,7 +272,7 @@ mod test {
             );
 
             assert_eq!(
-                ProgramParser::new().parse("{ a }").unwrap().call(ctx),
+                ProgramParser::new().parse("a").unwrap().call(ctx),
                 RawValue::Unit
             );
 
@@ -292,7 +292,7 @@ mod test {
             );
 
             assert_eq!(
-                ProgramParser::new().parse("{ $a }").unwrap().call(ctx),
+                ProgramParser::new().parse("$a").unwrap().call(ctx),
                 RawValue::Num(1)
             );
         });
