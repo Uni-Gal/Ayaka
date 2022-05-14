@@ -1,11 +1,32 @@
+use anyhow::{anyhow, Result};
+use clap::Parser;
 use gal_runtime::{Command, Context, Game, Line};
-use std::{io::stdin, path::PathBuf};
+use std::{ffi::OsString, io::stdin, path::PathBuf};
 
-fn main() {
-    let filename = std::env::args().nth(1).unwrap();
-    let reader = std::fs::File::open(&filename).unwrap();
-    let game: Game = serde_yaml::from_reader(reader).unwrap();
-    let mut ctx = Context::new(PathBuf::from(filename).parent().unwrap(), &game);
+#[derive(Debug, Parser)]
+#[clap(about, version, author)]
+pub struct Options {
+    input: OsString,
+    #[clap(short, long)]
+    check: bool,
+}
+
+fn open_game(input: &OsString) -> Result<Game> {
+    let reader = std::fs::File::open(input)?;
+    let mut game: Game = serde_yaml::from_reader(reader)?;
+    game.root_path = PathBuf::from(input).parent().unwrap().into();
+    Ok(game)
+}
+
+fn main() -> Result<()> {
+    let opts = Options::parse();
+    let game = open_game(&opts.input)?;
+    let mut ctx = Context::new(&game);
+    if opts.check {
+        if !ctx.check() {
+            return Err(anyhow!("Check failed."));
+        }
+    }
     while let Some(text) = ctx.next_run() {
         let mut item_index = 0;
         let mut item_actions = vec![];
@@ -36,8 +57,8 @@ fn main() {
         if item_index > 0 {
             loop {
                 let mut s = String::default();
-                stdin().read_line(&mut s).unwrap();
-                let i = s.trim().parse::<usize>().unwrap();
+                stdin().read_line(&mut s)?;
+                let i = s.trim().parse::<usize>()?;
                 let valid = i > 0 && i <= item_index;
                 if valid {
                     ctx.call(&item_actions[i - 1]);
@@ -48,4 +69,5 @@ fn main() {
             }
         }
     }
+    Ok(())
 }

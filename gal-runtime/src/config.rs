@@ -5,6 +5,8 @@ use std::path::PathBuf;
 
 #[derive(Debug, Deserialize)]
 pub struct Game {
+    #[serde(skip)]
+    pub root_path: PathBuf,
     pub title: String,
     pub author: String,
     pub paras: Vec<Paragraph>,

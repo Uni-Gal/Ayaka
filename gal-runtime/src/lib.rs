@@ -24,18 +24,22 @@ pub struct Context<'a> {
 }
 
 impl<'a> Context<'a> {
-    pub fn new(path: impl AsRef<Path>, game: &'a Game) -> Self {
+    fn default_ctx(game: &Game) -> RawContext {
         let mut ctx = RawContext::default();
         ctx.cur_para = game
             .paras
             .first()
             .map(|p| p.tag.clone())
             .unwrap_or_default();
-        Self::with_context(path, game, ctx)
+        ctx
     }
 
-    pub fn with_context(path: impl AsRef<Path>, game: &'a Game, ctx: RawContext) -> Self {
-        let runtime = load_plugins(&game.plugins, path);
+    pub fn new(game: &'a Game) -> Self {
+        Self::with_context(game, Self::default_ctx(game))
+    }
+
+    pub fn with_context(game: &'a Game, ctx: RawContext) -> Self {
+        let runtime = load_plugins(&game.plugins, &game.root_path);
         Self {
             game,
             ctx,
@@ -72,7 +76,7 @@ impl<'a> Context<'a> {
         format!(
             "Parse error on paragraph \"{}\", act {}:\n    {}\n    {}\n{}",
             self.ctx.cur_para.escape_default(),
-            self.ctx.cur_act,
+            self.ctx.cur_act + 1,
             &text[loc.0 - pre_len..loc.1 + post_len],
             repeat(' ')
                 .take(pre_len)
@@ -124,16 +128,19 @@ impl<'a> Context<'a> {
         }
     }
 
-    pub fn check(&self) -> bool {
+    pub fn check(&mut self) -> bool {
         let mut succeed = true;
         for para in &self.game.paras {
-            for act in &para.actions {
+            self.ctx.cur_para = para.tag.clone();
+            for (index, act) in para.actions.iter().enumerate() {
+                self.ctx.cur_act = index;
                 succeed &= self.check_text_rich_error(act);
             }
             if let Some(next) = &para.next {
                 succeed &= self.check_text_rich_error(next);
             }
         }
+        self.ctx = Self::default_ctx(self.game);
         succeed
     }
 }
