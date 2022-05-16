@@ -168,78 +168,64 @@ pub enum Command {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Text(pub Vec<Line>);
 
-struct Peakable<T: Iterator> {
+struct Peekable<T: Iterator> {
     iter: T,
-    head: Option<T::Item>,
+    head: Option<Option<T::Item>>,
 }
 
-impl<T: Iterator> Peakable<T> {
+impl<T: Iterator> Peekable<T> {
     pub fn new(iter: T) -> Self {
         Self { iter, head: None }
     }
 
-    pub fn peak(&mut self) -> Option<&T::Item> {
-        if self.head.is_none() {
-            if let Some(item) = self.iter.next() {
-                self.head = Some(item);
-            } else {
-                return None;
-            }
-        }
-        self.head.as_ref()
+    pub fn peek(&mut self) -> Option<&T::Item> {
+        self.head.get_or_insert_with(|| self.iter.next()).as_ref()
     }
 
-    pub fn next(&mut self) -> Option<T::Item> {
-        if let Some(c) = self.head.take() {
-            Some(c)
-        } else if let Some(c) = self.iter.next() {
-            Some(c)
-        } else {
-            None
+    pub fn inner_iter(&self) -> &T {
+        &self.iter
+    }
+}
+
+impl<T: Iterator> Iterator for Peekable<T> {
+    type Item = T::Item;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match self.head.take() {
+            Some(item) => item,
+            None => self.iter.next(),
         }
     }
 }
 
-struct PeakableChars<'a> {
-    iter: CharIndices<'a>,
-    head: Option<char>,
-    readed: usize,
+struct PeekableChars<'a> {
+    inner: Peekable<CharIndices<'a>>,
 }
 
-impl<'a> PeakableChars<'a> {
+impl<'a> PeekableChars<'a> {
     pub fn new(s: &'a str) -> Self {
         Self {
-            iter: s.char_indices(),
-            head: None,
-            readed: 0,
+            inner: Peekable::new(s.char_indices()),
         }
     }
 
-    pub fn peak(&mut self) -> Option<char> {
-        if self.head.is_none() {
-            if let Some((_, item)) = self.iter.next() {
-                self.head = Some(item);
-            } else {
-                return None;
-            }
-        }
-        self.head.clone()
-    }
-
-    pub fn next(&mut self) -> Option<char> {
-        if let Some(c) = self.head.take() {
-            self.readed = self.iter.offset();
-            Some(c)
-        } else if let Some((index, c)) = self.iter.next() {
-            self.readed = index;
-            Some(c)
-        } else {
-            None
-        }
+    pub fn peek(&mut self) -> Option<char> {
+        self.inner.peek().map(|(_, c)| *c)
     }
 
     pub fn readed(&self) -> usize {
-        self.readed
+        match self.inner.head {
+            Some(Some((offset, _))) => offset,
+            _ => self.inner.iter.offset(),
+        }
+    }
+}
+
+impl<'a> Iterator for PeekableChars<'a> {
+    type Item = char;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.inner.next().map(|(_, c)| c)
     }
 }
 
@@ -252,14 +238,14 @@ const fn is_special_char(c: char) -> bool {
 
 struct TextLexer<'a> {
     text: &'a str,
-    chars: PeakableChars<'a>,
+    chars: PeekableChars<'a>,
 }
 
 impl<'a> TextLexer<'a> {
     pub fn new(text: &'a str) -> Self {
         Self {
             text,
-            chars: PeakableChars::new(text),
+            chars: PeekableChars::new(text),
         }
     }
 
@@ -274,7 +260,7 @@ impl<'a> Iterator for TextLexer<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         let cur = self.chars.readed();
         let mut has_whitespace = false;
-        while let Some(c) = self.chars.peak() {
+        while let Some(c) = self.chars.peek() {
             if c.is_whitespace() {
                 self.chars.next();
                 has_whitespace = true;
@@ -286,7 +272,7 @@ impl<'a> Iterator for TextLexer<'a> {
             return Some(Token::space(Loc(cur, self.chars.readed())));
         }
         let cur = self.chars.readed();
-        while let Some(c) = self.chars.peak() {
+        while let Some(c) = self.chars.peek() {
             if is_special_char(c) {
                 if self.chars.readed() - cur > 0 {
                     return Some(Token::text(
@@ -316,20 +302,20 @@ impl<'a> Iterator for TextLexer<'a> {
 }
 
 struct TextRichLexer<'a> {
-    lexer: Peakable<TextLexer<'a>>,
+    lexer: Peekable<TextLexer<'a>>,
     in_param: usize,
 }
 
 impl<'a> TextRichLexer<'a> {
     pub fn new(text: &'a str) -> Self {
         Self {
-            lexer: Peakable::new(TextLexer::new(text)),
+            lexer: Peekable::new(TextLexer::new(text)),
             in_param: 0,
         }
     }
 
     fn err(&self, loc: Loc, err: ParseErrorType) -> ParseResult<!> {
-        self.lexer.iter.err(loc, err)
+        self.lexer.inner_iter().err(loc, err)
     }
 
     fn parse_spec_char(&mut self, loc: Loc, c: char) -> ParseResult<RichToken<'a>> {
@@ -359,7 +345,7 @@ impl<'a> TextRichLexer<'a> {
     }
 
     fn parse_params(&mut self, prev_loc: Loc, name: &'a str) -> ParseResult<RichToken<'a>> {
-        if let Some(tok) = self.lexer.peak() {
+        if let Some(tok) = self.lexer.peek() {
             let loc = tok.loc;
             match &tok.tok {
                 TokenType::Space => {
@@ -370,7 +356,7 @@ impl<'a> TextRichLexer<'a> {
                     '\\' => Ok(RichToken::command(prev_loc, name, vec![])),
                     '{' => {
                         let mut params = vec![];
-                        while let Some(tok) = self.lexer.peak() {
+                        while let Some(tok) = self.lexer.peek() {
                             if tok.tok == TokenType::SpecChar('{') {
                                 self.lexer.next();
                                 let param = self.parse_param()?;
@@ -433,13 +419,13 @@ impl<'a> Iterator for TextRichLexer<'a> {
 }
 
 pub struct TextParser<'a> {
-    lexer: Peakable<TextRichLexer<'a>>,
+    lexer: Peekable<TextRichLexer<'a>>,
 }
 
 impl<'a> TextParser<'a> {
     pub fn new(text: &'a str) -> Self {
         Self {
-            lexer: Peakable::new(TextRichLexer::new(text)),
+            lexer: Peekable::new(TextRichLexer::new(text)),
         }
     }
 
@@ -448,12 +434,12 @@ impl<'a> TextParser<'a> {
     }
 
     fn err(&self, loc: Loc, err: ParseErrorType) -> ParseResult<!> {
-        self.lexer.iter.err(loc, err)
+        self.lexer.inner_iter().err(loc, err)
     }
 
     fn parse_next(&mut self) -> ParseResult<Option<Line>> {
         let mut str = String::new();
-        while let Some(tok) = self.lexer.peak() {
+        while let Some(tok) = self.lexer.peek() {
             match tok {
                 Ok(tok) => match &tok.tok {
                     RichTokenType::Char(c) => {
