@@ -1,6 +1,5 @@
 #![feature(char_indices_offset)]
 #![feature(iterator_try_collect)]
-#![feature(never_type)]
 
 mod exec;
 mod text;

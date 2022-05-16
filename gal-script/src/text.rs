@@ -1,5 +1,5 @@
 use crate::exec::*;
-use std::{error::Error, fmt::Display, str::CharIndices};
+use std::{error::Error, fmt::Display, iter::Peekable, str::CharIndices};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Loc(pub usize, pub usize);
@@ -108,6 +108,10 @@ impl ParseError {
     }
 }
 
+fn parse_error<T>(loc: Loc, err: ParseErrorType) -> ParseResult<T> {
+    Err(ParseError::new(loc, err))
+}
+
 impl Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.err.fmt(f)
@@ -168,55 +172,29 @@ pub enum Command {
 #[derive(Debug, PartialEq, Eq)]
 pub struct Text(pub Vec<Line>);
 
-struct Peekable<T: Iterator> {
-    iter: T,
-    head: Option<Option<T::Item>>,
-}
-
-impl<T: Iterator> Peekable<T> {
-    pub fn new(iter: T) -> Self {
-        Self { iter, head: None }
-    }
-
-    pub fn peek(&mut self) -> Option<&T::Item> {
-        self.head.get_or_insert_with(|| self.iter.next()).as_ref()
-    }
-
-    pub fn inner_iter(&self) -> &T {
-        &self.iter
-    }
-}
-
-impl<T: Iterator> Iterator for Peekable<T> {
-    type Item = T::Item;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.head.take() {
-            Some(item) => item,
-            None => self.iter.next(),
-        }
-    }
-}
-
 struct PeekableChars<'a> {
-    inner: Peekable<CharIndices<'a>>,
+    iter: CharIndices<'a>,
+    head: Option<Option<(usize, char)>>,
 }
 
 impl<'a> PeekableChars<'a> {
     pub fn new(s: &'a str) -> Self {
         Self {
-            inner: Peekable::new(s.char_indices()),
+            iter: s.char_indices(),
+            head: None,
         }
     }
 
     pub fn peek(&mut self) -> Option<char> {
-        self.inner.peek().map(|(_, c)| *c)
+        self.head
+            .get_or_insert_with(|| self.iter.next())
+            .map(|(_, c)| c)
     }
 
     pub fn readed(&self) -> usize {
-        match self.inner.head {
+        match self.head {
             Some(Some((offset, _))) => offset,
-            _ => self.inner.iter.offset(),
+            _ => self.iter.offset(),
         }
     }
 }
@@ -225,7 +203,11 @@ impl<'a> Iterator for PeekableChars<'a> {
     type Item = char;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.inner.next().map(|(_, c)| c)
+        match self.head.take() {
+            Some(item) => item,
+            None => self.iter.next(),
+        }
+        .map(|(_, c)| c)
     }
 }
 
@@ -247,10 +229,6 @@ impl<'a> TextLexer<'a> {
             text,
             chars: PeekableChars::new(text),
         }
-    }
-
-    pub fn err(&self, loc: Loc, err: ParseErrorType) -> ParseResult<!> {
-        Err(ParseError::new(loc, err))
     }
 }
 
@@ -309,20 +287,16 @@ struct TextRichLexer<'a> {
 impl<'a> TextRichLexer<'a> {
     pub fn new(text: &'a str) -> Self {
         Self {
-            lexer: Peekable::new(TextLexer::new(text)),
+            lexer: TextLexer::new(text).peekable(),
             in_param: 0,
         }
-    }
-
-    fn err(&self, loc: Loc, err: ParseErrorType) -> ParseResult<!> {
-        self.lexer.inner_iter().err(loc, err)
     }
 
     fn parse_spec_char(&mut self, loc: Loc, c: char) -> ParseResult<RichToken<'a>> {
         match c {
             '\\' => self.parse_escape_or_command(loc),
             '{' | '}' if self.in_param > 0 => Ok(RichToken::char(loc, c)),
-            _ => self.err(loc, ParseErrorType::IllegalChar(c))?,
+            _ => parse_error(loc, ParseErrorType::IllegalChar(c)),
         }
     }
 
@@ -333,14 +307,14 @@ impl<'a> TextRichLexer<'a> {
                 TokenType::SpecChar(c) => Ok(RichToken::char(tok.loc, c)),
                 TokenType::Text(name) => {
                     if self.in_param > 0 {
-                        self.err(tok.loc, ParseErrorType::CmdInCmd)?
+                        parse_error(tok.loc, ParseErrorType::CmdInCmd)
                     } else {
                         self.parse_params(Loc::from_locs([prev_loc, tok.loc].into_iter()), name)
                     }
                 }
             }
         } else {
-            self.err(prev_loc, ParseErrorType::CmdNotFound)?
+            parse_error(prev_loc, ParseErrorType::CmdNotFound)
         }
     }
 
@@ -367,9 +341,9 @@ impl<'a> TextRichLexer<'a> {
                         }
                         Ok(RichToken::command(prev_loc, name, params))
                     }
-                    _ => self.err(loc, ParseErrorType::IllegalChar(c))?,
+                    _ => parse_error(loc, ParseErrorType::IllegalChar(c)),
                 },
-                TokenType::Text(_) => self.err(loc, ParseErrorType::CmdNotFound)?,
+                TokenType::Text(_) => parse_error(loc, ParseErrorType::CmdNotFound),
             }
         } else {
             Ok(RichToken::command(prev_loc, name, vec![]))
@@ -425,16 +399,12 @@ pub struct TextParser<'a> {
 impl<'a> TextParser<'a> {
     pub fn new(text: &'a str) -> Self {
         Self {
-            lexer: Peekable::new(TextRichLexer::new(text)),
+            lexer: TextRichLexer::new(text).peekable(),
         }
     }
 
     pub fn parse(mut self) -> ParseResult<Text> {
         Ok(Text(self.try_collect()?))
-    }
-
-    fn err(&self, loc: Loc, err: ParseErrorType) -> ParseResult<!> {
-        self.lexer.inner_iter().err(loc, err)
     }
 
     fn parse_next(&mut self) -> ParseResult<Option<Line>> {
@@ -485,7 +455,7 @@ impl<'a> TextParser<'a> {
             match &tok.tok {
                 RichTokenType::Char(c) => str.push(*c),
                 RichTokenType::Text(s) => str.push_str(s),
-                RichTokenType::Command(_, _) => self.err(tok.loc, ParseErrorType::CmdInCmd)?,
+                RichTokenType::Command(_, _) => parse_error(tok.loc, ParseErrorType::CmdInCmd)?,
             }
         }
         Ok(str)
@@ -511,7 +481,7 @@ impl<'a> TextParser<'a> {
                     | ExecParseError::ExtraToken { token } => Loc(loc.0 + token.0, loc.0 + token.2),
                     ExecParseError::User { error: _ } => loc,
                 };
-                self.err(loc, ParseErrorType::InvalidProgram(e.to_string()))?
+                parse_error(loc, ParseErrorType::InvalidProgram(e.to_string()))
             }
         }
     }
@@ -525,9 +495,10 @@ impl<'a> TextParser<'a> {
         name: String,
     ) -> ParseResult<()> {
         if count < min || count > max {
-            self.err(loc, ParseErrorType::InvalidParamsCount(name, count))?;
+            parse_error(loc, ParseErrorType::InvalidParamsCount(name, count))
+        } else {
+            Ok(())
         }
-        Ok(())
     }
 
     fn parse_command(
@@ -562,7 +533,7 @@ impl<'a> TextParser<'a> {
                     enabled,
                 }
             }
-            _ => self.err(loc, ParseErrorType::InvalidCmd(name))?,
+            _ => parse_error(loc, ParseErrorType::InvalidCmd(name))?,
         };
         Ok(Line::Cmd(cmd))
     }
