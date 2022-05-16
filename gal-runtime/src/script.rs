@@ -27,7 +27,13 @@ pub trait Callable {
     fn call(&self, ctx: &mut VarTable) -> RawValue;
 }
 
-impl<T: Callable> Callable for Option<&T> {
+impl<T: Callable> Callable for &T {
+    fn call(&self, ctx: &mut VarTable) -> RawValue {
+        (*self).call(ctx)
+    }
+}
+
+impl<T: Callable> Callable for Option<T> {
     fn call(&self, ctx: &mut VarTable) -> RawValue {
         match self {
             Some(c) => c.call(ctx),
@@ -260,13 +266,13 @@ mod test {
                             a
                         "
                     )
-                    .unwrap()
+                    .ok()
                     .call(ctx),
                 RawValue::Num(2)
             );
 
             assert_eq!(
-                ProgramParser::new().parse("a").unwrap().call(ctx),
+                ProgramParser::new().parse("a").ok().call(ctx),
                 RawValue::Unit
             );
 
@@ -280,13 +286,13 @@ mod test {
                             $a
                         "
                     )
-                    .unwrap()
+                    .ok()
                     .call(ctx),
                 RawValue::Num(1)
             );
 
             assert_eq!(
-                ProgramParser::new().parse("$a").unwrap().call(ctx),
+                ProgramParser::new().parse("$a").ok().call(ctx),
                 RawValue::Num(1)
             );
         });
@@ -302,7 +308,7 @@ mod test {
                             if(1 + 1 + 4 + 5 + 1 + 4 == 16, "sodayo", ~)
                         "##
                     )
-                    .unwrap()
+                    .ok()
                     .call(ctx)
                     .get_num(),
                 6
@@ -320,7 +326,7 @@ mod test {
                             format.fmt("Hello {}!", 114514)
                         "##
                     )
-                    .unwrap()
+                    .ok()
                     .call(ctx)
                     .get_str(),
                 "Hello 114514!"
