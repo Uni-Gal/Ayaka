@@ -1,6 +1,8 @@
-use anyhow::{anyhow, Result};
 use clap::Parser;
-use gal_runtime::{Command, Context, Game, Line};
+use gal_runtime::{
+    anyhow::{bail, Result},
+    Command, Context, Game, Line,
+};
 use std::{ffi::OsString, io::stdin, path::PathBuf};
 
 #[derive(Debug, Parser)]
@@ -21,10 +23,10 @@ fn open_game(input: &OsString) -> Result<Game> {
 fn main() -> Result<()> {
     let opts = Options::parse();
     let game = open_game(&opts.input)?;
-    let mut ctx = Context::new(&game);
+    let mut ctx = Context::new(&game)?;
     if opts.check {
         if !ctx.check() {
-            return Err(anyhow!("Check failed."));
+            bail!("Check failed.");
         }
     }
     while let Some(text) = ctx.next_run() {

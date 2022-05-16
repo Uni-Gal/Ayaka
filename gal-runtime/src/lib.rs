@@ -6,8 +6,9 @@ pub mod script;
 
 pub use config::*;
 pub use gal_script::{Command, Expr, Line, RawValue, Text};
-use gal_script::{Loc, ParseError, TextParser};
+pub use wit_bindgen_wasmtime::anyhow;
 
+use gal_script::{Loc, ParseError, TextParser};
 use plugin::*;
 use script::*;
 use std::{collections::HashMap, path::Path};
@@ -37,19 +38,19 @@ impl<'a> Context<'a> {
         ctx
     }
 
-    pub fn new(game: &'a Game) -> Self {
+    pub fn new(game: &'a Game) -> anyhow::Result<Self> {
         Self::with_context(game, Self::default_ctx(game))
     }
 
-    pub fn with_context(game: &'a Game, ctx: RawContext) -> Self {
-        let runtime = load_plugins(&game.plugins, &game.root_path);
-        Self {
+    pub fn with_context(game: &'a Game, ctx: RawContext) -> anyhow::Result<Self> {
+        let runtime = load_plugins(&game.plugins, &game.root_path)?;
+        Ok(Self {
             game,
             ctx,
             // TODO: load resources
             res: VarMap::default(),
             runtime,
-        }
+        })
     }
 
     fn table(&mut self) -> VarTable {

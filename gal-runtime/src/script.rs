@@ -236,7 +236,7 @@ mod test {
         static ref RUNTIME: Mutex<Runtime> = Mutex::new(load_plugins(
             "../target/wasm32-unknown-unknown/release/",
             env!("CARGO_MANIFEST_DIR"),
-        ));
+        ).unwrap());
     }
 
     fn with_ctx(f: impl FnOnce(&mut VarTable)) {

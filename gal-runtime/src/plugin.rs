@@ -139,33 +139,31 @@ impl Host {
     }
 }
 
-pub fn load_plugins(dir: impl AsRef<Path>, rel_to: impl AsRef<Path>) -> Runtime {
+pub fn load_plugins(dir: impl AsRef<Path>, rel_to: impl AsRef<Path>) -> anyhow::Result<Runtime> {
     let mut store = Store::<()>::default();
     let mut linker = Linker::new(store.engine());
     let mut path = rel_to.as_ref().to_path_buf();
     path.push(dir);
-    let modules = std::fs::read_dir(path)
-        .unwrap()
-        .map(|f| f.unwrap().path())
-        .filter(|p| {
-            p.extension()
-                .map(|s| s.to_string_lossy())
-                .unwrap_or_default()
-                == "wasm"
-        })
-        .map(|p| {
+    let mut modules = HashMap::new();
+    for f in std::fs::read_dir(path)? {
+        let p = f?.path();
+        if p.extension()
+            .map(|s| s.to_string_lossy())
+            .unwrap_or_default()
+            == "wasm"
+        {
             let buf = std::fs::read(&p).unwrap();
             let module = Module::new(store.engine(), buf).unwrap();
             let runtime = Host::instantiate(&mut store, &module, &mut linker).unwrap();
-            (
+            modules.insert(
                 p.with_extension("")
                     .file_name()
                     .map(|s| s.to_string_lossy())
                     .unwrap_or_default()
                     .into_owned(),
                 runtime,
-            )
-        })
-        .collect();
-    Runtime { store, modules }
+            );
+        }
+    }
+    Ok(Runtime { store, modules })
 }
