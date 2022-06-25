@@ -2,7 +2,7 @@ pub use concat_idents::concat_idents;
 pub use gal_primitive::*;
 pub use log;
 
-use log::{Log, SetLoggerError};
+use log::Log;
 
 fn forget_string(s: String) -> (i32, i32) {
     let v = s.into_bytes().into_boxed_slice();
@@ -21,9 +21,17 @@ extern "C" {
 pub struct PluginLogger;
 
 impl PluginLogger {
-    pub fn init() -> Result<(), SetLoggerError> {
-        log::set_max_level(log::LevelFilter::Trace);
-        log::set_logger(&PluginLogger)
+    pub fn init() {
+        use std::sync::Once;
+        static INIT: Once = Once::new();
+
+        INIT.call_once(|| {
+            let r = log::set_logger(&PluginLogger);
+            if r.is_ok() {
+                log::set_max_level(log::LevelFilter::Trace);
+            }
+            r.unwrap();
+        });
     }
 }
 

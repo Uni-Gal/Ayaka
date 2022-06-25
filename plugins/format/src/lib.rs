@@ -2,7 +2,6 @@ use gal_bindings::*;
 use log::warn;
 use rt_format::*;
 use std::collections::HashMap;
-use std::sync::Once;
 
 struct ValueWrap<'a>(&'a RawValue);
 
@@ -75,14 +74,10 @@ impl FormatArgument for ValueWrap<'_> {
     }
 }
 
-static INIT: Once = Once::new();
-
 export!(fmt);
 
 fn fmt(args: Vec<RawValue>) -> RawValue {
-    INIT.call_once(|| {
-        PluginLogger::init().unwrap();
-    });
+    PluginLogger::init();
     if args.is_empty() {
         warn!("Format args is empty.");
         RawValue::Unit
