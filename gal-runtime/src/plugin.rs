@@ -1,18 +1,9 @@
 use crate::*;
-use log::Level;
 use wit_bindgen_wasmtime::{
     anyhow,
     rt::{copy_slice, invalid_variant, RawMem},
     wasmtime::*,
 };
-
-fn __log(level: Level, target: String, msg: String) {
-    log::log!(target: &target, level, "{}", msg);
-}
-
-fn __log_flush() {
-    log::logger().flush()
-}
 
 pub struct Host {
     canonical_abi_free: TypedFunc<(i32, i32, i32), ()>,
@@ -44,11 +35,18 @@ impl Host {
                 let target =
                     String::from_utf8(target_data).map_err(|_| Trap::new("invalid utf-8"))?;
                 let msg = String::from_utf8(msg_data).map_err(|_| Trap::new("invalid utf-8"))?;
-                __log(unsafe { std::mem::transmute(level as usize) }, target, msg);
+                let level = unsafe { std::mem::transmute(level as usize) };
+                log::logger().log(
+                    &log::Record::builder()
+                        .level(level)
+                        .target(&target)
+                        .args(format_args!("{}", msg))
+                        .build(),
+                );
                 Ok(())
             },
         )?;
-        linker.func_wrap("log", "__log_flush", __log_flush)?;
+        linker.func_wrap("log", "__log_flush", || log::logger().flush())?;
 
         let instance = linker.instantiate(&mut store, module)?;
         Ok(Self::new(store, instance)?)
