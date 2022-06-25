@@ -76,11 +76,11 @@ fn main() -> Result<()> {
                         let enabled = enabled.map(|p| ctx.call(&p).get_bool()).unwrap_or(true);
                         if enabled {
                             print!("\n-{}- {}", item_index + 1, stext);
+                            item_index += 1;
                         } else {
                             print!("\n-x- {}", stext);
                         }
                         item_actions.push(action);
-                        item_index += 1;
                     }
                 },
             }
