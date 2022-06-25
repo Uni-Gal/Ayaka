@@ -199,18 +199,32 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
         }
     } else {
         let args = args.iter().map(|e| e.call(ctx)).collect::<Vec<_>>();
-        let runtime = ctx.runtime.modules.get(ns).unwrap();
-        runtime
-            .dispatch(&mut ctx.runtime.store, name, &args)
-            .unwrap()
+        if let Some(runtime) = ctx.runtime.modules.get(ns) {
+            match runtime.dispatch(&mut ctx.runtime.store, name, &args) {
+                Ok(res) => res,
+                Err(e) => {
+                    error!("Calling `{}.{}` error: {}", ns, name, e);
+                    RawValue::Unit
+                }
+            }
+        } else {
+            error!("Cannot find namespace `{}`.", ns);
+            RawValue::Unit
+        }
     }
 }
 
 impl Callable for Ref {
     fn call(&self, ctx: &mut VarTable) -> RawValue {
         match self {
-            Self::Var(n) => ctx.vars.get(n).cloned().unwrap_or_default(),
-            Self::Ctx(n) => ctx.locals.get(n).cloned().unwrap_or_default(),
+            Self::Var(n) => ctx.vars.get(n).cloned().unwrap_or_else(|| {
+                warn!("Cannot find variable `{}`.", n);
+                Default::default()
+            }),
+            Self::Ctx(n) => ctx.locals.get(n).cloned().unwrap_or_else(|| {
+                warn!("Cannot find context variable `{}`.", n);
+                Default::default()
+            }),
             Self::Res(_) => unimplemented!("Resources"),
         }
     }

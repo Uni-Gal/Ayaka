@@ -1,6 +1,6 @@
 use clap::Parser;
 use gal_runtime::{
-    anyhow::{bail, Result},
+    anyhow::{anyhow, bail, Result},
     Command, Context, Game, Line,
 };
 use std::{
@@ -22,7 +22,10 @@ pub struct Options {
 fn open_game(input: &OsString) -> Result<Game> {
     let reader = std::fs::File::open(input)?;
     let mut game: Game = serde_yaml::from_reader(reader)?;
-    game.root_path = PathBuf::from(input).parent().unwrap().into();
+    game.root_path = PathBuf::from(input)
+        .parent()
+        .ok_or_else(|| anyhow!("Cannot get parent from input path."))?
+        .into();
     Ok(game)
 }
 
@@ -44,6 +47,7 @@ fn pause(auto: bool) -> Result<()> {
 
 fn main() -> Result<()> {
     let opts = Options::parse();
+    env_logger::try_init()?;
     let game = open_game(&opts.input)?;
     let mut ctx = Context::new(&game)?;
     if opts.check {
@@ -68,6 +72,7 @@ fn main() -> Result<()> {
                         action,
                         enabled,
                     } => {
+                        // unwrap: when enabled is None, it means true.
                         let enabled = enabled.map(|p| ctx.call(&p).get_bool()).unwrap_or(true);
                         if enabled {
                             print!("\n-{}- {}", item_index + 1, stext);
@@ -84,14 +89,14 @@ fn main() -> Result<()> {
             println!();
             loop {
                 let s = read_line()?;
-                let i = s.trim().parse::<usize>()?;
-                let valid = i > 0 && i <= item_index;
-                if valid {
-                    ctx.call(&item_actions[i - 1]);
-                    break;
-                } else {
-                    println!("Invalid switch, enter again!");
+                if let Ok(i) = s.trim().parse::<usize>() {
+                    let valid = i > 0 && i <= item_index;
+                    if valid {
+                        ctx.call(&item_actions[i - 1]);
+                        break;
+                    }
                 }
+                println!("Invalid switch, enter again!");
             }
         } else {
             pause(opts.auto)?;

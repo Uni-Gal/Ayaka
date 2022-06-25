@@ -152,9 +152,9 @@ pub fn load_plugins(dir: impl AsRef<Path>, rel_to: impl AsRef<Path>) -> anyhow::
             .unwrap_or_default()
             == "wasm"
         {
-            let buf = std::fs::read(&p).unwrap();
-            let module = Module::new(store.engine(), buf).unwrap();
-            let runtime = Host::instantiate(&mut store, &module, &mut linker).unwrap();
+            let buf = std::fs::read(&p)?;
+            let module = Module::new(store.engine(), buf)?;
+            let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
             modules.insert(
                 p.with_extension("")
                     .file_name()

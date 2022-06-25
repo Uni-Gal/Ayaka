@@ -438,6 +438,7 @@ impl<'a> TextParser<'a> {
                     }
                 },
                 Err(_) => {
+                    // unwrap: peek succeeded.
                     self.lexer.next().unwrap()?;
                 }
             }

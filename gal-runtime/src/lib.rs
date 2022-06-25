@@ -5,10 +5,11 @@ pub mod plugin;
 pub mod script;
 
 pub use config::*;
-pub use gal_script::{Command, Expr, Line, RawValue, Text};
+pub use gal_script::{log, Command, Expr, Line, RawValue, Text};
 pub use wit_bindgen_wasmtime::anyhow;
 
 use gal_script::{Loc, ParseError, TextParser};
+use log::{error, warn};
 use plugin::*;
 use script::*;
 use std::{collections::HashMap, path::Path};
@@ -34,7 +35,10 @@ impl<'a> Context<'a> {
             .paras
             .first()
             .map(|p| p.tag.clone())
-            .unwrap_or_default();
+            .unwrap_or_else(|| {
+                warn!("There is no paragraph in the game.");
+                Default::default()
+            });
         ctx
     }
 
@@ -82,6 +86,7 @@ impl<'a> Context<'a> {
         let pre = text.floor_char_boundary(loc.0 - loc.0.min(FREE_LEN));
         let post = text.ceil_char_boundary(loc.1 + (text.len() - loc.1).min(FREE_LEN));
 
+        // unwrap: the current paragraph cannot be None because some texts raises an error.
         let para_name = self.current_paragraph().unwrap().title.escape_default();
         let act_num = self.ctx.cur_act + 1;
         let show_code = &text[pre..post];
@@ -100,7 +105,7 @@ impl<'a> Context<'a> {
         match TextParser::new(text).parse() {
             Ok(t) => t,
             Err(e) => {
-                eprintln!("{}", self.rich_error(text, &e));
+                error!("{}", self.rich_error(text, &e));
                 panic!("{}", e);
             }
         }
