@@ -63,7 +63,7 @@ impl Host {
             .get_typed_func::<(i32, i32, i32, i32), i32, _>(&mut store, "canonical_abi_realloc")?;
         let memory = instance
             .get_memory(&mut store, "memory")
-            .ok_or_else(|| anyhow::anyhow!("`failed to find host memory"))?;
+            .ok_or_else(|| Trap::new("failed to find host memory"))?;
         Ok(Self {
             canonical_abi_free,
             canonical_abi_realloc,
