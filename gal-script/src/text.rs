@@ -169,7 +169,7 @@ pub enum Command {
     },
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct Text(pub Vec<Line>);
 
 struct PeekableChars<'a> {

@@ -106,7 +106,7 @@ impl<'a> Context<'a> {
             Ok(t) => t,
             Err(e) => {
                 error!("{}", self.rich_error(text, &e));
-                panic!("{}", e);
+                Text::default()
             }
         }
     }

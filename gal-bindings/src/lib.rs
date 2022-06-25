@@ -1,5 +1,47 @@
 pub use concat_idents::concat_idents;
 pub use gal_primitive::*;
+pub use log;
+
+use log::{Log, SetLoggerError};
+
+fn forget_string(s: String) -> (i32, i32) {
+    let v = s.into_bytes().into_boxed_slice();
+    let len = v.len() as i32;
+    let data = v.as_ptr() as i32;
+    std::mem::forget(v);
+    (len, data)
+}
+
+#[link(wasm_import_module = "log")]
+extern "C" {
+    fn __log(level: i32, target_len: i32, target: i32, msg_len: i32, msg: i32);
+    fn __log_flush();
+}
+
+pub struct PluginLogger;
+
+impl PluginLogger {
+    pub fn init() -> Result<(), SetLoggerError> {
+        log::set_max_level(log::LevelFilter::Trace);
+        log::set_logger(&PluginLogger)
+    }
+}
+
+impl Log for PluginLogger {
+    fn enabled(&self, _metadata: &log::Metadata) -> bool {
+        true
+    }
+
+    fn log(&self, record: &log::Record) {
+        let (target_len, target) = forget_string(record.target().to_string());
+        let (msg_len, msg) = forget_string(format!("{}", record.args()));
+        unsafe { __log(record.level() as i32, target_len, target, msg_len, msg) }
+    }
+
+    fn flush(&self) {
+        unsafe { __log_flush() }
+    }
+}
 
 pub unsafe fn __export(arg0: i32, arg1: i32, f: fn(Vec<RawValue>) -> RawValue) -> i32 {
     let base1 = arg0;

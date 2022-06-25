@@ -8,6 +8,7 @@ edition = "2018"
 gal-primitive = { path = "../gal-primitive" }
 wit-bindgen-rust = { git = "https://github.com/bytecodealliance/wit-bindgen.git" }
 concat-idents = "1.1"
+log = { version = "0.4", features = ["std"] }
 
 [dev-dependencies]
 serde_yaml = "0.8"

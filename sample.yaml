@@ -31,3 +31,4 @@ paras:
     title: Paragraph d
     actions:
       - Here is D.
+      - \exec{format.fmt("a")}\exec{format.fmt("{b}")}\exec{format.fmt("c", c)}

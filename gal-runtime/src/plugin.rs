@@ -1,9 +1,18 @@
 use crate::*;
+use log::Level;
 use wit_bindgen_wasmtime::{
     anyhow,
     rt::{copy_slice, invalid_variant, RawMem},
     wasmtime::*,
 };
+
+fn __log(level: Level, target: String, msg: String) {
+    log::log!(target: &target, level, "{}", msg);
+}
+
+fn __log_flush() {
+    log::logger().flush()
+}
 
 pub struct Host {
     canonical_abi_free: TypedFunc<(i32, i32, i32), ()>,
@@ -17,6 +26,30 @@ impl Host {
         module: &Module,
         linker: &mut Linker<()>,
     ) -> anyhow::Result<Self> {
+        linker.func_wrap(
+            "log",
+            "__log",
+            |mut caller: Caller<'_, ()>,
+             level: i32,
+             target_len: i32,
+             target: i32,
+             msg_len: i32,
+             msg: i32| {
+                let memory = match caller.get_export("memory") {
+                    Some(Extern::Memory(mem)) => mem,
+                    _ => return Err(Trap::new("failed to find host memory")),
+                };
+                let target_data = copy_slice(&mut caller, &memory, target, target_len, 1)?;
+                let msg_data = copy_slice(&mut caller, &memory, msg, msg_len, 1)?;
+                let target =
+                    String::from_utf8(target_data).map_err(|_| Trap::new("invalid utf-8"))?;
+                let msg = String::from_utf8(msg_data).map_err(|_| Trap::new("invalid utf-8"))?;
+                __log(unsafe { std::mem::transmute(level as usize) }, target, msg);
+                Ok(())
+            },
+        )?;
+        linker.func_wrap("log", "__log_flush", __log_flush)?;
+
         let instance = linker.instantiate(&mut store, module)?;
         Ok(Self::new(store, instance)?)
     }
@@ -32,7 +65,7 @@ impl Host {
             .get_typed_func::<(i32, i32, i32, i32), i32, _>(&mut store, "canonical_abi_realloc")?;
         let memory = instance
             .get_memory(&mut store, "memory")
-            .ok_or_else(|| anyhow::anyhow!("`memory` export not a memory"))?;
+            .ok_or_else(|| anyhow::anyhow!("`failed to find host memory"))?;
         Ok(Self {
             canonical_abi_free,
             canonical_abi_realloc,
