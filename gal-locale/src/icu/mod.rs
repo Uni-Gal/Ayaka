@@ -67,9 +67,14 @@ pub(crate) fn choose_impl(
 }
 
 pub fn choose(locales: impl IntoIterator<Item = Locale>) -> Option<Locale> {
-    if let Some(current) = current() {
-        choose_impl(current, locales)
-    } else {
-        None
-    }
+    current()
+        .and_then(|current| {
+            unsafe {
+                call_with_buffer(|buffer, len, status| {
+                    uloc_forLanguageTag(current.as_ptr() as _, buffer as _, len, null_mut(), status)
+                })
+            }
+            .map(Locale)
+        })
+        .and_then(|current| choose_impl(current, locales))
 }

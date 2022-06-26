@@ -10,6 +10,16 @@ pub use rust_icu_sys::{
     UErrorCode::{U_BUFFER_OVERFLOW_ERROR, U_ZERO_ERROR},
 };
 
+pub unsafe fn uloc_forLanguageTag(
+    langtag: *const ::std::os::raw::c_char,
+    localeID: *mut ::std::os::raw::c_char,
+    localeIDCapacity: i32,
+    parsedLength: *mut i32,
+    err: *mut UErrorCode,
+) -> i32 {
+    versioned_function!(uloc_forLanguageTag)(langtag, localeID, localeIDCapacity, parsedLength, err)
+}
+
 pub unsafe fn uloc_acceptLanguage(
     result: *mut ::std::os::raw::c_char,
     resultAvailable: i32,
@@ -42,22 +52,8 @@ pub unsafe fn uenum_close(en: *mut UEnumeration) {
     versioned_function!(uenum_close)(en)
 }
 
-pub fn current() -> Option<Locale> {
+pub fn current() -> Option<CString> {
     std::env::var("LANG")
         .ok()
-        .and_then(|lang| {
-            let lang = CString::new(lang).unwrap();
-            unsafe {
-                call_with_buffer(|buffer, len, status| {
-                    versioned_function!(uloc_forLanguageTag)(
-                        lang.as_ptr(),
-                        buffer as _,
-                        len,
-                        null_mut(),
-                        status,
-                    )
-                })
-            }
-        })
-        .map(Locale)
+        .and_then(|lang| CString::new(lang).ok())
 }
