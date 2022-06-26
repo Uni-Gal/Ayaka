@@ -5,12 +5,13 @@ edition = "2021"
 
 [dependencies]
 cfg-if = "1.0"
-rust_icu_uloc = { version = "2.0", default-features = false, features = ["renaming"] }
-rust_icu_common = { version = "2.0", default-features = false, features = ["renaming"] }
 serde = "1.0"
 
-[target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.38", features = [
-    "alloc",
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.36", features = [
     "Win32_Globalization",
 ] }
+
+[target.'cfg(not(windows))'.dependencies]
+rust_icu_sys = "2.0"
+paste = "1.0"

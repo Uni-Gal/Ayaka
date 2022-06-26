@@ -9,7 +9,7 @@ pub use gal_script::{log, Command, Expr, Line, RawValue, Text};
 pub use wit_bindgen_wasmtime::anyhow;
 
 use gal_script::{Loc, ParseError, TextParser};
-use log::{error, warn};
+use log::{error, info, warn};
 use plugin::*;
 use script::*;
 use std::{collections::HashMap, path::Path};
@@ -45,6 +45,7 @@ impl<'a> Context<'a> {
     fn load_res(game: &Game) -> VarMap {
         let current =
             gal_locale::choose(game.res.keys().cloned()).or_else(|| game.default_lang.clone());
+        info!("Choose locale {:?}", current);
         current
             .map(|current| game.res.get(&current).unwrap().clone())
             .unwrap_or_default()

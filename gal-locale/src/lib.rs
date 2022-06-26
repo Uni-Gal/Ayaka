@@ -1,17 +1,17 @@
-mod info;
+mod icu;
 
-use rust_icu_uloc::ULoc;
 use serde::Deserialize;
+use std::ffi::{CString, NulError};
 use std::str::FromStr;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Locale(ULoc);
+pub struct Locale(CString);
 
 impl FromStr for Locale {
-    type Err = rust_icu_common::Error;
+    type Err = NulError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        ULoc::for_language_tag(s).map(Self)
+        CString::new(s).map(Self)
     }
 }
 
@@ -35,37 +35,28 @@ impl<'de> Deserialize<'de> for Locale {
             where
                 E: Error,
             {
-                v.parse().map_err(|e| serde::de::Error::custom(e))
+                v.parse().map_err(|e| Error::custom(e))
             }
         }
         deserializer.deserialize_any(LocaleVisitor)
     }
 }
 
-pub fn choose<'a>(languages: impl IntoIterator<Item = Locale>) -> Option<Locale> {
-    if let Some(current) = info::current() {
-        rust_icu_uloc::accept_language(languages.into_iter().map(|locale| locale.0), [current])
-            .map(|(res, _)| res)
-            .ok()
-            .flatten()
-            .map(Locale)
-    } else {
-        None
-    }
-}
+pub use icu::choose;
 
 #[cfg(test)]
 mod test {
-    use super::*;
+    use crate::icu::*;
 
     #[test]
     fn accept() {
+        let current = "zh_CN".parse().unwrap();
         let accepts = vec![
             "en".parse().unwrap(),
             "ja".parse().unwrap(),
-            "zh-Hans".parse().unwrap(),
-            "zh-Hant".parse().unwrap(),
+            "zh_Hans".parse().unwrap(),
+            "zh_Hant".parse().unwrap(),
         ];
-        assert_eq!(choose(accepts), "zh-Hans".parse().ok());
+        assert_eq!(choose_impl(current, accepts), "zh_Hans".parse().ok());
     }
 }
