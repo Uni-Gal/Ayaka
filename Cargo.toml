@@ -1,8 +1,9 @@
 [workspace]
 members = [
-    "gal-script",
+    "gal-locale",
     "gal-primitive",
     "gal-runtime",
+    "gal-script",
     "gal",
     "plugins/format",
 ]

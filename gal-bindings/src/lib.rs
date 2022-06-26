@@ -12,11 +12,18 @@ fn forget_string(s: String) -> (i32, i32) {
     (len, data)
 }
 
+#[cfg(wasm)]
 #[link(wasm_import_module = "log")]
 extern "C" {
     fn __log(level: i32, target_len: i32, target: i32, msg_len: i32, msg: i32);
     fn __log_flush();
 }
+
+#[cfg(not(wasm))]
+unsafe fn __log(_level: i32, _target_len: i32, _target: i32, _msg_len: i32, _msg: i32) {}
+
+#[cfg(not(wasm))]
+unsafe fn __log_flush() {}
 
 pub struct PluginLogger;
 
