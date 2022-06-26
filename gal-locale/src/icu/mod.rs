@@ -11,7 +11,10 @@ cfg_if::cfg_if! {
 pub use platform::*;
 
 use crate::*;
-use std::{ffi::CString, ptr::null_mut};
+use std::{
+    ffi::{CStr, CString},
+    ptr::null_mut,
+};
 
 pub(crate) unsafe fn call_with_buffer(
     mut f: impl FnMut(*mut u8, i32, *mut UErrorCode) -> i32,
@@ -67,14 +70,9 @@ pub(crate) fn choose_impl(
 }
 
 pub fn choose(locales: impl IntoIterator<Item = Locale>) -> Option<Locale> {
-    current()
-        .and_then(|current| {
-            unsafe {
-                call_with_buffer(|buffer, len, status| {
-                    uloc_forLanguageTag(current.as_ptr() as _, buffer as _, len, null_mut(), status)
-                })
-            }
-            .map(Locale)
-        })
-        .and_then(|current| choose_impl(current, locales))
+    choose_impl(current(), locales)
+}
+
+pub fn current() -> Locale {
+    Locale(unsafe { CStr::from_ptr(uloc_getDefault() as _) }.to_owned())
 }

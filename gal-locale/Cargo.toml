@@ -11,7 +11,6 @@ serde = "1.0"
 windows-sys = { version = "0.36", features = [
     "Win32_Globalization",
 ] }
-widestring = "1.0"
 
 [target.'cfg(not(windows))'.dependencies]
 rust_icu_sys = { version = "2.0", default-features = false, features = ["use-bindgen", "icu_config"] }
