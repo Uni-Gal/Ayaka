@@ -14,5 +14,5 @@ windows-sys = { version = "0.36", features = [
 widestring = "1.0"
 
 [target.'cfg(not(windows))'.dependencies]
-rust_icu_sys = "2.0"
+rust_icu_sys = { version = "2.0", default-features = false, features = ["use-bindgen", "icu_config"] }
 paste = "1.0"

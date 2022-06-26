@@ -17,7 +17,7 @@ pub unsafe fn uloc_forLanguageTag(
     parsedLength: *mut i32,
     err: *mut UErrorCode,
 ) -> i32 {
-    versioned_function!(uloc_forLanguageTag)(langtag, localeID, localeIDCapacity, parsedLength, err)
+    versioned_function!(rust_icu_sys::uloc_forLanguageTag)(langtag, localeID, localeIDCapacity, parsedLength, err)
 }
 
 pub unsafe fn uloc_acceptLanguage(
@@ -29,7 +29,7 @@ pub unsafe fn uloc_acceptLanguage(
     availableLocales: *mut UEnumeration,
     status: *mut UErrorCode,
 ) -> i32 {
-    versioned_function!(uloc_acceptLanguage)(
+    versioned_function!(rust_icu_sys::uloc_acceptLanguage)(
         result,
         resultAvailable,
         outResult,
@@ -45,11 +45,11 @@ pub unsafe fn uenum_openCharStringsEnumeration(
     count: i32,
     ec: *mut UErrorCode,
 ) -> *mut UEnumeration {
-    versioned_function!(uenum_openCharStringsEnumeration)(strings, count, ec)
+    versioned_function!(rust_icu_sys::uenum_openCharStringsEnumeration)(strings, count, ec)
 }
 
 pub unsafe fn uenum_close(en: *mut UEnumeration) {
-    versioned_function!(uenum_close)(en)
+    versioned_function!(rust_icu_sys::uenum_close)(en)
 }
 
 pub fn current() -> Option<CString> {
