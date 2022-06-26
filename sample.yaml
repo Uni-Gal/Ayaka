@@ -1,6 +1,13 @@
 title: Galgame sample
 author: Berrysoft
 plugins: target/wasm32-unknown-unknown/release/
+res:
+  zh_Hans:
+    key1: foo-zh
+    key2: bar-zh
+  en:
+    key1: foo
+    key2: bar
 paras:
   -
     tag: a
@@ -8,6 +15,8 @@ paras:
     actions:
       - 123
       - 456
+      - \exec{#key1}
+      - \exec{#key2}
     next: b
   -
     tag: b
