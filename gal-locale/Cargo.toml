@@ -6,6 +6,8 @@ edition = "2021"
 [dependencies]
 cfg-if = "1.0"
 rust_icu_uloc = { version = "2.0", default-features = false, features = ["renaming"] }
+rust_icu_common = { version = "2.0", default-features = false, features = ["renaming"] }
+serde = "1.0"
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.38", features = [

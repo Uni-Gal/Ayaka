@@ -225,7 +225,10 @@ impl Callable for Ref {
                 warn!("Cannot find context variable `{}`.", n);
                 Default::default()
             }),
-            Self::Res(_) => unimplemented!("Resources"),
+            Self::Res(n) => ctx.res.get(n).cloned().unwrap_or_else(|| {
+                warn!("Cannot find resource `{}`.", n);
+                Default::default()
+            }),
         }
     }
 }

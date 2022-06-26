@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 gal-script = { path = "../gal-script" }
+gal-locale = { path = "../gal-locale" }
 serde = { version = "1.0", features = ["derive"] }
 wit-bindgen-wasmtime = { git = "https://github.com/bytecodealliance/wit-bindgen.git" }
 unicode-width = "0.1"

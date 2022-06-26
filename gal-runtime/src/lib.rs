@@ -42,6 +42,14 @@ impl<'a> Context<'a> {
         ctx
     }
 
+    fn load_res(game: &Game) -> VarMap {
+        let current =
+            gal_locale::choose(game.res.keys().cloned()).or_else(|| game.default_lang.clone());
+        current
+            .map(|current| game.res.get(&current).unwrap().clone())
+            .unwrap_or_default()
+    }
+
     pub fn new(game: &'a Game) -> anyhow::Result<Self> {
         Self::with_context(game, Self::default_ctx(game))
     }
@@ -51,8 +59,7 @@ impl<'a> Context<'a> {
         Ok(Self {
             game,
             ctx,
-            // TODO: load resources
-            res: VarMap::default(),
+            res: Self::load_res(game),
             runtime,
         })
     }

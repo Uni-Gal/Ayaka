@@ -1,3 +1,4 @@
+use gal_locale::Locale;
 use gal_script::RawValue;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -13,6 +14,10 @@ pub struct Game {
     pub paras: Vec<Paragraph>,
     #[serde(default)]
     pub plugins: PathBuf,
+    #[serde(default)]
+    pub res: HashMap<Locale, VarMap>,
+    #[serde(default)]
+    pub default_lang: Option<Locale>,
 }
 
 impl Game {
