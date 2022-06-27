@@ -1,6 +1,5 @@
 #![allow(non_snake_case)]
 
-use super::*;
 use rust_icu_sys::*;
 
 pub use rust_icu_sys::{
@@ -12,22 +11,6 @@ pub use rust_icu_sys::{
 
 pub unsafe fn uloc_getDefault() -> *const ::std::os::raw::c_char {
     versioned_function!(rust_icu_sys::uloc_getDefault)()
-}
-
-pub unsafe fn uloc_forLanguageTag(
-    langtag: *const ::std::os::raw::c_char,
-    localeID: *mut ::std::os::raw::c_char,
-    localeIDCapacity: i32,
-    parsedLength: *mut i32,
-    err: *mut UErrorCode,
-) -> i32 {
-    versioned_function!(rust_icu_sys::uloc_forLanguageTag)(
-        langtag,
-        localeID,
-        localeIDCapacity,
-        parsedLength,
-        err,
-    )
 }
 
 pub unsafe fn uloc_acceptLanguage(
