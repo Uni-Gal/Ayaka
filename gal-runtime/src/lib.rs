@@ -53,6 +53,8 @@ impl<'a> Context<'a> {
         info!("Avaliable locales {:?}", game.res.keys());
         let current = loc
             .choose_from(game.res.keys())
+            .ok()
+            .flatten()
             .or_else(|| game.default_lang.clone());
         info!("Choose locale {:?}", current);
         let res = current
@@ -153,7 +155,10 @@ impl<'a> Context<'a> {
                 Line::Cmd(Command::Lang(key)) => {
                     let tloc = self.locs.get(&key).cloned();
                     text_current = tloc
-                        .map(|tloc| user_current.choose_from([tloc].iter()).is_some())
+                        .map(|tloc| {
+                            let choose_res = user_current.choose_from([tloc].iter());
+                            choose_res.ok().flatten().is_some()
+                        })
                         .unwrap_or_else(|| {
                             warn!("Cannot find language or alias \"{}\"", key);
                             Default::default()

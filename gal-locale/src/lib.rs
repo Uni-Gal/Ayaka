@@ -1,11 +1,24 @@
 mod icu;
 
-use icu::{choose, current};
+use icu::*;
 use serde::Deserialize;
 use std::borrow::Borrow;
-use std::ffi::{CString, NulError};
+use std::ffi::{CString, FromVecWithNulError, NulError};
 use std::fmt::Display;
 use std::str::FromStr;
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum ICUError {
+    #[error("ICU error code: {0}")]
+    ICU(UErrorCode),
+    #[error(transparent)]
+    Nul(#[from] NulError),
+    #[error(transparent)]
+    FromVecNul(#[from] FromVecWithNulError),
+}
+
+pub type ICUResult<T> = std::result::Result<T, ICUError>;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Locale(CString);
@@ -15,16 +28,19 @@ impl Locale {
         current()
     }
 
-    pub fn choose_from(&self, locales: impl Iterator<Item = impl Borrow<Self>>) -> Option<Self> {
+    pub fn choose_from(
+        &self,
+        locales: impl Iterator<Item = impl Borrow<Self>>,
+    ) -> ICUResult<Option<Self>> {
         choose([self].into_iter(), locales)
     }
 }
 
 impl FromStr for Locale {
-    type Err = NulError;
+    type Err = ICUError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        CString::new(s).map(Self)
+        parse(s)
     }
 }
 
@@ -75,7 +91,7 @@ mod test {
             "zh_Hant".parse().unwrap(),
         ];
         assert_eq!(
-            choose(current.iter(), accepts.iter()),
+            choose(current.iter(), accepts.iter()).unwrap(),
             "zh_Hans".parse().ok()
         );
     }
