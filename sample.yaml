@@ -3,6 +3,7 @@ author: Berrysoft
 plugins: target/wasm32-unknown-unknown/release/
 res:
   zh_Hans:
+    alias: chs
     key1: foo-zh
     key2: bar-zh
   en:
@@ -17,6 +18,9 @@ paras:
       - 456
       - \res{key1}
       - \exec{#key2}
+      - |
+        \lang{chs} 中文测试
+        \lang{en} English test
     next: b
   -
     tag: b

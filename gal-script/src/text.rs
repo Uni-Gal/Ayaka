@@ -161,6 +161,7 @@ pub enum Line {
 pub enum Command {
     Pause,
     Par,
+    Lang(String),
     Exec(Program),
     Switch {
         text: String,
@@ -517,6 +518,10 @@ impl<'a> TextParser<'a> {
             "par" => {
                 self.check_params_count(params_count, 0, 0, loc, name)?;
                 Command::Par
+            }
+            "lang" => {
+                self.check_params_count(params_count, 1, 1, loc, name)?;
+                Command::Lang(self.concat_params(&params[0])?)
             }
             "res" => {
                 self.check_params_count(params_count, 1, 1, loc, name)?;

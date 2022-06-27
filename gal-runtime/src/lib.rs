@@ -5,6 +5,7 @@ pub mod plugin;
 pub mod script;
 
 pub use config::*;
+pub use gal_locale::Locale;
 pub use gal_script::{log, Command, Expr, Line, RawValue, Text};
 pub use wit_bindgen_wasmtime::anyhow;
 
@@ -21,10 +22,14 @@ pub struct Runtime {
     modules: HashMap<String, Host>,
 }
 
+pub type LocaleMap = HashMap<String, Locale>;
+
 pub struct Context<'a> {
     pub game: &'a Game,
     pub ctx: RawContext,
     pub res: VarMap,
+    loc: Locale,
+    locs: LocaleMap,
     runtime: Runtime,
 }
 
@@ -42,13 +47,30 @@ impl<'a> Context<'a> {
         ctx
     }
 
-    fn load_res(game: &Game) -> VarMap {
-        let current =
-            gal_locale::choose(game.res.keys().cloned()).or_else(|| game.default_lang.clone());
+    fn load_res(game: &Game) -> (VarMap, Locale, LocaleMap) {
+        let loc = Locale::current();
+        info!("Current locale {}", loc);
+        info!("Avaliable locales {:?}", game.res.keys());
+        let current = loc
+            .choose_from(game.res.keys())
+            .or_else(|| game.default_lang.clone());
         info!("Choose locale {:?}", current);
-        current
-            .map(|current| game.res.get(&current).unwrap().clone())
-            .unwrap_or_default()
+        let res = current
+            .and_then(|current| game.res.get(&current).cloned())
+            .unwrap_or_default();
+        let locs = game
+            .res
+            .iter()
+            .map(|(key, dict)| {
+                (
+                    dict.get("alias")
+                        .map(|v| v.get_str().into_owned())
+                        .unwrap_or_else(|| key.to_string().clone()),
+                    key.clone(),
+                )
+            })
+            .collect();
+        (res, loc, locs)
     }
 
     pub fn new(game: &'a Game) -> anyhow::Result<Self> {
@@ -57,10 +79,13 @@ impl<'a> Context<'a> {
 
     pub fn with_context(game: &'a Game, ctx: RawContext) -> anyhow::Result<Self> {
         let runtime = load_plugins(&game.plugins, &game.root_path)?;
+        let (res, loc, locs) = Self::load_res(game);
         Ok(Self {
             game,
             ctx,
-            res: Self::load_res(game),
+            res,
+            loc,
+            locs,
             runtime,
         })
     }
@@ -76,6 +101,14 @@ impl<'a> Context<'a> {
     pub fn current_text(&self) -> Option<&'a String> {
         self.current_paragraph()
             .and_then(|p| p.actions.get(self.ctx.cur_act))
+    }
+
+    pub fn set_locale(&mut self, loc: Locale) {
+        self.loc = loc;
+    }
+
+    pub fn locale(&self) -> &Locale {
+        &self.loc
     }
 
     pub fn call(&mut self, expr: &impl Callable) -> RawValue {
@@ -109,9 +142,30 @@ impl<'a> Context<'a> {
         )
     }
 
+    fn exact_text_loc(&self, t: Text) -> Text {
+        let mut lines = vec![];
+        let user_current = &self.loc;
+        let mut text_current = true;
+        for line in t.0.into_iter() {
+            if let Line::Cmd(Command::Lang(key)) = &line {
+                let tloc = self.locs.get(key).cloned();
+                text_current = tloc
+                    .map(|tloc| user_current.choose_from([tloc].iter()).is_some())
+                    .unwrap_or_else(|| {
+                        warn!("Cannot find language or alias \"{}\"", key);
+                        Default::default()
+                    });
+            }
+            if text_current {
+                lines.push(line);
+            }
+        }
+        Text(lines)
+    }
+
     fn parse_text_rich_error(&self, text: &str) -> Text {
         match TextParser::new(text).parse() {
-            Ok(t) => t,
+            Ok(t) => self.exact_text_loc(t),
             Err(e) => {
                 error!("{}", self.rich_error(text, &e));
                 Text::default()

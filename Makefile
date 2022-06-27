@@ -2,7 +2,7 @@ PLUGIN_NAMES:=format
 PLUGIN_TARGETS:=$(PLUGIN_NAMES:%=target/wasm32-unknown-unknown/release/%.wasm)
 
 .PHONY: test clean update
-test:
+test: plugins
 	cargo test
 clean:
 	cargo clean

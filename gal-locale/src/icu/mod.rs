@@ -33,13 +33,12 @@ pub(crate) unsafe fn call_with_buffer(
     CString::from_vec_with_nul(buffer).ok()
 }
 
-pub(crate) fn choose_impl(
-    current: Locale,
-    locales: impl IntoIterator<Item = Locale>,
+pub fn choose(
+    accepts: impl Iterator<Item = impl Borrow<Locale>>,
+    locales: impl Iterator<Item = impl Borrow<Locale>>,
 ) -> Option<Locale> {
-    let mut current_ptr = current.0.as_ptr();
-    let locales = locales.into_iter().collect::<Vec<_>>();
-    let locale_ptrs = locales.iter().map(|l| l.0.as_ptr()).collect::<Vec<_>>();
+    let mut accepts_ptrs = accepts.map(|l| l.borrow().0.as_ptr()).collect::<Vec<_>>();
+    let locale_ptrs = locales.map(|l| l.borrow().0.as_ptr()).collect::<Vec<_>>();
     let mut result = ULOC_ACCEPT_FAILED;
     let loc = unsafe {
         call_with_buffer(|buffer, len, status| {
@@ -52,8 +51,8 @@ pub(crate) fn choose_impl(
                 buffer as _,
                 len,
                 &mut result,
-                &mut current_ptr as _,
-                1,
+                accepts_ptrs.as_mut_ptr() as _,
+                accepts_ptrs.len() as _,
                 locales_enum,
                 status,
             );
@@ -67,10 +66,6 @@ pub(crate) fn choose_impl(
     } else {
         loc
     }
-}
-
-pub fn choose(locales: impl IntoIterator<Item = Locale>) -> Option<Locale> {
-    choose_impl(current(), locales)
 }
 
 pub fn current() -> Locale {
