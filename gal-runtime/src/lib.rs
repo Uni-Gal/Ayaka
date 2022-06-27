@@ -142,20 +142,36 @@ impl<'a> Context<'a> {
         )
     }
 
-    fn exact_text_loc(&self, t: Text) -> Text {
+    // Exact only current locale
+    // Translate character names
+    fn exact_text(&self, t: Text) -> Text {
         let mut lines = vec![];
         let user_current = &self.loc;
         let mut text_current = true;
         for line in t.0.into_iter() {
-            if let Line::Cmd(Command::Lang(key)) = &line {
-                let tloc = self.locs.get(key).cloned();
-                text_current = tloc
-                    .map(|tloc| user_current.choose_from([tloc].iter()).is_some())
-                    .unwrap_or_else(|| {
-                        warn!("Cannot find language or alias \"{}\"", key);
-                        Default::default()
-                    });
-            }
+            let line = match line {
+                Line::Cmd(Command::Lang(key)) => {
+                    let tloc = self.locs.get(&key).cloned();
+                    text_current = tloc
+                        .map(|tloc| user_current.choose_from([tloc].iter()).is_some())
+                        .unwrap_or_else(|| {
+                            warn!("Cannot find language or alias \"{}\"", key);
+                            Default::default()
+                        });
+                    Line::Cmd(Command::Lang(key))
+                }
+                Line::Cmd(Command::Character(key, mut alter)) => {
+                    if alter.is_empty() {
+                        alter = self
+                            .res
+                            .get(&format!("ch_{}", key))
+                            .map(|v| v.get_str().into_owned())
+                            .unwrap_or_default();
+                    }
+                    Line::Cmd(Command::Character(key, alter))
+                }
+                _ => line,
+            };
             if text_current {
                 lines.push(line);
             }
@@ -165,7 +181,7 @@ impl<'a> Context<'a> {
 
     fn parse_text_rich_error(&self, text: &str) -> Text {
         match TextParser::new(text).parse() {
-            Ok(t) => self.exact_text_loc(t),
+            Ok(t) => self.exact_text(t),
             Err(e) => {
                 error!("{}", self.rich_error(text, &e));
                 Text::default()

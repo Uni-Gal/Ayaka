@@ -6,27 +6,36 @@ res:
     alias: chs
     key1: foo-zh
     key2: bar-zh
+    ch_c1: 小红
+    ch_c2: 小明
+    ch_c3: 小刚
   en:
     key1: foo
     key2: bar
+    ch_c1: Alice
+    ch_c2: Bob
+    ch_c3: Eve
 paras:
   -
     tag: a
     title: Paragraph a
     actions:
-      - 123
-      - 456
+      - \ch{c1} 123
+      - \ch{c2} 456
       - \res{key1}
       - \exec{#key2}
       - |
         \lang{chs} 中文测试
         \lang{en} English test
+      - |
+        \lang{chs} \ch{c1}{不明} 谁
+        \lang{en} \ch{c1}{???} Who
     next: b
   -
     tag: b
     title: Paragraph b
     actions:
-      - 789
+      - \ch{c3} 789
       - |
         Choose where to go:
         \switch{To C}{$s = 1}

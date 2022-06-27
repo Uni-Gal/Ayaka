@@ -162,6 +162,7 @@ pub enum Command {
     Pause,
     Par,
     Lang(String),
+    Character(String, String),
     Exec(Program),
     Switch {
         text: String,
@@ -530,6 +531,13 @@ impl<'a> TextParser<'a> {
                 Command::Exec(Program(vec![Expr::Ref(Ref::Res(
                     self.concat_params(&params[0])?,
                 ))]))
+            }
+            "ch" => {
+                self.check_params_count(params_count, 1, 2, loc, name)?;
+                Command::Character(
+                    self.concat_params(&params[0])?,
+                    self.concat_params(params.get(1).map(|slice| slice.as_slice()).unwrap_or(&[]))?,
+                )
             }
             "exec" => {
                 self.check_params_count(params_count, 1, 1, loc, name)?;
