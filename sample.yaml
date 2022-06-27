@@ -15,7 +15,7 @@ paras:
     actions:
       - 123
       - 456
-      - \exec{#key1}
+      - \res{key1}
       - \exec{#key2}
     next: b
   -

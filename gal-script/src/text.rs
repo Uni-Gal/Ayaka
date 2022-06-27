@@ -518,6 +518,14 @@ impl<'a> TextParser<'a> {
                 self.check_params_count(params_count, 0, 0, loc, name)?;
                 Command::Par
             }
+            "res" => {
+                self.check_params_count(params_count, 1, 1, loc, name)?;
+                // Construct a simple program to get the resource.
+                // We don't expose this command to the front end.
+                Command::Exec(Program(vec![Expr::Ref(Ref::Res(
+                    self.concat_params(&params[0])?,
+                ))]))
+            }
             "exec" => {
                 self.check_params_count(params_count, 1, 1, loc, name)?;
                 Command::Exec(self.parse_program(&params[0])?)
