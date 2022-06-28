@@ -2,17 +2,24 @@ use crate::*;
 use gal_script::*;
 
 pub struct VarTable<'a> {
+    pub game: &'a Game,
+    pub loc: &'a Locale,
     pub locals: &'a mut VarMap,
-    pub res: &'a VarMap,
     pub runtime: &'a mut Runtime,
     pub vars: VarMap,
 }
 
 impl<'a> VarTable<'a> {
-    pub fn new(locals: &'a mut VarMap, res: &'a VarMap, runtime: &'a mut Runtime) -> Self {
+    pub fn new(
+        game: &'a Game,
+        loc: &'a Locale,
+        locals: &'a mut VarMap,
+        runtime: &'a mut Runtime,
+    ) -> Self {
         Self {
+            game,
+            loc,
             locals,
-            res,
             runtime,
             vars: VarMap::default(),
         }
@@ -225,10 +232,15 @@ impl Callable for Ref {
                 warn!("Cannot find context variable `{}`.", n);
                 Default::default()
             }),
-            Self::Res(n) => ctx.res.get(n).cloned().unwrap_or_else(|| {
-                warn!("Cannot find resource `{}`.", n);
-                Default::default()
-            }),
+            Self::Res(n) => ctx
+                .game
+                .find_res_fallback(&ctx.loc)
+                .and_then(|map| map.get(n))
+                .cloned()
+                .unwrap_or_else(|| {
+                    warn!("Cannot find resource `{}`.", n);
+                    Default::default()
+                }),
         }
     }
 }
@@ -263,10 +275,11 @@ mod test {
     }
 
     fn with_ctx(f: impl FnOnce(&mut VarTable)) {
+        let game = Game::default();
+        let loc = "zh_CN".parse().unwrap();
         let mut locals = VarMap::default();
-        let res = VarMap::default();
         let mut runtime = RUNTIME.lock().unwrap();
-        let mut ctx = VarTable::new(&mut locals, &res, &mut runtime);
+        let mut ctx = VarTable::new(&game, &loc, &mut locals, &mut runtime);
         f(&mut ctx);
     }
 

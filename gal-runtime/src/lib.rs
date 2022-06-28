@@ -10,7 +10,7 @@ pub use gal_script::{log, Command, Expr, Line, RawValue, Text};
 pub use wit_bindgen_wasmtime::anyhow;
 
 use gal_script::{Loc, ParseError, TextParser};
-use log::{error, info, warn};
+use log::{error, warn};
 use plugin::*;
 use script::*;
 use std::{collections::HashMap, path::Path};
@@ -27,9 +27,7 @@ pub type LocaleMap = HashMap<String, Locale>;
 pub struct Context<'a> {
     pub game: &'a Game,
     pub ctx: RawContext,
-    pub res: VarMap,
     loc: Locale,
-    locs: LocaleMap,
     runtime: Runtime,
 }
 
@@ -38,41 +36,13 @@ impl<'a> Context<'a> {
         let mut ctx = RawContext::default();
         ctx.cur_para = game
             .paras
-            .first()
-            .map(|p| p.tag.clone())
+            .get(&game.base_lang)
+            .and_then(|paras| paras.first().map(|p| p.tag.clone()))
             .unwrap_or_else(|| {
                 warn!("There is no paragraph in the game.");
                 Default::default()
             });
         ctx
-    }
-
-    fn load_res(game: &Game) -> (VarMap, Locale, LocaleMap) {
-        let loc = Locale::current();
-        info!("Current locale {}", loc);
-        info!("Avaliable locales {:?}", game.res.keys());
-        let current = loc
-            .choose_from(game.res.keys())
-            .ok()
-            .flatten()
-            .or_else(|| game.default_lang.clone());
-        info!("Choose locale {:?}", current);
-        let res = current
-            .and_then(|current| game.res.get(&current).cloned())
-            .unwrap_or_default();
-        let locs = game
-            .res
-            .iter()
-            .map(|(key, dict)| {
-                (
-                    dict.get("alias")
-                        .map(|v| v.get_str().into_owned())
-                        .unwrap_or_else(|| key.to_string().clone()),
-                    key.clone(),
-                )
-            })
-            .collect();
-        (res, loc, locs)
     }
 
     pub fn new(game: &'a Game) -> anyhow::Result<Self> {
@@ -81,28 +51,37 @@ impl<'a> Context<'a> {
 
     pub fn with_context(game: &'a Game, ctx: RawContext) -> anyhow::Result<Self> {
         let runtime = load_plugins(&game.plugins, &game.root_path)?;
-        let (res, loc, locs) = Self::load_res(game);
         Ok(Self {
             game,
             ctx,
-            res,
-            loc,
-            locs,
+            loc: Locale::current(),
             runtime,
         })
     }
 
     fn table(&mut self) -> VarTable {
-        VarTable::new(&mut self.ctx.locals, &self.res, &mut self.runtime)
+        VarTable::new(
+            &self.game,
+            &self.loc,
+            &mut self.ctx.locals,
+            &mut self.runtime,
+        )
     }
 
-    pub fn current_paragraph(&self) -> Option<&'a Paragraph> {
-        self.game.find_para(&self.ctx.cur_para)
+    fn current_paragraph(&self) -> Fallback<'a, Paragraph> {
+        self.game.find_para_fallback(&self.loc, &self.ctx.cur_para)
     }
 
-    pub fn current_text(&self) -> Option<&'a String> {
-        self.current_paragraph()
-            .and_then(|p| p.actions.get(self.ctx.cur_act))
+    fn current_text(&self) -> Option<&'a String> {
+        self.current_paragraph().and_then(|p| {
+            p.texts.get(self.ctx.cur_act).and_then(|s| {
+                if s.is_empty() || s == "~" {
+                    None
+                } else {
+                    Some(s)
+                }
+            })
+        })
     }
 
     pub fn set_locale(&mut self, loc: Locale) {
@@ -129,8 +108,11 @@ impl<'a> Context<'a> {
         let pre = text.floor_char_boundary(loc.0 - loc.0.min(FREE_LEN));
         let post = text.ceil_char_boundary(loc.1 + (text.len() - loc.1).min(FREE_LEN));
 
-        // unwrap: the current paragraph cannot be None because some texts raises an error.
-        let para_name = self.current_paragraph().unwrap().title.escape_default();
+        let para_name = self
+            .current_paragraph()
+            .and_then(|p| p.title.as_ref())
+            .map(|s| s.escape_default().to_string())
+            .unwrap_or_default();
         let act_num = self.ctx.cur_act + 1;
         let show_code = &text[pre..post];
         let pre_code = &text[pre..loc.0];
@@ -144,32 +126,18 @@ impl<'a> Context<'a> {
         )
     }
 
-    // Exact only current locale
     // Translate character names
+    // TODO: reduce allocation
     fn exact_text(&self, t: Text) -> Text {
         let mut lines = vec![];
-        let user_current = &self.loc;
-        let mut text_current = true;
         for line in t.0.into_iter() {
             let line = match line {
-                Line::Cmd(Command::Lang(key)) => {
-                    let tloc = self.locs.get(&key).cloned();
-                    text_current = tloc
-                        .map(|tloc| {
-                            let choose_res = user_current.choose_from([tloc].iter());
-                            choose_res.ok().flatten().is_some()
-                        })
-                        .unwrap_or_else(|| {
-                            warn!("Cannot find language or alias \"{}\"", key);
-                            Default::default()
-                        });
-                    Line::Cmd(Command::Lang(key))
-                }
                 Line::Cmd(Command::Character(key, mut alter)) => {
                     if alter.is_empty() {
                         alter = self
-                            .res
-                            .get(&format!("ch_{}", key))
+                            .game
+                            .find_res_fallback(&self.loc)
+                            .and_then(|map| map.get(&format!("ch_{}", key)))
                             .map(|v| v.get_str().into_owned())
                             .unwrap_or_default();
                     }
@@ -177,9 +145,7 @@ impl<'a> Context<'a> {
                 }
                 _ => line,
             };
-            if text_current {
-                lines.push(line);
-            }
+            lines.push(line);
         }
         Text(lines)
     }
@@ -204,18 +170,19 @@ impl<'a> Context<'a> {
     }
 
     pub fn next_run(&mut self) -> Option<Text> {
-        if let Some(cur_para) = self.current_paragraph() {
+        let cur_para = self.current_paragraph();
+        if cur_para.is_some() {
             if let Some(act) = self.current_text() {
                 self.ctx.cur_act += 1;
                 Some(self.parse_text_rich_error(act))
             } else {
                 self.ctx.cur_para = cur_para
-                    .next
-                    .as_ref()
-                    .map(|next| {
-                        self.call(&self.parse_text_rich_error(next))
-                            .get_str()
-                            .into()
+                    .and_then(|p| {
+                        p.next.as_ref().map(|next| {
+                            self.call(&self.parse_text_rich_error(next))
+                                .get_str()
+                                .into()
+                        })
                     })
                     .unwrap_or_default();
                 self.ctx.cur_act = 0;
@@ -228,14 +195,16 @@ impl<'a> Context<'a> {
 
     pub fn check(&mut self) -> bool {
         let mut succeed = true;
-        for para in &self.game.paras {
-            self.ctx.cur_para = para.tag.clone();
-            for (index, act) in para.actions.iter().enumerate() {
-                self.ctx.cur_act = index;
-                succeed &= self.check_text_rich_error(act);
-            }
-            if let Some(next) = &para.next {
-                succeed &= self.check_text_rich_error(next);
+        for (_, paras) in &self.game.paras {
+            for para in paras {
+                self.ctx.cur_para = para.tag.clone();
+                for (index, act) in para.texts.iter().enumerate() {
+                    self.ctx.cur_act = index;
+                    succeed &= self.check_text_rich_error(act);
+                }
+                if let Some(next) = &para.next {
+                    succeed &= self.check_text_rich_error(next);
+                }
             }
         }
         self.ctx = Self::default_ctx(self.game);

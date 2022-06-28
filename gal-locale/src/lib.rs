@@ -20,7 +20,7 @@ pub enum ICUError {
 
 pub type ICUResult<T> = std::result::Result<T, ICUError>;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
 pub struct Locale(CString);
 
 impl Locale {

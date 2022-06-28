@@ -66,7 +66,6 @@ fn main() -> Result<()> {
                         pause(opts.auto)?;
                     }
                     Command::Par => println!(),
-                    Command::Lang(_) => {}
                     Command::Character(_, name) => print!("_{}_", name),
                     Command::Exec(p) => print!("{}", ctx.call(&p).get_str()),
                     Command::Switch {

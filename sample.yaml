@@ -15,42 +15,50 @@ res:
     ch_c1: Alice
     ch_c2: Bob
     ch_c3: Eve
+base_lang: en
 paras:
-  -
-    tag: a
-    title: Paragraph a
-    actions:
-      - \ch{c1} 123
-      - \ch{c2} 456
-      - \res{key1}
-      - \exec{#key2}
-      - |
-        \lang{chs} 中文测试
-        \lang{en} English test
-      - |
-        \lang{chs} \ch{c1}{不明} 谁
-        \lang{en} \ch{c1}{???} Who
-    next: b
-  -
-    tag: b
-    title: Paragraph b
-    actions:
-      - \ch{c3} 789
-      - |
-        Choose where to go:
-        \switch{To C}{$s = 1}
-        \switch{To D}{$s = 2}
-        \switch{To E}{}{false}
-    next: \exec{if($s == 1, "c", if($s == 2, "d"))}
-  -
-    tag: c
-    title: Paragraph c
-    actions:
-      - Here is C.
-      - \exec{format.fmt("s{}", $s)}
-  -
-    tag: d
-    title: Paragraph d
-    actions:
-      - Here is D.
-      - \exec{format.fmt("a")}\exec{format.fmt("{b}")}\exec{format.fmt("c", c)}
+  en:
+    -
+      tag: a
+      title: Paragraph a
+      texts:
+        - \ch{c1} 123
+        - \ch{c2} 456
+        - \res{key1}
+        - \exec{#key2}
+        - English test
+        - \ch{c1}{???} Who
+      next: b
+    -
+      tag: b
+      title: Paragraph b
+      texts:
+        - \ch{c3} 789
+        - |
+          Choose where to go:
+          \switch{To C}{$s = 1}
+          \switch{To D}{$s = 2}
+          \switch{To E}{}{false}
+      next: \exec{if($s == 1, "c", if($s == 2, "d"))}
+    -
+      tag: c
+      title: Paragraph c
+      texts:
+        - Here is C.
+        - \exec{format.fmt("s{}", $s)}
+    -
+      tag: d
+      title: Paragraph d
+      texts:
+        - Here is D.
+        - \exec{format.fmt("a")}\exec{format.fmt("{b}")}\exec{format.fmt("c", c)}
+  zh_Hans:
+    -
+      tag: a
+      texts:
+        -
+        -
+        -
+        -
+        - 中文测试
+        - \ch{c1}{不明} 谁
