@@ -62,6 +62,7 @@ struct RichToken<'a> {
 enum RichTokenType<'a> {
     Char(char),
     Text(&'a str),
+    Character(&'a str, &'a str),
     Command(&'a str, Vec<Vec<RichToken<'a>>>),
 }
 
@@ -77,6 +78,13 @@ impl<'a> RichToken<'a> {
         Self {
             loc,
             tok: RichTokenType::Text(s),
+        }
+    }
+
+    pub fn character(loc: Loc, s: &'a str, a: &'a str) -> Self {
+        Self {
+            loc,
+            tok: RichTokenType::Character(s, a),
         }
     }
 
@@ -123,6 +131,8 @@ impl Error for ParseError {}
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParseErrorType {
     IllegalChar(char),
+    IllegalSpace,
+    EmptyKey,
     CmdNotFound,
     CmdInCmd,
     InvalidCmd(String),
@@ -134,6 +144,8 @@ impl Display for ParseErrorType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::IllegalChar(c) => write!(f, "Illegal char \"{}\".", c.escape_default())?,
+            Self::IllegalSpace => write!(f, "Illegal space.")?,
+            Self::EmptyKey => write!(f, "Key cannot be empty.")?,
             Self::CmdNotFound => write!(f, "Command not found after \"\\\".")?,
             Self::CmdInCmd => write!(f, "Embedded command is not supported.")?,
             Self::InvalidCmd(name) => write!(f, "Invalid commmand \"{}\"", name.escape_default())?,
@@ -214,7 +226,7 @@ impl<'a> Iterator for PeekableChars<'a> {
 
 const fn is_special_char(c: char) -> bool {
     match c {
-        '\\' | '{' | '}' => true,
+        '\\' | '{' | '}' | '/' => true,
         _ => false,
     }
 }
@@ -297,8 +309,46 @@ impl<'a> TextRichLexer<'a> {
         match c {
             '\\' => self.parse_escape_or_command(loc),
             '{' | '}' if self.in_param > 0 => Ok(RichToken::char(loc, c)),
+            '/' => self.parse_character(loc),
             _ => parse_error(loc, ParseErrorType::IllegalChar(c)),
         }
+    }
+
+    fn parse_character(&mut self, prev_loc: Loc) -> ParseResult<RichToken<'a>> {
+        let (name, mid_loc) = self.parse_character_name(prev_loc)?;
+        let (alias, last_loc) = self.parse_character_name(mid_loc)?;
+        Ok(RichToken::character(
+            Loc::from_locs([prev_loc, last_loc].into_iter()),
+            name,
+            alias,
+        ))
+    }
+
+    fn parse_character_name(&mut self, prev_loc: Loc) -> ParseResult<(&'a str, Loc)> {
+        let name = if let Some(tok) = self.lexer.next() {
+            match tok.tok {
+                TokenType::Space => parse_error(tok.loc, ParseErrorType::IllegalSpace),
+                TokenType::SpecChar(c) => match c {
+                    '/' => Ok(""),
+                    _ => parse_error(tok.loc, ParseErrorType::IllegalChar(c)),
+                },
+                TokenType::Text(name) => Ok(name),
+            }
+        } else {
+            parse_error(prev_loc, ParseErrorType::IllegalChar('/'))
+        }?;
+        let last_loc = if !name.is_empty() {
+            match self.lexer.next() {
+                Some(tok) => match tok.tok {
+                    TokenType::SpecChar('/') => Ok(tok.loc),
+                    _ => parse_error(prev_loc, ParseErrorType::IllegalChar('/')),
+                },
+                None => parse_error(prev_loc, ParseErrorType::IllegalChar('/')),
+            }
+        } else {
+            Ok(Loc(prev_loc.0 + 1, prev_loc.1 + 1))
+        }?;
+        Ok((name, last_loc))
     }
 
     fn parse_escape_or_command(&mut self, prev_loc: Loc) -> ParseResult<RichToken<'a>> {
@@ -421,6 +471,16 @@ impl<'a> TextParser<'a> {
                         str.push_str(s);
                         self.lexer.next();
                     }
+                    RichTokenType::Character(name, alias) => {
+                        if str.is_empty() {
+                            let name = name.to_string();
+                            let alias = alias.to_string();
+                            self.lexer.next();
+                            return Ok(Some(Line::Cmd(Command::Character(name, alias))));
+                        } else {
+                            break;
+                        }
+                    }
                     RichTokenType::Command(_, _) => {
                         if str.is_empty() {
                             let (loc, name, params) = if let Some(Ok(RichToken {
@@ -457,6 +517,7 @@ impl<'a> TextParser<'a> {
             match &tok.tok {
                 RichTokenType::Char(c) => str.push(*c),
                 RichTokenType::Text(s) => str.push_str(s),
+                RichTokenType::Character(_, _) => parse_error(tok.loc, ParseErrorType::CmdInCmd)?,
                 RichTokenType::Command(_, _) => parse_error(tok.loc, ParseErrorType::CmdInCmd)?,
             }
         }

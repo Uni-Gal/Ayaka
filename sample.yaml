@@ -22,18 +22,18 @@ paras:
       tag: a
       title: Paragraph a
       texts:
-        - \ch{c1} 123
-        - \ch{c2} 456
+        - /c1//123
+        - \ch{c2}456
         - \res{key1}
         - \exec{#key2}
         - English test
-        - \ch{c1}{???} Who
+        - /c1/???/Who
       next: b
     -
       tag: b
       title: Paragraph b
       texts:
-        - \ch{c3} 789
+        - 78/c3//9
         - |
           Choose where to go:
           \switch{To C}{$s = 1}
@@ -61,4 +61,4 @@ paras:
         -
         -
         - 中文测试
-        - \ch{c1}{不明} 谁
+        - /c1/不明/谁
