@@ -127,8 +127,8 @@ impl<'a> Context<'a> {
     }
 
     // Translate character names
-    // TODO: reduce allocation
     fn exact_text(&self, t: Text) -> Text {
+        // TODO: reduce allocation
         let mut lines = vec![];
         for line in t.0.into_iter() {
             let line = match line {
@@ -137,6 +137,7 @@ impl<'a> Context<'a> {
                         alter = self
                             .game
                             .find_res_fallback(&self.loc)
+                            // TODO: reduce allocation
                             .and_then(|map| map.get(&format!("ch_{}", key)))
                             .map(|v| v.get_str().into_owned())
                             .unwrap_or_default();

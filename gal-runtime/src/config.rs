@@ -1,5 +1,8 @@
 use gal_locale::Locale;
-use gal_script::{log::warn, RawValue};
+use gal_script::{
+    log::{trace, warn},
+    RawValue,
+};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -21,12 +24,17 @@ pub struct Game {
 
 impl Game {
     fn choose_from_keys<V>(&self, loc: &Locale, map: &HashMap<Locale, V>) -> Locale {
-        loc.choose_from(map.keys())
+        let keys = map.keys();
+        trace!("Choose \"{}\" from {:?}", loc, keys);
+        let res = loc
+            .choose_from(keys)
             .unwrap_or_else(|e| {
                 warn!("Cannot choose locale: {}", e);
                 None
             })
-            .unwrap_or_else(|| self.base_lang.clone())
+            .unwrap_or_else(|| self.base_lang.clone());
+        trace!("Chose \"{}\"", res);
+        res
     }
 
     pub fn find_para(&self, loc: &Locale, tag: &str) -> Option<&Paragraph> {
@@ -88,8 +96,9 @@ impl<'a, T> Fallback<'a, T> {
     }
 
     pub fn and_then<V>(&self, mut f: impl FnMut(&'a T) -> Option<V>) -> Option<V> {
-        self.data
-            .and_then(|t| f(t))
-            .or_else(|| self.base_data.and_then(|t| f(t)))
+        self.data.and_then(|t| f(t)).or_else(|| {
+            trace!("Fallback occurred");
+            self.base_data.and_then(|t| f(t))
+        })
     }
 }
