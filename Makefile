@@ -1,6 +1,3 @@
-PLUGIN_NAMES:=format
-PLUGIN_TARGETS:=$(PLUGIN_NAMES:%=target/wasm32-unknown-unknown/release/%.wasm)
-
 .PHONY: test clean update
 test: plugins
 	cargo test
@@ -9,15 +6,9 @@ clean:
 update:
 	cargo update
 
-.PHONY: $(PLUGIN_TARGETS)
-plugins: $(PLUGIN_TARGETS)
-
-define plugin-tpl
-target/wasm32-unknown-unknown/release/$(1).wasm:
-	cargo build --manifest-path=plugins/$(1)/Cargo.toml --target=wasm32-unknown-unknown --release
-endef
-
-$(eval $(foreach p,$(PLUGIN_NAMES),$(call plugin-tpl,$(p))))
+.PHONY: plugins
+plugins:
+	cd plugins && $(MAKE)
 
 .PHONY: sample sample-release
 sample: sample.yaml plugins
