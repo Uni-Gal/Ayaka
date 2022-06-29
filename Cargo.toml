@@ -5,6 +5,7 @@ members = [
     "gal-runtime",
     "gal-script",
     "gal",
+    "gal-web",
     "plugins/format",
 ]
 

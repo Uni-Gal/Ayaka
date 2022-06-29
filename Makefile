@@ -17,4 +17,8 @@ sample: sample.yaml plugins
 sample-release: sample.yaml plugins
 	cargo run --manifest-path=gal/Cargo.toml --release -- $< --auto
 
+.PHONY: sample-web
+sample-web: sample.yaml plugins
+	RUST_LOG=info cargo run --manifest-path=gal-web/Cargo.toml -- $< -p 3000
+
 .SECONDARY:

@@ -1,3 +1,4 @@
+use crate::anyhow::{anyhow, Result};
 use gal_locale::Locale;
 use gal_script::{
     log::{trace, warn},
@@ -5,7 +6,7 @@ use gal_script::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug, Default, Deserialize)]
 pub struct Game {
@@ -23,6 +24,16 @@ pub struct Game {
 }
 
 impl Game {
+    pub fn open(path: impl AsRef<Path>) -> Result<Self> {
+        let reader = std::fs::File::open(path.as_ref())?;
+        let mut game: Self = serde_yaml::from_reader(reader)?;
+        game.root_path = PathBuf::from(path.as_ref())
+            .parent()
+            .ok_or_else(|| anyhow!("Cannot get parent from input path."))?
+            .into();
+        Ok(game)
+    }
+
     fn choose_from_keys<V>(&self, loc: &Locale, map: &HashMap<Locale, V>) -> Locale {
         let keys = map.keys();
         trace!("Choose \"{}\" from {:?}", loc, keys);

@@ -1,0 +1,14 @@
+[package]
+name = "gal-web"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gal-runtime = { path = "../gal-runtime" }
+env_logger = "0.9"
+portpicker = "0.1"
+webbrowser = "0.7"
+clap = { version = "3.1", features = ["derive"] }
+actix-web = "4"
+actix-files = "0.6"
+serde_json = "1.0"
