@@ -15,6 +15,8 @@ use std::{
 #[clap(about, version, author)]
 pub struct Options {
     input: OsString,
+    #[clap(long)]
+    dist: OsString,
     #[clap(short, long)]
     port: Option<u16>,
 }
@@ -45,7 +47,11 @@ async fn main() -> Result<()> {
     HttpServer::new(move || {
         App::new()
             .service(web::scope("/api").app_data(ctx_data.clone()).service(hello))
-            .service(actix_files::Files::new("/", ".").prefer_utf8(true))
+            .service(
+                actix_files::Files::new("/", &opts.dist)
+                    .index_file("index.html")
+                    .prefer_utf8(true),
+            )
     })
     .bind(("127.0.0.1", port))?
     .run()
