@@ -13,6 +13,15 @@ pub unsafe fn uloc_getDefault() -> *const ::std::os::raw::c_char {
     versioned_function!(rust_icu_sys::uloc_getDefault)()
 }
 
+pub fn uloc_canonicalize(
+    localeID: *const ::std::os::raw::c_char,
+    name: *mut ::std::os::raw::c_char,
+    nameCapacity: i32,
+    err: *mut UErrorCode,
+) -> i32 {
+    versioned_function!(rust_icu_sys::uloc_canonicalize)(localeID, name, nameCapacity, err)
+}
+
 pub unsafe fn uloc_acceptLanguage(
     result: *mut ::std::os::raw::c_char,
     resultAvailable: i32,
