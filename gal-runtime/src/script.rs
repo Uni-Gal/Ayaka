@@ -5,22 +5,15 @@ pub struct VarTable<'a> {
     pub game: &'a Game,
     pub loc: &'a Locale,
     pub locals: &'a mut VarMap,
-    pub runtime: &'a Runtime,
     pub vars: VarMap,
 }
 
 impl<'a> VarTable<'a> {
-    pub fn new(
-        game: &'a Game,
-        loc: &'a Locale,
-        locals: &'a mut VarMap,
-        runtime: &'a Runtime,
-    ) -> Self {
+    pub fn new(game: &'a Game, loc: &'a Locale, locals: &'a mut VarMap) -> Self {
         Self {
             game,
             loc,
             locals,
-            runtime,
             vars: VarMap::default(),
         }
     }
@@ -206,9 +199,13 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
         }
     } else {
         let args = args.iter().map(|e| e.call(ctx)).collect::<Vec<_>>();
-        if let Some(runtime) = ctx.runtime.modules.get(ns) {
+        if let Some(runtime) = ctx.game.runtime().modules.get(ns) {
             use std::ops::DerefMut;
-            match runtime.dispatch(ctx.runtime.store.lock().unwrap().deref_mut(), name, &args) {
+            match runtime.dispatch(
+                ctx.game.runtime().store.lock().unwrap().deref_mut(),
+                name,
+                &args,
+            ) {
                 Ok(res) => res,
                 Err(e) => {
                     error!("Calling `{}.{}` error: {}", ns, name, e);
@@ -269,18 +266,16 @@ mod test {
     use std::sync::Mutex;
 
     lazy_static::lazy_static! {
-        static ref RUNTIME: Mutex<Runtime> = Mutex::new(Runtime::load(
-            "../target/wasm32-unknown-unknown/release/",
-            env!("CARGO_MANIFEST_DIR"),
+        static ref GAME: Mutex<Game> = Mutex::new(Game::open(
+           concat!(env!("CARGO_MANIFEST_DIR"), "../sample.yaml"),
         ).unwrap());
     }
 
     fn with_ctx(f: impl FnOnce(&mut VarTable)) {
-        let game = Game::default();
+        let game = GAME.lock().unwrap();
         let loc = "zh_CN".parse().unwrap();
         let mut locals = VarMap::default();
-        let mut runtime = RUNTIME.lock().unwrap();
-        let mut ctx = VarTable::new(&game, &loc, &mut locals, &mut runtime);
+        let mut ctx = VarTable::new(&game, &loc, &mut locals);
         f(&mut ctx);
     }
 

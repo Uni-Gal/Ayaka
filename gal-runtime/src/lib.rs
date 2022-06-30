@@ -11,7 +11,6 @@ pub use wit_bindgen_wasmtime::anyhow;
 
 use gal_script::{Loc, ParseError, TextParser};
 use log::{error, warn};
-use plugin::*;
 use script::*;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use unicode_width::UnicodeWidthStr;
@@ -20,7 +19,6 @@ pub type LocaleMap = HashMap<String, Locale>;
 
 pub struct Context {
     pub game: Arc<Game>,
-    runtime: Arc<Runtime>,
     pub ctx: RawContext,
     loc: Locale,
 }
@@ -29,8 +27,8 @@ impl Context {
     fn default_ctx(game: &Game) -> RawContext {
         let mut ctx = RawContext::default();
         ctx.cur_para = game
-            .paras
-            .get(&game.base_lang)
+            .paras()
+            .get(&game.base_lang())
             .and_then(|paras| paras.first().map(|p| p.tag.clone()))
             .unwrap_or_else(|| {
                 warn!("There is no paragraph in the game.");
@@ -39,26 +37,21 @@ impl Context {
         ctx
     }
 
-    pub fn new(game: Arc<Game>, runtime: Arc<Runtime>) -> anyhow::Result<Self> {
+    pub fn new(game: Arc<Game>) -> anyhow::Result<Self> {
         let ctx = Self::default_ctx(&game);
-        Self::with_context(game, runtime, ctx)
+        Self::with_context(game, ctx)
     }
 
-    pub fn with_context(
-        game: Arc<Game>,
-        runtime: Arc<Runtime>,
-        ctx: RawContext,
-    ) -> anyhow::Result<Self> {
+    pub fn with_context(game: Arc<Game>, ctx: RawContext) -> anyhow::Result<Self> {
         Ok(Self {
             game,
-            runtime,
             ctx,
             loc: Locale::current(),
         })
     }
 
     fn table(&mut self) -> VarTable {
-        VarTable::new(&self.game, &self.loc, &mut self.ctx.locals, &self.runtime)
+        VarTable::new(&self.game, &self.loc, &mut self.ctx.locals)
     }
 
     fn current_paragraph(&self) -> Fallback<Paragraph> {
@@ -186,7 +179,7 @@ impl Context {
 
     pub fn check(&mut self) -> bool {
         let mut succeed = true;
-        for (_, paras) in &self.game.paras {
+        for (_, paras) in self.game.paras() {
             for para in paras {
                 self.ctx.cur_para = para.tag.clone();
                 for (index, act) in para.texts.iter().enumerate() {

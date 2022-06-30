@@ -11,11 +11,10 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
-    sync::Arc,
 };
 
 #[derive(Debug, Default, Deserialize)]
-pub struct Game {
+struct GameData {
     pub title: String,
     #[serde(default)]
     pub author: String,
@@ -27,16 +26,21 @@ pub struct Game {
     pub base_lang: Locale,
 }
 
+pub struct Game {
+    data: GameData,
+    runtime: Runtime,
+}
+
 impl Game {
-    pub fn open(path: impl AsRef<Path>) -> Result<(Arc<Self>, Arc<Runtime>)> {
+    pub fn open(path: impl AsRef<Path>) -> Result<Self> {
         let reader = std::fs::File::open(path.as_ref())?;
-        let game: Self = serde_yaml::from_reader(reader)?;
+        let data: GameData = serde_yaml::from_reader(reader)?;
         let root_path = path
             .as_ref()
             .parent()
             .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
-        let runtime = Runtime::load(&game.plugins, root_path)?;
-        Ok((Arc::new(game), Arc::new(runtime)))
+        let runtime = Runtime::load(&data.plugins, root_path)?;
+        Ok(Self { data, runtime })
     }
 
     fn choose_from_keys<V>(&self, loc: &Locale, map: &HashMap<Locale, V>) -> Locale {
@@ -48,13 +52,37 @@ impl Game {
                 warn!("Cannot choose locale: {}", e);
                 None
             })
-            .unwrap_or_else(|| self.base_lang.clone());
+            .unwrap_or_else(|| self.data.base_lang.clone());
         trace!("Chose \"{}\"", res);
         res
     }
 
+    pub fn runtime(&self) -> &Runtime {
+        &self.runtime
+    }
+
+    pub fn title(&self) -> &str {
+        &self.data.title
+    }
+
+    pub fn author(&self) -> &str {
+        &self.data.author
+    }
+
+    pub fn paras(&self) -> &std::collections::HashMap<gal_locale::Locale, Vec<Paragraph>> {
+        &self.data.paras
+    }
+
+    pub fn base_lang(&self) -> &Locale {
+        &self.data.base_lang
+    }
+
     pub fn find_para(&self, loc: &Locale, tag: &str) -> Option<&Paragraph> {
-        if let Some(paras) = self.paras.get(&self.choose_from_keys(loc, &self.paras)) {
+        if let Some(paras) = self
+            .data
+            .paras
+            .get(&self.choose_from_keys(loc, &self.data.paras))
+        {
             for p in paras {
                 if p.tag == tag {
                     return Some(p);
@@ -67,16 +95,18 @@ impl Game {
     pub fn find_para_fallback(&self, loc: &Locale, tag: &str) -> Fallback<Paragraph> {
         Fallback::new(
             self.find_para(loc, tag),
-            self.find_para(&self.base_lang, tag),
+            self.find_para(&self.data.base_lang, tag),
         )
     }
 
     pub fn find_res(&self, loc: &Locale) -> Option<&HashMap<String, RawValue>> {
-        self.res.get(&self.choose_from_keys(loc, &self.res))
+        self.data
+            .res
+            .get(&self.choose_from_keys(loc, &self.data.res))
     }
 
     pub fn find_res_fallback(&self, loc: &Locale) -> Fallback<HashMap<String, RawValue>> {
-        Fallback::new(self.find_res(loc), self.find_res(&self.base_lang))
+        Fallback::new(self.find_res(loc), self.find_res(&self.data.base_lang))
     }
 }
 
