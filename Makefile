@@ -10,12 +10,16 @@ update:
 plugins:
 	cd plugins && $(MAKE)
 
-.PHONY: sample sample-release
+.PHONY: sample sample-gui
 sample: sample.yaml plugins
 	RUST_LOG=info cargo run --manifest-path=gal/Cargo.toml -- $< --auto
-
-.PHONY: sample-web sample-web-release
-sample-web: sample.yaml plugins
+sample-gui: sample.yaml plugins
 	cd gal-gui && $(MAKE) run FILE=$(realpath $<)
+
+.PHONY: release release-gui
+release:
+	cargo build --manifest-path=gal/Cargo.toml --release
+release-gui:
+	cd gal-gui && $(MAKE) release
 
 .SECONDARY:
