@@ -10,11 +10,10 @@ export default {
       author: ""
     }
   },
-  created() {
-    axios.get<{ title: string, author: string }>("/api/info").then(res => {
-      this.title = res.data.title
-      this.author = res.data.author
-    })
+  async created() {
+    let res = await axios.get<{ title: string, author: string }>("/api/info")
+    this.title = res.data.title
+    this.author = res.data.author
   }
 }
 </script>

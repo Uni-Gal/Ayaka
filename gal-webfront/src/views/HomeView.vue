@@ -9,10 +9,9 @@ export default {
       title: ""
     }
   },
-  created() {
-    axios.get<{ title: string }>("/api/info").then(res => {
-      this.title = res.data.title
-    })
+  async created() {
+    let res = await axios.get<{ title: string }>("/api/info")
+    this.title = res.data.title
   }
 }
 </script>
@@ -20,7 +19,7 @@ export default {
 <template>
   <div class="container">
     <h1 class="gal-home-title">{{ title }}</h1>
-    <div class="d-grid gap-2 col-6 mx-auto">
+    <div class="d-grid gap-2 col-4 mx-auto">
       <router-link class="btn btn-primary" to="/about">About</router-link>
     </div>
   </div>
