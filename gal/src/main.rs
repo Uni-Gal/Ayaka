@@ -6,7 +6,6 @@ use gal_runtime::{
 use std::{
     ffi::OsString,
     io::{stdin, stdout, Write},
-    sync::Arc,
 };
 
 #[derive(Debug, Parser)]
@@ -38,8 +37,8 @@ fn pause(auto: bool) -> Result<()> {
 fn main() -> Result<()> {
     let opts = Options::parse();
     env_logger::try_init()?;
-    let game = Arc::new(Game::open(&opts.input)?);
-    let mut ctx = Context::new(game)?;
+    let (game, runtime) = Game::open(&opts.input)?;
+    let mut ctx = Context::new(game, runtime)?;
     if opts.check {
         if !ctx.check() {
             bail!("Check failed.");

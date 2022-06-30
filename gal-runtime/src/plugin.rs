@@ -1,4 +1,5 @@
 use crate::*;
+use std::sync::Mutex;
 use wit_bindgen_wasmtime::{
     anyhow,
     rt::{copy_slice, invalid_variant, RawMem},
@@ -170,31 +171,41 @@ impl Host {
     }
 }
 
-pub fn load_plugins(dir: impl AsRef<Path>, rel_to: impl AsRef<Path>) -> anyhow::Result<Runtime> {
-    let mut store = Store::<()>::default();
-    let mut linker = Linker::new(store.engine());
-    let mut path = rel_to.as_ref().to_path_buf();
-    path.push(dir);
-    let mut modules = HashMap::new();
-    for f in std::fs::read_dir(path)? {
-        let p = f?.path();
-        if p.extension()
-            .map(|s| s.to_string_lossy())
-            .unwrap_or_default()
-            == "wasm"
-        {
-            let buf = std::fs::read(&p)?;
-            let module = Module::new(store.engine(), buf)?;
-            let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
-            modules.insert(
-                p.with_extension("")
-                    .file_name()
-                    .map(|s| s.to_string_lossy())
-                    .unwrap_or_default()
-                    .into_owned(),
-                runtime,
-            );
+pub struct Runtime {
+    pub store: Mutex<Store<()>>,
+    pub modules: HashMap<String, Host>,
+}
+
+impl Runtime {
+    pub fn load(dir: impl AsRef<Path>, rel_to: impl AsRef<Path>) -> anyhow::Result<Self> {
+        let mut store = Store::<()>::default();
+        let mut linker = Linker::new(store.engine());
+        let mut path = rel_to.as_ref().to_path_buf();
+        path.push(dir);
+        let mut modules = HashMap::new();
+        for f in std::fs::read_dir(path)? {
+            let p = f?.path();
+            if p.extension()
+                .map(|s| s.to_string_lossy())
+                .unwrap_or_default()
+                == "wasm"
+            {
+                let buf = std::fs::read(&p)?;
+                let module = Module::new(store.engine(), buf)?;
+                let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
+                modules.insert(
+                    p.with_extension("")
+                        .file_name()
+                        .map(|s| s.to_string_lossy())
+                        .unwrap_or_default()
+                        .into_owned(),
+                    runtime,
+                );
+            }
         }
+        Ok(Self {
+            store: Mutex::new(store),
+            modules,
+        })
     }
-    Ok(Runtime { store, modules })
 }

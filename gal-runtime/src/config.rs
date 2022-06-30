@@ -1,17 +1,21 @@
-use crate::anyhow::{anyhow, Result};
+use crate::{
+    anyhow::{anyhow, Result},
+    plugin::Runtime,
+};
 use gal_locale::Locale;
 use gal_script::{
     log::{trace, warn},
     RawValue,
 };
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::path::{Path, PathBuf};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 #[derive(Debug, Default, Deserialize)]
 pub struct Game {
-    #[serde(skip)]
-    pub root_path: PathBuf,
     pub title: String,
     #[serde(default)]
     pub author: String,
@@ -24,14 +28,15 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn open(path: impl AsRef<Path>) -> Result<Self> {
+    pub fn open(path: impl AsRef<Path>) -> Result<(Arc<Self>, Arc<Runtime>)> {
         let reader = std::fs::File::open(path.as_ref())?;
-        let mut game: Self = serde_yaml::from_reader(reader)?;
-        game.root_path = PathBuf::from(path.as_ref())
+        let game: Self = serde_yaml::from_reader(reader)?;
+        let root_path = path
+            .as_ref()
             .parent()
-            .ok_or_else(|| anyhow!("Cannot get parent from input path."))?
-            .into();
-        Ok(game)
+            .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
+        let runtime = Runtime::load(&game.plugins, root_path)?;
+        Ok((Arc::new(game), Arc::new(runtime)))
     }
 
     fn choose_from_keys<V>(&self, loc: &Locale, map: &HashMap<Locale, V>) -> Locale {

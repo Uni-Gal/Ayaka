@@ -6,11 +6,7 @@ use gal_runtime::{
     Context, Game,
 };
 use serde_json::json;
-use std::{
-    ffi::OsString,
-    path::PathBuf,
-    sync::{Arc, Mutex},
-};
+use std::{ffi::OsString, path::PathBuf, sync::Mutex};
 
 #[derive(Debug, Parser)]
 #[clap(about, version, author)]
@@ -36,8 +32,8 @@ async fn hello(data: web::Data<Mutex<Context>>) -> impl Responder {
 async fn main() -> Result<()> {
     let opts = Options::parse();
     env_logger::try_init()?;
-    let game = Arc::new(Game::open(&opts.input)?);
-    let ctx_data = web::Data::new(Mutex::new(Context::new(game)?));
+    let (game, runtime) = Game::open(&opts.input)?;
+    let ctx_data = web::Data::new(Mutex::new(Context::new(game, runtime)?));
     let port = opts
         .port
         .or_else(|| portpicker::pick_unused_port())

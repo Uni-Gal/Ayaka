@@ -15,20 +15,14 @@ use plugin::*;
 use script::*;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use unicode_width::UnicodeWidthStr;
-use wit_bindgen_wasmtime::wasmtime::Store;
-
-pub struct Runtime {
-    store: Store<()>,
-    modules: HashMap<String, Host>,
-}
 
 pub type LocaleMap = HashMap<String, Locale>;
 
 pub struct Context {
     pub game: Arc<Game>,
+    runtime: Arc<Runtime>,
     pub ctx: RawContext,
     loc: Locale,
-    runtime: Runtime,
 }
 
 impl Context {
@@ -45,28 +39,26 @@ impl Context {
         ctx
     }
 
-    pub fn new(game: Arc<Game>) -> anyhow::Result<Self> {
+    pub fn new(game: Arc<Game>, runtime: Arc<Runtime>) -> anyhow::Result<Self> {
         let ctx = Self::default_ctx(&game);
-        Self::with_context(game, ctx)
+        Self::with_context(game, runtime, ctx)
     }
 
-    pub fn with_context(game: Arc<Game>, ctx: RawContext) -> anyhow::Result<Self> {
-        let runtime = load_plugins(&game.plugins, &game.root_path)?;
+    pub fn with_context(
+        game: Arc<Game>,
+        runtime: Arc<Runtime>,
+        ctx: RawContext,
+    ) -> anyhow::Result<Self> {
         Ok(Self {
             game,
+            runtime,
             ctx,
             loc: Locale::current(),
-            runtime,
         })
     }
 
     fn table(&mut self) -> VarTable {
-        VarTable::new(
-            &self.game,
-            &self.loc,
-            &mut self.ctx.locals,
-            &mut self.runtime,
-        )
+        VarTable::new(&self.game, &self.loc, &mut self.ctx.locals, &self.runtime)
     }
 
     fn current_paragraph(&self) -> Fallback<Paragraph> {

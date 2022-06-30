@@ -5,7 +5,7 @@ pub struct VarTable<'a> {
     pub game: &'a Game,
     pub loc: &'a Locale,
     pub locals: &'a mut VarMap,
-    pub runtime: &'a mut Runtime,
+    pub runtime: &'a Runtime,
     pub vars: VarMap,
 }
 
@@ -14,7 +14,7 @@ impl<'a> VarTable<'a> {
         game: &'a Game,
         loc: &'a Locale,
         locals: &'a mut VarMap,
-        runtime: &'a mut Runtime,
+        runtime: &'a Runtime,
     ) -> Self {
         Self {
             game,
@@ -207,7 +207,8 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
     } else {
         let args = args.iter().map(|e| e.call(ctx)).collect::<Vec<_>>();
         if let Some(runtime) = ctx.runtime.modules.get(ns) {
-            match runtime.dispatch(&mut ctx.runtime.store, name, &args) {
+            use std::ops::DerefMut;
+            match runtime.dispatch(ctx.runtime.store.lock().unwrap().deref_mut(), name, &args) {
                 Ok(res) => res,
                 Err(e) => {
                     error!("Calling `{}.{}` error: {}", ns, name, e);
@@ -268,7 +269,7 @@ mod test {
     use std::sync::Mutex;
 
     lazy_static::lazy_static! {
-        static ref RUNTIME: Mutex<Runtime> = Mutex::new(load_plugins(
+        static ref RUNTIME: Mutex<Runtime> = Mutex::new(Runtime::load(
             "../target/wasm32-unknown-unknown/release/",
             env!("CARGO_MANIFEST_DIR"),
         ).unwrap());
