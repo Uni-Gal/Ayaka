@@ -8,6 +8,7 @@ use gal_runtime::{
 use serde_json::json;
 use std::{
     ffi::OsString,
+    path::PathBuf,
     sync::{Arc, Mutex},
 };
 
@@ -45,12 +46,15 @@ async fn main() -> Result<()> {
     info!("Listening {}", url);
     webbrowser::open(&url)?;
     HttpServer::new(move || {
+        let dist = PathBuf::from(&opts.dist);
+        let index = dist.join("index.html");
         App::new()
             .service(web::scope("/api").app_data(ctx_data.clone()).service(hello))
             .service(
-                actix_files::Files::new("/", &opts.dist)
-                    .index_file("index.html")
-                    .prefer_utf8(true),
+                actix_web_lab::web::spa()
+                    .static_resources_location(dist.to_string_lossy().into_owned())
+                    .index_file(index.to_string_lossy().into_owned())
+                    .finish(),
             )
     })
     .bind(("127.0.0.1", port))?
