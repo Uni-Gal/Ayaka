@@ -36,9 +36,9 @@ export default {
     <div class="content">
         <div class="d-grid gap-4 col-4 mx-auto">
             <h1>{{ title }}</h1>
-            <router-link class="btn btn-primary" v-on:click="new_game()" to="/game">New game</router-link>
+            <router-link class="btn btn-primary" v-on:click="new_game" to="/game">New game</router-link>
             <router-link class="btn btn-primary" to="/about">About</router-link>
-            <button class="btn btn-primary" v-on:click="quit()">Quit</button>
+            <button class="btn btn-primary" v-on:click="quit">Quit</button>
         </div>
     </div>
 </template>

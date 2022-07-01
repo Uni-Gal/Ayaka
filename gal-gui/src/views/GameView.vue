@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/tauri'
 import { setTimeout } from 'timers-promises'
+import { Mutex } from 'async-mutex'
 </script>
 
 <script lang="ts">
@@ -9,21 +10,23 @@ function action_default(): Action {
 }
 
 export default {
-    data(): { action: Action, action_data: Action } {
+    data() {
         return {
             action: action_default(),
             action_data: action_default(),
+            click_mutex: new Mutex(),
         }
     },
     async created() {
+        document.addEventListener('keydown', this.onkeydown)
         await this.next_run()
+        await this.type_text()
     },
     methods: {
         async next_run() {
             let res = await invoke<Action | null>("next_run")
             if (res != null) {
                 this.action_data = res
-                await this.type_text()
             } else {
                 location.href = "/"
             }
@@ -31,6 +34,7 @@ export default {
         async switch_run(i: number) {
             await invoke<void>("switch", { i: i })
             await this.next_run()
+            await this.type_text()
         },
         async type_text() {
             this.action.line = ""
@@ -42,14 +46,29 @@ export default {
             }
         },
         async onclick() {
-            if (this.action.line.length < this.action_data.line.length) {
-                this.action.line = this.action_data.line
-            } else if (this.action.switches.length < this.action_data.switches.length) {
-                this.action.switches = this.action_data.switches
-            } else {
-                await this.next_run()
+            const new_text = await this.click_mutex.runExclusive(async () => {
+                if (this.action.line.length < this.action_data.line.length) {
+                    this.action.line = this.action_data.line
+                    return false
+                } else if (this.action.switches.length < this.action_data.switches.length) {
+                    this.action.switches = this.action_data.switches
+                    return false
+                } else {
+                    await this.next_run()
+                    return true
+                }
+            })
+            if (new_text) {
+                await this.type_text()
             }
-        }
+        },
+        async onkeydown(e: KeyboardEvent) {
+            if (e.key == "Enter") {
+                if (this.action.switches.length == 0) {
+                    await this.onclick()
+                }
+            }
+        },
     }
 }
 
@@ -66,7 +85,7 @@ interface Switch {
 </script>
 
 <template>
-    <div v-on:click="onclick()">
+    <div v-on:click="onclick">
         <div class="card bottom">
             <div class="card-header char">
                 <h4 class="card-title">{{ action.character }}</h4>
