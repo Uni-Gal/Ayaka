@@ -61,6 +61,15 @@
         "title": "GalGUI",
         "width": 800
       }
-    ]
+    ],
+    "cli": {
+      "args": [
+        {
+          "name": "config",
+          "index": 1,
+          "takesValue": true
+        }
+      ]
+    }
   }
 }

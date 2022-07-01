@@ -3,7 +3,6 @@
     windows_subsystem = "windows"
 )]
 
-use clap::Parser;
 use gal_runtime::{
     anyhow::{self, anyhow, Result},
     log::{self, info},
@@ -11,8 +10,8 @@ use gal_runtime::{
 };
 use serde::Serialize;
 use serde_json::json;
-use std::{ffi::OsString, fmt::Display, sync::Arc};
-use tauri::{async_runtime::Mutex, command, State};
+use std::{fmt::Display, sync::Arc};
+use tauri::{async_runtime::Mutex, command, Manager, State};
 
 type CommandResult<T> = std::result::Result<T, CommandError>;
 
@@ -65,24 +64,24 @@ async fn start_new(storage: State<'_, Storage>) -> CommandResult<()> {
     Ok(())
 }
 
-#[derive(Debug, Parser)]
-#[clap(about, version, author)]
-pub struct Options {
-    input: OsString,
-}
-
 fn main() -> Result<()> {
-    let opts = Options::parse();
     simple_logger::SimpleLogger::new()
         .with_level(log::LevelFilter::Info)
         .init()?;
-    let game = Arc::new(Game::open(&opts.input)?);
     let port =
         portpicker::pick_unused_port().ok_or_else(|| anyhow!("failed to find unused port"))?;
     info!("Picked port {}", port);
     tauri::Builder::default()
         .plugin(tauri_plugin_localhost::Builder::new(port).build())
-        .manage(Storage::new(game))
+        .setup(|app| {
+            let matches = app.get_cli_matches()?;
+            let config = matches.args["config"].value.as_str().unwrap_or("");
+            info!("Loading config...");
+            let game = Arc::new(Game::open(config)?);
+            info!("Loaded config \"{}\"", config.escape_default());
+            app.manage(Storage::new(game));
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![info, start_new])
         .run(tauri::generate_context!())?;
     Ok(())
