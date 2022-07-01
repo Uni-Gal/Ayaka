@@ -12,14 +12,20 @@
   },
   "tauri": {
     "allowlist": {
-      "all": true
+      "all": false,
+      "window": {
+        "all": false,
+        "close": true
+      }
     },
     "bundle": {
       "active": true,
-      "category": "DeveloperTool",
+      "category": "RolePlayingGame",
       "copyright": "",
       "deb": {
-        "depends": []
+        "depends": [
+          "libicu-dev"
+        ]
       },
       "externalBin": [],
       "icon": [
@@ -40,7 +46,11 @@
       },
       "resources": [],
       "shortDescription": "",
-      "targets": "all",
+      "targets": [
+        "deb",
+        "msi",
+        "app"
+      ],
       "windows": {
         "certificateThumbprint": null,
         "digestAlgorithm": "sha256",
