@@ -3,8 +3,10 @@ test: plugins
 	cargo test
 clean:
 	cargo clean
+	cd gal-gui && $(MAKE) clean
 update:
 	cargo update
+	cd gal-gui && $(MAKE) node_modules
 
 .PHONY: plugins
 plugins:

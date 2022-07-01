@@ -15,14 +15,14 @@
     "vue-router": "^4.0.16"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^1.0.1",
-    "@types/node": "^16.11.41",
+    "@tauri-apps/cli": "^1.0.2",
+    "@types/node": "^18.0.0",
     "@vitejs/plugin-vue": "^2.3.3",
     "@vue/tsconfig": "^0.1.3",
     "process": "^0.11.10",
     "typescript": "~4.7.4",
     "url": "^0.11.0",
-    "vite": "^2.9.12",
-    "vue-tsc": "^0.38.1"
+    "vite": "^2.9.13",
+    "vue-tsc": "^0.38.2"
   }
 }
