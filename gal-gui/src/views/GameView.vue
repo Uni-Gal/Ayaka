@@ -63,9 +63,11 @@ export default {
             }
         },
         async onkeydown(e: KeyboardEvent) {
-            if (e.key == "Enter") {
-                if (this.action.switches.length == 0) {
-                    await this.onclick()
+            if (!this.click_mutex.isLocked()) {
+                if (e.key == "Enter" || e.key == " " || e.key == "ArrowDown") {
+                    if (this.action.switches.length == 0) {
+                        await this.onclick()
+                    }
                 }
             }
         },
