@@ -22,15 +22,11 @@ export default {
 </script>
 
 <template>
-    <h1 class="gal-home-title">{{ title }}</h1>
-    <div class="d-grid gap-2 col-4 mx-auto">
-        <router-link class="btn btn-primary" @click="new_game()" to="/game">New game</router-link>
-        <router-link class="btn btn-primary" to="/about">About</router-link>
+    <div class="content">
+        <div class="d-grid gap-4 col-4 mx-auto">
+            <h1>{{ title }}</h1>
+            <router-link class="btn btn-primary" v-on:click="new_game()" to="/game">New game</router-link>
+            <router-link class="btn btn-primary" to="/about">About</router-link>
+        </div>
     </div>
 </template>
-
-<style>
-.gal-home-title {
-    text-align: center;
-}
-</style>

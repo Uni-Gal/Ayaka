@@ -19,6 +19,10 @@ export default {
 </script>
 
 <template>
-    <h1>About {{ title }}</h1>
-    <p>Author: {{ author }}</p>
+    <div class="content">
+        <h2>About {{ title }}</h2>
+        <p>Author: {{ author }}</p>
+        <h2>About gal-gui</h2>
+        <p>This is a sample GUI frontend of gal project.</p>
+    </div>
 </template>
