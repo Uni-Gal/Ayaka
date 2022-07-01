@@ -17,7 +17,13 @@ export default {
             let res = await invoke<Action | null>("next_run")
             if (res != null) {
                 this.action = res
+            } else {
+                location.href = "/"
             }
+        },
+        async switch_run(i: number) {
+            await invoke<void>("switch", { i: i })
+            await this.next_run()
         }
     }
 }
@@ -45,21 +51,54 @@ interface Switch {
             </div>
         </div>
     </div>
+    <div class="container-switches" v-bind:hidden="action.switches.length == 0">
+        <div class="switches">
+            <div class="switches-center">
+                <div class="d-grid gap-4 col-8 mx-auto">
+                    <button class="btn btn-primary" v-for="s in action.switches"
+                        v-on:click="switch_run(action.switches.indexOf(s))" v-bind:disabled="!s.enabled">
+                        {{ s.text }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <style>
-div.bottom {
+.bottom {
     position: absolute;
     bottom: 0;
     width: 100%;
-    opacity: 0.8;
 }
 
-div.char {
+.char {
     height: 3em;
 }
 
-div.lines {
+.lines {
     height: 8em;
+}
+
+.container-switches {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 100%;
+    background-color: #00000077;
+}
+
+.switches {
+    position: absolute;
+    width: 100%;
+    height: calc(100% - 11em);
+}
+
+.switches-center {
+    position: absolute;
+    width: 100%;
+    top: 50%;
+    transform: translateY(-50%);
 }
 </style>

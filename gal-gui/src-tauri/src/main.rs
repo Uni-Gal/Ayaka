@@ -131,6 +131,7 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<Option<Action>> 
 
 #[command]
 async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue> {
+    info!("Switch {}", i);
     let mut context = storage.context.lock().await;
     let context = context
         .as_mut()
