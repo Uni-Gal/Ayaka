@@ -40,7 +40,15 @@ export default {
                 this.action.line += this.action_data.line[this.action.line.length]
                 await setTimeout(10)
             }
-            this.action.switches = this.action_data.switches
+        },
+        async onclick() {
+            if (this.action.line.length < this.action_data.line.length) {
+                this.action.line = this.action_data.line
+            } else if (this.action.switches.length < this.action_data.switches.length) {
+                this.action.switches = this.action_data.switches
+            } else {
+                await this.next_run()
+            }
         }
     }
 }
@@ -58,7 +66,7 @@ interface Switch {
 </script>
 
 <template>
-    <div v-on:click="next_run()">
+    <div v-on:click="onclick()">
         <div class="card bottom">
             <div class="card-header char">
                 <h4 class="card-title">{{ action.character }}</h4>
