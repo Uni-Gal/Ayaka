@@ -5,20 +5,14 @@
 
 use clap::Parser;
 use gal_runtime::{
-    anyhow::{anyhow, Result},
-    log::info,
-    Game,
+    anyhow::{self, anyhow, Result},
+    log::{self, info},
+    Context, Game,
 };
 use serde::Serialize;
 use serde_json::json;
-use std::{error::Error, ffi::OsString, fmt::Display, sync::Arc};
-use tauri::{command, State};
-
-#[derive(Debug, Parser)]
-#[clap(about, version, author)]
-pub struct Options {
-    input: OsString,
-}
+use std::{ffi::OsString, fmt::Display, sync::Arc};
+use tauri::{async_runtime::Mutex, command, State};
 
 type CommandResult<T> = std::result::Result<T, CommandError>;
 
@@ -27,15 +21,11 @@ struct CommandError {
     msg: String,
 }
 
-impl From<gal_runtime::anyhow::Error> for CommandError {
-    fn from(e: gal_runtime::anyhow::Error) -> Self {
-        Self { msg: e.to_string() }
-    }
-}
-
-impl<T: Into<CommandError>> From<&T> for CommandError {
-    fn from(e: &T) -> Self {
-        e.into()
+impl<E: Into<anyhow::Error>> From<E> for CommandError {
+    fn from(e: E) -> Self {
+        Self {
+            msg: e.into().to_string(),
+        }
     }
 }
 
@@ -45,34 +35,55 @@ impl Display for CommandError {
     }
 }
 
-impl Error for CommandError {}
-
 struct Storage {
     game: Arc<Game>,
+    context: Mutex<Option<Context>>,
+}
+
+impl Storage {
+    pub fn new(game: Arc<Game>) -> Self {
+        Self {
+            game,
+            context: Mutex::default(),
+        }
+    }
 }
 
 #[command]
-fn info(storage: State<Storage>) -> CommandResult<serde_json::Value> {
+fn info(storage: State<Storage>) -> serde_json::Value {
     let game = &storage.game;
-    Ok(json!({
+    json!({
         "title": game.title(),
         "author": game.author(),
-    }))
+    })
+}
+
+#[command]
+async fn start_new(storage: State<'_, Storage>) -> CommandResult<()> {
+    *(storage.context.lock().await) = Some(Context::new(storage.game.clone())?);
+    info!("Created new context.");
+    Ok(())
+}
+
+#[derive(Debug, Parser)]
+#[clap(about, version, author)]
+pub struct Options {
+    input: OsString,
 }
 
 fn main() -> Result<()> {
     let opts = Options::parse();
     simple_logger::SimpleLogger::new()
-        .with_level(gal_runtime::log::LevelFilter::Info)
+        .with_level(log::LevelFilter::Info)
         .init()?;
     let game = Arc::new(Game::open(&opts.input)?);
     let port =
         portpicker::pick_unused_port().ok_or_else(|| anyhow!("failed to find unused port"))?;
-    info!("Picker port {}", port);
+    info!("Picked port {}", port);
     tauri::Builder::default()
         .plugin(tauri_plugin_localhost::Builder::new(port).build())
-        .manage(Storage { game })
-        .invoke_handler(tauri::generate_handler![info])
+        .manage(Storage::new(game))
+        .invoke_handler(tauri::generate_handler![info, start_new])
         .run(tauri::generate_context!())?;
     Ok(())
 }

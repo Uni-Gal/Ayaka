@@ -4,27 +4,28 @@ import { invoke } from '@tauri-apps/api/tauri'
 
 <script lang="ts">
 export default {
-  data() {
-    return {
-      title: ""
+    data() {
+        return {
+            title: ""
+        }
+    },
+    async created() {
+        const res = await invoke<{ title: string }>("info")
+        this.title = res.title
     }
-  },
-  async created() {
-    const res = await invoke<{ title: string }>("info")
-    this.title = res.title
-  }
 }
 </script>
 
 <template>
-  <h1 class="gal-home-title">{{ title }}</h1>
-  <div class="d-grid gap-2 col-4 mx-auto">
-    <router-link class="btn btn-primary" to="/about">About</router-link>
-  </div>
+    <h1 class="gal-home-title">{{ title }}</h1>
+    <div class="d-grid gap-2 col-4 mx-auto">
+        <router-link class="btn btn-primary" to="/game?new=true">New game</router-link>
+        <router-link class="btn btn-primary" to="/about">About</router-link>
+    </div>
 </template>
 
 <style>
 .gal-home-title {
-  text-align: center;
+    text-align: center;
 }
 </style>
