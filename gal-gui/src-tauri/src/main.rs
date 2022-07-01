@@ -6,8 +6,9 @@
 use gal_runtime::{
     anyhow::{self, anyhow, Result},
     log::{self, info},
-    Context, Game,
+    Command, Context, Game, Line, RawValue,
 };
+use gal_script::Program;
 use serde::Serialize;
 use serde_json::json;
 use std::{fmt::Display, sync::Arc};
@@ -37,6 +38,7 @@ impl Display for CommandError {
 struct Storage {
     game: Arc<Game>,
     context: Mutex<Option<Context>>,
+    switch_actions: Mutex<Vec<Program>>,
 }
 
 impl Storage {
@@ -44,6 +46,7 @@ impl Storage {
         Self {
             game,
             context: Mutex::default(),
+            switch_actions: Mutex::default(),
         }
     }
 }
@@ -64,6 +67,81 @@ async fn start_new(storage: State<'_, Storage>) -> CommandResult<()> {
     Ok(())
 }
 
+#[derive(Debug, Serialize)]
+struct Action {
+    pub line: String,
+    pub character: Option<String>,
+    pub switches: Vec<DisplaySwitch>,
+}
+
+#[derive(Debug, Serialize)]
+struct DisplaySwitch {
+    pub text: String,
+    pub enabled: bool,
+}
+
+#[command]
+async fn next_run(storage: State<'_, Storage>) -> CommandResult<Option<Action>> {
+    let mut context = storage.context.lock().await;
+    let action = context
+        .as_mut()
+        .and_then(|context| context.next_run().map(|text| (context, text)))
+        .map(|(context, text)| {
+            let mut lines = String::new();
+            let mut chname = None;
+            let mut switches = vec![];
+            let mut switch_actions = vec![];
+            for line in text.0.into_iter() {
+                match line {
+                    Line::Str(s) => lines.push_str(&s),
+                    Line::Cmd(cmd) => match cmd {
+                        Command::Par => lines.push('\n'),
+                        Command::Character(_, name) => chname = Some(name),
+                        Command::Exec(p) => lines.push_str(&context.call(&p).get_str()),
+                        Command::Switch {
+                            text,
+                            action,
+                            enabled,
+                        } => {
+                            // unwrap: when enabled is None, it means true.
+                            let enabled =
+                                enabled.map(|p| context.call(&p).get_bool()).unwrap_or(true);
+                            switches.push(DisplaySwitch { text, enabled });
+                            switch_actions.push(action);
+                        }
+                    },
+                }
+            }
+            (
+                Action {
+                    line: lines,
+                    character: chname,
+                    switches,
+                },
+                switch_actions,
+            )
+        });
+    if let Some((action, sactions)) = action {
+        *storage.switch_actions.lock().await = sactions;
+        Ok(Some(action))
+    } else {
+        Ok(None)
+    }
+}
+
+#[command]
+async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue> {
+    let mut context = storage.context.lock().await;
+    let context = context
+        .as_mut()
+        .ok_or_else(|| anyhow!("Context not initialized."))?;
+    let actions = storage.switch_actions.lock().await;
+    let action = actions
+        .get(i)
+        .ok_or_else(|| anyhow!("Index error: {}", i))?;
+    Ok(context.call(action))
+}
+
 fn main() -> Result<()> {
     simple_logger::SimpleLogger::new()
         .with_level(log::LevelFilter::Info)
@@ -82,7 +160,7 @@ fn main() -> Result<()> {
             app.manage(Storage::new(game));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![info, start_new])
+        .invoke_handler(tauri::generate_handler![info, start_new, next_run, switch])
         .run(tauri::generate_context!())?;
     Ok(())
 }

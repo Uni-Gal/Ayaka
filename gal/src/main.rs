@@ -52,9 +52,6 @@ fn main() -> Result<()> {
             match line {
                 Line::Str(s) => print!("{}", s),
                 Line::Cmd(c) => match c {
-                    Command::Pause => {
-                        pause(opts.auto)?;
-                    }
                     Command::Par => println!(),
                     Command::Character(_, name) => print!("_{}_", name),
                     Command::Exec(p) => print!("{}", ctx.call(&p).get_str()),

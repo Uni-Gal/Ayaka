@@ -12,10 +12,12 @@ export default {
     async created() {
         const res = await invoke<{ title: string }>("info")
         this.title = res.title
+    },
+    methods: {
+        async new_game() {
+            await invoke<void>("start_new")
+        }
     }
-}
-async function new_game() {
-    await invoke<void>("start_new")
 }
 </script>
 

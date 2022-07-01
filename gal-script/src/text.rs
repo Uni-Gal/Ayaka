@@ -171,7 +171,6 @@ pub enum Line {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Command {
-    Pause,
     Par,
     Character(String, String),
     Exec(Program),
@@ -572,10 +571,6 @@ impl<'a> TextParser<'a> {
     ) -> ParseResult<Line> {
         let params_count = params.len();
         let cmd = match name.as_str() {
-            "pause" => {
-                self.check_params_count(params_count, 0, 0, loc, name)?;
-                Command::Pause
-            }
             "par" => {
                 self.check_params_count(params_count, 0, 0, loc, name)?;
                 Command::Par
@@ -642,10 +637,6 @@ mod test {
         assert_eq!(
             TextParser::new("\\{").parse().unwrap(),
             Text(vec![Line::Str("{".to_string())])
-        );
-        assert_eq!(
-            TextParser::new("\\pause").parse().unwrap(),
-            Text(vec![Line::Cmd(Command::Pause)])
         );
     }
 
