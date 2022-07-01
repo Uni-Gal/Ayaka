@@ -1,12 +1,18 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/tauri'
+import { setTimeout } from 'timers-promises'
 </script>
 
 <script lang="ts">
+function action_default(): Action {
+    return { line: "", character: null, switches: [] }
+}
+
 export default {
-    data(): { action: Action } {
+    data(): { action: Action, action_data: Action } {
         return {
-            action: { line: "", character: null, switches: [] }
+            action: action_default(),
+            action_data: action_default(),
         }
     },
     async created() {
@@ -16,7 +22,8 @@ export default {
         async next_run() {
             let res = await invoke<Action | null>("next_run")
             if (res != null) {
-                this.action = res
+                this.action_data = res
+                await this.type_text()
             } else {
                 location.href = "/"
             }
@@ -24,6 +31,16 @@ export default {
         async switch_run(i: number) {
             await invoke<void>("switch", { i: i })
             await this.next_run()
+        },
+        async type_text() {
+            this.action.line = ""
+            this.action.switches = []
+            this.action.character = this.action_data.character
+            while (this.action.line.length < this.action_data.line.length) {
+                this.action.line += this.action_data.line[this.action.line.length]
+                await setTimeout(10)
+            }
+            this.action.switches = this.action_data.switches
         }
     }
 }

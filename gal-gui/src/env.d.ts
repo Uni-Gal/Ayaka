@@ -6,3 +6,8 @@ declare module '*.vue' {
     const component: DefineComponent<{}, {}, any>
     export default component
 }
+
+declare module 'timers-promises' {
+    import type { setTimeout } from "timers/promises"
+    export { setTimeout }
+}
