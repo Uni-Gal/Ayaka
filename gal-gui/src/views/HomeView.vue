@@ -31,7 +31,7 @@ export default {
         async new_game() {
             await invoke<void>("start_new", { locale: this.$i18n.locale })
             if (await invoke<boolean>("next_run")) {
-                router.push("/game")
+                router.replace("/game")
             }
         },
         async quit() {

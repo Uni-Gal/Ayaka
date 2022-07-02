@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/tauri'
 import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import router from '../router'
 </script>
 
 <script lang="ts">
@@ -24,10 +25,10 @@ export default {
         await this.start_type_anime()
     },
     methods: {
-        go_home() {
+        async go_home() {
             this.action_data = action_default()
             this.action = action_default()
-            location.replace("/")
+            await router.replace("/")
         },
         // Should be called in mutex
         async fetch_current_run() {
@@ -115,22 +116,22 @@ interface Switch {
         </div>
         <div class="commands">
             <div class="btn-group" role="group">
-                <button class="btn btn-outline-primary">
+                <button class="btn btn-outline-primary btn-command">
                     <FontAwesomeIcon icon="fas fa-backward-step"></FontAwesomeIcon>
                 </button>
-                <button class="btn btn-outline-primary">
+                <button class="btn btn-outline-primary btn-command">
                     <FontAwesomeIcon icon="fas fa-play"></FontAwesomeIcon>
                 </button>
-                <button class="btn btn-outline-primary" v-on:click="next">
+                <button class="btn btn-outline-primary btn-command" v-on:click="next">
                     <FontAwesomeIcon icon="fas fa-forward-step"></FontAwesomeIcon>
                 </button>
-                <button class="btn btn-outline-primary">
+                <button class="btn btn-outline-primary btn-command">
                     <FontAwesomeIcon icon="fas fa-forward"></FontAwesomeIcon>
                 </button>
-                <button class="btn btn-outline-primary">
+                <button class="btn btn-outline-primary btn-command">
                     <FontAwesomeIcon icon="fas fa-gear"></FontAwesomeIcon>
                 </button>
-                <button class="btn btn-outline-primary" v-on:click="go_home">
+                <button class="btn btn-outline-primary btn-command" v-on:click="go_home">
                     <FontAwesomeIcon icon="fas fa-house"></FontAwesomeIcon>
                 </button>
             </div>
@@ -161,7 +162,7 @@ interface Switch {
 
 .card-lines {
     position: absolute;
-    bottom: 3em;
+    bottom: 2.5em;
     width: 100%;
 }
 
@@ -180,8 +181,14 @@ interface Switch {
 
 .commands {
     position: absolute;
-    bottom: 0;
-    right: 1em;
+    top: 100%;
+    left: 100%;
+    transform: translate(-100%, -100%);
+}
+
+.btn-command {
+    width: 2.5em;
+    height: 2.5em;
 }
 
 .container-switches {
@@ -196,7 +203,7 @@ interface Switch {
 .switches {
     position: absolute;
     width: 100%;
-    height: calc(100% - 14em);
+    height: calc(100% - 13.5em);
 }
 
 .switches-center {

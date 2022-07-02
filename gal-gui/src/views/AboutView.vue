@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/tauri'
+import { getName, getTauriVersion, getVersion } from '@tauri-apps/api/app';
+import router from '../router';
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 </script>
 
 <script lang="ts">
@@ -7,22 +10,46 @@ export default {
     data() {
         return {
             title: "",
-            author: ""
+            author: "",
+            app_name: "",
+            app_ver: "",
+            tauri_ver: ""
         }
     },
     async created() {
         const res = await invoke<{ title: string, author: string }>("info")
         this.title = res.title
         this.author = res.author
+        this.app_name = await getName();
+        this.app_ver = await getVersion();
+        this.tauri_ver = await getTauriVersion();
+    },
+    methods: {
+        async go_home() {
+            await router.replace("/")
+        }
     }
 }
 </script>
 
 <template>
     <div class="content">
-        <h2>About {{ title }}</h2>
+        <h2>{{ title }}</h2>
         <p>Author: {{ author }}</p>
-        <h2>About gal-gui</h2>
+        <h2>{{ app_name }}</h2>
+        <p>Version {{ app_ver }}</p>
         <p>This is a sample GUI frontend of gal project.</p>
+        <h2>Tauri</h2>
+        <p>Version {{ tauri_ver }}</p>
+        <p>
+            This is an awesome framework to build cross-platform GUI applications,
+            <br />
+            with HTML frontend and Rust backend.
+        </p>
+    </div>
+    <div>
+        <button class="btn btn-outline-primary" v-on:click="go_home">
+            <FontAwesomeIcon icon="fas fa-house"></FontAwesomeIcon>
+        </button>
     </div>
 </template>
