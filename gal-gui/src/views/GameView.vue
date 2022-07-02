@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/tauri'
 import { setTimeout } from 'timers-promises'
-import { Mutex } from 'async-mutex'
+import { Mutex, tryAcquire } from 'async-mutex'
 </script>
 
 <script lang="ts">
@@ -14,29 +14,33 @@ export default {
         return {
             action: action_default(),
             action_data: action_default(),
-            click_mutex: new Mutex(),
+            mutex: new Mutex(),
         }
     },
     async created() {
         document.addEventListener('keydown', this.onkeydown)
-        await this.next_run()
-        await this.type_text()
+        await this.mutex.runExclusive(this.fetch_next_run)
+        await this.start_type_anime()
     },
     methods: {
-        async next_run() {
+        // Should be called in mutex
+        async fetch_next_run() {
             let res = await invoke<Action | null>("next_run")
             if (res != null) {
                 this.action_data = res
             } else {
-                location.href = "/"
+                this.action_data = action_default()
+                this.action = action_default()
+                location.replace("/")
             }
         },
         async switch_run(i: number) {
             await invoke<void>("switch", { i: i })
-            await this.next_run()
-            await this.type_text()
+            await this.mutex.runExclusive(this.fetch_next_run)
+            await this.start_type_anime()
         },
-        async type_text() {
+        // Shouldn't be called in mutex
+        async start_type_anime() {
             this.action.line = ""
             this.action.switches = []
             this.action.character = this.action_data.character
@@ -45,8 +49,8 @@ export default {
                 await setTimeout(10)
             }
         },
-        async onclick() {
-            const new_text = await this.click_mutex.runExclusive(async () => {
+        async next() {
+            const new_text = await tryAcquire(this.mutex).runExclusive(async () => {
                 if (this.action.line.length < this.action_data.line.length) {
                     this.action.line = this.action_data.line
                     return false
@@ -54,20 +58,24 @@ export default {
                     this.action.switches = this.action_data.switches
                     return false
                 } else {
-                    await this.next_run()
+                    await this.fetch_next_run()
                     return true
                 }
-            })
+            }).catch(_ => { })
             if (new_text) {
-                await this.type_text()
+                await this.start_type_anime()
             }
         },
+        async next_fast() {
+            await tryAcquire(this.mutex).runExclusive(async () => {
+                await this.fetch_next_run()
+                this.action = this.action_data
+            }).catch(_ => { })
+        },
         async onkeydown(e: KeyboardEvent) {
-            if (!this.click_mutex.isLocked()) {
-                if (e.key == "Enter" || e.key == " " || e.key == "ArrowDown") {
-                    if (this.action.switches.length == 0) {
-                        await this.onclick()
-                    }
+            if (e.key == "Enter" || e.key == " " || e.key == "ArrowDown") {
+                if (this.action.switches.length == 0) {
+                    await this.next()
                 }
             }
         },
@@ -87,7 +95,7 @@ interface Switch {
 </script>
 
 <template>
-    <div v-on:click="onclick">
+    <div v-on:click="next">
         <div class="card bottom">
             <div class="card-header char">
                 <h4 class="card-title">{{ action.character }}</h4>
@@ -114,7 +122,7 @@ interface Switch {
 <style>
 .bottom {
     position: absolute;
-    bottom: 0;
+    bottom: 2em;
     width: 100%;
 }
 
@@ -138,7 +146,7 @@ interface Switch {
 .switches {
     position: absolute;
     width: 100%;
-    height: calc(100% - 11em);
+    height: calc(100% - 13em);
 }
 
 .switches-center {
