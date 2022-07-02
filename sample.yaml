@@ -1,64 +1,130 @@
-title: Galgame sample
-author: Berrysoft
+title: 団長の名場面
+author: 冈田麿里
 plugins: target/wasm32-unknown-unknown/release/
 res:
+  ja:
+    ch_rd: ライド
+    ch_org: オルガ
+    ch_kdr: クーデリア
+    ch_tkk: タカキ
+    ch_td: チャド
+    ch_ass: 暗殺者
+    ch_mktk: 三日月
   zh_Hans:
-    alias: chs
-    key1: foo-zh
-    key2: bar-zh
-    ch_c1: 小红
-    ch_c2: 小明
-    ch_c3: 小刚
-  en:
-    key1: foo
-    key2: bar
-    ch_c1: Alice
-    ch_c2: Bob
-    ch_c3: Eve
-base_lang: en
+    ch_rd: 莱德
+    ch_org: 奥尔加
+    ch_kdr: 古荻莉亚
+    ch_tkk: 塔卡基
+    ch_td: 查德
+    ch_ass: 刺客
+base_lang: ja
 paras:
-  en:
+  ja:
     -
-      tag: a
-      title: Paragraph a
+      tag: pre_car
+      title: 車の用意し
       texts:
-        - /c1//123
-        - \ch{c2}456
-        - \res{key1}
-        - \exec{#key2}
-        - English test
-        - /c1/???/Who
-      next: b
-    -
-      tag: b
-      title: Paragraph b
-      texts:
-        - 78/c3//9
         - |
-          Choose where to go:
-          \switch{To C}{$s = 1}
-          \switch{To D}{$s = 2}
-          \switch{To E}{}{false}
-      next: \exec{if($s == 1, "c", if($s == 2, "d"))}
+          \ch{rd}団長！車の用意できました！
+          \switch{おう！}{$end = false}
+          \switch{止まるんじゃねぇぞ！}{$end = true}
+          \switch{止まれ！}{}{false}
+      next: \exec{if($end, "end", "walk")}
     -
-      tag: c
-      title: Paragraph c
+      tag: walk
+      title: 静かだ
       texts:
-        - Here is C.
-        - \exec{format.fmt("s{}", $s)}
+        - \ch{org}おう！じゃあな。
+        - /kdr//はい、お気をつけて。
+        - |
+          /rd//なんか静かですね。街の中にはギャラルホルンもいないし本部とはえらい違いだ。
+          \switch{安全}{}
+          \switch{気を付け}{}{false}
+        - /org//ああ。火星の戦力は軒並み向こうに回してんのかもな。
+        - /rd//まっそんなのもう関係ないですけどね！
+        - /org//上機嫌だな。
+        - /rd/ガンバラナイト/そりゃそうですよ！みんな助かるし、\ref{ch_tkk}も頑張ってたし、俺も頑張らないと！
+        - /org//ああ。
+        - そうだ。俺たちが今まで積み上げてきたもんは全部無駄じゃなかった。これからも俺たちが立ち止まらないかぎり道は続く。
+      next: gun
     -
-      tag: d
-      title: Paragraph d
+      tag: gun
+      title: 何やってんだよ
       texts:
-        - Here is D.
-        - \exec{format.fmt("a")}\exec{format.fmt("{b}")}\exec{format.fmt("c", c)}
+        - /td//ぐわっ！
+        - /rd//団長？何やってんだよ？団長！
+        - /org//ぐっ！うおぉ～～！
+        - /ass//うおっ！あっ！
+        - /org//はぁはぁはぁ……なんだよ、結構当たんじゃねぇか。ふっ……
+        - /rd//だ……団長……あっ……あぁ……
+        - /org//なんて声出してやがる……ライド。
+        - /rd//だって……だって……
+        - /org//俺は鉄華団団長オルガ・イツカだぞ。こんくれぇなんてこたぁねぇ。
+        - /rd//そんな……俺なんかのために……
+        - /org//団員を守んのは俺の仕事だ。
+        - /rd//でも！
+        - /org//いいから行くぞ。皆が待ってんだ。それに……。
+        - ミカ、やっと分かったんだ。
+        - 俺たちにはたどりつく場所なんていらねぇ。ただ進み続けるだけでいい。止まんねぇかぎり、道は続く。
+        - /mktk//謝ったら許さない。
+        - /org//ああ分かってる。
+      next: end
+    -
+      tag: end
+      title: 止まるんじゃねぇぞ
+      texts:
+        - /org//俺は止まんねぇからよ、お前らが止まんねぇかぎり、その先に俺はいるぞ！
+        - /org//だからよ、止まるんじゃねぇぞ……
   zh_Hans:
     -
-      tag: a
+      tag: pre_car
+      title: 备车
       texts:
-        -
-        -
-        -
-        -
-        - 中文测试
-        - /c1/不明/谁
+        - |
+          /rd//团长！车已经准备好了！
+          \switch{哦！}{$end = false}
+          \switch{不要停下来啊！}{$end = true}
+          \switch{停下！}{}{false}
+    -
+      tag: walk
+      title: 安静
+      texts:
+        - /org//哦！那么我走了。
+        - /kdr//好，路上小心。
+        - |
+          /rd//感觉真安静啊，街上也没有加拉尔霍恩的人，和总部差别真大啊。
+          \switch{安全}{}
+          \switch{小心}{}{false}
+        - /org//啊，可能是他们把火星的战力都调到那里去了。
+        - /rd//不过这也和我们没关系了。
+        - /org//心情很愉快啊。
+        - /rd/加把劲骑士/那是当然的了！大家也有救了，\res{ch_tkk}又那么努力，我也要加油了！
+        - /org//啊。
+        - 没错，我们至今为止所做的一切，并不是全部徒劳的。今后也是，只要我们不停下脚步，道路就会不断延伸。
+    -
+      tag: gun
+      title: 你在干什么啊
+      texts:
+        - /td//咕哇！
+        - /rd//团长，你在干什么啊，团长！
+        - /org//呃呃啊啊啊啊啊啊啊啊啊啊啊啊啊啊啊！！！
+        - /ass//呜哦！啊！
+        - /org//哈哈哈……什么嘛，我的枪法还挺准的嘛。呵……
+        - /rd//团……团长……啊……啊……
+        - /org//你的声音为什么要颤抖，莱德。
+        - /rd//因为……因为……
+        - /org//我可是铁华团团长奥尔加·伊兹卡啊，这点小伤无关紧要。
+        - /rd//为什么……要为了保护我……
+        - /org//保护团员就是我的使命。
+        - /rd//但是！
+        - /org//好了，快走吧！大家都在等着你们。而且……
+        - 三日，我终于明白了。
+        - 我们的目的地根本不重要，只要继续前进就好了，只要不停下脚步，道路就会不断延伸。
+        - /mktk//道歉的话我是不会原谅你的。
+        - /org//啊，我明白。
+    -
+      tag: end
+      title: 不要停下来啊
+      texts:
+        - /org//我是不会停下来的，只要你们不停下来，那前面就一定有我！
+        - /org//所以，不要停下来啊……
