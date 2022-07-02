@@ -1,12 +1,12 @@
 use clap::Parser;
 use gal_runtime::{
-    anyhow::{anyhow, bail, Result},
+    anyhow::{bail, Result},
     Command, Context, Game, Line,
 };
 use std::{
     ffi::OsString,
     io::{stdin, stdout, Write},
-    path::PathBuf,
+    sync::Arc,
 };
 
 #[derive(Debug, Parser)]
@@ -17,16 +17,6 @@ pub struct Options {
     check: bool,
     #[clap(long)]
     auto: bool,
-}
-
-fn open_game(input: &OsString) -> Result<Game> {
-    let reader = std::fs::File::open(input)?;
-    let mut game: Game = serde_yaml::from_reader(reader)?;
-    game.root_path = PathBuf::from(input)
-        .parent()
-        .ok_or_else(|| anyhow!("Cannot get parent from input path."))?
-        .into();
-    Ok(game)
 }
 
 fn read_line() -> Result<String> {
@@ -48,8 +38,8 @@ fn pause(auto: bool) -> Result<()> {
 fn main() -> Result<()> {
     let opts = Options::parse();
     env_logger::try_init()?;
-    let game = open_game(&opts.input)?;
-    let mut ctx = Context::new(&game)?;
+    let game = Arc::new(Game::open(&opts.input)?);
+    let mut ctx = Context::new(game)?;
     if opts.check {
         if !ctx.check() {
             bail!("Check failed.");
@@ -62,9 +52,6 @@ fn main() -> Result<()> {
             match line {
                 Line::Str(s) => print!("{}", s),
                 Line::Cmd(c) => match c {
-                    Command::Pause => {
-                        pause(opts.auto)?;
-                    }
                     Command::Par => println!(),
                     Command::Character(_, name) => print!("_{}_", name),
                     Command::Exec(p) => print!("{}", ctx.call(&p).get_str()),

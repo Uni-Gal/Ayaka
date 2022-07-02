@@ -9,20 +9,20 @@ pub use rust_icu_sys::{
     UErrorCode::{U_BUFFER_OVERFLOW_ERROR, U_ZERO_ERROR},
 };
 
-pub unsafe fn uloc_getDefault() -> *const ::std::os::raw::c_char {
-    versioned_function!(rust_icu_sys::uloc_getDefault)()
+pub unsafe fn imp_uloc_getDefault() -> *const ::std::os::raw::c_char {
+    versioned_function!(uloc_getDefault)()
 }
 
-pub fn uloc_canonicalize(
+pub unsafe fn imp_uloc_canonicalize(
     localeID: *const ::std::os::raw::c_char,
     name: *mut ::std::os::raw::c_char,
     nameCapacity: i32,
     err: *mut UErrorCode,
 ) -> i32 {
-    versioned_function!(rust_icu_sys::uloc_canonicalize)(localeID, name, nameCapacity, err)
+    versioned_function!(uloc_canonicalize)(localeID, name, nameCapacity, err)
 }
 
-pub unsafe fn uloc_acceptLanguage(
+pub unsafe fn imp_uloc_acceptLanguage(
     result: *mut ::std::os::raw::c_char,
     resultAvailable: i32,
     outResult: *mut UAcceptResult,
@@ -31,7 +31,7 @@ pub unsafe fn uloc_acceptLanguage(
     availableLocales: *mut UEnumeration,
     status: *mut UErrorCode,
 ) -> i32 {
-    versioned_function!(rust_icu_sys::uloc_acceptLanguage)(
+    versioned_function!(uloc_acceptLanguage)(
         result,
         resultAvailable,
         outResult,
@@ -42,14 +42,14 @@ pub unsafe fn uloc_acceptLanguage(
     )
 }
 
-pub unsafe fn uenum_openCharStringsEnumeration(
+pub unsafe fn imp_uenum_openCharStringsEnumeration(
     strings: *const *const ::std::os::raw::c_char,
     count: i32,
     ec: *mut UErrorCode,
 ) -> *mut UEnumeration {
-    versioned_function!(rust_icu_sys::uenum_openCharStringsEnumeration)(strings, count, ec)
+    versioned_function!(uenum_openCharStringsEnumeration)(strings, count, ec)
 }
 
-pub unsafe fn uenum_close(en: *mut UEnumeration) {
-    versioned_function!(rust_icu_sys::uenum_close)(en)
+pub unsafe fn imp_uenum_close(en: *mut UEnumeration) {
+    versioned_function!(uenum_close)(en)
 }

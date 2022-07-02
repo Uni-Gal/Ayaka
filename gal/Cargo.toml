@@ -5,6 +5,5 @@ edition = "2021"
 
 [dependencies]
 gal-runtime = { path = "../gal-runtime" }
-serde_yaml = "0.8"
 clap = { version = "3.1", features = ["derive"] }
 env_logger = "0.9"

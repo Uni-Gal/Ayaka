@@ -11,32 +11,24 @@ pub use wit_bindgen_wasmtime::anyhow;
 
 use gal_script::{Loc, ParseError, TextParser};
 use log::{error, warn};
-use plugin::*;
 use script::*;
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, path::Path, sync::Arc};
 use unicode_width::UnicodeWidthStr;
-use wit_bindgen_wasmtime::wasmtime::Store;
-
-pub struct Runtime {
-    store: Store<()>,
-    modules: HashMap<String, Host>,
-}
 
 pub type LocaleMap = HashMap<String, Locale>;
 
-pub struct Context<'a> {
-    pub game: &'a Game,
+pub struct Context {
+    pub game: Arc<Game>,
     pub ctx: RawContext,
     loc: Locale,
-    runtime: Runtime,
 }
 
-impl<'a> Context<'a> {
+impl Context {
     fn default_ctx(game: &Game) -> RawContext {
         let mut ctx = RawContext::default();
         ctx.cur_para = game
-            .paras
-            .get(&game.base_lang)
+            .paras()
+            .get(&game.base_lang())
             .and_then(|paras| paras.first().map(|p| p.tag.clone()))
             .unwrap_or_else(|| {
                 warn!("There is no paragraph in the game.");
@@ -45,34 +37,28 @@ impl<'a> Context<'a> {
         ctx
     }
 
-    pub fn new(game: &'a Game) -> anyhow::Result<Self> {
-        Self::with_context(game, Self::default_ctx(game))
+    pub fn new(game: Arc<Game>) -> anyhow::Result<Self> {
+        let ctx = Self::default_ctx(&game);
+        Self::with_context(game, ctx)
     }
 
-    pub fn with_context(game: &'a Game, ctx: RawContext) -> anyhow::Result<Self> {
-        let runtime = load_plugins(&game.plugins, &game.root_path)?;
+    pub fn with_context(game: Arc<Game>, ctx: RawContext) -> anyhow::Result<Self> {
         Ok(Self {
             game,
             ctx,
             loc: Locale::current(),
-            runtime,
         })
     }
 
     fn table(&mut self) -> VarTable {
-        VarTable::new(
-            &self.game,
-            &self.loc,
-            &mut self.ctx.locals,
-            &mut self.runtime,
-        )
+        VarTable::new(&self.game, &self.loc, &mut self.ctx.locals)
     }
 
-    fn current_paragraph(&self) -> Fallback<'a, Paragraph> {
+    fn current_paragraph(&self) -> Fallback<Paragraph> {
         self.game.find_para_fallback(&self.loc, &self.ctx.cur_para)
     }
 
-    fn current_text(&self) -> Option<&'a String> {
+    fn current_text(&self) -> Option<&String> {
         self.current_paragraph().and_then(|p| {
             p.texts.get(self.ctx.cur_act).and_then(|s| {
                 if s.is_empty() || s == "~" {
@@ -174,17 +160,14 @@ impl<'a> Context<'a> {
         let cur_para = self.current_paragraph();
         if cur_para.is_some() {
             if let Some(act) = self.current_text() {
+                let text = Some(self.parse_text_rich_error(act));
                 self.ctx.cur_act += 1;
-                Some(self.parse_text_rich_error(act))
+                text
             } else {
                 self.ctx.cur_para = cur_para
-                    .and_then(|p| {
-                        p.next.as_ref().map(|next| {
-                            self.call(&self.parse_text_rich_error(next))
-                                .get_str()
-                                .into()
-                        })
-                    })
+                    .and_then(|p| p.next.as_ref())
+                    .map(|next| self.parse_text_rich_error(next))
+                    .map(|text| self.call(&text).get_str().into())
                     .unwrap_or_default();
                 self.ctx.cur_act = 0;
                 self.next_run()
@@ -196,7 +179,7 @@ impl<'a> Context<'a> {
 
     pub fn check(&mut self) -> bool {
         let mut succeed = true;
-        for (_, paras) in &self.game.paras {
+        for (_, paras) in self.game.paras() {
             for para in paras {
                 self.ctx.cur_para = para.tag.clone();
                 for (index, act) in para.texts.iter().enumerate() {
@@ -208,7 +191,7 @@ impl<'a> Context<'a> {
                 }
             }
         }
-        self.ctx = Self::default_ctx(self.game);
+        self.ctx = Self::default_ctx(&self.game);
         succeed
     }
 }

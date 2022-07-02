@@ -42,12 +42,12 @@ pub fn choose(
     let mut result = ULOC_ACCEPT_FAILED;
     let loc = unsafe {
         call_with_buffer(|buffer, len, status| {
-            let locales_enum = uenum_openCharStringsEnumeration(
+            let locales_enum = imp_uenum_openCharStringsEnumeration(
                 locale_ptrs.as_ptr(),
                 locale_ptrs.len() as _,
                 status,
             );
-            let len = uloc_acceptLanguage(
+            let len = imp_uloc_acceptLanguage(
                 buffer as _,
                 len,
                 &mut result,
@@ -56,7 +56,7 @@ pub fn choose(
                 locales_enum,
                 status,
             );
-            uenum_close(locales_enum);
+            imp_uenum_close(locales_enum);
             len
         })
     }
@@ -69,14 +69,14 @@ pub fn choose(
 }
 
 pub fn current() -> Locale {
-    Locale(unsafe { CStr::from_ptr(uloc_getDefault() as _) }.to_owned())
+    Locale(unsafe { CStr::from_ptr(imp_uloc_getDefault() as _) }.to_owned())
 }
 
 pub fn parse(s: &str) -> ICUResult<Locale> {
     let s = CString::new(s)?;
     unsafe {
         call_with_buffer(|buffer, len, status| {
-            uloc_canonicalize(s.as_ptr() as _, buffer as _, len, status)
+            imp_uloc_canonicalize(s.as_ptr() as _, buffer as _, len, status)
         })
     }
     .map(Locale)
