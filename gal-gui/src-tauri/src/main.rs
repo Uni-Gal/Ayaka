@@ -183,7 +183,7 @@ fn main() -> Result<()> {
         portpicker::pick_unused_port().ok_or_else(|| anyhow!("failed to find unused port"))?;
     info!("Picked port {}", port);
     tauri::Builder::default()
-        //.plugin(tauri_plugin_localhost::Builder::new(port).build())
+        .plugin(tauri_plugin_localhost::Builder::new(port).build())
         .setup(|app| {
             let matches = app.get_cli_matches()?;
             let config = matches.args["config"].value.as_str().unwrap_or("");
