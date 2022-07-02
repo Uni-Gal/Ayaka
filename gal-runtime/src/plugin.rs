@@ -180,8 +180,7 @@ impl Runtime {
     pub fn load(dir: impl AsRef<Path>, rel_to: impl AsRef<Path>) -> anyhow::Result<Self> {
         let mut store = Store::<()>::default();
         let mut linker = Linker::new(store.engine());
-        let mut path = rel_to.as_ref().to_path_buf();
-        path.push(dir);
+        let path = rel_to.as_ref().join(dir);
         let mut modules = HashMap::new();
         for f in std::fs::read_dir(path)? {
             let p = f?.path();

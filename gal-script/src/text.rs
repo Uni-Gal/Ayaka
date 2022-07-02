@@ -1,5 +1,5 @@
 use crate::exec::*;
-use std::{error::Error, fmt::Display, iter::Peekable, str::CharIndices};
+use std::{error::Error, fmt::Display, iter::Peekable, num::ParseIntError, str::CharIndices};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Loc(pub usize, pub usize);
@@ -138,6 +138,7 @@ pub enum ParseErrorType {
     InvalidCmd(String),
     InvalidParamsCount(String, usize),
     InvalidProgram(String),
+    InvalidIndex(ParseIntError),
 }
 
 impl Display for ParseErrorType {
@@ -156,6 +157,7 @@ impl Display for ParseErrorType {
                 name.escape_default()
             )?,
             Self::InvalidProgram(err) => write!(f, "Program parse error: {}", err)?,
+            Self::InvalidIndex(e) => Display::fmt(e, f)?,
         }
         Ok(())
     }
@@ -179,6 +181,7 @@ pub enum Command {
         action: Program,
         enabled: Option<Program>,
     },
+    Bgm(usize),
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -605,6 +608,14 @@ impl<'a> TextParser<'a> {
                     action: self.parse_program(&params[1])?,
                     enabled,
                 }
+            }
+            "bgm" => {
+                self.check_params_count(params_count, 1, 1, loc, name)?;
+                Command::Bgm(
+                    self.concat_params(&params[0])?
+                        .parse()
+                        .map_err(|e| ParseError::new(loc, ParseErrorType::InvalidIndex(e)))?,
+                )
             }
             _ => parse_error(loc, ParseErrorType::InvalidCmd(name))?,
         };

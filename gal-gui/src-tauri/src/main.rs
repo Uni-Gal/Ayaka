@@ -2,6 +2,7 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
+#![feature(absolute_path)]
 #![feature(iterator_try_collect)]
 
 use gal_runtime::{
@@ -50,27 +51,15 @@ fn choose_locale(locales: Vec<String>) -> CommandResult<Option<String>> {
     }))
 }
 
+#[derive(Default)]
 struct Storage {
-    game: Arc<Game>,
     context: Mutex<Option<Context>>,
     action: Mutex<Option<Action>>,
     switch_actions: Mutex<Vec<Program>>,
 }
 
-impl Storage {
-    pub fn new(game: Arc<Game>) -> Self {
-        Self {
-            game,
-            context: Mutex::default(),
-            action: Mutex::default(),
-            switch_actions: Mutex::default(),
-        }
-    }
-}
-
 #[command]
-fn info(storage: State<Storage>) -> serde_json::Value {
-    let game = &storage.game;
+fn info(game: State<Arc<Game>>) -> serde_json::Value {
     json!({
         "title": game.title(),
         "author": game.author(),
@@ -78,8 +67,12 @@ fn info(storage: State<Storage>) -> serde_json::Value {
 }
 
 #[command]
-async fn start_new(locale: Locale, storage: State<'_, Storage>) -> CommandResult<()> {
-    *(storage.context.lock().await) = Some(Context::new(storage.game.clone(), locale.clone())?);
+async fn start_new(
+    locale: Locale,
+    game: State<'_, Arc<Game>>,
+    storage: State<'_, Storage>,
+) -> CommandResult<()> {
+    *(storage.context.lock().await) = Some(Context::new((*game).clone(), locale.clone())?);
     info!("Created new context with locale {}.", locale);
     Ok(())
 }
@@ -89,6 +82,7 @@ struct Action {
     pub line: String,
     pub character: Option<String>,
     pub switches: Vec<DisplaySwitch>,
+    pub bgm: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -98,7 +92,7 @@ struct DisplaySwitch {
 }
 
 #[command]
-async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
+async fn next_run(game: State<'_, Arc<Game>>, storage: State<'_, Storage>) -> CommandResult<bool> {
     let mut context = storage.context.lock().await;
     let action = context
         .as_mut()
@@ -108,6 +102,7 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
             let mut chname = None;
             let mut switches = vec![];
             let mut switch_actions = vec![];
+            let mut bgm = None;
             for line in text.0.into_iter() {
                 match line {
                     Line::Str(s) => lines.push_str(&s),
@@ -126,14 +121,24 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
                             switches.push(DisplaySwitch { text, enabled });
                             switch_actions.push(action);
                         }
+                        Command::Bgm(index) => bgm = Some(index),
                     },
                 }
             }
+            let bgm = bgm
+                .map(|index| game.bgm_dir().join(format!("{}.mp3", index)))
+                .map(|path| {
+                    std::path::absolute(path)
+                        .unwrap()
+                        .to_string_lossy()
+                        .into_owned()
+                });
             (
                 Action {
                     line: lines,
                     character: chname,
                     switches,
+                    bgm,
                 },
                 switch_actions,
             )
@@ -178,14 +183,15 @@ fn main() -> Result<()> {
         portpicker::pick_unused_port().ok_or_else(|| anyhow!("failed to find unused port"))?;
     info!("Picked port {}", port);
     tauri::Builder::default()
-        .plugin(tauri_plugin_localhost::Builder::new(port).build())
+        //.plugin(tauri_plugin_localhost::Builder::new(port).build())
         .setup(|app| {
             let matches = app.get_cli_matches()?;
             let config = matches.args["config"].value.as_str().unwrap_or("");
             info!("Loading config...");
             let game = Arc::new(Game::open(config)?);
             info!("Loaded config \"{}\"", config.escape_default());
-            app.manage(Storage::new(game));
+            app.manage(game);
+            app.manage(Storage::default());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

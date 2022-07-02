@@ -22,11 +22,14 @@ struct GameData {
     #[serde(default)]
     pub plugins: PathBuf,
     #[serde(default)]
+    pub bgms: PathBuf,
+    #[serde(default)]
     pub res: HashMap<Locale, VarMap>,
     pub base_lang: Locale,
 }
 
 pub struct Game {
+    root_path: PathBuf,
     data: GameData,
     runtime: Runtime,
 }
@@ -40,7 +43,11 @@ impl Game {
             .parent()
             .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
         let runtime = Runtime::load(&data.plugins, root_path)?;
-        Ok(Self { data, runtime })
+        Ok(Self {
+            data,
+            root_path: root_path.to_path_buf(),
+            runtime,
+        })
     }
 
     fn choose_from_keys<V>(&self, loc: &Locale, map: &HashMap<Locale, V>) -> Locale {
@@ -75,6 +82,10 @@ impl Game {
 
     pub fn base_lang(&self) -> &Locale {
         &self.data.base_lang
+    }
+
+    pub fn bgm_dir(&self) -> PathBuf {
+        self.root_path.join(&self.data.bgms)
     }
 
     pub fn find_para(&self, loc: &Locale, tag: &str) -> Option<&Paragraph> {

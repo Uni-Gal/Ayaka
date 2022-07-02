@@ -70,6 +70,7 @@ fn main() -> Result<()> {
                         }
                         item_actions.push(action);
                     }
+                    Command::Bgm(_) => {}
                 },
             }
         }

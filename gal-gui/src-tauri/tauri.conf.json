@@ -16,6 +16,13 @@
       "window": {
         "all": false,
         "close": true
+      },
+      "protocol": {
+        "all": true,
+        "asset": true,
+        "assetScope": [
+          "**"
+        ]
       }
     },
     "bundle": {

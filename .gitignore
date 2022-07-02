@@ -22,3 +22,6 @@ CMakeSettings.json
 # CMake build
 build
 out
+
+# large assets
+bgms/

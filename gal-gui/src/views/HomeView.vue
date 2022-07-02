@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/tauri'
 import { appWindow } from "@tauri-apps/api/window";
-import { assert } from 'console';
 import { Locale } from 'vue-i18n';
 import router from '../router';
 </script>

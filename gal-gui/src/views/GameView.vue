@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/tauri'
+import { invoke, convertFileSrc } from '@tauri-apps/api/tauri'
 import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -8,7 +8,7 @@ import router from '../router'
 
 <script lang="ts">
 function action_default(): Action {
-    return { line: "", character: null, switches: [] }
+    return { line: "", character: null, switches: [], bgm: undefined }
 }
 
 export default {
@@ -33,8 +33,14 @@ export default {
         // Should be called in mutex
         async fetch_current_run() {
             let res = await invoke<Action | null>("current_run")
+            console.log(res)
             if (res != null) {
                 this.action_data = res
+                this.action.character = this.action_data.character
+                if (this.action_data.bgm != undefined) {
+                    this.action.bgm = convertFileSrc(this.action_data.bgm);
+                    (document.getElementById("bgm") as HTMLAudioElement).load()
+                }
             } else {
                 this.go_home()
             }
@@ -53,7 +59,6 @@ export default {
         async start_type_anime() {
             this.action.line = ""
             this.action.switches = []
-            this.action.character = this.action_data.character
             while (this.action.line.length < this.action_data.line.length) {
                 this.action.line += this.action_data.line[this.action.line.length]
                 await setTimeout(10)
@@ -88,7 +93,7 @@ export default {
             if (e.key == "Enter" || e.key == " " || e.key == "ArrowDown") {
                 await this.next()
             }
-        },
+        }
     }
 }
 
@@ -96,6 +101,7 @@ interface Action {
     line: string,
     character: string | null,
     switches: Array<Switch>,
+    bgm: string | undefined,
 }
 
 interface Switch {
@@ -106,6 +112,9 @@ interface Switch {
 
 <template>
     <div class="backboard" v-on:click="next">
+        <audio id="bgm" controls autoplay hidden>
+            <source v-bind:src="action.bgm" type="audio/mpeg">
+        </audio>
         <div class="card card-lines">
             <div class="card-header char">
                 <h4 class="card-title">{{ action.character }}</h4>
