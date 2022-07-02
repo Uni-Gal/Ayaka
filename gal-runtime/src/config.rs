@@ -4,7 +4,7 @@ use crate::{
 };
 use gal_locale::Locale;
 use gal_script::{
-    log::{trace, warn},
+    log::{debug, trace, warn},
     RawValue,
 };
 use serde::{Deserialize, Serialize};
@@ -45,7 +45,7 @@ impl Game {
 
     fn choose_from_keys<V>(&self, loc: &Locale, map: &HashMap<Locale, V>) -> Locale {
         let keys = map.keys();
-        trace!("Choose \"{}\" from {:?}", loc, keys);
+        debug!("Choose \"{}\" from {:?}", loc, keys);
         let res = loc
             .choose_from(keys)
             .unwrap_or_else(|e| {
@@ -53,7 +53,7 @@ impl Game {
                 None
             })
             .unwrap_or_else(|| self.data.base_lang.clone());
-        trace!("Chose \"{}\"", res);
+        debug!("Chose \"{}\"", res);
         res
     }
 

@@ -267,7 +267,7 @@ mod test {
 
     lazy_static::lazy_static! {
         static ref GAME: Mutex<Game> = Mutex::new(Game::open(
-           concat!(env!("CARGO_MANIFEST_DIR"), "../sample.yaml"),
+           concat!(env!("CARGO_MANIFEST_DIR"), "/../sample.yaml"),
         ).unwrap());
     }
 

@@ -18,6 +18,7 @@
     "timers-promises": "^1.0.1",
     "vue": "^3.2.37",
     "vue-bs-modal": "^0.6.5",
+    "vue-i18n": "^9.1.10",
     "vue-router": "^4.0.16"
   },
   "devDependencies": {

@@ -2,11 +2,12 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
+#![feature(iterator_try_collect)]
 
 use gal_runtime::{
     anyhow::{self, anyhow, Result},
     log::{self, info},
-    Command, Context, Game, Line, RawValue,
+    Command, Context, Game, Line, Locale, RawValue,
 };
 use gal_script::Program;
 use serde::Serialize;
@@ -33,6 +34,20 @@ impl Display for CommandError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.msg)
     }
+}
+
+#[command]
+fn choose_locale(locales: Vec<String>) -> CommandResult<Option<String>> {
+    let current = Locale::current();
+    let locales = locales
+        .into_iter()
+        .map(|s| s.parse::<Locale>())
+        .try_collect::<Vec<_>>()?;
+    info!("Choose {} from {:?}", current, locales);
+    Ok(current.choose_from(locales.iter())?.map(|loc| {
+        info!("Chose locale {}", loc);
+        loc.to_string()
+    }))
 }
 
 struct Storage {
@@ -63,9 +78,9 @@ fn info(storage: State<Storage>) -> serde_json::Value {
 }
 
 #[command]
-async fn start_new(storage: State<'_, Storage>) -> CommandResult<()> {
-    *(storage.context.lock().await) = Some(Context::new(storage.game.clone())?);
-    info!("Created new context.");
+async fn start_new(locale: Locale, storage: State<'_, Storage>) -> CommandResult<()> {
+    *(storage.context.lock().await) = Some(Context::new(storage.game.clone(), locale.clone())?);
+    info!("Created new context with locale {}.", locale);
     Ok(())
 }
 
@@ -174,6 +189,7 @@ fn main() -> Result<()> {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            choose_locale,
             info,
             start_new,
             next_run,

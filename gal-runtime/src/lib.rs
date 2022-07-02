@@ -37,17 +37,13 @@ impl Context {
         ctx
     }
 
-    pub fn new(game: Arc<Game>) -> anyhow::Result<Self> {
+    pub fn new(game: Arc<Game>, loc: Locale) -> anyhow::Result<Self> {
         let ctx = Self::default_ctx(&game);
-        Self::with_context(game, ctx)
+        Self::with_context(game, loc, ctx)
     }
 
-    pub fn with_context(game: Arc<Game>, ctx: RawContext) -> anyhow::Result<Self> {
-        Ok(Self {
-            game,
-            ctx,
-            loc: Locale::current(),
-        })
+    pub fn with_context(game: Arc<Game>, loc: Locale, ctx: RawContext) -> anyhow::Result<Self> {
+        Ok(Self { game, ctx, loc })
     }
 
     fn table(&mut self) -> VarTable {

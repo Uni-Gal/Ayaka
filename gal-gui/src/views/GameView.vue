@@ -138,9 +138,9 @@ interface Switch {
         <div class="container-switches" v-bind:hidden="action.switches.length == 0">
             <div class="switches">
                 <div class="switches-center">
-                    <div class="d-grid gap-4 col-8 mx-auto">
-                        <button class="btn btn-primary" v-for="(s, i) in action.switches" v-on:click="switch_run(i)"
-                            v-bind:disabled="!s.enabled">
+                    <div class="d-grid gap-5 col-8 mx-auto">
+                        <button class="btn btn-primary switch" v-for="(s, i) in action.switches"
+                            v-on:click="switch_run(i)" v-bind:disabled="!s.enabled">
                             {{ s.text }}
                         </button>
                     </div>
@@ -171,6 +171,11 @@ interface Switch {
 
 .lines {
     height: 8em;
+}
+
+/* Copied from .h4 */
+.switch {
+    font-size: calc(1.275rem + .3vw);
 }
 
 .commands {

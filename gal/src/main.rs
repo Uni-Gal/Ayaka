@@ -1,7 +1,7 @@
 use clap::Parser;
 use gal_runtime::{
     anyhow::{bail, Result},
-    Command, Context, Game, Line,
+    Command, Context, Game, Line, Locale,
 };
 use std::{
     ffi::OsString,
@@ -39,7 +39,7 @@ fn main() -> Result<()> {
     let opts = Options::parse();
     env_logger::try_init()?;
     let game = Arc::new(Game::open(&opts.input)?);
-    let mut ctx = Context::new(game)?;
+    let mut ctx = Context::new(game, Locale::current())?;
     if opts.check {
         if !ctx.check() {
             bail!("Check failed.");

@@ -79,11 +79,16 @@ impl<'de> Deserialize<'de> for Locale {
 
 #[cfg(test)]
 mod test {
-    use crate::icu::*;
+    use crate::Locale;
+
+    #[test]
+    fn parse() {
+        assert_eq!("zh_Hans".parse::<Locale>().unwrap().to_string(), "zh_Hans");
+    }
 
     #[test]
     fn accept() {
-        let current = ["zh_CN".parse().unwrap()];
+        let current = "zh_CN".parse::<Locale>().unwrap();
         let accepts = [
             "en".parse().unwrap(),
             "ja".parse().unwrap(),
@@ -91,8 +96,12 @@ mod test {
             "zh_Hant".parse().unwrap(),
         ];
         assert_eq!(
-            choose(current.iter(), accepts.iter()).unwrap(),
-            "zh_Hans".parse().ok()
+            current
+                .choose_from(accepts.iter())
+                .unwrap()
+                .unwrap()
+                .to_string(),
+            "zh_Hans"
         );
     }
 }
