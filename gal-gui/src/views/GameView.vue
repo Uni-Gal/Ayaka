@@ -139,8 +139,8 @@ interface Switch {
             <div class="switches">
                 <div class="switches-center">
                     <div class="d-grid gap-4 col-8 mx-auto">
-                        <button class="btn btn-primary" v-for="s in action.switches"
-                            v-on:click="switch_run(action.switches.indexOf(s))" v-bind:disabled="!s.enabled">
+                        <button class="btn btn-primary" v-for="(s, i) in action.switches" v-on:click="switch_run(i)"
+                            v-bind:disabled="!s.enabled">
                             {{ s.text }}
                         </button>
                     </div>
