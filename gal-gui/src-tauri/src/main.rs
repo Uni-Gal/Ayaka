@@ -38,6 +38,7 @@ impl Display for CommandError {
 struct Storage {
     game: Arc<Game>,
     context: Mutex<Option<Context>>,
+    action: Mutex<Option<Action>>,
     switch_actions: Mutex<Vec<Program>>,
 }
 
@@ -46,6 +47,7 @@ impl Storage {
         Self {
             game,
             context: Mutex::default(),
+            action: Mutex::default(),
             switch_actions: Mutex::default(),
         }
     }
@@ -67,21 +69,21 @@ async fn start_new(storage: State<'_, Storage>) -> CommandResult<()> {
     Ok(())
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 struct Action {
     pub line: String,
     pub character: Option<String>,
     pub switches: Vec<DisplaySwitch>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Serialize)]
 struct DisplaySwitch {
     pub text: String,
     pub enabled: bool,
 }
 
 #[command]
-async fn next_run(storage: State<'_, Storage>) -> CommandResult<Option<Action>> {
+async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
     let mut context = storage.context.lock().await;
     let action = context
         .as_mut()
@@ -122,11 +124,21 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<Option<Action>> 
             )
         });
     if let Some((action, sactions)) = action {
+        info!("Next action: {:?}", action);
+        *storage.action.lock().await = Some(action);
         *storage.switch_actions.lock().await = sactions;
-        Ok(Some(action))
+        Ok(true)
     } else {
-        Ok(None)
+        info!("No action left.");
+        *storage.action.lock().await = None;
+        *storage.switch_actions.lock().await = vec![];
+        Ok(false)
     }
+}
+
+#[command]
+async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<Action>> {
+    Ok(storage.action.lock().await.clone())
 }
 
 #[command]
@@ -161,7 +173,13 @@ fn main() -> Result<()> {
             app.manage(Storage::new(game));
             Ok(())
         })
-        .invoke_handler(tauri::generate_handler![info, start_new, next_run, switch])
+        .invoke_handler(tauri::generate_handler![
+            info,
+            start_new,
+            next_run,
+            current_run,
+            switch
+        ])
         .run(tauri::generate_context!())?;
     Ok(())
 }

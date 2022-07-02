@@ -19,13 +19,13 @@ export default {
     },
     async created() {
         document.addEventListener('keydown', this.onkeydown)
-        await this.mutex.runExclusive(this.fetch_next_run)
+        await this.mutex.runExclusive(this.fetch_current_run)
         await this.start_type_anime()
     },
     methods: {
         // Should be called in mutex
-        async fetch_next_run() {
-            let res = await invoke<Action | null>("next_run")
+        async fetch_current_run() {
+            let res = await invoke<Action | null>("current_run")
             if (res != null) {
                 this.action_data = res
             } else {
@@ -33,6 +33,11 @@ export default {
                 this.action = action_default()
                 location.replace("/")
             }
+        },
+        // Should be called in mutex
+        async fetch_next_run() {
+            await invoke<boolean>("next_run")
+            await this.fetch_current_run()
         },
         async switch_run(i: number) {
             await invoke<void>("switch", { i: i })
