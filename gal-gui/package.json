@@ -9,6 +9,9 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@fortawesome/fontawesome-svg-core": "^6.1.1",
+    "@fortawesome/free-solid-svg-icons": "^6.1.1",
+    "@fortawesome/vue-fontawesome": "^3.0.1",
     "@tauri-apps/api": "^1.0.1",
     "async-mutex": "^0.3.2",
     "bootstrap": "^5.1.3",

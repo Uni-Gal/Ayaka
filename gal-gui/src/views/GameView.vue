@@ -2,6 +2,7 @@
 import { invoke } from '@tauri-apps/api/tauri'
 import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 </script>
 
 <script lang="ts">
@@ -23,15 +24,18 @@ export default {
         await this.start_type_anime()
     },
     methods: {
+        go_home() {
+            this.action_data = action_default()
+            this.action = action_default()
+            location.replace("/")
+        },
         // Should be called in mutex
         async fetch_current_run() {
             let res = await invoke<Action | null>("current_run")
             if (res != null) {
                 this.action_data = res
             } else {
-                this.action_data = action_default()
-                this.action = action_default()
-                location.replace("/")
+                this.go_home()
             }
         },
         // Should be called in mutex
@@ -55,20 +59,22 @@ export default {
             }
         },
         async next() {
-            const new_text = await tryAcquire(this.mutex).runExclusive(async () => {
-                if (this.action.line.length < this.action_data.line.length) {
-                    this.action.line = this.action_data.line
-                    return false
-                } else if (this.action.switches.length < this.action_data.switches.length) {
-                    this.action.switches = this.action_data.switches
-                    return false
-                } else {
-                    await this.fetch_next_run()
-                    return true
+            if (this.action.switches.length == 0) {
+                const new_text = await tryAcquire(this.mutex).runExclusive(async () => {
+                    if (this.action.line.length < this.action_data.line.length) {
+                        this.action.line = this.action_data.line
+                        return false
+                    } else if (this.action.switches.length < this.action_data.switches.length) {
+                        this.action.switches = this.action_data.switches
+                        return false
+                    } else {
+                        await this.fetch_next_run()
+                        return true
+                    }
+                }).catch(_ => { })
+                if (new_text) {
+                    await this.start_type_anime()
                 }
-            }).catch(_ => { })
-            if (new_text) {
-                await this.start_type_anime()
             }
         },
         async next_fast() {
@@ -79,9 +85,7 @@ export default {
         },
         async onkeydown(e: KeyboardEvent) {
             if (e.key == "Enter" || e.key == " " || e.key == "ArrowDown") {
-                if (this.action.switches.length == 0) {
-                    await this.next()
-                }
+                await this.next()
             }
         },
     }
@@ -100,8 +104,8 @@ interface Switch {
 </script>
 
 <template>
-    <div v-on:click="next">
-        <div class="card bottom">
+    <div class="backboard" v-on:click="next">
+        <div class="card card-lines">
             <div class="card-header char">
                 <h4 class="card-title">{{ action.character }}</h4>
             </div>
@@ -109,15 +113,37 @@ interface Switch {
                 <p class="h4 card-text">{{ action.line }}</p>
             </div>
         </div>
-    </div>
-    <div class="container-switches" v-bind:hidden="action.switches.length == 0">
-        <div class="switches">
-            <div class="switches-center">
-                <div class="d-grid gap-4 col-8 mx-auto">
-                    <button class="btn btn-primary" v-for="s in action.switches"
-                        v-on:click="switch_run(action.switches.indexOf(s))" v-bind:disabled="!s.enabled">
-                        {{ s.text }}
-                    </button>
+        <div class="commands">
+            <div class="btn-group" role="group">
+                <button class="btn btn-outline-primary">
+                    <FontAwesomeIcon icon="fas fa-backward-step"></FontAwesomeIcon>
+                </button>
+                <button class="btn btn-outline-primary">
+                    <FontAwesomeIcon icon="fas fa-play"></FontAwesomeIcon>
+                </button>
+                <button class="btn btn-outline-primary" v-on:click="next">
+                    <FontAwesomeIcon icon="fas fa-forward-step"></FontAwesomeIcon>
+                </button>
+                <button class="btn btn-outline-primary">
+                    <FontAwesomeIcon icon="fas fa-forward"></FontAwesomeIcon>
+                </button>
+                <button class="btn btn-outline-primary">
+                    <FontAwesomeIcon icon="fas fa-gear"></FontAwesomeIcon>
+                </button>
+                <button class="btn btn-outline-primary" v-on:click="go_home">
+                    <FontAwesomeIcon icon="fas fa-house"></FontAwesomeIcon>
+                </button>
+            </div>
+        </div>
+        <div class="container-switches" v-bind:hidden="action.switches.length == 0">
+            <div class="switches">
+                <div class="switches-center">
+                    <div class="d-grid gap-4 col-8 mx-auto">
+                        <button class="btn btn-primary" v-for="s in action.switches"
+                            v-on:click="switch_run(action.switches.indexOf(s))" v-bind:disabled="!s.enabled">
+                            {{ s.text }}
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -125,9 +151,17 @@ interface Switch {
 </template>
 
 <style>
-.bottom {
+.backboard {
     position: absolute;
-    bottom: 2em;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+}
+
+.card-lines {
+    position: absolute;
+    bottom: 3em;
     width: 100%;
 }
 
@@ -139,19 +173,25 @@ interface Switch {
     height: 8em;
 }
 
+.commands {
+    position: absolute;
+    bottom: 0;
+    right: 1em;
+}
+
 .container-switches {
     position: absolute;
     top: 0;
     left: 0;
-    height: 100%;
-    width: 100%;
+    bottom: 0;
+    right: 0;
     background-color: #00000077;
 }
 
 .switches {
     position: absolute;
     width: 100%;
-    height: calc(100% - 13em);
+    height: calc(100% - 14em);
 }
 
 .switches-center {
