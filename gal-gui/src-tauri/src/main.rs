@@ -185,6 +185,8 @@ fn main() -> Result<()> {
     tauri::Builder::default()
         .plugin(tauri_plugin_localhost::Builder::new(port).build())
         .setup(|app| {
+            #[cfg(debug_assertions)]
+            app.get_window("main").unwrap().open_devtools();
             let matches = app.get_cli_matches()?;
             let config = matches.args["config"].value.as_str().unwrap_or("");
             info!("Loading config...");
