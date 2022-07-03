@@ -15,6 +15,8 @@ export default {
             const confirmed = await this.$vbsModal.confirm({
                 title: this.$t("quit"),
                 message: this.$t("quitConfirm"),
+                leftBtnText: this.$t("dialogNo"),
+                rightBtnText: this.$t("dialogYes"),
             })
             if (confirmed) {
                 await appWindow.close()
