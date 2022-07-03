@@ -11,38 +11,57 @@ function action_default(): Action {
     return { line: "", character: null, switches: [], bgm: undefined }
 }
 
+interface Action {
+    line: string,
+    character: string | null,
+    switches: Array<Switch>,
+    bgm: string | undefined,
+}
+
+interface Switch {
+    text: string,
+    enabled: boolean,
+}
+
+enum ActionState {
+    Typing,
+    Switching,
+    End,
+}
+
 export default {
     data() {
         return {
             action: action_default(),
-            action_data: action_default(),
+            type_text: "",
+            state: ActionState.End,
             mutex: new Mutex(),
         }
     },
-    async created() {
+    async mounted() {
         document.addEventListener('keydown', this.onkeydown)
         await this.mutex.runExclusive(this.fetch_current_run)
         await this.start_type_anime()
     },
+    async unmounted() {
+        document.removeEventListener('keydown', this.onkeydown)
+    },
     methods: {
         async go_home() {
-            this.action_data = action_default()
-            this.action = action_default()
             await router.replace("/")
         },
         // Should be called in mutex
         async fetch_current_run() {
-            let res = await invoke<Action | null>("current_run")
-            console.log(res)
+            const res = await invoke<Action | null>("current_run")
+            console.info(res)
             if (res != null) {
-                this.action_data = res
-                this.action.character = this.action_data.character
-                if (this.action_data.bgm != undefined) {
-                    this.action.bgm = convertFileSrc(this.action_data.bgm);
+                this.action = res
+                if (this.action.bgm != undefined) {
+                    this.action.bgm = convertFileSrc(this.action.bgm);
                     (document.getElementById("bgm") as HTMLAudioElement).load()
                 }
             } else {
-                this.go_home()
+                await this.go_home()
             }
         },
         // Should be called in mutex
@@ -55,28 +74,32 @@ export default {
             await this.mutex.runExclusive(this.fetch_next_run)
             await this.start_type_anime()
         },
+        end_typing(wait_switch: boolean = false) {
+            this.type_text = this.action.line
+            this.state = this.action.switches.length != 0 ? (wait_switch ? this.state : ActionState.Switching) : ActionState.End
+        },
         // Shouldn't be called in mutex
         async start_type_anime() {
-            this.action.line = ""
-            this.action.switches = []
-            while (this.action.line.length < this.action_data.line.length) {
-                this.action.line += this.action_data.line[this.action.line.length]
+            this.state = ActionState.Typing
+            this.type_text = ""
+            while (this.type_text.length < this.action.line.length) {
+                this.type_text += this.action.line[this.type_text.length]
                 await setTimeout(10)
             }
+            this.end_typing(true)
         },
         async next() {
-            if (this.action.switches.length == 0) {
+            if (this.state != ActionState.Switching) {
                 const new_text = await tryAcquire(this.mutex).runExclusive(async () => {
-                    if (this.action.line.length < this.action_data.line.length) {
-                        this.action.line = this.action_data.line
-                        return false
-                    } else if (this.action.switches.length < this.action_data.switches.length) {
-                        this.action.switches = this.action_data.switches
-                        return false
-                    } else {
-                        await this.fetch_next_run()
-                        return true
+                    switch (this.state) {
+                        case ActionState.Typing:
+                            this.end_typing()
+                            break
+                        case ActionState.End:
+                            await this.fetch_next_run()
+                            return true
                     }
+                    return false
                 }).catch(_ => { })
                 if (new_text) {
                     await this.start_type_anime()
@@ -84,10 +107,12 @@ export default {
             }
         },
         async next_fast() {
-            await tryAcquire(this.mutex).runExclusive(async () => {
-                await this.fetch_next_run()
-                this.action = this.action_data
-            }).catch(_ => { })
+            if (this.state != ActionState.Switching) {
+                await tryAcquire(this.mutex).runExclusive(async () => {
+                    await this.fetch_next_run()
+                    this.end_typing()
+                }).catch(_ => { })
+            }
         },
         async onkeydown(e: KeyboardEvent) {
             if (e.key == "Enter" || e.key == " " || e.key == "ArrowDown") {
@@ -95,18 +120,6 @@ export default {
             }
         }
     }
-}
-
-interface Action {
-    line: string,
-    character: string | null,
-    switches: Array<Switch>,
-    bgm: string | undefined,
-}
-
-interface Switch {
-    text: string,
-    enabled: boolean,
 }
 </script>
 
@@ -120,7 +133,7 @@ interface Switch {
                 <h4 class="card-title">{{ action.character }}</h4>
             </div>
             <div class="card-body lines">
-                <p class="h4 card-text">{{ action.line }}</p>
+                <p class="h4 card-text">{{ type_text }}</p>
             </div>
         </div>
         <div class="commands">
@@ -145,7 +158,7 @@ interface Switch {
                 </button>
             </div>
         </div>
-        <div class="container-switches" v-bind:hidden="action.switches.length == 0">
+        <div class="container-switches" v-bind:hidden="state != ActionState.Switching">
             <div class="switches">
                 <div class="switches-center">
                     <div class="d-grid gap-5 col-8 mx-auto">
