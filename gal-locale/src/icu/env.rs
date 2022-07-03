@@ -42,7 +42,7 @@ pub unsafe fn imp_uloc_acceptLanguage(
     )
 }
 
-pub fn imp_uloc_getDisplayName(
+pub unsafe fn imp_uloc_getDisplayName(
     localeID: *const ::std::os::raw::c_char,
     inLocaleID: *const ::std::os::raw::c_char,
     result: *mut UChar,
