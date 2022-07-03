@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { invoke } from '@tauri-apps/api/tauri'
-import { appWindow } from "@tauri-apps/api/window";
 import { Locale } from 'vue-i18n';
 import router from '../router';
+import App from '../App.vue'
 </script>
 
 <script lang="ts">
@@ -13,7 +13,6 @@ export default {
         }
     },
     async created() {
-        appWindow.listen("tauri://close-requested", async () => { await this.quit() })
         const loc = localStorage.getItem("locale") ?? await invoke<string | null>("choose_locale", { locales: this.$i18n.availableLocales })
         if (loc != null) {
             if (this.$i18n.availableLocales.includes(loc)) {
@@ -33,15 +32,6 @@ export default {
                 router.replace("/game")
             }
         },
-        async quit() {
-            const confirmed = await this.$vbsModal.confirm({
-                title: this.$t("quit"),
-                message: this.$t("quitConfirm"),
-            })
-            if (confirmed) {
-                await appWindow.close()
-            }
-        },
         save_locale(loc: Locale) {
             localStorage.setItem("locale", loc)
         }
@@ -55,7 +45,7 @@ export default {
             <h1>{{ title }}</h1>
             <button class="btn btn-primary" v-on:click="new_game">{{ $t("newGame") }}</button>
             <router-link class="btn btn-primary" to="/about">{{ $t("about") }}</router-link>
-            <button class="btn btn-primary" v-on:click="quit">{{ $t("quit") }}</button>
+            <button class="btn btn-primary" v-on:click="App.methods?.quit">{{ $t("quit") }}</button>
             <select class="form-select" v-model="$i18n.locale"
                 v-on:change="(e) => save_locale((e.target as HTMLInputElement).value)">
                 <option v-for="locale in $i18n.availableLocales" :key="`locale-${locale}`" :value="locale">{{ locale
