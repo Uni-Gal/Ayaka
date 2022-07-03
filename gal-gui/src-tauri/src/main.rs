@@ -38,17 +38,17 @@ impl Display for CommandError {
 }
 
 #[command]
-fn choose_locale(locales: Vec<String>) -> CommandResult<Option<String>> {
+fn choose_locale(locales: Vec<Locale>) -> CommandResult<Option<Locale>> {
     let current = Locale::current();
-    let locales = locales
-        .into_iter()
-        .map(|s| s.parse::<Locale>())
-        .try_collect::<Vec<_>>()?;
     info!("Choose {} from {:?}", current, locales);
-    Ok(current.choose_from(locales.iter())?.map(|loc| {
-        info!("Chose locale {}", loc);
-        loc.to_string()
-    }))
+    Ok(current.choose_from(locales.iter())?)
+}
+
+#[command]
+fn locale_native_name(loc: Locale) -> CommandResult<String> {
+    let name = loc.native_name()?;
+    info!("{} is {}", loc, name);
+    Ok(name)
 }
 
 #[derive(Default)]
@@ -198,6 +198,7 @@ fn main() -> Result<()> {
         })
         .invoke_handler(tauri::generate_handler![
             choose_locale,
+            locale_native_name,
             info,
             start_new,
             next_run,

@@ -1,24 +1,17 @@
 mod icu;
 
+use anyhow::Result;
 use icu::*;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
-use std::ffi::{CString, FromVecWithNulError, NulError};
+use std::ffi::CString;
 use std::fmt::Display;
 use std::str::FromStr;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum ICUError {
-    #[error("ICU error code: {0}")]
-    ICU(UErrorCode),
-    #[error(transparent)]
-    Nul(#[from] NulError),
-    #[error(transparent)]
-    FromVecNul(#[from] FromVecWithNulError),
-}
-
-pub type ICUResult<T> = std::result::Result<T, ICUError>;
+#[error("ICU error code: {0}")]
+pub struct ICUError(UErrorCode);
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
 pub struct Locale(CString);
@@ -31,13 +24,17 @@ impl Locale {
     pub fn choose_from(
         &self,
         locales: impl Iterator<Item = impl Borrow<Self>>,
-    ) -> ICUResult<Option<Self>> {
+    ) -> Result<Option<Self>> {
         choose([self].into_iter(), locales)
+    }
+
+    pub fn native_name(&self) -> Result<String> {
+        native_name(self)
     }
 }
 
 impl FromStr for Locale {
-    type Err = ICUError;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         parse(s)
@@ -74,6 +71,17 @@ impl<'de> Deserialize<'de> for Locale {
             }
         }
         deserializer.deserialize_any(LocaleVisitor)
+    }
+}
+
+impl Serialize for Locale {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::Error;
+
+        serializer.serialize_str(self.0.to_str().map_err(|e| S::Error::custom(e))?)
     }
 }
 

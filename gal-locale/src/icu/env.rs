@@ -42,6 +42,16 @@ pub unsafe fn imp_uloc_acceptLanguage(
     )
 }
 
+pub fn imp_uloc_getDisplayName(
+    localeID: *const ::std::os::raw::c_char,
+    inLocaleID: *const ::std::os::raw::c_char,
+    result: *mut UChar,
+    maxResultSize: i32,
+    err: *mut UErrorCode,
+) -> i32 {
+    versioned_function!(uloc_getDisplayName)(localeID, inLocaleID, result, maxResultSize, err)
+}
+
 pub unsafe fn imp_uenum_openCharStringsEnumeration(
     strings: *const *const ::std::os::raw::c_char,
     count: i32,

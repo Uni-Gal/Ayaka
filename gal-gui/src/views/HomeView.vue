@@ -8,7 +8,8 @@ import router from '../router';
 export default {
     data() {
         return {
-            title: ""
+            title: "",
+            locale_names: new Map<Locale, string>()
         }
     },
     async created() {
@@ -23,6 +24,9 @@ export default {
         }
         const res = await invoke<{ title: string }>("info")
         this.title = res.title
+        this.$i18n.availableLocales.forEach(async (locale) => {
+            this.locale_names.set(locale, await this.locale_native_name(locale))
+        })
     },
     methods: {
         async new_game() {
@@ -33,6 +37,9 @@ export default {
         },
         save_locale(loc: Locale) {
             localStorage.setItem("locale", loc)
+        },
+        async locale_native_name(loc: Locale) {
+            return await invoke<string>("locale_native_name", { loc: loc })
         }
     }
 }
@@ -48,7 +55,7 @@ export default {
             <select class="form-select" v-model="$i18n.locale"
                 v-on:change="(e) => save_locale((e.target as HTMLInputElement).value)">
                 <option v-for="locale in $i18n.availableLocales" :key="`locale-${locale}`" :value="locale">
-                    {{ locale }}
+                    {{ locale_names.get(locale) ?? locale }}
                 </option>
             </select>
         </div>
