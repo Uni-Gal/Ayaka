@@ -8,9 +8,8 @@
 use gal_runtime::{
     anyhow::{self, anyhow, Result},
     log::{self, info},
-    Command, Context, Game, Line, Locale, RawValue,
+    Action, ActionData, Context, Game, Locale, RawValue,
 };
-use gal_script::Program;
 use serde::Serialize;
 use serde_json::json;
 use std::{fmt::Display, sync::Arc};
@@ -55,7 +54,6 @@ fn locale_native_name(loc: Locale) -> CommandResult<String> {
 struct Storage {
     context: Mutex<Option<Context>>,
     action: Mutex<Option<Action>>,
-    switch_actions: Mutex<Vec<Program>>,
 }
 
 #[command]
@@ -77,88 +75,29 @@ async fn start_new(
     Ok(())
 }
 
-#[derive(Debug, Clone, Serialize)]
-struct Action {
-    pub line: String,
-    pub character: Option<String>,
-    pub switches: Vec<DisplaySwitch>,
-    pub bgm: Option<String>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-struct DisplaySwitch {
-    pub text: String,
-    pub enabled: bool,
-}
-
 #[command]
-async fn next_run(game: State<'_, Arc<Game>>, storage: State<'_, Storage>) -> CommandResult<bool> {
+async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
     let mut context = storage.context.lock().await;
-    let action = context
-        .as_mut()
-        .and_then(|context| context.next_run().map(|text| (context, text)))
-        .map(|(context, text)| {
-            let mut lines = String::new();
-            let mut chname = None;
-            let mut switches = vec![];
-            let mut switch_actions = vec![];
-            let mut bgm = None;
-            for line in text.0.into_iter() {
-                match line {
-                    Line::Str(s) => lines.push_str(&s),
-                    Line::Cmd(cmd) => match cmd {
-                        Command::Par => lines.push('\n'),
-                        Command::Character(_, name) => chname = Some(name),
-                        Command::Exec(p) => lines.push_str(&context.call(&p).get_str()),
-                        Command::Switch {
-                            text,
-                            action,
-                            enabled,
-                        } => {
-                            // unwrap: when enabled is None, it means true.
-                            let enabled =
-                                enabled.map(|p| context.call(&p).get_bool()).unwrap_or(true);
-                            switches.push(DisplaySwitch { text, enabled });
-                            switch_actions.push(action);
-                        }
-                        Command::Bgm(index) => bgm = Some(index),
-                    },
-                }
-            }
-            let bgm = bgm
-                .map(|index| game.bgm_dir().join(format!("{}.mp3", index)))
-                .map(|path| {
-                    std::path::absolute(path)
-                        .unwrap()
-                        .to_string_lossy()
-                        .into_owned()
-                });
-            (
-                Action {
-                    line: lines,
-                    character: chname,
-                    switches,
-                    bgm,
-                },
-                switch_actions,
-            )
-        });
-    if let Some((action, sactions)) = action {
+    let action = context.as_mut().and_then(|context| context.next_run());
+    if let Some(action) = action {
         info!("Next action: {:?}", action);
         *storage.action.lock().await = Some(action);
-        *storage.switch_actions.lock().await = sactions;
         Ok(true)
     } else {
         info!("No action left.");
         *storage.action.lock().await = None;
-        *storage.switch_actions.lock().await = vec![];
         Ok(false)
     }
 }
 
 #[command]
-async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<Action>> {
-    Ok(storage.action.lock().await.clone())
+async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<ActionData>> {
+    Ok(storage
+        .action
+        .lock()
+        .await
+        .as_ref()
+        .map(|action| action.data.clone()))
 }
 
 #[command]
@@ -168,9 +107,10 @@ async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue
     let context = context
         .as_mut()
         .ok_or_else(|| anyhow!("Context not initialized."))?;
-    let actions = storage.switch_actions.lock().await;
-    let action = actions
-        .get(i)
+    let action = storage.action.lock().await;
+    let action = action
+        .as_ref()
+        .and_then(|action| action.switch_actions.get(i))
         .ok_or_else(|| anyhow!("Index error: {}", i))?;
     Ok(context.call(action))
 }

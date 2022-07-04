@@ -1,7 +1,7 @@
 use clap::Parser;
 use gal_runtime::{
     anyhow::{bail, Result},
-    Command, Context, Game, Line, Locale,
+    Context, Game, Locale,
 };
 use std::{
     ffi::OsString,
@@ -45,43 +45,26 @@ fn main() -> Result<()> {
             bail!("Check failed.");
         }
     }
-    while let Some(text) = ctx.next_run() {
-        let mut item_index = 0;
-        let mut item_actions = vec![];
-        for line in text.0 {
-            match line {
-                Line::Str(s) => print!("{}", s),
-                Line::Cmd(c) => match c {
-                    Command::Par => println!(),
-                    Command::Character(_, name) => print!("_{}_", name),
-                    Command::Exec(p) => print!("{}", ctx.call(&p).get_str()),
-                    Command::Switch {
-                        text: stext,
-                        action,
-                        enabled,
-                    } => {
-                        // unwrap: when enabled is None, it means true.
-                        let enabled = enabled.map(|p| ctx.call(&p).get_bool()).unwrap_or(true);
-                        if enabled {
-                            print!("\n-{}- {}", item_index + 1, stext);
-                            item_index += 1;
-                        } else {
-                            print!("\n-x- {}", stext);
-                        }
-                        item_actions.push(action);
-                    }
-                    Command::Bgm(_) => {}
-                },
-            }
+    while let Some(action) = ctx.next_run() {
+        if let Some(name) = &action.data.character {
+            print!("_{}_", name);
         }
-        if item_index > 0 {
+        print!("{}", action.data.line);
+        if !action.data.switches.is_empty() {
+            for (i, s) in action.data.switches.iter().enumerate() {
+                if s.enabled {
+                    print!("\n-{}- {}", i + 1, s.text);
+                } else {
+                    print!("\n-x- {}", s.text);
+                }
+            }
             println!();
             loop {
                 let s = read_line()?;
                 if let Ok(i) = s.trim().parse::<usize>() {
-                    let valid = i > 0 && i <= item_index;
+                    let valid = i > 0 && i <= action.switch_actions.len();
                     if valid {
-                        ctx.call(&item_actions[i - 1]);
+                        ctx.call(&action.switch_actions[i - 1]);
                         break;
                     }
                 }

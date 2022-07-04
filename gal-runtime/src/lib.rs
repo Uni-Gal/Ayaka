@@ -1,3 +1,4 @@
+#![feature(absolute_path)]
 #![feature(round_char_boundary)]
 
 pub mod config;
@@ -108,34 +109,66 @@ impl Context {
         )
     }
 
-    // Translate character names
-    fn exact_text(&self, t: Text) -> Text {
-        // TODO: reduce allocation
-        let mut lines = vec![];
+    fn exact_text(&mut self, t: Text) -> Action {
+        let mut lines = String::new();
+        let mut chname = None;
+        let mut switches = vec![];
+        let mut switch_actions = vec![];
+        let mut bgm = None;
         for line in t.0.into_iter() {
-            let line = match line {
-                Line::Cmd(Command::Character(key, mut alter)) => {
-                    if alter.is_empty() {
-                        alter = self
-                            .game
-                            .find_res_fallback(&self.loc)
+            match line {
+                Line::Str(s) => lines.push_str(&s),
+                Line::Cmd(cmd) => match cmd {
+                    Command::Par => lines.push('\n'),
+                    Command::Character(key, alter) => {
+                        chname = if alter.is_empty() {
                             // TODO: reduce allocation
-                            .and_then(|map| map.get(&format!("ch_{}", key)))
-                            .map(|v| v.get_str().into_owned())
-                            .unwrap_or_default();
+                            let res_key = format!("ch_{}", key);
+                            self.game
+                                .find_res_fallback(&self.loc)
+                                .and_then(|map| map.get(&res_key))
+                                .map(|v| v.get_str().into_owned())
+                        } else {
+                            Some(alter)
+                        }
                     }
-                    Line::Cmd(Command::Character(key, alter))
-                }
-                _ => line,
-            };
-            lines.push(line);
+                    Command::Exec(p) => lines.push_str(&self.call(&p).get_str()),
+                    Command::Switch {
+                        text,
+                        action,
+                        enabled,
+                    } => {
+                        // unwrap: when enabled is None, it means true.
+                        let enabled = enabled.map(|p| self.call(&p).get_bool()).unwrap_or(true);
+                        switches.push(Switch { text, enabled });
+                        switch_actions.push(action);
+                    }
+                    Command::Bgm(index) => bgm = Some(index),
+                },
+            }
         }
-        Text(lines)
+        let bgm = bgm
+            .map(|index| self.game.bgm_dir().join(format!("{}.mp3", index)))
+            .map(|path| {
+                std::path::absolute(path)
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned()
+            });
+        Action {
+            data: ActionData {
+                line: lines,
+                character: chname,
+                switches,
+                bgm,
+            },
+            switch_actions,
+        }
     }
 
     fn parse_text_rich_error(&self, text: &str) -> Text {
         match TextParser::new(text).parse() {
-            Ok(t) => self.exact_text(t),
+            Ok(t) => t,
             Err(e) => {
                 error!("{}", self.rich_error(text, &e));
                 Text::default()
@@ -152,13 +185,13 @@ impl Context {
         }
     }
 
-    pub fn next_run(&mut self) -> Option<Text> {
+    pub fn next_run(&mut self) -> Option<Action> {
         let cur_para = self.current_paragraph();
         if cur_para.is_some() {
             if let Some(act) = self.current_text() {
                 let text = Some(self.parse_text_rich_error(act));
                 self.ctx.cur_act += 1;
-                text
+                text.map(|t| self.exact_text(t))
             } else {
                 self.ctx.cur_para = cur_para
                     .and_then(|p| p.next.as_ref())

@@ -5,13 +5,30 @@ use crate::{
 use gal_locale::Locale;
 use gal_script::{
     log::{debug, trace, warn},
-    RawValue,
+    Program, RawValue,
 };
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
+
+pub type VarMap = HashMap<String, RawValue>;
+
+#[derive(Debug, Deserialize)]
+pub struct Paragraph {
+    pub tag: String,
+    pub title: Option<String>,
+    pub texts: Vec<String>,
+    pub next: Option<String>,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub struct RawContext {
+    pub cur_para: String,
+    pub cur_act: usize,
+    pub locals: VarMap,
+}
 
 #[derive(Debug, Default, Deserialize)]
 struct GameData {
@@ -76,12 +93,20 @@ impl Game {
         &self.data.author
     }
 
-    pub fn paras(&self) -> &std::collections::HashMap<gal_locale::Locale, Vec<Paragraph>> {
+    pub fn paras(&self) -> &HashMap<Locale, Vec<Paragraph>> {
         &self.data.paras
+    }
+
+    pub fn resources(&self) -> &HashMap<Locale, VarMap> {
+        &self.data.res
     }
 
     pub fn base_lang(&self) -> &Locale {
         &self.data.base_lang
+    }
+
+    pub fn plugin_dir(&self) -> PathBuf {
+        self.root_path.join(&self.data.plugins)
     }
 
     pub fn bgm_dir(&self) -> PathBuf {
@@ -121,23 +146,6 @@ impl Game {
     }
 }
 
-#[derive(Debug, Deserialize)]
-pub struct Paragraph {
-    pub tag: String,
-    pub title: Option<String>,
-    pub texts: Vec<String>,
-    pub next: Option<String>,
-}
-
-#[derive(Debug, Default, Deserialize, Serialize)]
-pub struct RawContext {
-    pub cur_para: String,
-    pub cur_act: usize,
-    pub locals: VarMap,
-}
-
-pub type VarMap = HashMap<String, RawValue>;
-
 pub struct Fallback<'a, T> {
     data: Option<&'a T>,
     base_data: Option<&'a T>,
@@ -158,4 +166,24 @@ impl<'a, T> Fallback<'a, T> {
             self.base_data.and_then(|t| f(t))
         })
     }
+}
+
+#[derive(Debug, Default)]
+pub struct Action {
+    pub data: ActionData,
+    pub switch_actions: Vec<Program>,
+}
+
+#[derive(Debug, Default, Clone, Serialize)]
+pub struct ActionData {
+    pub line: String,
+    pub character: Option<String>,
+    pub switches: Vec<Switch>,
+    pub bgm: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct Switch {
+    pub text: String,
+    pub enabled: bool,
 }
