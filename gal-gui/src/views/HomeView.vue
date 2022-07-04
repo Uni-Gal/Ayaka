@@ -6,6 +6,7 @@ import router from '../router';
 
 <script lang="ts">
 export default {
+    emits: ["quit"],
     data() {
         return {
             title: "",

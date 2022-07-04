@@ -15,6 +15,7 @@ enum ActionState {
 }
 
 export default {
+    emits: ["quit"],
     data() {
         return {
             action: { line: "", character: null, switches: [], bgm: undefined } as Action,

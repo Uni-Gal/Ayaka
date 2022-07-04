@@ -7,6 +7,7 @@ import { info } from '../interop'
 
 <script lang="ts">
 export default {
+    emits: ["quit"],
     data() {
         return {
             title: "",
@@ -49,7 +50,7 @@ export default {
     </div>
     <div>
         <button class="btn btn-outline-primary" v-on:click="go_home">
-            <FontAwesomeIcon icon="fas fa-house"></FontAwesomeIcon>
+            <FontAwesomeIcon icon="fas fa-arrow-left"></FontAwesomeIcon>
         </button>
     </div>
 </template>
