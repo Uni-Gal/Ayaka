@@ -2,8 +2,6 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
-#![feature(absolute_path)]
-#![feature(iterator_try_collect)]
 
 use gal_runtime::{
     anyhow::{self, anyhow, Result},
