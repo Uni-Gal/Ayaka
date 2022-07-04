@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/tauri'
 import { getName, getTauriVersion, getVersion } from '@tauri-apps/api/app';
 import router from '../router';
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import { info } from '../interop'
 </script>
 
 <script lang="ts">
@@ -17,7 +17,7 @@ export default {
         }
     },
     async created() {
-        const res = await invoke<{ title: string, author: string }>("info")
+        const res = await info()
         this.title = res.title
         this.author = res.author
         this.app_name = await getName();

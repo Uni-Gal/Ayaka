@@ -1,28 +1,13 @@
 <script setup lang="ts">
-import { invoke, convertFileSrc } from '@tauri-apps/api/tauri'
+import { convertFileSrc } from '@tauri-apps/api/tauri'
 import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import router from '../router'
+import { current_run, next_run, switch_, Action } from '../interop'
 </script>
 
 <script lang="ts">
-function action_default(): Action {
-    return { line: "", character: null, switches: [], bgm: undefined }
-}
-
-interface Action {
-    line: string,
-    character: string | null,
-    switches: Array<Switch>,
-    bgm: string | undefined,
-}
-
-interface Switch {
-    text: string,
-    enabled: boolean,
-}
-
 enum ActionState {
     Typing,
     Switching,
@@ -32,7 +17,7 @@ enum ActionState {
 export default {
     data() {
         return {
-            action: action_default(),
+            action: { line: "", character: null, switches: [], bgm: undefined } as Action,
             type_text: "",
             state: ActionState.End,
             mutex: new Mutex(),
@@ -52,7 +37,7 @@ export default {
         },
         // Should be called in mutex
         async fetch_current_run() {
-            const res = await invoke<Action | null>("current_run")
+            const res = await current_run()
             console.info(res)
             if (res != null) {
                 this.action = res
@@ -66,11 +51,11 @@ export default {
         },
         // Should be called in mutex
         async fetch_next_run() {
-            await invoke<boolean>("next_run")
+            await next_run()
             await this.fetch_current_run()
         },
         async switch_run(i: number) {
-            await invoke<void>("switch", { i: i })
+            await switch_(i)
             await this.mutex.runExclusive(this.fetch_next_run)
             await this.start_type_anime()
         },
@@ -124,49 +109,48 @@ export default {
 </script>
 
 <template>
-    <div class="backboard" v-on:click="next">
-        <audio id="bgm" controls autoplay hidden>
-            <source v-bind:src="action.bgm" type="audio/mpeg">
-        </audio>
-        <div class="card card-lines">
-            <div class="card-header char">
-                <h4 class="card-title">{{ action.character }}</h4>
-            </div>
-            <div class="card-body lines">
-                <p class="h4 card-text">{{ type_text }}</p>
-            </div>
+    <audio id="bgm" controls autoplay hidden>
+        <source v-bind:src="action.bgm" type="audio/mpeg">
+    </audio>
+    <div class="card card-lines">
+        <div class="card-header char">
+            <h4 class="card-title">{{ action.character }}</h4>
         </div>
-        <div class="commands">
-            <div class="btn-group" role="group">
-                <button class="btn btn-outline-primary btn-command">
-                    <FontAwesomeIcon icon="fas fa-backward-step"></FontAwesomeIcon>
-                </button>
-                <button class="btn btn-outline-primary btn-command">
-                    <FontAwesomeIcon icon="fas fa-play"></FontAwesomeIcon>
-                </button>
-                <button class="btn btn-outline-primary btn-command" v-on:click="next">
-                    <FontAwesomeIcon icon="fas fa-forward-step"></FontAwesomeIcon>
-                </button>
-                <button class="btn btn-outline-primary btn-command">
-                    <FontAwesomeIcon icon="fas fa-forward"></FontAwesomeIcon>
-                </button>
-                <button class="btn btn-outline-primary btn-command">
-                    <FontAwesomeIcon icon="fas fa-gear"></FontAwesomeIcon>
-                </button>
-                <button class="btn btn-outline-primary btn-command" v-on:click="go_home">
-                    <FontAwesomeIcon icon="fas fa-house"></FontAwesomeIcon>
-                </button>
-            </div>
+        <div class="card-body lines">
+            <p class="h4 card-text">{{ type_text }}</p>
         </div>
-        <div class="container-switches" v-bind:hidden="state != ActionState.Switching">
-            <div class="switches">
-                <div class="switches-center">
-                    <div class="d-grid gap-5 col-8 mx-auto">
-                        <button class="btn btn-primary switch" v-for="(s, i) in action.switches"
-                            v-on:click="switch_run(i)" v-bind:disabled="!s.enabled">
-                            {{ s.text }}
-                        </button>
-                    </div>
+    </div>
+    <div class="backboard" v-on:click="next"></div>
+    <div class="commands">
+        <div class="btn-group" role="group">
+            <button class="btn btn-outline-primary btn-command">
+                <FontAwesomeIcon icon="fas fa-backward-step"></FontAwesomeIcon>
+            </button>
+            <button class="btn btn-outline-primary btn-command">
+                <FontAwesomeIcon icon="fas fa-play"></FontAwesomeIcon>
+            </button>
+            <button class="btn btn-outline-primary btn-command" v-on:click="next">
+                <FontAwesomeIcon icon="fas fa-forward-step"></FontAwesomeIcon>
+            </button>
+            <button class="btn btn-outline-primary btn-command">
+                <FontAwesomeIcon icon="fas fa-forward"></FontAwesomeIcon>
+            </button>
+            <button class="btn btn-outline-primary btn-command">
+                <FontAwesomeIcon icon="fas fa-gear"></FontAwesomeIcon>
+            </button>
+            <button class="btn btn-outline-primary btn-command" v-on:click="go_home">
+                <FontAwesomeIcon icon="fas fa-house"></FontAwesomeIcon>
+            </button>
+        </div>
+    </div>
+    <div class="container-switches" v-bind:hidden="state != ActionState.Switching">
+        <div class="switches">
+            <div class="switches-center">
+                <div class="d-grid gap-5 col-8 mx-auto">
+                    <button class="btn btn-primary switch" v-for="(s, i) in action.switches" v-on:click="switch_run(i)"
+                        v-bind:disabled="!s.enabled">
+                        {{ s.text }}
+                    </button>
                 </div>
             </div>
         </div>
@@ -178,7 +162,7 @@ export default {
     position: absolute;
     top: 0;
     left: 0;
-    bottom: 0;
+    bottom: 2.5em;
     right: 0;
 }
 

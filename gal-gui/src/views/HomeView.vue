@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { invoke } from '@tauri-apps/api/tauri'
 import { Locale } from 'vue-i18n';
+import { choose_locale, info, next_run, start_new, locale_native_name } from '../interop';
 import router from '../router';
 </script>
 
@@ -13,7 +13,7 @@ export default {
         }
     },
     async created() {
-        const loc = localStorage.getItem("locale") ?? await invoke<string | null>("choose_locale", { locales: this.$i18n.availableLocales })
+        const loc = localStorage.getItem("locale") ?? await choose_locale(this.$i18n.availableLocales)
         if (loc != null) {
             if (this.$i18n.availableLocales.includes(loc)) {
                 this.$i18n.locale = loc
@@ -22,7 +22,7 @@ export default {
                 console.error("Wrong locale %s", loc)
             }
         }
-        const res = await invoke<{ title: string }>("info")
+        const res = await info()
         this.title = res.title
         this.$i18n.availableLocales.forEach(async (locale) => {
             this.locale_names.set(locale, await this.locale_native_name(locale))
@@ -30,8 +30,8 @@ export default {
     },
     methods: {
         async new_game() {
-            await invoke<void>("start_new", { locale: this.$i18n.locale })
-            if (await invoke<boolean>("next_run")) {
+            await start_new(this.$i18n.locale)
+            if (await next_run()) {
                 router.replace("/game")
             }
         },
@@ -39,7 +39,7 @@ export default {
             localStorage.setItem("locale", loc)
         },
         async locale_native_name(loc: Locale) {
-            return await invoke<string>("locale_native_name", { loc: loc })
+            return await locale_native_name(loc)
         }
     }
 }
