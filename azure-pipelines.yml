@@ -30,7 +30,7 @@ jobs:
     displayName: "Install dependencies on Linux"
 
   - script: |
-      brew install icu4c pkgconf
+      brew install icu4c pkg-config
     condition: eq(variables.platform, 'mac')
     displayName: "Install dependencies on MacOS"
 
