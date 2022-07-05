@@ -77,7 +77,7 @@
         "resizable": true,
         "title": "GalGUI",
         "width": 800,
-        "theme": "Light"
+        "theme": "Dark"
       }
     ],
     "cli": {

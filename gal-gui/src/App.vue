@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import 'bootstrap/dist/css/bootstrap.min.css'
-import { appWindow } from "@tauri-apps/api/window";
+import 'bootswatch/dist/darkly/bootstrap.min.css'
+import { appWindow } from "@tauri-apps/api/window"
 </script>
 
 <script lang="ts">

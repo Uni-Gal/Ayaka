@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { Locale } from 'vue-i18n';
-import { choose_locale, info, next_run, start_new, locale_native_name } from '../interop';
-import router from '../router';
+import { Locale } from 'vue-i18n'
+import { choose_locale, info, next_run, start_new, locale_native_name } from '../interop'
+import router from '../router'
 </script>
 
 <script lang="ts">
