@@ -4,7 +4,7 @@ trigger:
       - master
 
 jobs:
-- job: Build_Windows
+- job: Build
   strategy:
     matrix:
       win-x64:
