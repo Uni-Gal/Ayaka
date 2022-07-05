@@ -15,45 +15,38 @@ use std::{
     ffi::{CStr, CString},
     ptr::null_mut,
 };
-use widestring::U16CString;
 
 trait UChar: Sized + Default + Copy {
-    type CString;
-
-    fn string_from_vec_with_nul(buffer: Vec<Self>) -> Result<Self::CString>;
+    fn string_from_buffer(buffer: Vec<Self>) -> String;
 }
 
 impl UChar for u8 {
-    type CString = std::ffi::CString;
-
-    fn string_from_vec_with_nul(buffer: Vec<Self>) -> Result<Self::CString> {
-        Ok(CString::from_vec_with_nul(buffer)?)
+    fn string_from_buffer(buffer: Vec<Self>) -> String {
+        unsafe { String::from_utf8_unchecked(buffer) }
     }
 }
 
 impl UChar for u16 {
-    type CString = widestring::U16CString;
-
-    fn string_from_vec_with_nul(buffer: Vec<Self>) -> Result<Self::CString> {
-        Ok(U16CString::from_vec(buffer)?)
+    fn string_from_buffer(buffer: Vec<Self>) -> String {
+        String::from_utf16_lossy(&buffer)
     }
 }
 
 unsafe fn call_with_buffer<T: UChar>(
     mut f: impl FnMut(*mut T, i32, *mut UErrorCode) -> i32,
-) -> Result<T::CString> {
+) -> Result<String> {
     let mut error_code = U_ZERO_ERROR;
     let len = f(null_mut(), 0, &mut error_code);
     if error_code > U_ZERO_ERROR && error_code != U_BUFFER_OVERFLOW_ERROR {
         return Err(ICUError(error_code).into());
     }
     error_code = U_ZERO_ERROR;
-    let mut buffer = vec![T::default(); len as usize + 1];
-    f(buffer.as_mut_ptr(), len + 1, &mut error_code);
+    let mut buffer = vec![T::default(); len as usize];
+    f(buffer.as_mut_ptr(), len, &mut error_code);
     if error_code > U_ZERO_ERROR {
         return Err(ICUError(error_code).into());
     }
-    T::string_from_vec_with_nul(buffer)
+    Ok(T::string_from_buffer(buffer))
 }
 
 pub fn choose(
@@ -66,7 +59,7 @@ pub fn choose(
     let loc = unsafe {
         call_with_buffer::<u8>(|buffer, len, status| {
             let locales_enum = imp_uenum_openCharStringsEnumeration(
-                locale_ptrs.as_ptr(),
+                locale_ptrs.as_ptr() as _,
                 locale_ptrs.len() as _,
                 status,
             );
@@ -92,7 +85,12 @@ pub fn choose(
 }
 
 pub fn current() -> Locale {
-    Locale(unsafe { CStr::from_ptr(imp_uloc_getDefault() as _) }.to_owned())
+    Locale(
+        unsafe { CStr::from_ptr(imp_uloc_getDefault() as _) }
+            .to_str()
+            .unwrap()
+            .to_string(),
+    )
 }
 
 pub fn parse(s: &str) -> Result<Locale> {
@@ -112,5 +110,4 @@ pub fn native_name(loc: &Locale) -> Result<String> {
             imp_uloc_getDisplayName(loc_ptr as _, loc_ptr as _, buffer, len, status)
         })
     }
-    .map(|name| name.to_string_lossy())
 }

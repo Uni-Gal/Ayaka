@@ -4,7 +4,6 @@ use anyhow::Result;
 use icu::*;
 use serde::{Deserialize, Serialize};
 use std::borrow::Borrow;
-use std::ffi::CString;
 use std::fmt::Display;
 use std::str::FromStr;
 use thiserror::Error;
@@ -14,7 +13,7 @@ use thiserror::Error;
 pub struct ICUError(UErrorCode);
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
-pub struct Locale(CString);
+pub struct Locale(String);
 
 impl Locale {
     pub fn current() -> Self {
@@ -43,7 +42,7 @@ impl FromStr for Locale {
 
 impl Display for Locale {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.0.to_str().unwrap())
+        f.write_str(&self.0)
     }
 }
 
@@ -79,9 +78,7 @@ impl Serialize for Locale {
     where
         S: serde::Serializer,
     {
-        use serde::ser::Error;
-
-        serializer.serialize_str(self.0.to_str().map_err(|e| S::Error::custom(e))?)
+        serializer.serialize_str(&self.0)
     }
 }
 
