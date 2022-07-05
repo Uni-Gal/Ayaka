@@ -6,8 +6,10 @@ clean:
 	rm -rf node_modules
 	rm -rf dist
 
-.PHONY: run release
+.PHONY: run dist release
 run: node_modules
 	npm run tauri dev -- -- -- $(FILE)
+dist: node_modules
+	npm run build
 release: node_modules
 	npm run tauri build

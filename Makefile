@@ -1,5 +1,5 @@
 .PHONY: test clean update
-test: plugins
+test: plugins dist-gui
 	cargo test
 clean:
 	cargo clean
@@ -18,10 +18,12 @@ sample: sample.yaml plugins
 sample-gui: sample.yaml plugins
 	cd gal-gui && $(MAKE) run FILE=$(realpath $<)
 
-.PHONY: release release-gui
+.PHONY: release release-gui dist-gui
 release:
 	cargo build --manifest-path=gal/Cargo.toml --release
 release-gui:
 	cd gal-gui && $(MAKE) release
+dist-gui:
+	cd gal-gui && $(MAKE) dist
 
 .SECONDARY:
