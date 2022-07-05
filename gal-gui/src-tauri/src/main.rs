@@ -3,9 +3,10 @@
     windows_subsystem = "windows"
 )]
 
+use flexi_logger::{FileSpec, LogSpecification, Logger};
 use gal_runtime::{
     anyhow::{self, anyhow, Result},
-    log::{self, info},
+    log::info,
     Action, ActionData, Context, Game, Locale, RawValue,
 };
 use serde::Serialize;
@@ -44,7 +45,6 @@ fn choose_locale(locales: Vec<Locale>) -> CommandResult<Option<Locale>> {
 #[command]
 fn locale_native_name(loc: Locale) -> CommandResult<String> {
     let name = loc.native_name()?;
-    info!("{} is {}", loc, name);
     Ok(name)
 }
 
@@ -114,9 +114,16 @@ async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue
 }
 
 fn main() -> Result<()> {
-    simple_logger::SimpleLogger::new()
-        .with_level(log::LevelFilter::Info)
-        .init()?;
+    let _log_handle = if cfg!(debug_assertions) {
+        Logger::with(LogSpecification::info())
+            .log_to_stdout()
+            .set_palette("b1;3;2;4;6".to_string())
+            .start()?
+    } else {
+        Logger::with(LogSpecification::info())
+            .log_to_file(FileSpec::default().directory("logs").basename("gal-gui"))
+            .start()?
+    };
     let port =
         portpicker::pick_unused_port().ok_or_else(|| anyhow!("failed to find unused port"))?;
     info!("Picked port {}", port);

@@ -24,4 +24,5 @@ build
 out
 
 # large assets
+logs
 bgms
