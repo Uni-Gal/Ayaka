@@ -29,11 +29,6 @@ jobs:
     condition: eq(variables.platform, 'linux')
     displayName: "Install dependencies on Linux"
 
-  - script: |
-      brew install icu4c pkg-config
-    condition: eq(variables.platform, 'mac')
-    displayName: "Install dependencies on MacOS"
-
   - pwsh: rustup target add wasm32-unknown-unknown
     displayName: "Install WASM32 target"
 
