@@ -171,40 +171,33 @@ impl Context {
 
     fn merge_action(&self, actions: Fallback<Action>) -> Option<Action> {
         if actions.is_some() {
+            let actions = actions.fallback();
             let data = {
-                let datas = actions.as_ref().map(|act| &act.data);
-                let line = datas
-                    .as_ref()
-                    .and_then(|data| {
-                        if data.line.is_empty() {
-                            None
-                        } else {
-                            Some(&data.line)
-                        }
-                    })
-                    .cloned()
+                let data = actions.data.fallback();
+                let line = data
+                    .line
+                    .and_then(|line| if line.is_empty() { None } else { Some(line) })
                     .unwrap_or_default();
-                let character = datas
-                    .as_ref()
-                    .and_then(|data| data.character.as_ref())
-                    .cloned();
-                let switches = datas
-                    .as_ref()
-                    .map(|data| data.switches.clone())
+                let character =
+                    data.character
+                        .and_then(|ch| if ch.is_empty() { None } else { Some(ch) });
+                let switches = data
+                    .switches
                     .into_iter()
                     .map(|s| {
-                        s.merge(|mut s, bases| {
-                            if s.text.is_empty() {
-                                s.text = bases.text;
-                            }
-                            if s.enabled != bases.enabled {
-                                s.enabled = bases.enabled;
-                            }
-                            s
-                        })
+                        let s = s.fallback();
+                        let text = s
+                            .text
+                            .and_then(|text| if text.is_empty() { None } else { Some(text) })
+                            .unwrap_or_default();
+                        let (enabled, base_enabled) = s.enabled.unzip();
+                        let enabled = base_enabled.or_else(|| enabled).unwrap_or(true);
+                        Switch { text, enabled }
                     })
                     .collect();
-                let bgm = datas.as_ref().and_then(|data| data.bgm.as_ref()).cloned();
+                let bgm = data
+                    .bgm
+                    .and_then(|bgm| if bgm.is_empty() { None } else { Some(bgm) });
                 ActionData {
                     line,
                     character,
@@ -212,14 +205,12 @@ impl Context {
                     bgm,
                 }
             };
-            let switch_actions = {
-                actions
-                    .map(|act| act.switch_actions)
-                    .into_iter()
-                    .map(|act| act.and_then(|p| if p.0.is_empty() { None } else { Some(p) }))
-                    .map(|p| p.unwrap_or(Program(vec![])))
-                    .collect()
-            };
+            let switch_actions = actions
+                .switch_actions
+                .into_iter()
+                .map(|act| act.and_then(|p| if p.0.is_empty() { None } else { Some(p) }))
+                .map(|p| p.unwrap_or(Program(vec![])))
+                .collect();
             Some(Action {
                 data,
                 switch_actions,

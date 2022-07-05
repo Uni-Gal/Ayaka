@@ -175,14 +175,8 @@ impl<T> Fallback<T> {
         Fallback::new(self.data.map(|t| f(t)), self.base_data.map(|t| f(t)))
     }
 
-    pub fn merge<V>(self, mut f: impl FnMut(T, T) -> V) -> V
-    where
-        T: Default,
-    {
-        f(
-            self.data.unwrap_or_default(),
-            self.base_data.unwrap_or_default(),
-        )
+    pub fn unzip(self) -> (Option<T>, Option<T>) {
+        (self.data, self.base_data)
     }
 }
 
@@ -242,4 +236,87 @@ pub struct ActionData {
 pub struct Switch {
     pub text: String,
     pub enabled: bool,
+}
+
+pub struct FallbackAction {
+    pub data: Fallback<ActionData>,
+    pub switch_actions: Fallback<Vec<Program>>,
+}
+
+impl Fallback<Action> {
+    pub fn fallback(self) -> FallbackAction {
+        let (act, base_act) = self.unzip();
+        let (data, sactions) = match act {
+            Some(act) => (Some(act.data), Some(act.switch_actions)),
+            None => (None, None),
+        };
+        let (base_data, base_sactions) = match base_act {
+            Some(act) => (Some(act.data), Some(act.switch_actions)),
+            None => (None, None),
+        };
+        FallbackAction {
+            data: Fallback::new(data, base_data),
+            switch_actions: Fallback::new(sactions, base_sactions),
+        }
+    }
+}
+
+pub struct FallbackActionData {
+    pub line: Fallback<String>,
+    pub character: Fallback<String>,
+    pub switches: Fallback<Vec<Switch>>,
+    pub bgm: Fallback<String>,
+}
+
+impl Fallback<ActionData> {
+    pub fn fallback(self) -> FallbackActionData {
+        let (data, base_data) = self.unzip();
+        let (line, ch, sw, bgm) = match data {
+            Some(data) => (
+                Some(data.line),
+                data.character,
+                Some(data.switches),
+                data.bgm,
+            ),
+            None => (None, None, None, None),
+        };
+        let (base_line, base_ch, base_sw, base_bgm) = match base_data {
+            Some(data) => (
+                Some(data.line),
+                data.character,
+                Some(data.switches),
+                data.bgm,
+            ),
+            None => (None, None, None, None),
+        };
+        FallbackActionData {
+            line: Fallback::new(line, base_line),
+            character: Fallback::new(ch, base_ch),
+            switches: Fallback::new(sw, base_sw),
+            bgm: Fallback::new(bgm, base_bgm),
+        }
+    }
+}
+
+pub struct FallbackSwitch {
+    pub text: Fallback<String>,
+    pub enabled: Fallback<bool>,
+}
+
+impl Fallback<Switch> {
+    pub fn fallback(self) -> FallbackSwitch {
+        let (s, base_s) = self.unzip();
+        let (text, enabled) = match s {
+            Some(s) => (Some(s.text), Some(s.enabled)),
+            None => (None, None),
+        };
+        let (base_text, base_enabled) = match base_s {
+            Some(s) => (Some(s.text), Some(s.enabled)),
+            None => (None, None),
+        };
+        FallbackSwitch {
+            text: Fallback::new(text, base_text),
+            enabled: Fallback::new(enabled, base_enabled),
+        }
+    }
 }
