@@ -11,10 +11,7 @@ cfg_if::cfg_if! {
 pub use platform::*;
 
 use crate::*;
-use std::{
-    ffi::{CStr, CString},
-    ptr::null_mut,
-};
+use std::ffi::{CStr, CString};
 
 trait UChar: Sized + Default + Copy {
     fn string_from_buffer(buffer: Vec<Self>) -> String;
@@ -35,16 +32,18 @@ impl UChar for u16 {
 unsafe fn call_with_buffer<T: UChar>(
     mut f: impl FnMut(*mut T, i32, *mut UErrorCode) -> i32,
 ) -> Result<String> {
+    let mut buffer = vec![T::default(); 10];
     let mut error_code = U_ZERO_ERROR;
-    let len = f(null_mut(), 0, &mut error_code);
-    if error_code > U_ZERO_ERROR && error_code != U_BUFFER_OVERFLOW_ERROR {
+    let mut len = f(buffer.as_mut_ptr(), buffer.len() as _, &mut error_code);
+    if error_code == U_BUFFER_OVERFLOW_ERROR || len > buffer.len() as _ {
+        buffer.resize(len as usize, T::default());
+        len = f(buffer.as_mut_ptr(), buffer.len() as _, &mut error_code);
+    }
+    if error_code != U_ZERO_ERROR {
         return Err(ICUError(error_code).into());
     }
-    error_code = U_ZERO_ERROR;
-    let mut buffer = vec![T::default(); len as usize];
-    f(buffer.as_mut_ptr(), len, &mut error_code);
-    if error_code > U_ZERO_ERROR {
-        return Err(ICUError(error_code).into());
+    if len > 0 {
+        buffer.resize(len as usize, T::default());
     }
     Ok(T::string_from_buffer(buffer))
 }
