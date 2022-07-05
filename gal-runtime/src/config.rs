@@ -186,6 +186,18 @@ impl<T> Fallback<Option<T>> {
     }
 }
 
+impl Fallback<String> {
+    pub fn and_any(self) -> Option<String> {
+        self.and_then(|s| if s.is_empty() { None } else { Some(s) })
+    }
+}
+
+impl<T> Fallback<Vec<T>> {
+    pub fn and_any(self) -> Option<Vec<T>> {
+        self.and_then(|s| if s.is_empty() { None } else { Some(s) })
+    }
+}
+
 impl<T> IntoIterator for Fallback<Vec<T>> {
     type Item = Fallback<T>;
 

@@ -608,7 +608,7 @@ impl<'a> TextParser<'a> {
                     action: if let Some(toks) = params.get(1) {
                         self.parse_program(toks)?
                     } else {
-                        Program(vec![])
+                        Program::default()
                     },
                     enabled,
                 }

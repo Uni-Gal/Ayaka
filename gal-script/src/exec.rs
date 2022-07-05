@@ -5,7 +5,7 @@ lalrpop_mod!(exec_grammer);
 
 pub use exec_grammer::*;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct Program(pub Vec<Expr>);
 
 #[derive(Debug, PartialEq, Eq)]

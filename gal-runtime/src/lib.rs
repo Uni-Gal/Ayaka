@@ -174,30 +174,20 @@ impl Context {
             let actions = actions.fallback();
             let data = {
                 let data = actions.data.fallback();
-                let line = data
-                    .line
-                    .and_then(|line| if line.is_empty() { None } else { Some(line) })
-                    .unwrap_or_default();
-                let character =
-                    data.character
-                        .and_then(|ch| if ch.is_empty() { None } else { Some(ch) });
+                let line = data.line.and_any().unwrap_or_default();
+                let character = data.character.and_any();
                 let switches = data
                     .switches
                     .into_iter()
                     .map(|s| {
                         let s = s.fallback();
-                        let text = s
-                            .text
-                            .and_then(|text| if text.is_empty() { None } else { Some(text) })
-                            .unwrap_or_default();
+                        let text = s.text.and_any().unwrap_or_default();
                         let (enabled, base_enabled) = s.enabled.unzip();
                         let enabled = base_enabled.or_else(|| enabled).unwrap_or(true);
                         Switch { text, enabled }
                     })
                     .collect();
-                let bgm = data
-                    .bgm
-                    .and_then(|bgm| if bgm.is_empty() { None } else { Some(bgm) });
+                let bgm = data.bgm.and_any();
                 ActionData {
                     line,
                     character,
@@ -208,8 +198,8 @@ impl Context {
             let switch_actions = actions
                 .switch_actions
                 .into_iter()
-                .map(|act| act.and_then(|p| if p.0.is_empty() { None } else { Some(p) }))
-                .map(|p| p.unwrap_or(Program(vec![])))
+                .map(|act| act.map(|p| p.0).and_any().map(Program))
+                .map(|p| p.unwrap_or_default())
                 .collect();
             Some(Action {
                 data,
