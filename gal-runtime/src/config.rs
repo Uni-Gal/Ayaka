@@ -128,7 +128,7 @@ impl Game {
         None
     }
 
-    pub fn find_para_fallback(&self, loc: &Locale, tag: &str) -> Fallback<Paragraph> {
+    pub fn find_para_fallback(&self, loc: &Locale, tag: &str) -> Fallback<&Paragraph> {
         Fallback::new(
             self.find_para(loc, tag),
             self.find_para(&self.data.base_lang, tag),
@@ -141,18 +141,18 @@ impl Game {
             .get(&self.choose_from_keys(loc, &self.data.res))
     }
 
-    pub fn find_res_fallback(&self, loc: &Locale) -> Fallback<HashMap<String, RawValue>> {
+    pub fn find_res_fallback(&self, loc: &Locale) -> Fallback<&HashMap<String, RawValue>> {
         Fallback::new(self.find_res(loc), self.find_res(&self.data.base_lang))
     }
 }
 
-pub struct Fallback<'a, T> {
-    data: Option<&'a T>,
-    base_data: Option<&'a T>,
+pub struct Fallback<T> {
+    data: Option<T>,
+    base_data: Option<T>,
 }
 
-impl<'a, T> Fallback<'a, T> {
-    pub(crate) fn new(data: Option<&'a T>, base_data: Option<&'a T>) -> Self {
+impl<T> Fallback<T> {
+    pub(crate) fn new(data: Option<T>, base_data: Option<T>) -> Self {
         Self { data, base_data }
     }
 
@@ -160,11 +160,29 @@ impl<'a, T> Fallback<'a, T> {
         self.data.is_some() || self.base_data.is_some()
     }
 
-    pub fn and_then<V>(&self, mut f: impl FnMut(&'a T) -> Option<V>) -> Option<V> {
+    pub fn as_ref(&self) -> Fallback<&T> {
+        Fallback::new(self.data.as_ref(), self.base_data.as_ref())
+    }
+
+    pub fn and_then<V>(self, mut f: impl FnMut(T) -> Option<V>) -> Option<V> {
         self.data.and_then(|t| f(t)).or_else(|| {
             trace!("Fallback occurred");
             self.base_data.and_then(|t| f(t))
         })
+    }
+
+    pub fn map<V>(self, mut f: impl FnMut(T) -> V) -> Fallback<V> {
+        Fallback::new(self.data.map(|t| f(t)), self.base_data.map(|t| f(t)))
+    }
+
+    pub fn into_raw(self) -> (Option<T>, Option<T>) {
+        (self.data, self.base_data)
+    }
+}
+
+impl<T> Fallback<Option<T>> {
+    pub fn flatten(self) -> Fallback<T> {
+        Fallback::new(self.data.flatten(), self.base_data.flatten())
     }
 }
 

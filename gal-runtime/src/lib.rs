@@ -1,4 +1,5 @@
 #![feature(absolute_path)]
+#![feature(extend_one)]
 #![feature(round_char_boundary)]
 
 pub mod config;
@@ -51,20 +52,22 @@ impl Context {
         VarTable::new(&self.game, &self.loc, &mut self.ctx.locals)
     }
 
-    fn current_paragraph(&self) -> Fallback<Paragraph> {
+    fn current_paragraph(&self) -> Fallback<&Paragraph> {
         self.game.find_para_fallback(&self.loc, &self.ctx.cur_para)
     }
 
-    fn current_text(&self) -> Option<&String> {
-        self.current_paragraph().and_then(|p| {
-            p.texts.get(self.ctx.cur_act).and_then(|s| {
-                if s.is_empty() || s == "~" {
-                    None
-                } else {
-                    Some(s)
-                }
+    fn current_text(&self) -> Fallback<&String> {
+        self.current_paragraph()
+            .map(|p| {
+                p.texts.get(self.ctx.cur_act).and_then(|s| {
+                    if s.is_empty() || s == "~" {
+                        None
+                    } else {
+                        Some(s)
+                    }
+                })
             })
-        })
+            .flatten()
     }
 
     pub fn set_locale(&mut self, loc: Locale) {
@@ -166,6 +169,70 @@ impl Context {
         }
     }
 
+    fn merge_action(&self, actions: Fallback<Action>) -> Option<Action> {
+        if actions.is_some() {
+            let data = {
+                let datas = actions.as_ref().map(|act| &act.data);
+                let line = datas
+                    .as_ref()
+                    .and_then(|data| {
+                        if data.line.is_empty() {
+                            None
+                        } else {
+                            Some(&data.line)
+                        }
+                    })
+                    .cloned()
+                    .unwrap_or_default();
+                let character = datas
+                    .as_ref()
+                    .and_then(|data| data.character.as_ref())
+                    .cloned();
+                let switches = datas
+                    .as_ref()
+                    .and_then(|data| {
+                        if data.switches.is_empty() {
+                            None
+                        } else {
+                            Some(&data.switches)
+                        }
+                    })
+                    .cloned()
+                    .unwrap_or_default();
+                let bgm = datas.as_ref().and_then(|data| data.bgm.as_ref()).cloned();
+                ActionData {
+                    line,
+                    character,
+                    switches,
+                    bgm,
+                }
+            };
+            let switch_actions = {
+                let (actions, base_actions) = actions.map(|act| act.switch_actions).into_raw();
+                let (mut actions, base_actions) = (
+                    actions.unwrap_or_default(),
+                    base_actions.unwrap_or_default(),
+                );
+                for (i, base_act) in base_actions.into_iter().enumerate() {
+                    if i >= actions.len() {
+                        actions.push(base_act);
+                    } else {
+                        if actions[i].0.is_empty() {
+                            actions[i] = base_act;
+                        }
+                    }
+                }
+                actions
+            };
+            Some(Action {
+                data,
+                switch_actions,
+            })
+        } else {
+            None
+        }
+    }
+
     fn parse_text_rich_error(&self, text: &str) -> Text {
         match TextParser::new(text).parse() {
             Ok(t) => t,
@@ -188,10 +255,12 @@ impl Context {
     pub fn next_run(&mut self) -> Option<Action> {
         let cur_para = self.current_paragraph();
         if cur_para.is_some() {
-            if let Some(act) = self.current_text() {
-                let text = Some(self.parse_text_rich_error(act));
+            let cur_text = self.current_text();
+            if cur_text.is_some() {
+                let text = cur_text.map(|act| self.parse_text_rich_error(act));
                 self.ctx.cur_act += 1;
-                text.map(|t| self.exact_text(t))
+                let actions = text.map(|t| self.exact_text(t));
+                self.merge_action(actions)
             } else {
                 self.ctx.cur_para = cur_para
                     .and_then(|p| p.next.as_ref())
