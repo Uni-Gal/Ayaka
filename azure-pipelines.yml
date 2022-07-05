@@ -32,6 +32,9 @@ jobs:
   - pwsh: rustup target add wasm32-unknown-unknown
     displayName: "Install WASM32 target"
 
+  - pwsh: make plugins
+    displayName: "Build plugins"
+
   - pwsh: make release
     displayName: "Build CLI"
 
