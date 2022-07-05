@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { convertFileSrc } from '@tauri-apps/api/tauri'
 import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
@@ -43,13 +42,9 @@ export default {
             if (res != null) {
                 if (res.bg == undefined) {
                     res.bg = this.action.bg
-                } else {
-                    res.bg = convertFileSrc(res.bg)
                 }
                 if (res.bgm == undefined) {
                     res.bgm = this.action.bgm
-                } else {
-                    res.bgm = convertFileSrc(res.bgm)
                 }
                 const load_new_bgm = (res.bgm != this.action.bgm);
                 this.action = res

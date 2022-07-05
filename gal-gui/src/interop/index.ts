@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/tauri"
+import { convertFileSrc, invoke } from "@tauri-apps/api/tauri"
 import { Locale } from 'vue-i18n'
 
 export interface Info {
@@ -39,8 +39,17 @@ export function next_run(): Promise<boolean> {
     return invoke("next_run")
 }
 
-export function current_run(): Promise<Action | null> {
-    return invoke("current_run")
+export async function current_run(): Promise<Action | null> {
+    let res = await invoke<Action | null>("current_run")
+    if (res != null) {
+        if (res.bg != undefined) {
+            res.bg = convertFileSrc(res.bg)
+        }
+        if (res.bgm != undefined) {
+            res.bgm = convertFileSrc(res.bgm)
+        }
+    }
+    return res
 }
 
 export function switch_(i: number): Promise<void> {
