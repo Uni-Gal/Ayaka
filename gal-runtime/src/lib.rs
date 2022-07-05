@@ -1,5 +1,4 @@
 #![feature(absolute_path)]
-#![feature(extend_one)]
 #![feature(round_char_boundary)]
 
 pub mod config;
