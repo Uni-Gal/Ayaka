@@ -62,7 +62,9 @@ fn main() -> Result<()> {
             loop {
                 let s = read_line()?;
                 if let Ok(i) = s.trim().parse::<usize>() {
-                    let valid = i > 0 && i <= action.switch_actions.len();
+                    let valid = i > 0
+                        && i <= action.switch_actions.len()
+                        && action.data.switches[i - 1].enabled;
                     if valid {
                         ctx.call(&action.switch_actions[i - 1]);
                         break;
