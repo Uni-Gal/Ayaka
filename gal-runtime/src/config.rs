@@ -175,14 +175,52 @@ impl<T> Fallback<T> {
         Fallback::new(self.data.map(|t| f(t)), self.base_data.map(|t| f(t)))
     }
 
-    pub fn into_raw(self) -> (Option<T>, Option<T>) {
-        (self.data, self.base_data)
+    pub fn merge<V>(self, mut f: impl FnMut(T, T) -> V) -> V
+    where
+        T: Default,
+    {
+        f(
+            self.data.unwrap_or_default(),
+            self.base_data.unwrap_or_default(),
+        )
     }
 }
 
 impl<T> Fallback<Option<T>> {
     pub fn flatten(self) -> Fallback<T> {
         Fallback::new(self.data.flatten(), self.base_data.flatten())
+    }
+}
+
+impl<T> IntoIterator for Fallback<Vec<T>> {
+    type Item = Fallback<T>;
+
+    type IntoIter = FallbackVecIter<<Vec<T> as IntoIterator>::IntoIter>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        FallbackVecIter {
+            data: self.data.unwrap_or_default().into_iter(),
+            base_data: self.base_data.unwrap_or_default().into_iter(),
+        }
+    }
+}
+
+pub struct FallbackVecIter<A> {
+    data: A,
+    base_data: A,
+}
+
+impl<A: Iterator> Iterator for FallbackVecIter<A> {
+    type Item = Fallback<A::Item>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let d = self.data.next();
+        let based = self.base_data.next();
+        if d.is_some() || based.is_some() {
+            Some(Fallback::new(d, based))
+        } else {
+            None
+        }
     }
 }
 
@@ -200,7 +238,7 @@ pub struct ActionData {
     pub bgm: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Serialize)]
 pub struct Switch {
     pub text: String,
     pub enabled: bool,

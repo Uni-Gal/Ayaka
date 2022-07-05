@@ -83,9 +83,9 @@ paras:
       texts:
         - |
           团长！车已经准备好了！
-          \switch{哦！}{}
-          \switch{不要停下来啊！}{}
-          \switch{停下！}{}{false}
+          \switch{哦！}
+          \switch{不要停下来啊！}
+          \switch{停下！}
     -
       tag: walk
       title: 安静
@@ -94,8 +94,8 @@ paras:
         - 好，路上小心。
         - |
           感觉真安静啊，街上也没有加拉尔霍恩的人，和总部差别真大啊。
-          \switch{安全}{}
-          \switch{小心}{}{false}
+          \switch{安全}
+          \switch{小心}
         - 啊，可能是他们把火星的战力都调到那里去了。
         - 不过这也和我们没关系了。
         - 心情很愉快啊。

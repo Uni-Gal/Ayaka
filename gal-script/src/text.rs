@@ -598,14 +598,18 @@ impl<'a> TextParser<'a> {
                 Command::Exec(self.parse_program(&params[0])?)
             }
             "switch" => {
-                self.check_params_count(params_count, 2, 3, loc, name)?;
+                self.check_params_count(params_count, 1, 3, loc, name)?;
                 let enabled = match params.get(2) {
                     Some(toks) => Some(self.parse_program(toks)?),
                     None => None,
                 };
                 Command::Switch {
                     text: self.concat_params(&params[0])?,
-                    action: self.parse_program(&params[1])?,
+                    action: if let Some(toks) = params.get(1) {
+                        self.parse_program(toks)?
+                    } else {
+                        Program(vec![])
+                    },
                     enabled,
                 }
             }

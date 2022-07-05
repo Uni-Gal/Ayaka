@@ -11,7 +11,7 @@ pub use gal_locale::Locale;
 pub use gal_script::{log, Command, Expr, Line, RawValue, Text};
 pub use wit_bindgen_wasmtime::anyhow;
 
-use gal_script::{Loc, ParseError, TextParser};
+use gal_script::{Loc, ParseError, Program, TextParser};
 use log::{error, warn};
 use script::*;
 use std::{collections::HashMap, path::Path, sync::Arc};
@@ -190,15 +190,20 @@ impl Context {
                     .cloned();
                 let switches = datas
                     .as_ref()
-                    .and_then(|data| {
-                        if data.switches.is_empty() {
-                            None
-                        } else {
-                            Some(&data.switches)
-                        }
+                    .map(|data| data.switches.clone())
+                    .into_iter()
+                    .map(|s| {
+                        s.merge(|mut s, bases| {
+                            if s.text.is_empty() {
+                                s.text = bases.text;
+                            }
+                            if s.enabled != bases.enabled {
+                                s.enabled = bases.enabled;
+                            }
+                            s
+                        })
                     })
-                    .cloned()
-                    .unwrap_or_default();
+                    .collect();
                 let bgm = datas.as_ref().and_then(|data| data.bgm.as_ref()).cloned();
                 ActionData {
                     line,
@@ -208,21 +213,12 @@ impl Context {
                 }
             };
             let switch_actions = {
-                let (actions, base_actions) = actions.map(|act| act.switch_actions).into_raw();
-                let (mut actions, base_actions) = (
-                    actions.unwrap_or_default(),
-                    base_actions.unwrap_or_default(),
-                );
-                for (i, base_act) in base_actions.into_iter().enumerate() {
-                    if i >= actions.len() {
-                        actions.push(base_act);
-                    } else {
-                        if actions[i].0.is_empty() {
-                            actions[i] = base_act;
-                        }
-                    }
-                }
                 actions
+                    .map(|act| act.switch_actions)
+                    .into_iter()
+                    .map(|act| act.and_then(|p| if p.0.is_empty() { None } else { Some(p) }))
+                    .map(|p| p.unwrap_or(Program(vec![])))
+                    .collect()
             };
             Some(Action {
                 data,
