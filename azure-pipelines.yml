@@ -1,0 +1,30 @@
+trigger:
+  branches:
+    include:
+      - master
+
+jobs:
+- job: Build_Windows
+  strategy:
+    matrix:
+      win-x64:
+        target: 'x86_64-pc-windows-msvc'
+        image: 'windows-latest'
+      linux-x64:
+        target: 'x86_64-unknown-linux-gnu'
+        image: 'ubuntu-latest'
+      macos-x64:
+        target: 'x86_64-apple-darwin'
+        image: 'macOS-latest'
+  pool:
+    vmImage: $(image)
+  
+  steps:
+  - pwsh: make test
+    displayName: "Test"
+
+  - pwsh: make release
+    displayName: "Build CLI"
+
+  - pwsh: make release-gui
+    displayName: "Build GUI"
