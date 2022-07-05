@@ -3,7 +3,6 @@ mod icu;
 use anyhow::Result;
 use icu::*;
 use serde::{Deserialize, Serialize};
-use std::borrow::Borrow;
 use std::fmt::Display;
 use std::str::FromStr;
 use thiserror::Error;
@@ -22,13 +21,19 @@ impl Locale {
 
     pub fn choose_from(
         &self,
-        locales: impl Iterator<Item = impl Borrow<Self>>,
+        locales: impl IntoIterator<Item = impl AsRef<Self>>,
     ) -> Result<Option<Self>> {
-        choose([self].into_iter(), locales)
+        choose([self], locales)
     }
 
     pub fn native_name(&self) -> Result<String> {
         native_name(self)
+    }
+}
+
+impl AsRef<Locale> for &'_ Locale {
+    fn as_ref(&self) -> &Locale {
+        self
     }
 }
 
@@ -95,17 +100,13 @@ mod test {
     fn accept() {
         let current = "zh_CN".parse::<Locale>().unwrap();
         let accepts = [
-            "en".parse().unwrap(),
+            "en".parse::<Locale>().unwrap(),
             "ja".parse().unwrap(),
             "zh_Hans".parse().unwrap(),
             "zh_Hant".parse().unwrap(),
         ];
         assert_eq!(
-            current
-                .choose_from(accepts.iter())
-                .unwrap()
-                .unwrap()
-                .to_string(),
+            current.choose_from(&accepts).unwrap().unwrap().to_string(),
             "zh_Hans"
         );
     }

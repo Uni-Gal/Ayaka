@@ -50,11 +50,17 @@ unsafe fn call_with_buffer<T: UChar>(
 }
 
 pub fn choose(
-    accepts: impl Iterator<Item = impl Borrow<Locale>>,
-    locales: impl Iterator<Item = impl Borrow<Locale>>,
+    accepts: impl IntoIterator<Item = impl AsRef<Locale>>,
+    locales: impl IntoIterator<Item = impl AsRef<Locale>>,
 ) -> Result<Option<Locale>> {
-    let mut accepts_ptrs = accepts.map(|l| l.borrow().0.as_ptr()).collect::<Vec<_>>();
-    let locale_ptrs = locales.map(|l| l.borrow().0.as_ptr()).collect::<Vec<_>>();
+    let mut accepts_ptrs = accepts
+        .into_iter()
+        .map(|l| l.as_ref().0.as_ptr())
+        .collect::<Vec<_>>();
+    let locale_ptrs = locales
+        .into_iter()
+        .map(|l| l.as_ref().0.as_ptr())
+        .collect::<Vec<_>>();
     let mut result = ULOC_ACCEPT_FAILED;
     let loc = unsafe {
         call_with_buffer::<u8>(|buffer, len, status| {

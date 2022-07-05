@@ -39,7 +39,7 @@ impl Display for CommandError {
 fn choose_locale(locales: Vec<Locale>) -> CommandResult<Option<Locale>> {
     let current = Locale::current();
     info!("Choose {} from {:?}", current, locales);
-    Ok(current.choose_from(locales.iter())?)
+    Ok(current.choose_from(&locales)?)
 }
 
 #[command]
