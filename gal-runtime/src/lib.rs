@@ -116,6 +116,7 @@ impl Context {
         let mut chname = None;
         let mut switches = vec![];
         let mut switch_actions = vec![];
+        let mut bg = None;
         let mut bgm = None;
         for line in t.0.into_iter() {
             match line {
@@ -145,10 +146,26 @@ impl Context {
                         switches.push(Switch { text, enabled });
                         switch_actions.push(action);
                     }
+                    Command::Bg(index) => bg = Some(index),
                     Command::Bgm(index) => bgm = Some(index),
                 },
             }
         }
+        let bg = bg
+            .map(|index| {
+                ["jpg", "png"]
+                    .into_iter()
+                    .map(|ex| self.game.bg_dir().join(format!("{}.{}", index, ex)))
+                    .filter(|p| p.exists())
+                    .next()
+            })
+            .flatten()
+            .map(|path| {
+                std::path::absolute(path)
+                    .unwrap()
+                    .to_string_lossy()
+                    .into_owned()
+            });
         let bgm = bgm
             .map(|index| self.game.bgm_dir().join(format!("{}.mp3", index)))
             .map(|path| {
@@ -162,6 +179,7 @@ impl Context {
                 line: lines,
                 character: chname,
                 switches,
+                bg,
                 bgm,
             },
             switch_actions,
@@ -186,11 +204,13 @@ impl Context {
                         Switch { text, enabled }
                     })
                     .collect();
+                let bg = data.bg.and_any();
                 let bgm = data.bgm.and_any();
                 ActionData {
                     line,
                     character,
                     switches,
+                    bg,
                     bgm,
                 }
             };

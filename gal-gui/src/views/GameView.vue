@@ -18,7 +18,7 @@ export default {
     emits: ["quit"],
     data() {
         return {
-            action: { line: "", character: null, switches: [], bgm: undefined } as Action,
+            action: { line: "", character: null, switches: [], bg: undefined, bgm: undefined } as Action,
             type_text: "",
             state: ActionState.End,
             mutex: new Mutex(),
@@ -41,9 +41,19 @@ export default {
             const res = await current_run()
             console.info(res)
             if (res != null) {
+                if (res.bg == undefined) {
+                    res.bg = this.action.bg
+                } else {
+                    res.bg = convertFileSrc(res.bg)
+                }
+                if (res.bgm == undefined) {
+                    res.bgm = this.action.bgm
+                } else {
+                    res.bgm = convertFileSrc(res.bgm)
+                }
+                const load_new_bgm = (res.bgm != this.action.bgm);
                 this.action = res
-                if (this.action.bgm != undefined) {
-                    this.action.bgm = convertFileSrc(this.action.bgm);
+                if (load_new_bgm) {
                     (document.getElementById("bgm") as HTMLAudioElement).load()
                 }
             } else {
@@ -110,9 +120,10 @@ export default {
 </script>
 
 <template>
-    <audio id="bgm" controls autoplay hidden>
+    <audio id="bgm" autoplay hidden>
         <source v-bind:src="action.bgm" type="audio/mpeg">
     </audio>
+    <img class="background" v-bind:src="action.bg">
     <div class="card card-lines">
         <div class="card-header char">
             <h4 class="card-title">{{ action.character }}</h4>
@@ -124,22 +135,22 @@ export default {
     <div class="backboard" v-on:click="next"></div>
     <div class="commands">
         <div class="btn-group" role="group">
-            <button class="btn btn-outline-primary btn-command">
+            <button class="btn btn-primary btn-command">
                 <FontAwesomeIcon icon="fas fa-backward-step"></FontAwesomeIcon>
             </button>
-            <button class="btn btn-outline-primary btn-command">
+            <button class="btn btn-primary btn-command">
                 <FontAwesomeIcon icon="fas fa-play"></FontAwesomeIcon>
             </button>
-            <button class="btn btn-outline-primary btn-command" v-on:click="next">
+            <button class="btn btn-primary btn-command" v-on:click="next">
                 <FontAwesomeIcon icon="fas fa-forward-step"></FontAwesomeIcon>
             </button>
-            <button class="btn btn-outline-primary btn-command">
+            <button class="btn btn-primary btn-command">
                 <FontAwesomeIcon icon="fas fa-forward"></FontAwesomeIcon>
             </button>
-            <button class="btn btn-outline-primary btn-command">
+            <button class="btn btn-primary btn-command">
                 <FontAwesomeIcon icon="fas fa-gear"></FontAwesomeIcon>
             </button>
-            <button class="btn btn-outline-primary btn-command" v-on:click="go_home">
+            <button class="btn btn-primary btn-command" v-on:click="go_home">
                 <FontAwesomeIcon icon="fas fa-house"></FontAwesomeIcon>
             </button>
         </div>
@@ -159,6 +170,15 @@ export default {
 </template>
 
 <style>
+.background {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    min-width: 100%;
+    min-height: 100%;
+}
+
 .backboard {
     position: absolute;
     top: 0;
@@ -171,6 +191,7 @@ export default {
     position: absolute;
     bottom: 2.5em;
     width: 100%;
+    opacity: 0.8;
 }
 
 .char {

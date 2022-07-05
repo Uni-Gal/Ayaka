@@ -10,6 +10,7 @@ export interface Action {
     line: string,
     character: string | null,
     switches: Array<Switch>,
+    bg: string | undefined,
     bgm: string | undefined,
 }
 

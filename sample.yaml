@@ -1,6 +1,7 @@
 title: 団長の名場面
 author: 冈田麿里
 plugins: target/wasm32-unknown-unknown/release/
+bgs: bgs
 bgms: bgms
 res:
   ja:
@@ -26,7 +27,7 @@ paras:
       title: 車の用意し
       texts:
         - |
-          \ch{rd}団長！車の用意できました！
+          \ch{rd}団長！車の用意できました！\bg{0}
           \switch{おう！}{$end = false}
           \switch{止まるんじゃねぇぞ！}{$end = true}
           \switch{止まれ！}{}{false}

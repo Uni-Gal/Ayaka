@@ -181,6 +181,7 @@ pub enum Command {
         action: Program,
         enabled: Option<Program>,
     },
+    Bg(usize),
     Bgm(usize),
 }
 
@@ -612,6 +613,14 @@ impl<'a> TextParser<'a> {
                     },
                     enabled,
                 }
+            }
+            "bg" => {
+                self.check_params_count(params_count, 1, 1, loc, name)?;
+                Command::Bg(
+                    self.concat_params(&params[0])?
+                        .parse()
+                        .map_err(|e| ParseError::new(loc, ParseErrorType::InvalidIndex(e)))?,
+                )
             }
             "bgm" => {
                 self.check_params_count(params_count, 1, 1, loc, name)?;

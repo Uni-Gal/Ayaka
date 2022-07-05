@@ -39,6 +39,8 @@ struct GameData {
     #[serde(default)]
     pub plugins: PathBuf,
     #[serde(default)]
+    pub bgs: PathBuf,
+    #[serde(default)]
     pub bgms: PathBuf,
     #[serde(default)]
     pub res: HashMap<Locale, VarMap>,
@@ -107,6 +109,10 @@ impl Game {
 
     pub fn plugin_dir(&self) -> PathBuf {
         self.root_path.join(&self.data.plugins)
+    }
+
+    pub fn bg_dir(&self) -> PathBuf {
+        self.root_path.join(&self.data.bgs)
     }
 
     pub fn bgm_dir(&self) -> PathBuf {
@@ -241,6 +247,7 @@ pub struct ActionData {
     pub line: String,
     pub character: Option<String>,
     pub switches: Vec<Switch>,
+    pub bg: Option<String>,
     pub bgm: Option<String>,
 }
 
@@ -277,34 +284,38 @@ pub struct FallbackActionData {
     pub line: Fallback<String>,
     pub character: Fallback<String>,
     pub switches: Fallback<Vec<Switch>>,
+    pub bg: Fallback<String>,
     pub bgm: Fallback<String>,
 }
 
 impl Fallback<ActionData> {
     pub fn fallback(self) -> FallbackActionData {
         let (data, base_data) = self.unzip();
-        let (line, ch, sw, bgm) = match data {
+        let (line, ch, sw, bg, bgm) = match data {
             Some(data) => (
                 Some(data.line),
                 data.character,
                 Some(data.switches),
+                data.bg,
                 data.bgm,
             ),
-            None => (None, None, None, None),
+            None => (None, None, None, None, None),
         };
-        let (base_line, base_ch, base_sw, base_bgm) = match base_data {
+        let (base_line, base_ch, base_sw, base_bg, base_bgm) = match base_data {
             Some(data) => (
                 Some(data.line),
                 data.character,
                 Some(data.switches),
+                data.bg,
                 data.bgm,
             ),
-            None => (None, None, None, None),
+            None => (None, None, None, None, None),
         };
         FallbackActionData {
             line: Fallback::new(line, base_line),
             character: Fallback::new(ch, base_ch),
             switches: Fallback::new(sw, base_sw),
+            bg: Fallback::new(bg, base_bg),
             bgm: Fallback::new(bgm, base_bgm),
         }
     }
