@@ -35,7 +35,7 @@ export default {
 
 <template>
     <div class="content">
-        <h2>{{ title }}</h2>
+        <h1>{{ title }}</h1>
         <p>Author: {{ author }}</p>
         <h2>{{ app_name }}</h2>
         <p>Version {{ app_ver }}</p>

@@ -14,6 +14,8 @@ export default {
         }
     },
     async created() {
+        const res = await info()
+        this.title = res.title
         const loc = localStorage.getItem("locale") ?? await choose_locale(this.$i18n.availableLocales)
         if (loc != null) {
             if (this.$i18n.availableLocales.includes(loc)) {
@@ -23,8 +25,6 @@ export default {
                 console.error("Wrong locale %s", loc)
             }
         }
-        const res = await info()
-        this.title = res.title
         this.$i18n.availableLocales.forEach(async (locale) => {
             this.locale_names.set(locale, await this.locale_native_name(locale))
         })

@@ -130,12 +130,17 @@ fn main() -> Result<()> {
     tauri::Builder::default()
         .plugin(tauri_plugin_localhost::Builder::new(port).build())
         .setup(|app| {
-            #[cfg(debug_assertions)]
-            app.get_window("main").unwrap().open_devtools();
+            let window = app.get_window("main").unwrap();
+            if cfg!(debug_assertions) {
+                window.open_devtools();
+            } else {
+                window.center()?;
+            }
             let matches = app.get_cli_matches()?;
             let config = matches.args["config"].value.as_str().unwrap_or("");
             info!("Loading config...");
             let game = Arc::new(Game::open(config)?);
+            window.set_title(game.title())?;
             info!("Loaded config \"{}\"", config.escape_default());
             app.manage(game);
             app.manage(Storage::default());

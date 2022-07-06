@@ -13,11 +13,6 @@ export default defineConfig({
     minify: !env.TAURI_DEBUG ? 'esbuild' : false,
     sourcemap: !!env.TAURI_DEBUG,
   },
-  resolve: {
-    alias: {
-      '@': fileURLToPath(new URL('./src', import.meta.url))
-    }
-  },
   server: {
     fs: {
       strict: false

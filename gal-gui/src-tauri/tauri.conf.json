@@ -14,8 +14,7 @@
     "allowlist": {
       "all": false,
       "window": {
-        "all": false,
-        "close": true
+        "all": true
       },
       "protocol": {
         "all": true,
@@ -72,10 +71,11 @@
     },
     "windows": [
       {
+        "label": "main",
         "fullscreen": false,
         "height": 600,
         "resizable": true,
-        "title": "GalGUI",
+        "title": "",
         "width": 800,
         "theme": "Dark"
       }
