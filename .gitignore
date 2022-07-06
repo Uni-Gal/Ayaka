@@ -23,7 +23,5 @@ CMakeSettings.json
 build
 out
 
-# large assets
+# logs
 logs
-bgs
-bgms

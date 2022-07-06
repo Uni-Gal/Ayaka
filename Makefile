@@ -8,22 +8,26 @@ update:
 	cargo update
 	cd gal-gui && $(MAKE) node_modules
 
-.PHONY: plugins
+.PHONY: plugins release release-gui dist-gui
 plugins:
 	cd plugins && $(MAKE)
-
-.PHONY: sample sample-gui
-sample: sample.yaml plugins
-	RUST_LOG=info cargo run --manifest-path=gal/Cargo.toml -- $< --auto
-sample-gui: sample.yaml plugins
-	cd gal-gui && $(MAKE) run FILE=$(realpath $<)
-
-.PHONY: release release-gui dist-gui
 release:
 	cargo build --manifest-path=gal/Cargo.toml --release
 release-gui:
 	cd gal-gui && $(MAKE) release
 dist-gui:
 	cd gal-gui && $(MAKE) dist
+
+EXAMPLES:=Orga
+
+define example-tpl
+.PHONY: example-$(1) example-$(1)-gui
+example-$(1): examples/$(1)/config.yaml plugins
+	RUST_LOG=info cargo run --manifest-path=gal/Cargo.toml -- $$< --auto
+example-$(1)-gui: examples/$(1)/config.yaml plugins
+	cd gal-gui && $$(MAKE) run FILE=$$(realpath $$<)
+endef
+
+$(eval $(foreach ex,$(EXAMPLES),$(call example-tpl,$(ex))))
 
 .SECONDARY:
