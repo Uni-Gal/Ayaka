@@ -94,3 +94,19 @@ fn fmt(args: Vec<RawValue>) -> RawValue {
         })
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::*;
+
+    #[test]
+    fn format() {
+        assert_eq!(
+            fmt(vec![
+                RawValue::Str("Hello, {}!".to_string()),
+                RawValue::Str("world".to_string())
+            ]),
+            RawValue::Str("Hello, world!".to_string())
+        );
+    }
+}
