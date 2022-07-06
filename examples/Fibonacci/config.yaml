@@ -1,0 +1,20 @@
+title: Fibonacci
+author: Berrysoft
+plugins: ../../target/wasm32-unknown-unknown/release/
+base_lang: en
+paras:
+  en:
+    -
+      tag: init
+      texts:
+        - \exec{$n = 10; $a = 1; $b = 1; $i = 1;}
+      next: loop
+    -
+      tag: loop
+      texts:
+        - \exec{c = $b; $b += $a; $a = c; $i += 1;}
+      next: \exec{if($i < $n, "loop", "end")}
+    -
+      tag: end
+      texts:
+        - \exec{$b}

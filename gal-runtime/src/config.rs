@@ -141,12 +141,8 @@ impl Game {
         self.root_path.join(&self.data.bgms)
     }
 
-    pub fn find_para(&self, loc: &Locale, tag: &str) -> Option<&Paragraph> {
-        if let Some(paras) = self
-            .data
-            .paras
-            .get(&self.choose_from_keys(loc, &self.data.paras))
-        {
+    fn find_para(&self, loc: &Locale, tag: &str) -> Option<&Paragraph> {
+        if let Some(paras) = self.data.paras.get(loc) {
             for p in paras {
                 if p.tag == tag {
                     return Some(p);
@@ -157,20 +153,33 @@ impl Game {
     }
 
     pub fn find_para_fallback(&self, loc: &Locale, tag: &str) -> Fallback<&Paragraph> {
+        let key = self.choose_from_keys(loc, &self.data.paras);
+        let base_key = self.choose_from_keys(&self.data.base_lang, &self.data.paras);
         Fallback::new(
-            self.find_para(loc, tag),
-            self.find_para(&self.data.base_lang, tag),
+            if key == base_key {
+                None
+            } else {
+                self.find_para(&key, tag)
+            },
+            self.find_para(&base_key, tag),
         )
     }
 
-    pub fn find_res(&self, loc: &Locale) -> Option<&HashMap<String, RawValue>> {
-        self.data
-            .res
-            .get(&self.choose_from_keys(loc, &self.data.res))
+    fn find_res(&self, loc: &Locale) -> Option<&HashMap<String, RawValue>> {
+        self.data.res.get(loc)
     }
 
     pub fn find_res_fallback(&self, loc: &Locale) -> Fallback<&HashMap<String, RawValue>> {
-        Fallback::new(self.find_res(loc), self.find_res(&self.data.base_lang))
+        let key = self.choose_from_keys(loc, &self.data.res);
+        let base_key = self.choose_from_keys(&self.data.base_lang, &self.data.res);
+        Fallback::new(
+            if key == base_key {
+                None
+            } else {
+                self.find_res(&key)
+            },
+            self.find_res(&base_key),
+        )
     }
 }
 
