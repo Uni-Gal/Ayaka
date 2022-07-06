@@ -168,6 +168,7 @@ impl Context {
             });
         let bgm = bgm
             .map(|index| self.game.bgm_dir().join(format!("{}.mp3", index)))
+            .filter(|p| p.exists())
             .map(|path| {
                 std::path::absolute(path)
                     .unwrap()
