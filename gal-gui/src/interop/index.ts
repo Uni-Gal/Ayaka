@@ -1,6 +1,18 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/tauri"
 import { Locale } from 'vue-i18n'
 
+export interface OpenGameStatus {
+    t: keyof typeof OpenGameStatusType,
+    text: string | null,
+}
+
+export enum OpenGameStatusType {
+    LoadProfile,
+    CreateRuntime,
+    LoadPlugin,
+    Loaded,
+}
+
 export interface Info {
     title: string,
     author: string,

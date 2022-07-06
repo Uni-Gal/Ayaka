@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Locale } from 'vue-i18n'
-import { choose_locale, info, next_run, start_new, locale_native_name } from '../interop'
+import { info, next_run, start_new, locale_native_name } from '../interop'
 import router from '../router'
 </script>
 
@@ -16,15 +16,6 @@ export default {
     async created() {
         const res = await info()
         this.title = res.title
-        const loc = localStorage.getItem("locale") ?? await choose_locale(this.$i18n.availableLocales)
-        if (loc != null) {
-            if (this.$i18n.availableLocales.includes(loc)) {
-                this.$i18n.locale = loc
-                this.save_locale(loc)
-            } else {
-                console.error("Wrong locale %s", loc)
-            }
-        }
         this.$i18n.availableLocales.forEach(async (locale) => {
             this.locale_names.set(locale, await this.locale_native_name(locale))
         })

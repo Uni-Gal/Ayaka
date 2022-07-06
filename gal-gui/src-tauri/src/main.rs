@@ -37,6 +37,50 @@ impl Display for CommandError {
     }
 }
 
+#[derive(Debug, Clone, Serialize)]
+struct OpenGameStatus {
+    t: OpenGameStatusType,
+    text: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, Serialize)]
+enum OpenGameStatusType {
+    LoadProfile,
+    CreateRuntime,
+    LoadPlugin,
+    Loaded,
+}
+
+impl OpenGameStatus {
+    pub fn load_profile(path: impl Into<String>) -> Self {
+        Self {
+            t: OpenGameStatusType::LoadProfile,
+            text: Some(path.into()),
+        }
+    }
+
+    pub fn create_runtime() -> Self {
+        Self {
+            t: OpenGameStatusType::CreateRuntime,
+            text: None,
+        }
+    }
+
+    pub fn load_plugin(name: impl Into<String>) -> Self {
+        Self {
+            t: OpenGameStatusType::LoadPlugin,
+            text: Some(name.into()),
+        }
+    }
+
+    pub fn loaded() -> Self {
+        Self {
+            t: OpenGameStatusType::Loaded,
+            text: None,
+        }
+    }
+}
+
 #[command]
 fn choose_locale(locales: Vec<Locale>) -> CommandResult<Option<Locale>> {
     let current = Locale::current();
@@ -143,24 +187,30 @@ fn main() -> Result<()> {
                 .as_str()
                 .map(|s| s.to_string())
                 .unwrap_or_default();
+            app.manage(Storage::default());
             let handle = app.handle();
             tauri::async_runtime::spawn(async move {
                 let open = Game::open(&config);
                 tokio::pin!(open);
                 while let Some(status) = open.try_next().await? {
                     match status {
-                        OpenStatus::LoadProfile => info!("Loading profile..."),
-                        OpenStatus::CreateRuntime => info!("Creating runtime..."),
-                        OpenStatus::LoadPlugin(name) => info!("Loading plugin \"{}\"", name),
+                        OpenStatus::LoadProfile => handle.emit_all(
+                            "gal://open_status",
+                            OpenGameStatus::load_profile(config.clone()),
+                        )?,
+                        OpenStatus::CreateRuntime => handle
+                            .emit_all("gal://open_status", OpenGameStatus::create_runtime())?,
+                        OpenStatus::LoadPlugin(name) => handle
+                            .emit_all("gal://open_status", OpenGameStatus::load_plugin(name))?,
                         OpenStatus::Loaded(game) => {
                             let game = Arc::new(game);
                             window.set_title(game.title())?;
+                            handle.emit_all("gal://open_status", OpenGameStatus::loaded())?;
                             info!("Loaded config \"{}\"", config.escape_default());
                             handle.manage(game);
                         }
                     }
                 }
-                handle.manage(Storage::default());
                 anyhow::Ok(())
             });
             Ok(())

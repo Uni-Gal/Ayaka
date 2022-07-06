@@ -33,7 +33,7 @@ export default {
     },
     methods: {
         async go_home() {
-            await router.replace("/")
+            await router.replace("/home")
         },
         // Should be called in mutex
         async fetch_current_run() {
