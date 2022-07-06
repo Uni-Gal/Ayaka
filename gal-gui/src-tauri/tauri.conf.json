@@ -31,7 +31,7 @@
       "copyright": "",
       "deb": {
         "depends": [
-          "libicu-dev"
+          "libicu63 | libicu68 | libicu69 | libicu70 | libicu71"
         ]
       },
       "externalBin": [],
