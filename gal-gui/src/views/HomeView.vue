@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Locale } from 'vue-i18n'
-import { info, next_run, start_new, locale_native_name } from '../interop'
+import { info, next_run, start_new, locale_native_name, save_locale } from '../interop'
 import router from '../router'
 </script>
 
@@ -26,9 +26,6 @@ export default {
             if (await next_run()) {
                 router.replace("/game")
             }
-        },
-        save_locale(loc: Locale) {
-            localStorage.setItem("locale", loc)
         },
         async locale_native_name(loc: Locale) {
             return await locale_native_name(loc)

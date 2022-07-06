@@ -31,6 +31,14 @@ export interface Switch {
     enabled: boolean,
 }
 
+export function get_locale(): Locale | null {
+    return localStorage.getItem("locale")
+}
+
+export function save_locale(loc: Locale) {
+    localStorage.setItem("locale", loc)
+}
+
 export function choose_locale(locales: Locale[]): Promise<Locale | null> {
     return invoke("choose_locale", { locales: locales })
 }
