@@ -14,7 +14,7 @@ use gal_runtime::{
 use serde::Serialize;
 use serde_json::json;
 use std::{fmt::Display, sync::Arc};
-use tauri::{async_runtime::Mutex, command, Manager, State};
+use tauri::{async_runtime::Mutex, command, AppHandle, Manager, State};
 
 type CommandResult<T> = std::result::Result<T, CommandError>;
 
@@ -82,6 +82,36 @@ impl OpenGameStatus {
 }
 
 #[command]
+async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
+    let window = handle.get_window("main").unwrap();
+    let config = &storage.config;
+    let open = Game::open(config);
+    tokio::pin!(open);
+    while let Some(status) = open.try_next().await? {
+        match status {
+            OpenStatus::LoadProfile => handle.emit_all(
+                "gal://open_status",
+                OpenGameStatus::load_profile(config.clone()),
+            )?,
+            OpenStatus::CreateRuntime => {
+                handle.emit_all("gal://open_status", OpenGameStatus::create_runtime())?
+            }
+            OpenStatus::LoadPlugin(name) => {
+                handle.emit_all("gal://open_status", OpenGameStatus::load_plugin(name))?
+            }
+            OpenStatus::Loaded(game) => {
+                let game = Arc::new(game);
+                window.set_title(game.title())?;
+                handle.emit_all("gal://open_status", OpenGameStatus::loaded())?;
+                info!("Loaded config \"{}\"", config.escape_default());
+                handle.manage(game);
+            }
+        }
+    }
+    Ok(())
+}
+
+#[command]
 fn choose_locale(locales: Vec<Locale>) -> CommandResult<Option<Locale>> {
     let current = Locale::current();
     info!("Choose {} from {:?}", current, locales);
@@ -96,8 +126,18 @@ fn locale_native_name(loc: Locale) -> CommandResult<String> {
 
 #[derive(Default)]
 struct Storage {
+    config: String,
     context: Mutex<Option<Context>>,
     action: Mutex<Option<Action>>,
+}
+
+impl Storage {
+    pub fn new(config: impl Into<String>) -> Self {
+        Self {
+            config: config.into(),
+            ..Default::default()
+        }
+    }
 }
 
 #[command]
@@ -187,35 +227,11 @@ fn main() -> Result<()> {
                 .as_str()
                 .map(|s| s.to_string())
                 .unwrap_or_default();
-            app.manage(Storage::default());
-            let handle = app.handle();
-            tauri::async_runtime::spawn(async move {
-                let open = Game::open(&config);
-                tokio::pin!(open);
-                while let Some(status) = open.try_next().await? {
-                    match status {
-                        OpenStatus::LoadProfile => handle.emit_all(
-                            "gal://open_status",
-                            OpenGameStatus::load_profile(config.clone()),
-                        )?,
-                        OpenStatus::CreateRuntime => handle
-                            .emit_all("gal://open_status", OpenGameStatus::create_runtime())?,
-                        OpenStatus::LoadPlugin(name) => handle
-                            .emit_all("gal://open_status", OpenGameStatus::load_plugin(name))?,
-                        OpenStatus::Loaded(game) => {
-                            let game = Arc::new(game);
-                            window.set_title(game.title())?;
-                            handle.emit_all("gal://open_status", OpenGameStatus::loaded())?;
-                            info!("Loaded config \"{}\"", config.escape_default());
-                            handle.manage(game);
-                        }
-                    }
-                }
-                anyhow::Ok(())
-            });
+            app.manage(Storage::new(config));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            open_game,
             choose_locale,
             locale_native_name,
             info,

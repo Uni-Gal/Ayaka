@@ -31,6 +31,10 @@ export interface Switch {
     enabled: boolean,
 }
 
+export function open_game(): Promise<void> {
+    return invoke("open_game")
+}
+
 export function get_locale(): Locale | null {
     return localStorage.getItem("locale")
 }
