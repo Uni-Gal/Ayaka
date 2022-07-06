@@ -1,6 +1,6 @@
 use crate::{
     anyhow::{anyhow, Result},
-    plugin::Runtime,
+    plugin::{LoadStatus, Runtime},
 };
 use gal_locale::Locale;
 use gal_script::{
@@ -12,6 +12,7 @@ use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
+use tokio_stream::{Stream, StreamExt};
 
 pub type VarMap = HashMap<String, RawValue>;
 
@@ -53,20 +54,41 @@ pub struct Game {
     runtime: Runtime,
 }
 
+pub enum OpenStatus {
+    LoadProfile,
+    CreateRuntime,
+    LoadPlugin(String),
+    Loaded(Game),
+}
+
 impl Game {
-    pub fn open(path: impl AsRef<Path>) -> Result<Self> {
-        let reader = std::fs::File::open(path.as_ref())?;
-        let data: GameData = serde_yaml::from_reader(reader)?;
-        let root_path = path
-            .as_ref()
-            .parent()
-            .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
-        let runtime = Runtime::load(&data.plugins, root_path)?;
-        Ok(Self {
-            data,
-            root_path: root_path.to_path_buf(),
-            runtime,
-        })
+    pub fn open(path: impl AsRef<Path>) -> impl Stream<Item = Result<OpenStatus>> {
+        async_stream::try_stream! {
+            yield OpenStatus::LoadProfile;
+            let file = tokio::fs::read(path.as_ref()).await?;
+            let data: GameData = serde_yaml::from_slice(&file)?;
+            let root_path = path
+                .as_ref()
+                .parent()
+                .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
+            yield OpenStatus::CreateRuntime;
+            let mut runtime = None;
+            {
+                let load = Runtime::load(&data.plugins, root_path);
+                tokio::pin!(load);
+                while let Some(load_status) = load.try_next().await? {
+                    match load_status {
+                        LoadStatus::LoadPlugin(name) => yield OpenStatus::LoadPlugin(name),
+                        LoadStatus::Loaded(rt) => runtime = Some(rt),
+                    }
+                }
+            }
+            yield OpenStatus::Loaded(Self {
+                data,
+                root_path: root_path.to_path_buf(),
+                runtime: runtime.unwrap(),
+            })
+        }
     }
 
     fn choose_from_keys<V>(&self, loc: &Locale, map: &HashMap<Locale, V>) -> Locale {

@@ -1,7 +1,8 @@
 use clap::Parser;
 use gal_runtime::{
     anyhow::{bail, Result},
-    Context, Game, Locale,
+    tokio_stream::StreamExt,
+    Context, Game, Locale, OpenStatus,
 };
 use std::{
     ffi::OsString,
@@ -35,45 +36,57 @@ fn pause(auto: bool) -> Result<()> {
     Ok(())
 }
 
-fn main() -> Result<()> {
+#[tokio::main(flavor = "current_thread")]
+async fn main() -> Result<()> {
     let opts = Options::parse();
     env_logger::try_init()?;
-    let game = Arc::new(Game::open(&opts.input)?);
-    let mut ctx = Context::new(game, Locale::current())?;
-    if opts.check {
-        if !ctx.check() {
-            bail!("Check failed.");
-        }
-    }
-    while let Some(action) = ctx.next_run() {
-        if let Some(name) = &action.data.character {
-            print!("_{}_", name);
-        }
-        print!("{}", action.data.line);
-        if !action.data.switches.is_empty() {
-            for (i, s) in action.data.switches.iter().enumerate() {
-                if s.enabled {
-                    print!("\n-{}- {}", i + 1, s.text);
-                } else {
-                    print!("\n-x- {}", s.text);
-                }
-            }
-            println!();
-            loop {
-                let s = read_line()?;
-                if let Ok(i) = s.trim().parse::<usize>() {
-                    let valid = i > 0
-                        && i <= action.switch_actions.len()
-                        && action.data.switches[i - 1].enabled;
-                    if valid {
-                        ctx.call(&action.switch_actions[i - 1]);
-                        break;
+    let open = Game::open(&opts.input);
+    tokio::pin!(open);
+    while let Some(status) = open.try_next().await? {
+        match status {
+            OpenStatus::LoadProfile => println!("Loading profile..."),
+            OpenStatus::CreateRuntime => println!("Creating runtime..."),
+            OpenStatus::LoadPlugin(name) => println!("Loading plugin \"{}\"", name),
+            OpenStatus::Loaded(game) => {
+                let game = Arc::new(game);
+                let mut ctx = Context::new(game, Locale::current())?;
+                if opts.check {
+                    if !ctx.check() {
+                        bail!("Check failed.");
                     }
                 }
-                println!("Invalid switch, enter again!");
+                while let Some(action) = ctx.next_run() {
+                    if let Some(name) = &action.data.character {
+                        print!("_{}_", name);
+                    }
+                    print!("{}", action.data.line);
+                    if !action.data.switches.is_empty() {
+                        for (i, s) in action.data.switches.iter().enumerate() {
+                            if s.enabled {
+                                print!("\n-{}- {}", i + 1, s.text);
+                            } else {
+                                print!("\n-x- {}", s.text);
+                            }
+                        }
+                        println!();
+                        loop {
+                            let s = read_line()?;
+                            if let Ok(i) = s.trim().parse::<usize>() {
+                                let valid = i > 0
+                                    && i <= action.switch_actions.len()
+                                    && action.data.switches[i - 1].enabled;
+                                if valid {
+                                    ctx.call(&action.switch_actions[i - 1]);
+                                    break;
+                                }
+                            }
+                            println!("Invalid switch, enter again!");
+                        }
+                    } else {
+                        pause(opts.auto)?;
+                    }
+                }
             }
-        } else {
-            pause(opts.auto)?;
         }
     }
     Ok(())

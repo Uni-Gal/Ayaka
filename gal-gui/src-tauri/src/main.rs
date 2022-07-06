@@ -7,7 +7,9 @@ use flexi_logger::{FileSpec, LogSpecification, Logger};
 use gal_runtime::{
     anyhow::{self, anyhow, Result},
     log::info,
-    Action, ActionData, Context, Game, Locale, RawValue,
+    tokio,
+    tokio_stream::StreamExt,
+    Action, ActionData, Context, Game, Locale, OpenStatus, RawValue,
 };
 use serde::Serialize;
 use serde_json::json;
@@ -136,13 +138,31 @@ fn main() -> Result<()> {
             #[cfg(not(debug_assertions))]
             window.center()?;
             let matches = app.get_cli_matches()?;
-            let config = matches.args["config"].value.as_str().unwrap_or("");
-            info!("Loading config...");
-            let game = Arc::new(Game::open(config)?);
-            window.set_title(game.title())?;
-            info!("Loaded config \"{}\"", config.escape_default());
-            app.manage(game);
-            app.manage(Storage::default());
+            let config = matches.args["config"]
+                .value
+                .as_str()
+                .map(|s| s.to_string())
+                .unwrap_or_default();
+            let handle = app.handle();
+            tauri::async_runtime::spawn(async move {
+                let open = Game::open(&config);
+                tokio::pin!(open);
+                while let Some(status) = open.try_next().await? {
+                    match status {
+                        OpenStatus::LoadProfile => info!("Loading profile..."),
+                        OpenStatus::CreateRuntime => info!("Creating runtime..."),
+                        OpenStatus::LoadPlugin(name) => info!("Loading plugin \"{}\"", name),
+                        OpenStatus::Loaded(game) => {
+                            let game = Arc::new(game);
+                            window.set_title(game.title())?;
+                            info!("Loaded config \"{}\"", config.escape_default());
+                            handle.manage(game);
+                        }
+                    }
+                }
+                handle.manage(Storage::default());
+                anyhow::Ok(())
+            });
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

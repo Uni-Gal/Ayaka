@@ -266,9 +266,18 @@ mod test {
     use std::sync::Mutex;
 
     lazy_static::lazy_static! {
-        static ref GAME: Mutex<Game> = Mutex::new(Game::open(
-           concat!(env!("CARGO_MANIFEST_DIR"), "/../sample.yaml"),
-        ).unwrap());
+        static ref GAME: Mutex<Game> = Mutex::new(tokio_test::block_on(async {
+            use tokio_stream::StreamExt;
+            let open = Game::open(concat!(env!("CARGO_MANIFEST_DIR"), "/../sample.yaml"));
+            let mut game = None;
+            tokio::pin!(open);
+            while let Some(status) = open.try_next().await.unwrap() {
+                if let OpenStatus::Loaded(g) = status {
+                    game = Some(g);
+                }
+            }
+            game.unwrap()
+        }));
     }
 
     fn with_ctx(f: impl FnOnce(&mut VarTable)) {

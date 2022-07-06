@@ -1,5 +1,6 @@
 use crate::*;
 use std::sync::Mutex;
+use tokio_stream::{wrappers::ReadDirStream, Stream, StreamExt};
 use wit_bindgen_wasmtime::{
     anyhow,
     rt::{copy_slice, invalid_variant, RawMem},
@@ -176,35 +177,46 @@ pub struct Runtime {
     pub modules: HashMap<String, Host>,
 }
 
+pub enum LoadStatus {
+    LoadPlugin(String),
+    Loaded(Runtime),
+}
+
 impl Runtime {
-    pub fn load(dir: impl AsRef<Path>, rel_to: impl AsRef<Path>) -> anyhow::Result<Self> {
-        let mut store = Store::<()>::default();
-        let mut linker = Linker::new(store.engine());
-        let path = rel_to.as_ref().join(dir);
-        let mut modules = HashMap::new();
-        for f in std::fs::read_dir(path)? {
-            let p = f?.path();
-            if p.extension()
-                .map(|s| s.to_string_lossy())
-                .unwrap_or_default()
-                == "wasm"
-            {
-                let buf = std::fs::read(&p)?;
-                let module = Module::new(store.engine(), buf)?;
-                let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
-                modules.insert(
-                    p.with_extension("")
+    pub fn load(
+        dir: impl AsRef<Path>,
+        rel_to: impl AsRef<Path>,
+    ) -> impl Stream<Item = anyhow::Result<LoadStatus>> {
+        async_stream::try_stream! {
+            let mut store = Store::<()>::default();
+            let mut linker = Linker::new(store.engine());
+            let path = rel_to.as_ref().join(dir);
+            let mut modules = HashMap::new();
+            let mut dirs = ReadDirStream::new(tokio::fs::read_dir(path).await?);
+            while let Some(f) = dirs.try_next().await? {
+                let p = f.path();
+                if p.extension()
+                    .map(|s| s.to_string_lossy())
+                    .unwrap_or_default()
+                    == "wasm"
+                {
+                    let name = p
+                        .with_extension("")
                         .file_name()
                         .map(|s| s.to_string_lossy())
                         .unwrap_or_default()
-                        .into_owned(),
-                    runtime,
-                );
+                        .into_owned();
+                    yield LoadStatus::LoadPlugin(name.clone());
+                    let buf = tokio::fs::read(&p).await?;
+                    let module = Module::from_binary(store.engine(), &buf)?;
+                    let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
+                    modules.insert(name, runtime);
+                }
             }
+            yield LoadStatus::Loaded(Self {
+                store: Mutex::new(store),
+                modules,
+            })
         }
-        Ok(Self {
-            store: Mutex::new(store),
-            modules,
-        })
     }
 }

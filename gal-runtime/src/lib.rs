@@ -8,6 +8,8 @@ pub mod script;
 pub use config::*;
 pub use gal_locale::Locale;
 pub use gal_script::{log, Command, Expr, Line, RawValue, Text};
+pub use tokio;
+pub use tokio_stream;
 pub use wit_bindgen_wasmtime::anyhow;
 
 use gal_script::{Loc, ParseError, Program, TextParser};

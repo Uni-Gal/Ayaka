@@ -10,7 +10,11 @@ serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
 wit-bindgen-wasmtime = { git = "https://github.com/bytecodealliance/wit-bindgen.git" }
 unicode-width = "0.1"
+tokio = { version = "1", features = ["fs"] }
+tokio-stream = { version = "0.1", features = ["fs"] }
+async-stream = "0.3"
 
 [dev-dependencies]
 serde_yaml = "0.8"
 lazy_static = "1.4"
+tokio-test = "0.4"
