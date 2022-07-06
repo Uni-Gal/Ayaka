@@ -131,11 +131,10 @@ fn main() -> Result<()> {
         .plugin(tauri_plugin_localhost::Builder::new(port).build())
         .setup(|app| {
             let window = app.get_window("main").unwrap();
-            if cfg!(debug_assertions) {
-                window.open_devtools();
-            } else {
-                window.center()?;
-            }
+            #[cfg(debug_assertions)]
+            window.open_devtools();
+            #[cfg(not(debug_assertions))]
+            window.center()?;
             let matches = app.get_cli_matches()?;
             let config = matches.args["config"].value.as_str().unwrap_or("");
             info!("Loading config...");
