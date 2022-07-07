@@ -20,37 +20,6 @@ impl Host {
         module: &Module,
         linker: &mut Linker<WasiCtx>,
     ) -> anyhow::Result<Self> {
-        linker.func_wrap(
-            "log",
-            "__log",
-            |mut caller: Caller<'_, WasiCtx>,
-             level: i32,
-             target_len: i32,
-             target: i32,
-             msg_len: i32,
-             msg: i32| {
-                let memory = match caller.get_export("memory") {
-                    Some(Extern::Memory(mem)) => mem,
-                    _ => return Err(Trap::new("failed to find host memory")),
-                };
-                let target_data = copy_slice(&mut caller, &memory, target, target_len, 1)?;
-                let msg_data = copy_slice(&mut caller, &memory, msg, msg_len, 1)?;
-                let target =
-                    String::from_utf8(target_data).map_err(|_| Trap::new("invalid utf-8"))?;
-                let msg = String::from_utf8(msg_data).map_err(|_| Trap::new("invalid utf-8"))?;
-                let level = unsafe { std::mem::transmute(level as usize) };
-                log::logger().log(
-                    &log::Record::builder()
-                        .level(level)
-                        .target(&target)
-                        .args(format_args!("{}", msg))
-                        .build(),
-                );
-                Ok(())
-            },
-        )?;
-        linker.func_wrap("log", "__log_flush", || log::logger().flush())?;
-
         let instance = linker.instantiate(&mut store, module)?;
         Ok(Self::new(store, instance)?)
     }
@@ -184,6 +153,42 @@ pub enum LoadStatus {
 }
 
 impl Runtime {
+    fn new_linker(engine: &Engine) -> anyhow::Result<Linker<WasiCtx>> {
+        let mut linker = Linker::new(engine);
+        wasmtime_wasi::add_to_linker(&mut linker, |s| s)?;
+        linker.func_wrap(
+            "log",
+            "__log",
+            |mut caller: Caller<'_, WasiCtx>,
+             level: i32,
+             target_len: i32,
+             target: i32,
+             msg_len: i32,
+             msg: i32| {
+                let memory = match caller.get_export("memory") {
+                    Some(Extern::Memory(mem)) => mem,
+                    _ => return Err(Trap::new("failed to find host memory")),
+                };
+                let target_data = copy_slice(&mut caller, &memory, target, target_len, 1)?;
+                let msg_data = copy_slice(&mut caller, &memory, msg, msg_len, 1)?;
+                let target =
+                    String::from_utf8(target_data).map_err(|_| Trap::new("invalid utf-8"))?;
+                let msg = String::from_utf8(msg_data).map_err(|_| Trap::new("invalid utf-8"))?;
+                let level = unsafe { std::mem::transmute(level as usize) };
+                log::logger().log(
+                    &log::Record::builder()
+                        .level(level)
+                        .target(&target)
+                        .args(format_args!("{}", msg))
+                        .build(),
+                );
+                Ok(())
+            },
+        )?;
+        linker.func_wrap("log", "__log_flush", || log::logger().flush())?;
+        Ok(linker)
+    }
+
     pub fn load(
         dir: impl AsRef<Path>,
         rel_to: impl AsRef<Path>,
@@ -194,6 +199,7 @@ impl Runtime {
         let path = rel_to.as_ref().join(dir);
         let mut modules = HashMap::new();
         async_stream::try_stream! {
+            let mut linker = Self::new_linker(store.engine())?;
             let mut dirs = ReadDirStream::new(tokio::fs::read_dir(path).await?);
             while let Some(f) = dirs.try_next().await? {
                 let p = f.path();
@@ -211,8 +217,6 @@ impl Runtime {
                     yield LoadStatus::LoadPlugin(name.clone());
                     let buf = tokio::fs::read(&p).await?;
                     let module = Module::from_binary(store.engine(), &buf)?;
-                    let mut linker = Linker::new(store.engine());
-                    wasmtime_wasi::add_to_linker(&mut linker, |s| s)?;
                     let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
                     modules.insert(name, runtime);
                 }
