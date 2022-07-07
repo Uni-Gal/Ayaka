@@ -1,42 +1,79 @@
-use crate::*;
+use crate::{
+    plugin::{LoadStatus, Runtime},
+    *,
+};
+use anyhow::{anyhow, Result};
 use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
-use std::sync::Arc;
+use std::path::{Path, PathBuf};
+use tokio_stream::{Stream, StreamExt};
 use unicode_width::UnicodeWidthStr;
 
 pub struct Context {
-    pub game: Arc<Game>,
+    pub game: Game,
+    root_path: PathBuf,
+    runtime: Runtime,
     pub ctx: RawContext,
     loc: Locale,
 }
 
+pub enum OpenStatus {
+    LoadProfile,
+    CreateRuntime,
+    LoadPlugin(String, usize, usize),
+    Loaded(Context),
+}
+
 impl Context {
-    fn default_ctx(game: &Game) -> RawContext {
+    pub fn open(path: impl AsRef<Path>) -> impl Stream<Item = Result<OpenStatus>> {
+        async_stream::try_stream! {
+            yield OpenStatus::LoadProfile;
+            let file = tokio::fs::read(path.as_ref()).await?;
+            let game: Game = serde_yaml::from_slice(&file)?;
+            let root_path = path
+                .as_ref()
+                .parent()
+                .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
+            yield OpenStatus::CreateRuntime;
+            let mut runtime = None;
+            {
+                let load = Runtime::load(&game.plugins.dir, root_path, &game.plugins.modules);
+                tokio::pin!(load);
+                while let Some(load_status) = load.try_next().await? {
+                    match load_status {
+                        LoadStatus::LoadPlugin(name, i, len) => yield OpenStatus::LoadPlugin(name, i, len),
+                        LoadStatus::Loaded(rt) => runtime = Some(rt),
+                    }
+                }
+            }
+            yield OpenStatus::Loaded(Self {
+                game,
+                root_path: root_path.to_path_buf(),
+                runtime: runtime.unwrap(),
+                ctx: RawContext::default(),
+                loc: Locale::current(),
+            })
+        }
+    }
+
+    pub fn init_new(&mut self) {
         let mut ctx = RawContext::default();
-        ctx.cur_para = game
-            .paras()
-            .get(&game.base_lang())
+        ctx.cur_para = self
+            .game
+            .paras
+            .get(&self.game.base_lang)
             .and_then(|paras| paras.first().map(|p| p.tag.clone()))
             .unwrap_or_else(|| {
                 warn!("There is no paragraph in the game.");
                 Default::default()
             });
-        ctx
-    }
-
-    pub fn new(game: Arc<Game>, loc: Locale) -> anyhow::Result<Self> {
-        let ctx = Self::default_ctx(&game);
-        Self::with_context(game, loc, ctx)
-    }
-
-    pub fn with_context(game: Arc<Game>, loc: Locale, ctx: RawContext) -> anyhow::Result<Self> {
-        Ok(Self { game, ctx, loc })
+        self.ctx = ctx;
     }
 
     fn table(&mut self) -> VarTable {
         VarTable::new(
-            &self.game.runtime(),
+            &self.runtime,
             self.game.find_res_fallback(&self.loc),
             &mut self.ctx.locals,
         )
@@ -58,6 +95,14 @@ impl Context {
                 })
             })
             .flatten()
+    }
+
+    fn bg_dir(&self) -> PathBuf {
+        self.root_path.join(&self.game.bgs)
+    }
+
+    fn bgm_dir(&self) -> PathBuf {
+        self.root_path.join(&self.game.bgms)
     }
 
     pub fn set_locale(&mut self, loc: Locale) {
@@ -146,7 +191,7 @@ impl Context {
             .map(|index| {
                 ["jpg", "png"]
                     .into_iter()
-                    .map(|ex| self.game.bg_dir().join(format!("{}.{}", index, ex)))
+                    .map(|ex| self.bg_dir().join(format!("{}.{}", index, ex)))
                     .filter(|p| p.exists())
                     .next()
             })
@@ -158,7 +203,7 @@ impl Context {
                     .into_owned()
             });
         let bgm = bgm
-            .map(|index| self.game.bgm_dir().join(format!("{}.mp3", index)))
+            .map(|index| self.bgm_dir().join(format!("{}.mp3", index)))
             .filter(|p| p.exists())
             .map(|path| {
                 std::path::absolute(path)
@@ -265,7 +310,7 @@ impl Context {
 
     pub fn check(&mut self) -> bool {
         let mut succeed = true;
-        for (_, paras) in self.game.paras() {
+        for (_, paras) in &self.game.paras {
             for para in paras {
                 self.ctx.cur_para = para.tag.clone();
                 for (index, act) in para.texts.iter().enumerate() {
@@ -277,7 +322,6 @@ impl Context {
                 }
             }
         }
-        self.ctx = Self::default_ctx(&self.game);
         succeed
     }
 }

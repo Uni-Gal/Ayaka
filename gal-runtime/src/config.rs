@@ -1,18 +1,10 @@
-use crate::{
-    anyhow::{anyhow, Result},
-    plugin::{LoadStatus, Runtime},
-};
 use gal_locale::Locale;
 use gal_script::{
     log::{debug, trace, warn},
     Program, RawValue,
 };
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
-use tokio_stream::{Stream, StreamExt};
+use std::{collections::HashMap, path::PathBuf};
 
 pub type VarMap = HashMap<String, RawValue>;
 
@@ -32,7 +24,7 @@ pub struct RawContext {
 }
 
 #[derive(Debug, Default, Deserialize)]
-struct GameData {
+pub struct Game {
     pub title: String,
     #[serde(default)]
     pub author: String,
@@ -49,55 +41,13 @@ struct GameData {
 }
 
 #[derive(Debug, Default, Deserialize)]
-struct PluginsConfig {
+pub struct PluginsConfig {
     pub dir: PathBuf,
     #[serde(default)]
     pub modules: Vec<String>,
 }
 
-pub struct Game {
-    root_path: PathBuf,
-    data: GameData,
-    runtime: Runtime,
-}
-
-pub enum OpenStatus {
-    LoadProfile,
-    CreateRuntime,
-    LoadPlugin(String, usize, usize),
-    Loaded(Game),
-}
-
 impl Game {
-    pub fn open(path: impl AsRef<Path>) -> impl Stream<Item = Result<OpenStatus>> {
-        async_stream::try_stream! {
-            yield OpenStatus::LoadProfile;
-            let file = tokio::fs::read(path.as_ref()).await?;
-            let data: GameData = serde_yaml::from_slice(&file)?;
-            let root_path = path
-                .as_ref()
-                .parent()
-                .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
-            yield OpenStatus::CreateRuntime;
-            let mut runtime = None;
-            {
-                let load = Runtime::load(&data.plugins.dir, root_path, &data.plugins.modules);
-                tokio::pin!(load);
-                while let Some(load_status) = load.try_next().await? {
-                    match load_status {
-                        LoadStatus::LoadPlugin(name, i, len) => yield OpenStatus::LoadPlugin(name, i, len),
-                        LoadStatus::Loaded(rt) => runtime = Some(rt),
-                    }
-                }
-            }
-            yield OpenStatus::Loaded(Self {
-                data,
-                root_path: root_path.to_path_buf(),
-                runtime: runtime.unwrap(),
-            })
-        }
-    }
-
     fn choose_from_keys<V>(&self, loc: &Locale, map: &HashMap<Locale, V>) -> Locale {
         let keys = map.keys();
         debug!("Choose \"{}\" from {:?}", loc, keys);
@@ -107,49 +57,13 @@ impl Game {
                 warn!("Cannot choose locale: {}", e);
                 None
             })
-            .unwrap_or_else(|| self.data.base_lang.clone());
+            .unwrap_or_else(|| self.base_lang.clone());
         debug!("Chose \"{}\"", res);
         res
     }
 
-    pub fn runtime(&self) -> &Runtime {
-        &self.runtime
-    }
-
-    pub fn title(&self) -> &str {
-        &self.data.title
-    }
-
-    pub fn author(&self) -> &str {
-        &self.data.author
-    }
-
-    pub fn paras(&self) -> &HashMap<Locale, Vec<Paragraph>> {
-        &self.data.paras
-    }
-
-    pub fn resources(&self) -> &HashMap<Locale, VarMap> {
-        &self.data.res
-    }
-
-    pub fn base_lang(&self) -> &Locale {
-        &self.data.base_lang
-    }
-
-    pub fn plugin_dir(&self) -> PathBuf {
-        self.root_path.join(&self.data.plugins.dir)
-    }
-
-    pub fn bg_dir(&self) -> PathBuf {
-        self.root_path.join(&self.data.bgs)
-    }
-
-    pub fn bgm_dir(&self) -> PathBuf {
-        self.root_path.join(&self.data.bgms)
-    }
-
     fn find_para(&self, loc: &Locale, tag: &str) -> Option<&Paragraph> {
-        if let Some(paras) = self.data.paras.get(loc) {
+        if let Some(paras) = self.paras.get(loc) {
             for p in paras {
                 if p.tag == tag {
                     return Some(p);
@@ -160,8 +74,8 @@ impl Game {
     }
 
     pub fn find_para_fallback(&self, loc: &Locale, tag: &str) -> Fallback<&Paragraph> {
-        let key = self.choose_from_keys(loc, &self.data.paras);
-        let base_key = self.choose_from_keys(&self.data.base_lang, &self.data.paras);
+        let key = self.choose_from_keys(loc, &self.paras);
+        let base_key = self.choose_from_keys(&self.base_lang, &self.paras);
         Fallback::new(
             if key == base_key {
                 None
@@ -173,12 +87,12 @@ impl Game {
     }
 
     fn find_res(&self, loc: &Locale) -> Option<&VarMap> {
-        self.data.res.get(loc)
+        self.res.get(loc)
     }
 
     pub fn find_res_fallback(&self, loc: &Locale) -> Fallback<&VarMap> {
-        let key = self.choose_from_keys(loc, &self.data.res);
-        let base_key = self.choose_from_keys(&self.data.base_lang, &self.data.res);
+        let key = self.choose_from_keys(loc, &self.res);
+        let base_key = self.choose_from_keys(&self.base_lang, &self.res);
         Fallback::new(
             if key == base_key {
                 None

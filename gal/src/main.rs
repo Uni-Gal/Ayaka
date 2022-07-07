@@ -2,12 +2,11 @@ use clap::Parser;
 use gal_runtime::{
     anyhow::{bail, Result},
     tokio_stream::StreamExt,
-    Context, Game, Locale, OpenStatus,
+    Context, OpenStatus,
 };
 use std::{
     ffi::OsString,
     io::{stdin, stdout, Write},
-    sync::Arc,
 };
 
 #[derive(Debug, Parser)]
@@ -40,7 +39,7 @@ fn pause(auto: bool) -> Result<()> {
 async fn main() -> Result<()> {
     let opts = Options::parse();
     env_logger::try_init()?;
-    let open = Game::open(&opts.input);
+    let open = Context::open(&opts.input);
     tokio::pin!(open);
     while let Some(status) = open.try_next().await? {
         match status {
@@ -49,14 +48,13 @@ async fn main() -> Result<()> {
             OpenStatus::LoadPlugin(name, i, len) => {
                 println!("Loading plugin \"{}\" ({}/{})", name, i + 1, len)
             }
-            OpenStatus::Loaded(game) => {
-                let game = Arc::new(game);
-                let mut ctx = Context::new(game, Locale::current())?;
+            OpenStatus::Loaded(mut ctx) => {
                 if opts.check {
                     if !ctx.check() {
                         bail!("Check failed.");
                     }
                 }
+                ctx.init_new();
                 while let Some(action) = ctx.next_run() {
                     if let Some(name) = &action.data.character {
                         print!("_{}_", name);

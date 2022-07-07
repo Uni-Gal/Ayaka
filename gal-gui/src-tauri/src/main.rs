@@ -6,14 +6,14 @@
 use flexi_logger::{FileSpec, LogSpecification, Logger};
 use gal_runtime::{
     anyhow::{self, anyhow, Result},
-    log::info,
+    log::{info, warn},
     tokio,
     tokio_stream::StreamExt,
-    Action, ActionData, Context, Game, Locale, OpenStatus, RawValue,
+    Action, ActionData, Context, Locale, OpenStatus, RawValue,
 };
 use serde::Serialize;
 use serde_json::json;
-use std::{fmt::Display, sync::Arc};
+use std::fmt::Display;
 use tauri::{async_runtime::Mutex, command, AppHandle, Manager, State};
 
 type CommandResult<T> = std::result::Result<T, CommandError>;
@@ -85,7 +85,7 @@ impl OpenGameStatus {
 async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
     let window = handle.get_window("main").unwrap();
     let config = &storage.config;
-    let open = Game::open(config);
+    let open = Context::open(config);
     tokio::pin!(open);
     while let Some(status) = open.try_next().await? {
         match status {
@@ -100,12 +100,11 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
                 "gal://open_status",
                 OpenGameStatus::load_plugin(name, i, len),
             )?,
-            OpenStatus::Loaded(game) => {
-                let game = Arc::new(game);
-                window.set_title(game.title())?;
+            OpenStatus::Loaded(ctx) => {
+                window.set_title(&ctx.game.title)?;
                 handle.emit_all("gal://open_status", OpenGameStatus::loaded())?;
                 info!("Loaded config \"{}\"", config.escape_default());
-                handle.manage(game);
+                *storage.context.lock().await = Some(ctx);
             }
         }
     }
@@ -142,21 +141,27 @@ impl Storage {
 }
 
 #[command]
-fn info(game: State<Arc<Game>>) -> serde_json::Value {
-    json!({
-        "title": game.title(),
-        "author": game.author(),
-    })
+async fn info(storage: State<'_, Storage>) -> CommandResult<serde_json::Value> {
+    let ctx = storage.context.lock().await;
+    if let Some(ctx) = ctx.as_ref() {
+        Ok(json!({
+            "title": ctx.game.title,
+            "author": ctx.game.author,
+        }))
+    } else {
+        warn!("Game hasn't been loaded.");
+        Ok(json!({}))
+    }
 }
 
 #[command]
-async fn start_new(
-    locale: Locale,
-    game: State<'_, Arc<Game>>,
-    storage: State<'_, Storage>,
-) -> CommandResult<()> {
-    *(storage.context.lock().await) = Some(Context::new((*game).clone(), locale.clone())?);
-    info!("Created new context with locale {}.", locale);
+async fn start_new(locale: Locale, storage: State<'_, Storage>) -> CommandResult<()> {
+    if let Some(ctx) = storage.context.lock().await.as_mut() {
+        ctx.init_new();
+        info!("Init new context with locale {}.", locale);
+    } else {
+        warn!("Game hasn't been loaded.")
+    }
     Ok(())
 }
 
