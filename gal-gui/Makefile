@@ -12,4 +12,4 @@ run: node_modules
 dist: node_modules
 	npm run build
 release: node_modules
-	npm run tauri build
+	STATIC_VCRUNTIME=false npm run tauri build

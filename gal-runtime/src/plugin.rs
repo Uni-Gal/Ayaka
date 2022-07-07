@@ -1,6 +1,7 @@
 use crate::*;
 use std::sync::Mutex;
 use tokio_stream::{wrappers::ReadDirStream, Stream, StreamExt};
+use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
 use wit_bindgen_wasmtime::{
     anyhow,
     rt::{copy_slice, invalid_variant, RawMem},
@@ -15,14 +16,14 @@ pub struct Host {
 }
 impl Host {
     pub fn instantiate(
-        mut store: impl AsContextMut<Data = ()>,
+        mut store: impl AsContextMut<Data = WasiCtx>,
         module: &Module,
-        linker: &mut Linker<()>,
+        linker: &mut Linker<WasiCtx>,
     ) -> anyhow::Result<Self> {
         linker.func_wrap(
             "log",
             "__log",
-            |mut caller: Caller<'_, ()>,
+            |mut caller: Caller<'_, WasiCtx>,
              level: i32,
              target_len: i32,
              target: i32,
@@ -55,7 +56,7 @@ impl Host {
     }
 
     pub fn new(
-        mut store: impl AsContextMut<Data = ()>,
+        mut store: impl AsContextMut<Data = WasiCtx>,
         instance: Instance,
     ) -> anyhow::Result<Self> {
         let mut store = store.as_context_mut();
@@ -76,7 +77,7 @@ impl Host {
 
     pub fn dispatch(
         &self,
-        mut caller: impl AsContextMut<Data = ()>,
+        mut caller: impl AsContextMut<Data = WasiCtx>,
         name: &str,
         args: &[RawValue],
     ) -> Result<RawValue, Trap> {
@@ -173,7 +174,7 @@ impl Host {
 }
 
 pub struct Runtime {
-    pub store: Mutex<Store<()>>,
+    pub store: Mutex<Store<WasiCtx>>,
     pub modules: HashMap<String, Host>,
 }
 
@@ -187,11 +188,12 @@ impl Runtime {
         dir: impl AsRef<Path>,
         rel_to: impl AsRef<Path>,
     ) -> impl Stream<Item = anyhow::Result<LoadStatus>> {
+        let engine = Engine::default();
+        let wasi = WasiCtxBuilder::new().build();
+        let mut store = Store::new(&engine, wasi);
+        let path = rel_to.as_ref().join(dir);
+        let mut modules = HashMap::new();
         async_stream::try_stream! {
-            let mut store = Store::<()>::default();
-            let mut linker = Linker::new(store.engine());
-            let path = rel_to.as_ref().join(dir);
-            let mut modules = HashMap::new();
             let mut dirs = ReadDirStream::new(tokio::fs::read_dir(path).await?);
             while let Some(f) = dirs.try_next().await? {
                 let p = f.path();
@@ -209,6 +211,8 @@ impl Runtime {
                     yield LoadStatus::LoadPlugin(name.clone());
                     let buf = tokio::fs::read(&p).await?;
                     let module = Module::from_binary(store.engine(), &buf)?;
+                    let mut linker = Linker::new(store.engine());
+                    wasmtime_wasi::add_to_linker(&mut linker, |s| s)?;
                     let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
                     modules.insert(name, runtime);
                 }

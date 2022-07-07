@@ -10,7 +10,7 @@ update:
 
 .PHONY: plugins release release-gui dist-gui
 plugins:
-	cd plugins && $(MAKE)
+	cd plugins && $(MAKE) plugins
 release:
 	cargo build --manifest-path=gal/Cargo.toml --release
 release-gui:

@@ -1,6 +1,6 @@
 title: 団長の名場面
 author: 冈田麿里
-plugins: ../../target/wasm32-unknown-unknown/release/
+plugins: ../../target/wasm32-wasi/release/
 bgs: bgs
 bgms: bgms
 res:

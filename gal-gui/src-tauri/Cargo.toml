@@ -16,5 +16,5 @@ tauri-plugin-localhost = "0.1"
 portpicker = "0.1"
 
 [features]
-default = [ "custom-protocol" ]
+default = []
 custom-protocol = [ "tauri/custom-protocol" ]
