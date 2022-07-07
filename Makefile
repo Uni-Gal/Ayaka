@@ -18,7 +18,7 @@ release-gui:
 dist-gui:
 	cd gal-gui && $(MAKE) dist
 
-EXAMPLES:=Fibonacci Orga
+EXAMPLES:=Fibonacci Fibonacci2 Orga
 
 define example-tpl
 .PHONY: example-$(1) example-$(1)-gui
