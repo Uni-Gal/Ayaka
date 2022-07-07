@@ -1,5 +1,5 @@
 use crate::*;
-use std::{collections::HashMap, path::Path, sync::Mutex};
+use std::{collections::HashMap, path::Path};
 use tokio_stream::{wrappers::ReadDirStream, Stream, StreamExt};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
 use wit_bindgen_wasmtime::{
@@ -143,8 +143,13 @@ impl Host {
 }
 
 pub struct Runtime {
-    pub store: Mutex<Store<WasiCtx>>,
+    pub store: Store<WasiCtx>,
     pub modules: HashMap<String, Host>,
+}
+
+pub struct RuntimeRef<'a> {
+    pub store: &'a mut Store<WasiCtx>,
+    pub modules: &'a HashMap<String, Host>,
 }
 
 pub enum LoadStatus {
@@ -236,10 +241,14 @@ impl Runtime {
                 let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
                 modules.insert(name, runtime);
             }
-            yield LoadStatus::Loaded(Self {
-                store: Mutex::new(store),
-                modules,
-            })
+            yield LoadStatus::Loaded(Self { store, modules })
+        }
+    }
+
+    pub fn as_mut(&mut self) -> RuntimeRef {
+        RuntimeRef {
+            store: &mut self.store,
+            modules: &self.modules,
         }
     }
 }
