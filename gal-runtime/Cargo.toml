@@ -9,6 +9,7 @@ gal-script = { path = "../gal-script" }
 gal-locale = { path = "../gal-locale" }
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
+rmp-serde = "1.1"
 anyhow = "1.0"
 wasmtime = "0.38"
 wasmtime-wasi = "0.38"

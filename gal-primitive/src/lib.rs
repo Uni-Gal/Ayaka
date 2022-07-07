@@ -1,11 +1,9 @@
-pub use bincode;
 pub use log;
 
-use bincode::{Decode, Encode};
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Encode, Decode)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub enum RawValue {
     Unit,
     Bool(bool),
@@ -128,13 +126,13 @@ impl Serialize for RawValue {
         match self {
             Self::Unit => serializer.serialize_unit(),
             Self::Bool(b) => serializer.serialize_bool(*b),
-            Self::Num(n) => serializer.serialize_i64(*n),
+            Self::Num(n) => n.serialize(serializer),
             Self::Str(s) => serializer.serialize_str(s),
         }
     }
 }
 
-#[derive(Encode, Decode)]
+#[derive(Serialize, Deserialize)]
 pub struct Record {
     pub level: usize,
     pub target: String,

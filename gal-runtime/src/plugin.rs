@@ -1,5 +1,5 @@
 use crate::*;
-use gal_primitive::{bincode, Record};
+use gal_primitive::Record;
 use std::{collections::HashMap, path::Path};
 use tokio_stream::{wrappers::ReadDirStream, Stream, StreamExt};
 use wasmtime::*;
@@ -46,7 +46,7 @@ impl Host {
         &self,
         mut caller: impl AsContextMut<Data = WasiCtx>,
         name: &str,
-        args: Vec<RawValue>,
+        args: &[RawValue],
     ) -> anyhow::Result<RawValue> {
         let func = self
             .instance
@@ -54,7 +54,7 @@ impl Host {
         let func_canonical_abi_realloc = &self.canonical_abi_realloc;
         let func_canonical_abi_free = &self.canonical_abi_free;
         let memory = &self.memory;
-        let data = bincode::encode_to_vec(args, bincode::config::standard())?;
+        let data = rmp_serde::to_vec(args)?;
         let ptr = func_canonical_abi_realloc.call(&mut caller, (0, 0, 8, data.len() as i32))?;
         memory
             .data_mut(&mut caller)
@@ -70,7 +70,7 @@ impl Host {
             .get(res as usize..)
             .and_then(|s| s.get(..len as usize))
             .ok_or_else(|| Trap::new("out of bounds read"))?;
-        Ok(bincode::decode_from_slice(res, bincode::config::standard())?.0)
+        Ok(rmp_serde::from_slice(res)?)
     }
 }
 
@@ -106,9 +106,8 @@ impl Runtime {
                     .get(data as usize..)
                     .and_then(|s| s.get(..len as usize))
                     .ok_or_else(|| Trap::new("out of bounds read"))?;
-                let data: Record = bincode::decode_from_slice(data, bincode::config::standard())
-                    .map_err(|e| Trap::new(e.to_string()))?
-                    .0;
+                let data: Record =
+                    rmp_serde::from_slice(data).map_err(|e| Trap::new(e.to_string()))?;
                 log::logger().log(
                     &log::Record::builder()
                         .level(unsafe { std::mem::transmute(data.level) })

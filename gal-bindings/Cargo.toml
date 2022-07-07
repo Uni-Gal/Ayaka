@@ -7,6 +7,7 @@ edition = "2018"
 [dependencies]
 gal-primitive = { path = "../gal-primitive" }
 concat-idents = "1.1"
+rmp-serde = "1.1"
 
 [dev-dependencies]
 serde_yaml = "0.8"

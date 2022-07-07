@@ -75,7 +75,7 @@ impl Log for PluginLogger {
 
     fn log(&self, record: &log::Record) {
         let record: Record = record.into();
-        let data = bincode::encode_to_vec(&record, bincode::config::standard()).unwrap();
+        let data = rmp_serde::to_vec(&record).unwrap();
         unsafe { __log(data.len(), data.as_ptr()) }
     }
 
@@ -87,11 +87,9 @@ impl Log for PluginLogger {
 pub unsafe fn __export(len: usize, data: *const u8, f: fn(Vec<RawValue>) -> RawValue) -> u64 {
     PluginLogger::init();
     let data = std::slice::from_raw_parts(data, len);
-    let data = bincode::decode_from_slice(data, bincode::config::standard())
-        .unwrap()
-        .0;
+    let data = rmp_serde::from_slice(data).unwrap();
     let res = f(data);
-    let data = bincode::encode_to_vec(&res, bincode::config::standard()).unwrap();
+    let data = rmp_serde::to_vec(&res).unwrap();
     let len = data.len();
     let ptr = data.as_ptr();
     std::mem::forget(data);

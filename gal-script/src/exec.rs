@@ -115,7 +115,7 @@ mod test {
 
         assert_eq!(
             ConstParser::new().parse("114514").unwrap(),
-            RawValue::Num(114514)
+            RawValue::Num(114514.into())
         );
 
         assert_eq!(
