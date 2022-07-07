@@ -165,11 +165,11 @@ impl Game {
         )
     }
 
-    fn find_res(&self, loc: &Locale) -> Option<&HashMap<String, RawValue>> {
+    fn find_res(&self, loc: &Locale) -> Option<&VarMap> {
         self.data.res.get(loc)
     }
 
-    pub fn find_res_fallback(&self, loc: &Locale) -> Fallback<&HashMap<String, RawValue>> {
+    pub fn find_res_fallback(&self, loc: &Locale) -> Fallback<&VarMap> {
         let key = self.choose_from_keys(loc, &self.data.res);
         let base_key = self.choose_from_keys(&self.data.base_lang, &self.data.res);
         Fallback::new(

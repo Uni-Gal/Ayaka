@@ -50,7 +50,11 @@ impl Context {
     }
 
     fn table(&mut self) -> VarTable {
-        VarTable::new(&self.game, &self.loc, &mut self.ctx.locals)
+        VarTable::new(
+            &self.game.runtime(),
+            self.game.find_res_fallback(&self.loc),
+            &mut self.ctx.locals,
+        )
     }
 
     fn current_paragraph(&self) -> Fallback<&Paragraph> {

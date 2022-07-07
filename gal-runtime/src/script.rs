@@ -1,18 +1,18 @@
-use crate::*;
+use crate::{plugin::Runtime, *};
 use gal_script::*;
 
 pub struct VarTable<'a> {
-    pub game: &'a Game,
-    pub loc: &'a Locale,
+    pub runtime: &'a Runtime,
+    pub res: Fallback<&'a VarMap>,
     pub locals: &'a mut VarMap,
     pub vars: VarMap,
 }
 
 impl<'a> VarTable<'a> {
-    pub fn new(game: &'a Game, loc: &'a Locale, locals: &'a mut VarMap) -> Self {
+    pub fn new(runtime: &'a Runtime, res: Fallback<&'a VarMap>, locals: &'a mut VarMap) -> Self {
         Self {
-            game,
-            loc,
+            runtime,
+            res,
             locals,
             vars: VarMap::default(),
         }
@@ -199,13 +199,9 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
         }
     } else {
         let args = args.iter().map(|e| e.call(ctx)).collect::<Vec<_>>();
-        if let Some(runtime) = ctx.game.runtime().modules.get(ns) {
+        if let Some(runtime) = ctx.runtime.modules.get(ns) {
             use std::ops::DerefMut;
-            match runtime.dispatch(
-                ctx.game.runtime().store.lock().unwrap().deref_mut(),
-                name,
-                &args,
-            ) {
+            match runtime.dispatch(ctx.runtime.store.lock().unwrap().deref_mut(), name, &args) {
                 Ok(res) => res,
                 Err(e) => {
                     error!("Calling `{}.{}` error: {}", ns, name, e);
@@ -231,8 +227,8 @@ impl Callable for Ref {
                 Default::default()
             }),
             Self::Res(n) => ctx
-                .game
-                .find_res_fallback(&ctx.loc)
+                .res
+                .as_ref()
                 .and_then(|map| map.get(n))
                 .cloned()
                 .unwrap_or_else(|| {
@@ -261,30 +257,32 @@ impl Callable for Text {
 
 #[cfg(test)]
 mod test {
-    use crate::*;
+    use crate::{
+        plugin::{LoadStatus, Runtime},
+        *,
+    };
     use gal_script::*;
     use std::sync::Mutex;
 
     lazy_static::lazy_static! {
-        static ref GAME: Mutex<Game> = Mutex::new(tokio_test::block_on(async {
+        static ref RUNTIME: Mutex<Runtime> = Mutex::new(tokio_test::block_on(async {
             use tokio_stream::StreamExt;
-            let open = Game::open(concat!(env!("CARGO_MANIFEST_DIR"), "/../examples/Orga/config.yaml"));
-            let mut game = None;
-            tokio::pin!(open);
-            while let Some(status) = open.try_next().await.unwrap() {
-                if let OpenStatus::Loaded(g) = status {
-                    game = Some(g);
+            let load = Runtime::load("../target/wasm32-wasi/release", env!("CARGO_MANIFEST_DIR"));
+            let mut runtime = None;
+            tokio::pin!(load);
+            while let Some(status) = load.try_next().await.unwrap() {
+                if let LoadStatus::Loaded(r) = status {
+                    runtime = Some(r);
                 }
             }
-            game.unwrap()
+            runtime.unwrap()
         }));
     }
 
     fn with_ctx(f: impl FnOnce(&mut VarTable)) {
-        let game = GAME.lock().unwrap();
-        let loc = "zh_CN".parse().unwrap();
+        let runtime = RUNTIME.lock().unwrap();
         let mut locals = VarMap::default();
-        let mut ctx = VarTable::new(&game, &loc, &mut locals);
+        let mut ctx = VarTable::new(&runtime, Fallback::new(None, None), &mut locals);
         f(&mut ctx);
     }
 
