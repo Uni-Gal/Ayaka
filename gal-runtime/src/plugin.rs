@@ -6,8 +6,8 @@ use wasmtime::*;
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
 
 pub struct Host {
-    canonical_abi_free: TypedFunc<(i32, i32, i32), ()>,
-    canonical_abi_realloc: TypedFunc<(i32, i32, i32, i32), i32>,
+    abi_free: TypedFunc<(i32, i32, i32), ()>,
+    abi_alloc: TypedFunc<(i32, i32), i32>,
     instance: Instance,
     memory: Memory,
 }
@@ -27,16 +27,15 @@ impl Host {
         instance: Instance,
     ) -> anyhow::Result<Self> {
         let mut store = store.as_context_mut();
-        let canonical_abi_free =
-            instance.get_typed_func::<(i32, i32, i32), (), _>(&mut store, "canonical_abi_free")?;
-        let canonical_abi_realloc = instance
-            .get_typed_func::<(i32, i32, i32, i32), i32, _>(&mut store, "canonical_abi_realloc")?;
+        let abi_free =
+            instance.get_typed_func::<(i32, i32, i32), (), _>(&mut store, "__abi_free")?;
+        let abi_alloc = instance.get_typed_func::<(i32, i32), i32, _>(&mut store, "__abi_alloc")?;
         let memory = instance
             .get_memory(&mut store, "memory")
             .ok_or_else(|| Trap::new("failed to find host memory"))?;
         Ok(Self {
-            canonical_abi_free,
-            canonical_abi_realloc,
+            abi_free,
+            abi_alloc,
             instance,
             memory,
         })
@@ -51,11 +50,11 @@ impl Host {
         let func = self
             .instance
             .get_typed_func::<(i32, i32), (u64,), _>(&mut caller, name)?;
-        let func_canonical_abi_realloc = &self.canonical_abi_realloc;
-        let func_canonical_abi_free = &self.canonical_abi_free;
+        let func_abi_alloc = &self.abi_alloc;
+        let func_abi_free = &self.abi_free;
         let memory = &self.memory;
         let data = rmp_serde::to_vec(args)?;
-        let ptr = func_canonical_abi_realloc.call(&mut caller, (0, 0, 8, data.len() as i32))?;
+        let ptr = func_abi_alloc.call(&mut caller, (8, data.len() as i32))?;
         memory
             .data_mut(&mut caller)
             .get_mut(ptr as usize..)
@@ -64,7 +63,7 @@ impl Host {
             .ok_or_else(|| Trap::new("out of bounds write"))?;
         let (res,) = func.call(&mut caller, (data.len() as i32, ptr))?;
         let (len, res) = ((res >> 32) as i32, (res & 0xFFFFFFFF) as i32);
-        func_canonical_abi_free.call(&mut caller, (ptr, data.len() as i32, 8))?;
+        func_abi_free.call(&mut caller, (ptr, data.len() as i32, 8))?;
         let res = memory
             .data(&mut caller)
             .get(res as usize..)
