@@ -8,7 +8,7 @@ clean:
 
 .PHONY: run dist release
 run: node_modules
-	npm run tauri dev -- -- -- $(FILE)
+	npm run tauri dev -- -- --no-default-features -- $(FILE)
 dist: node_modules
 	npm run build
 release: node_modules
