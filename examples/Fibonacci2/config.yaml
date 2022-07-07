@@ -1,6 +1,10 @@
 title: Fibonacci2
 author: Berrysoft
-plugins: ../../target/wasm32-wasi/release/
+plugins:
+  dir: ../../target/wasm32-wasi/release/
+  modules:
+    - random
+    - format
 base_lang: en
 paras:
   en:

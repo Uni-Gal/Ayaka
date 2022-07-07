@@ -38,7 +38,7 @@ struct GameData {
     pub author: String,
     pub paras: HashMap<Locale, Vec<Paragraph>>,
     #[serde(default)]
-    pub plugins: PathBuf,
+    pub plugins: PluginsConfig,
     #[serde(default)]
     pub bgs: PathBuf,
     #[serde(default)]
@@ -46,6 +46,13 @@ struct GameData {
     #[serde(default)]
     pub res: HashMap<Locale, VarMap>,
     pub base_lang: Locale,
+}
+
+#[derive(Debug, Default, Deserialize)]
+struct PluginsConfig {
+    pub dir: PathBuf,
+    #[serde(default)]
+    pub modules: Vec<String>,
 }
 
 pub struct Game {
@@ -74,7 +81,7 @@ impl Game {
             yield OpenStatus::CreateRuntime;
             let mut runtime = None;
             {
-                let load = Runtime::load(&data.plugins, root_path);
+                let load = Runtime::load(&data.plugins.dir, root_path, &data.plugins.modules);
                 tokio::pin!(load);
                 while let Some(load_status) = load.try_next().await? {
                     match load_status {
@@ -130,7 +137,7 @@ impl Game {
     }
 
     pub fn plugin_dir(&self) -> PathBuf {
-        self.root_path.join(&self.data.plugins)
+        self.root_path.join(&self.data.plugins.dir)
     }
 
     pub fn bg_dir(&self) -> PathBuf {

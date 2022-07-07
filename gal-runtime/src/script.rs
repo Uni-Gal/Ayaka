@@ -267,7 +267,7 @@ mod test {
     lazy_static::lazy_static! {
         static ref RUNTIME: Mutex<Runtime> = Mutex::new(tokio_test::block_on(async {
             use tokio_stream::StreamExt;
-            let load = Runtime::load("../target/wasm32-wasi/release", env!("CARGO_MANIFEST_DIR"));
+            let load = Runtime::load("../target/wasm32-wasi/release", env!("CARGO_MANIFEST_DIR"), &[]);
             let mut runtime = None;
             tokio::pin!(load);
             while let Some(status) = load.try_next().await.unwrap() {

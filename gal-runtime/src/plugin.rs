@@ -192,7 +192,8 @@ impl Runtime {
     pub fn load(
         dir: impl AsRef<Path>,
         rel_to: impl AsRef<Path>,
-    ) -> impl Stream<Item = anyhow::Result<LoadStatus>> {
+        names: &[String],
+    ) -> impl Stream<Item = anyhow::Result<LoadStatus>> + '_ {
         let engine = Engine::default();
         let wasi = WasiCtxBuilder::new().build();
         let mut store = Store::new(&engine, wasi);
@@ -200,26 +201,39 @@ impl Runtime {
         let mut modules = HashMap::new();
         async_stream::try_stream! {
             let mut linker = Self::new_linker(store.engine())?;
-            let mut dirs = ReadDirStream::new(tokio::fs::read_dir(path).await?);
-            while let Some(f) = dirs.try_next().await? {
-                let p = f.path();
-                if p.extension()
-                    .map(|s| s.to_string_lossy())
-                    .unwrap_or_default()
-                    == "wasm"
-                {
-                    let name = p
-                        .with_extension("")
-                        .file_name()
+            let mut paths = vec![];
+            if names.is_empty() {
+                let mut dirs = ReadDirStream::new(tokio::fs::read_dir(path).await?);
+                while let Some(f) = dirs.try_next().await? {
+                    let p = f.path();
+                    if p.extension()
                         .map(|s| s.to_string_lossy())
                         .unwrap_or_default()
-                        .into_owned();
-                    yield LoadStatus::LoadPlugin(name.clone());
-                    let buf = tokio::fs::read(&p).await?;
-                    let module = Module::from_binary(store.engine(), &buf)?;
-                    let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
-                    modules.insert(name, runtime);
+                        == "wasm"
+                    {
+                        let name = p
+                            .with_extension("")
+                            .file_name()
+                            .map(|s| s.to_string_lossy())
+                            .unwrap_or_default()
+                            .into_owned();
+                        paths.push((name, p));
+                    }
                 }
+            } else {
+                for name in names {
+                    let p = path.join(name).with_extension("wasm");
+                    if p.exists() {
+                        paths.push((name.clone(), p));
+                    }
+                }
+            }
+            for (name, p) in paths.into_iter() {
+                yield LoadStatus::LoadPlugin(name.clone());
+                let buf = tokio::fs::read(&p).await?;
+                let module = Module::from_binary(store.engine(), &buf)?;
+                let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
+                modules.insert(name, runtime);
             }
             yield LoadStatus::Loaded(Self {
                 store: Mutex::new(store),
