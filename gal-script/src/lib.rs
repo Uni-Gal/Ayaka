@@ -5,6 +5,5 @@ mod exec;
 mod text;
 
 pub use exec::*;
-pub use gal_primitive::*;
-pub use log;
+pub use gal_primitive::{log, RawValue, ValueType};
 pub use text::*;

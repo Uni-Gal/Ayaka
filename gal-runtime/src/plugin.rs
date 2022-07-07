@@ -1,12 +1,9 @@
 use crate::*;
+use gal_primitive::{bincode, Record};
 use std::{collections::HashMap, path::Path};
 use tokio_stream::{wrappers::ReadDirStream, Stream, StreamExt};
+use wasmtime::*;
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
-use wit_bindgen_wasmtime::{
-    anyhow,
-    rt::{copy_slice, invalid_variant, RawMem},
-    wasmtime::*,
-};
 
 pub struct Host {
     canonical_abi_free: TypedFunc<(i32, i32, i32), ()>,
@@ -49,97 +46,31 @@ impl Host {
         &self,
         mut caller: impl AsContextMut<Data = WasiCtx>,
         name: &str,
-        args: &[RawValue],
-    ) -> Result<RawValue, Trap> {
+        args: Vec<RawValue>,
+    ) -> anyhow::Result<RawValue> {
         let func = self
             .instance
-            .get_typed_func::<(i32, i32), (i32,), _>(&mut caller, name)?;
+            .get_typed_func::<(i32, i32), (u64,), _>(&mut caller, name)?;
         let func_canonical_abi_realloc = &self.canonical_abi_realloc;
         let func_canonical_abi_free = &self.canonical_abi_free;
         let memory = &self.memory;
-        let vec1 = args;
-        let len1 = vec1.len() as i32;
-        let result1 = func_canonical_abi_realloc.call(&mut caller, (0, 0, 8, len1 * 16))?;
-        for (i, e) in vec1.into_iter().enumerate() {
-            let base = result1 + (i as i32) * 16;
-            {
-                match e {
-                    RawValue::Unit => {
-                        memory
-                            .data_mut(&mut caller)
-                            .store(base + 0, wit_bindgen_wasmtime::rt::as_i32(0i32) as u8)?;
-                    }
-                    RawValue::Bool(e) => {
-                        memory
-                            .data_mut(&mut caller)
-                            .store(base + 0, wit_bindgen_wasmtime::rt::as_i32(1i32) as u8)?;
-                        match e {
-                            false => {
-                                memory.data_mut(&mut caller).store(
-                                    base + 8,
-                                    wit_bindgen_wasmtime::rt::as_i32(0i32) as u8,
-                                )?;
-                            }
-                            true => {
-                                memory.data_mut(&mut caller).store(
-                                    base + 8,
-                                    wit_bindgen_wasmtime::rt::as_i32(1i32) as u8,
-                                )?;
-                            }
-                        };
-                    }
-                    RawValue::Num(e) => {
-                        memory
-                            .data_mut(&mut caller)
-                            .store(base + 0, wit_bindgen_wasmtime::rt::as_i32(2i32) as u8)?;
-                        memory.data_mut(&mut caller).store(
-                            base + 8,
-                            wit_bindgen_wasmtime::rt::as_i64(wit_bindgen_wasmtime::rt::as_i64(e)),
-                        )?;
-                    }
-                    RawValue::Str(e) => {
-                        memory
-                            .data_mut(&mut caller)
-                            .store(base + 0, wit_bindgen_wasmtime::rt::as_i32(3i32) as u8)?;
-                        let vec0 = e;
-                        let ptr0 = func_canonical_abi_realloc
-                            .call(&mut caller, (0, 0, 1, (vec0.len() as i32) * 1))?;
-                        memory
-                            .data_mut(&mut caller)
-                            .store_many(ptr0, vec0.as_ref())?;
-                        memory.data_mut(&mut caller).store(
-                            base + 12,
-                            wit_bindgen_wasmtime::rt::as_i32(vec0.len() as i32),
-                        )?;
-                        memory
-                            .data_mut(&mut caller)
-                            .store(base + 8, wit_bindgen_wasmtime::rt::as_i32(ptr0))?;
-                    }
-                };
-            }
-        }
-        let (result2_0,) = func.call(&mut caller, (result1, len1))?;
-        let load3 = memory.data_mut(&mut caller).load::<i32>(result2_0 + 0)?;
-        let load4 = memory.data_mut(&mut caller).load::<i64>(result2_0 + 8)?;
-        let load5 = memory.data_mut(&mut caller).load::<i32>(result2_0 + 16)?;
-        Ok(match load3 {
-            0 => RawValue::Unit,
-            1 => RawValue::Bool(match load4 as i32 {
-                0 => false,
-                1 => true,
-                _ => return Err(invalid_variant("bool")),
-            }),
-            2 => RawValue::Num(load4),
-            3 => RawValue::Str({
-                let ptr6 = load4 as i32;
-                let len6 = load5;
-
-                let data6 = copy_slice(&mut caller, memory, ptr6, len6, 1)?;
-                func_canonical_abi_free.call(&mut caller, (ptr6, len6 * 1, 1))?;
-                String::from_utf8(data6).map_err(|_| Trap::new("invalid utf-8"))?
-            }),
-            _ => return Err(invalid_variant("RawValue")),
-        })
+        let data = bincode::encode_to_vec(args, bincode::config::standard())?;
+        let ptr = func_canonical_abi_realloc.call(&mut caller, (0, 0, 8, data.len() as i32))?;
+        memory
+            .data_mut(&mut caller)
+            .get_mut(ptr as usize..)
+            .and_then(|s| s.get_mut(..data.len()))
+            .map(|s| s.copy_from_slice(&data))
+            .ok_or_else(|| Trap::new("out of bounds write"))?;
+        let (res,) = func.call(&mut caller, (data.len() as i32, ptr))?;
+        let (len, res) = ((res >> 32) as i32, (res & 0xFFFFFFFF) as i32);
+        func_canonical_abi_free.call(&mut caller, (ptr, data.len() as i32, 8))?;
+        let res = memory
+            .data(&mut caller)
+            .get(res as usize..)
+            .and_then(|s| s.get(..len as usize))
+            .ok_or_else(|| Trap::new("out of bounds read"))?;
+        Ok(bincode::decode_from_slice(res, bincode::config::standard())?.0)
     }
 }
 
@@ -165,27 +96,27 @@ impl Runtime {
         linker.func_wrap(
             "log",
             "__log",
-            |mut caller: Caller<'_, WasiCtx>,
-             level: i32,
-             target_len: i32,
-             target: i32,
-             msg_len: i32,
-             msg: i32| {
+            |mut caller: Caller<'_, WasiCtx>, len: i32, data: i32| {
                 let memory = match caller.get_export("memory") {
                     Some(Extern::Memory(mem)) => mem,
                     _ => return Err(Trap::new("failed to find host memory")),
                 };
-                let target_data = copy_slice(&mut caller, &memory, target, target_len, 1)?;
-                let msg_data = copy_slice(&mut caller, &memory, msg, msg_len, 1)?;
-                let target =
-                    String::from_utf8(target_data).map_err(|_| Trap::new("invalid utf-8"))?;
-                let msg = String::from_utf8(msg_data).map_err(|_| Trap::new("invalid utf-8"))?;
-                let level = unsafe { std::mem::transmute(level as usize) };
+                let data = memory
+                    .data(&mut caller)
+                    .get(data as usize..)
+                    .and_then(|s| s.get(..len as usize))
+                    .ok_or_else(|| Trap::new("out of bounds read"))?;
+                let data: Record = bincode::decode_from_slice(data, bincode::config::standard())
+                    .map_err(|e| Trap::new(e.to_string()))?
+                    .0;
                 log::logger().log(
                     &log::Record::builder()
-                        .level(level)
-                        .target(&target)
-                        .args(format_args!("{}", msg))
+                        .level(unsafe { std::mem::transmute(data.level) })
+                        .target(&data.target)
+                        .args(format_args!("{}", data.msg))
+                        .module_path(data.module_path.as_ref().map(|s| s.as_str()))
+                        .file(data.file.as_ref().map(|s| s.as_str()))
+                        .line(data.line)
                         .build(),
                 );
                 Ok(())

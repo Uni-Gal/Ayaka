@@ -77,7 +77,6 @@ impl FormatArgument for ValueWrap<'_> {
 export!(fmt);
 
 fn fmt(args: Vec<RawValue>) -> RawValue {
-    PluginLogger::init();
     if args.is_empty() {
         warn!("Format args is empty.");
         RawValue::Unit

@@ -7,7 +7,6 @@ edition = "2021"
 gal-primitive = { path = "../gal-primitive" }
 lalrpop-util = { version = "0.19", features = ["lexer"] }
 regex = "1"
-log = "0.4"
 
 [build-dependencies]
 lalrpop = "0.19"

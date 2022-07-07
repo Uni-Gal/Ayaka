@@ -1,8 +1,0 @@
-variant raw-value {
-    unit,
-    %bool(bool),
-    num(s64),
-    str(string),
-}
-
-dispatch: function(args: list<raw-value>) -> raw-value

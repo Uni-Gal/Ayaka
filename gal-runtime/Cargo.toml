@@ -4,11 +4,13 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+gal-primitive = { path = "../gal-primitive" }
 gal-script = { path = "../gal-script" }
 gal-locale = { path = "../gal-locale" }
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
-wit-bindgen-wasmtime = { git = "https://github.com/bytecodealliance/wit-bindgen.git" }
+anyhow = "1.0"
+wasmtime = "0.38"
 wasmtime-wasi = "0.38"
 unicode-width = "0.1"
 tokio = { version = "1", features = ["fs"] }
