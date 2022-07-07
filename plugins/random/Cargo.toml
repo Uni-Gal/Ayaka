@@ -8,5 +8,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 gal-bindings = { path = "../../gal-bindings" }
-rand = { version = "0.8", default-features = false, features = ["std_rng"] }
+rand = "0.8"
 lazy_static = "1.4"

@@ -1,15 +1,9 @@
 use gal_bindings::*;
-use rand::{prelude::StdRng, Rng, SeedableRng};
+use rand::{rngs::StdRng, Rng, SeedableRng};
 use std::sync::Mutex;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 lazy_static::lazy_static! {
-    static ref RNG: Mutex<StdRng> = Mutex::new(StdRng::seed_from_u64(
-        SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs(),
-    ));
+    static ref RNG: Mutex<StdRng> = Mutex::new(StdRng::from_entropy());
 }
 
 export!(rnd);
