@@ -3,7 +3,7 @@ import { Locale } from 'vue-i18n'
 
 export interface OpenGameStatus {
     t: keyof typeof OpenGameStatusType,
-    text: string | null,
+    data: object | null,
 }
 
 export enum OpenGameStatusType {
@@ -11,6 +11,10 @@ export enum OpenGameStatusType {
     CreateRuntime,
     LoadPlugin,
     Loaded,
+}
+
+export interface OpenGameStatusLoadProfile {
+    LoadProfile: string
 }
 
 export interface Info {

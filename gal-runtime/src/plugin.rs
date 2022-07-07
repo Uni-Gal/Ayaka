@@ -148,7 +148,7 @@ pub struct Runtime {
 }
 
 pub enum LoadStatus {
-    LoadPlugin(String),
+    LoadPlugin(String, usize, usize),
     Loaded(Runtime),
 }
 
@@ -228,8 +228,9 @@ impl Runtime {
                     }
                 }
             }
-            for (name, p) in paths.into_iter() {
-                yield LoadStatus::LoadPlugin(name.clone());
+            let total_len = paths.len();
+            for (i, (name, p)) in paths.into_iter().enumerate() {
+                yield LoadStatus::LoadPlugin(name.clone(), i, total_len);
                 let buf = tokio::fs::read(&p).await?;
                 let module = Module::from_binary(store.engine(), &buf)?;
                 let runtime = Host::instantiate(&mut store, &module, &mut linker)?;

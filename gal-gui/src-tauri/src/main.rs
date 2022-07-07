@@ -40,7 +40,7 @@ impl Display for CommandError {
 #[derive(Debug, Clone, Serialize)]
 struct OpenGameStatus {
     t: OpenGameStatusType,
-    text: Option<String>,
+    data: Option<serde_json::Value>,
 }
 
 #[derive(Debug, Clone, Copy, Serialize)]
@@ -55,28 +55,28 @@ impl OpenGameStatus {
     pub fn load_profile(path: impl Into<String>) -> Self {
         Self {
             t: OpenGameStatusType::LoadProfile,
-            text: Some(path.into()),
+            data: Some(json! {path.into()}),
         }
     }
 
     pub fn create_runtime() -> Self {
         Self {
             t: OpenGameStatusType::CreateRuntime,
-            text: None,
+            data: None,
         }
     }
 
-    pub fn load_plugin(name: impl Into<String>) -> Self {
+    pub fn load_plugin(name: impl Into<String>, i: usize, len: usize) -> Self {
         Self {
             t: OpenGameStatusType::LoadPlugin,
-            text: Some(name.into()),
+            data: Some(json! {[name.into(), i, len]}),
         }
     }
 
     pub fn loaded() -> Self {
         Self {
             t: OpenGameStatusType::Loaded,
-            text: None,
+            data: None,
         }
     }
 }
@@ -96,9 +96,10 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
             OpenStatus::CreateRuntime => {
                 handle.emit_all("gal://open_status", OpenGameStatus::create_runtime())?
             }
-            OpenStatus::LoadPlugin(name) => {
-                handle.emit_all("gal://open_status", OpenGameStatus::load_plugin(name))?
-            }
+            OpenStatus::LoadPlugin(name, i, len) => handle.emit_all(
+                "gal://open_status",
+                OpenGameStatus::load_plugin(name, i, len),
+            )?,
             OpenStatus::Loaded(game) => {
                 let game = Arc::new(game);
                 window.set_title(game.title())?;

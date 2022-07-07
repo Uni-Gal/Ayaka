@@ -46,7 +46,9 @@ async fn main() -> Result<()> {
         match status {
             OpenStatus::LoadProfile => println!("Loading profile..."),
             OpenStatus::CreateRuntime => println!("Creating runtime..."),
-            OpenStatus::LoadPlugin(name) => println!("Loading plugin \"{}\"", name),
+            OpenStatus::LoadPlugin(name, i, len) => {
+                println!("Loading plugin \"{}\" ({}/{})", name, i + 1, len)
+            }
             OpenStatus::Loaded(game) => {
                 let game = Arc::new(game);
                 let mut ctx = Context::new(game, Locale::current())?;

@@ -26,13 +26,16 @@ export default {
     },
     methods: {
         status_to_text(s: OpenGameStatus): [string, number] {
+            console.log(s)
             switch (OpenGameStatusType[s.t]) {
                 case OpenGameStatusType.LoadProfile:
-                    return [`Loading profile "${s.text}"...`, 25]
+                    return [`Loading profile "${s.data as unknown as string}"...`, 25]
                 case OpenGameStatusType.CreateRuntime:
                     return ["Creating runtime...", 50]
                 case OpenGameStatusType.LoadPlugin:
-                    return [`Loading plugin "${s.text}"...`, 75]
+                    const data = s.data as unknown as [string, number, number];
+                    const percent = data[1] / data[2];
+                    return [`Loading plugin "${data[0]}"... (${data[1] + 1}/${data[2]})`, 75 + percent * 25]
                 case OpenGameStatusType.Loaded:
                     return ["Loaded.", 100]
                 default:

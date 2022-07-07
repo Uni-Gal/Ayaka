@@ -64,7 +64,7 @@ pub struct Game {
 pub enum OpenStatus {
     LoadProfile,
     CreateRuntime,
-    LoadPlugin(String),
+    LoadPlugin(String, usize, usize),
     Loaded(Game),
 }
 
@@ -85,7 +85,7 @@ impl Game {
                 tokio::pin!(load);
                 while let Some(load_status) = load.try_next().await? {
                     match load_status {
-                        LoadStatus::LoadPlugin(name) => yield OpenStatus::LoadPlugin(name),
+                        LoadStatus::LoadPlugin(name, i, len) => yield OpenStatus::LoadPlugin(name, i, len),
                         LoadStatus::Loaded(rt) => runtime = Some(rt),
                     }
                 }
