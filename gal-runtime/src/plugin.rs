@@ -14,6 +14,7 @@ pub struct Host {
     instance: Instance,
     memory: Memory,
 }
+
 impl Host {
     pub fn instantiate(
         mut store: impl AsContextMut<Data = WasiCtx>,
@@ -199,12 +200,12 @@ impl Runtime {
         rel_to: impl AsRef<Path>,
         names: &[String],
     ) -> impl Stream<Item = anyhow::Result<LoadStatus>> + '_ {
-        let engine = Engine::default();
-        let wasi = WasiCtxBuilder::new().build();
-        let mut store = Store::new(&engine, wasi);
         let path = rel_to.as_ref().join(dir);
-        let mut modules = HashMap::new();
         async_stream::try_stream! {
+            let wasi = WasiCtxBuilder::new().inherit_env()?.inherit_stdio().build();
+            let engine = Engine::default();
+            let mut store = Store::new(&engine, wasi);
+            let mut modules = HashMap::new();
             let mut linker = Self::new_linker(store.engine())?;
             let mut paths = vec![];
             if names.is_empty() {
