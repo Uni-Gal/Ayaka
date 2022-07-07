@@ -1,5 +1,5 @@
 use crate::*;
-use std::sync::Mutex;
+use std::{collections::HashMap, path::Path, sync::Mutex};
 use tokio_stream::{wrappers::ReadDirStream, Stream, StreamExt};
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
 use wit_bindgen_wasmtime::{

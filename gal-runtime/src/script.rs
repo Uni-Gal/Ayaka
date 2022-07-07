@@ -1,5 +1,6 @@
 use crate::{plugin::Runtime, *};
 use gal_script::*;
+use log::{error, warn};
 
 pub struct VarTable<'a> {
     pub runtime: &'a Runtime,
@@ -259,9 +260,8 @@ impl Callable for Text {
 mod test {
     use crate::{
         plugin::{LoadStatus, Runtime},
-        *,
+        script::*,
     };
-    use gal_script::*;
     use std::sync::Mutex;
 
     lazy_static::lazy_static! {
