@@ -1,4 +1,5 @@
 use crate::*;
+use anyhow::{anyhow, Result};
 use gal_primitive::Record;
 use std::{collections::HashMap, path::Path};
 use tokio_stream::{wrappers::ReadDirStream, Stream, StreamExt};
@@ -8,8 +9,33 @@ use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
 pub struct Host {
     abi_free: TypedFunc<(i32, i32, i32), ()>,
     abi_alloc: TypedFunc<(i32, i32), i32>,
+    export_free: TypedFunc<(i32, i32), ()>,
     instance: Instance,
     memory: Memory,
+}
+
+unsafe fn mem_slice<'a>(
+    memory: &Memory,
+    caller: &'a mut impl AsContextMut,
+    start: i32,
+    len: i32,
+) -> &'a [u8] {
+    memory
+        .data(caller)
+        .get_unchecked(start as usize..)
+        .get_unchecked(..len as usize)
+}
+
+unsafe fn mem_slice_mut<'a>(
+    memory: &Memory,
+    caller: &'a mut impl AsContextMut,
+    start: i32,
+    len: i32,
+) -> &'a mut [u8] {
+    memory
+        .data_mut(caller)
+        .get_unchecked_mut(start as usize..)
+        .get_unchecked_mut(..len as usize)
 }
 
 impl Host {
@@ -17,25 +43,23 @@ impl Host {
         mut store: impl AsContextMut<Data = WasiCtx>,
         module: &Module,
         linker: &mut Linker<WasiCtx>,
-    ) -> anyhow::Result<Self> {
+    ) -> Result<Self> {
         let instance = linker.instantiate(&mut store, module)?;
         Ok(Self::new(store, instance)?)
     }
 
-    pub fn new(
-        mut store: impl AsContextMut<Data = WasiCtx>,
-        instance: Instance,
-    ) -> anyhow::Result<Self> {
+    pub fn new(mut store: impl AsContextMut<Data = WasiCtx>, instance: Instance) -> Result<Self> {
         let mut store = store.as_context_mut();
-        let abi_free =
-            instance.get_typed_func::<(i32, i32, i32), (), _>(&mut store, "__abi_free")?;
-        let abi_alloc = instance.get_typed_func::<(i32, i32), i32, _>(&mut store, "__abi_alloc")?;
+        let abi_free = instance.get_typed_func(&mut store, "__abi_free")?;
+        let abi_alloc = instance.get_typed_func(&mut store, "__abi_alloc")?;
+        let export_free = instance.get_typed_func(&mut store, "__export_free")?;
         let memory = instance
             .get_memory(&mut store, "memory")
-            .ok_or_else(|| Trap::new("failed to find host memory"))?;
+            .ok_or_else(|| anyhow!("failed to find host memory"))?;
         Ok(Self {
             abi_free,
             abi_alloc,
+            export_free,
             instance,
             memory,
         })
@@ -46,30 +70,22 @@ impl Host {
         mut caller: impl AsContextMut<Data = WasiCtx>,
         name: &str,
         args: &[RawValue],
-    ) -> anyhow::Result<RawValue> {
+    ) -> Result<RawValue> {
         let func = self
             .instance
             .get_typed_func::<(i32, i32), (u64,), _>(&mut caller, name)?;
-        let func_abi_alloc = &self.abi_alloc;
-        let func_abi_free = &self.abi_free;
-        let memory = &self.memory;
         let data = rmp_serde::to_vec(args)?;
-        let ptr = func_abi_alloc.call(&mut caller, (8, data.len() as i32))?;
-        memory
-            .data_mut(&mut caller)
-            .get_mut(ptr as usize..)
-            .and_then(|s| s.get_mut(..data.len()))
-            .map(|s| s.copy_from_slice(&data))
-            .ok_or_else(|| Trap::new("out of bounds write"))?;
+        let ptr = self.abi_alloc.call(&mut caller, (8, data.len() as i32))?;
+        unsafe { mem_slice_mut(&self.memory, &mut caller, ptr, data.len() as i32) }
+            .copy_from_slice(&data);
         let (res,) = func.call(&mut caller, (data.len() as i32, ptr))?;
         let (len, res) = ((res >> 32) as i32, (res & 0xFFFFFFFF) as i32);
-        func_abi_free.call(&mut caller, (ptr, data.len() as i32, 8))?;
-        let res = memory
-            .data(&mut caller)
-            .get(res as usize..)
-            .and_then(|s| s.get(..len as usize))
-            .ok_or_else(|| Trap::new("out of bounds read"))?;
-        Ok(rmp_serde::from_slice(res)?)
+        self.abi_free
+            .call(&mut caller, (ptr, data.len() as i32, 8))?;
+        let res_data = unsafe { mem_slice(&self.memory, &mut caller, res, len) };
+        let res_data = rmp_serde::from_slice(res_data)?;
+        self.export_free.call(&mut caller, (len, res))?;
+        Ok(res_data)
     }
 }
 
@@ -89,7 +105,7 @@ pub enum LoadStatus {
 }
 
 impl Runtime {
-    fn new_linker(engine: &Engine) -> anyhow::Result<Linker<WasiCtx>> {
+    fn new_linker(engine: &Engine) -> Result<Linker<WasiCtx>> {
         let mut linker = Linker::new(engine);
         wasmtime_wasi::add_to_linker(&mut linker, |s| s)?;
         linker.func_wrap(
@@ -100,11 +116,7 @@ impl Runtime {
                     Some(Extern::Memory(mem)) => mem,
                     _ => return Err(Trap::new("failed to find host memory")),
                 };
-                let data = memory
-                    .data(&mut caller)
-                    .get(data as usize..)
-                    .and_then(|s| s.get(..len as usize))
-                    .ok_or_else(|| Trap::new("out of bounds read"))?;
+                let data = unsafe { mem_slice(&memory, &mut caller, data, len) };
                 let data: Record =
                     rmp_serde::from_slice(data).map_err(|e| Trap::new(e.to_string()))?;
                 log::logger().log(
@@ -128,7 +140,7 @@ impl Runtime {
         dir: impl AsRef<Path>,
         rel_to: impl AsRef<Path>,
         names: &[String],
-    ) -> impl Stream<Item = anyhow::Result<LoadStatus>> + '_ {
+    ) -> impl Stream<Item = Result<LoadStatus>> + '_ {
         let path = rel_to.as_ref().join(dir);
         async_stream::try_stream! {
             let wasi = WasiCtxBuilder::new().inherit_env()?.inherit_stdio().build();
