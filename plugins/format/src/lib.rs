@@ -4,8 +4,8 @@ use rt_format::*;
 use std::collections::HashMap;
 
 #[export]
-fn plugin_type(_args: Vec<RawValue>) -> RawValue {
-    RawValue::Num(PluginType::Script as _)
+fn plugin_type() -> PluginType {
+    PluginType::Script
 }
 
 struct ValueWrap<'a>(&'a RawValue);

@@ -258,9 +258,9 @@ impl Context {
         }
     }
 
-    fn process_line(&mut self, mut action: Action) -> Result<Action> {
+    fn process_action(&mut self, mut action: Action) -> Result<Action> {
         for (_, module) in &self.runtime.action_modules {
-            action.data.line = module.process_line(&mut self.runtime.store, action.data.line)?;
+            action.data = module.process_action(&mut self.runtime.store, action.data)?;
         }
         Ok(action)
     }
@@ -292,8 +292,12 @@ impl Context {
                 let text = cur_text.map(|act| self.parse_text_rich_error(act));
                 self.ctx.cur_act += 1;
                 let actions = text.map(|t| self.exact_text(t));
-                self.merge_action(actions)
-                    .and_then(|act| self.process_line(act).ok())
+                self.merge_action(actions).map(|act| {
+                    self.process_action(act).unwrap_or_else(|e| {
+                        error!("Error when processing action: {}", e);
+                        Action::default()
+                    })
+                })
             } else {
                 self.ctx.cur_para = cur_para
                     .and_then(|p| p.next.as_ref())

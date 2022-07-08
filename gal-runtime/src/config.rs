@@ -194,7 +194,7 @@ pub struct Action {
     pub switch_actions: Vec<Program>,
 }
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct ActionData {
     pub line: String,
     pub character: Option<String>,
@@ -203,7 +203,7 @@ pub struct ActionData {
     pub bgm: Option<String>,
 }
 
-#[derive(Debug, Default, Clone, Serialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Switch {
     pub text: String,
     pub enabled: bool,

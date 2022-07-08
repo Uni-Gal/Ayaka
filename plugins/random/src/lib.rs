@@ -4,8 +4,8 @@ use rand::{rngs::StdRng, Rng, SeedableRng};
 use std::sync::Mutex;
 
 #[export]
-fn plugin_type(_args: Vec<RawValue>) -> RawValue {
-    RawValue::Num(PluginType::Script as _)
+fn plugin_type() -> PluginType {
+    PluginType::Script
 }
 
 lazy_static::lazy_static! {

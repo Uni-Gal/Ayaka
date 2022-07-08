@@ -1,9 +1,13 @@
+#![feature(fn_traits)]
+#![feature(unboxed_closures)]
+
 pub use concat_idents::concat_idents;
 pub use gal_bindings_types::{FrontendType, PluginType};
 pub use gal_primitive::*;
 pub use log;
 
 use log::Log;
+use serde::{de::DeserializeOwned, Serialize};
 use std::alloc::{self, Layout};
 
 #[no_mangle]
@@ -75,11 +79,15 @@ impl Log for PluginLogger {
 }
 
 #[doc(hidden)]
-pub unsafe fn __export(len: usize, data: *const u8, f: fn(Vec<RawValue>) -> RawValue) -> u64 {
+pub unsafe fn __export<Params: DeserializeOwned, Res: Serialize>(
+    len: usize,
+    data: *const u8,
+    f: impl FnOnce<Params, Output = Res>,
+) -> u64 {
     PluginLogger::init();
     let data = std::slice::from_raw_parts(data, len);
     let data = rmp_serde::from_slice(data).unwrap();
-    let res = f(data);
+    let res = f.call_once(data);
     let data = rmp_serde::to_vec(&res).unwrap();
     let data = data.into_boxed_slice();
     let data = Box::leak(data);

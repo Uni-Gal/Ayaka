@@ -1,6 +1,7 @@
 use crate::*;
 use anyhow::{anyhow, Result};
 use gal_bindings_types::*;
+use serde::{de::DeserializeOwned, Serialize};
 use std::{collections::HashMap, path::Path};
 use tokio_stream::{wrappers::ReadDirStream, Stream, StreamExt};
 use wasmtime::*;
@@ -65,16 +66,16 @@ impl Host {
         })
     }
 
-    pub fn dispatch(
+    pub fn call<Params: Serialize, Res: DeserializeOwned>(
         &self,
         mut caller: impl AsContextMut<Data = WasiCtx>,
         name: &str,
-        args: &[RawValue],
-    ) -> Result<RawValue> {
+        args: Params,
+    ) -> Result<Res> {
         let func = self
             .instance
             .get_typed_func::<(i32, i32), (u64,), _>(&mut caller, name)?;
-        let data = rmp_serde::to_vec(args)?;
+        let data = rmp_serde::to_vec(&args)?;
         let ptr = self.abi_alloc.call(&mut caller, (8, data.len() as i32))?;
         unsafe { mem_slice_mut(&self.memory, &mut caller, ptr, data.len() as i32) }
             .copy_from_slice(&data);
@@ -88,18 +89,25 @@ impl Host {
         Ok(res_data)
     }
 
-    pub fn plugin_type(&self, caller: impl AsContextMut<Data = WasiCtx>) -> Result<PluginType> {
-        self.dispatch(caller, "plugin_type", &[])
-            .map(|v| v.get_num().into())
-    }
-
-    pub fn process_line(
+    pub fn dispatch(
         &self,
         caller: impl AsContextMut<Data = WasiCtx>,
-        line: String,
-    ) -> Result<String> {
-        self.dispatch(caller, "process_line", &[RawValue::Str(line)])
-            .map(|v| v.get_str().into_owned())
+        name: &str,
+        args: &[RawValue],
+    ) -> Result<RawValue> {
+        self.call(caller, name, (args,))
+    }
+
+    pub fn plugin_type(&self, caller: impl AsContextMut<Data = WasiCtx>) -> Result<PluginType> {
+        self.call(caller, "plugin_type", ())
+    }
+
+    pub fn process_action(
+        &self,
+        caller: impl AsContextMut<Data = WasiCtx>,
+        action: ActionData,
+    ) -> Result<ActionData> {
+        self.call(caller, "process_action", (action,))
     }
 }
 
