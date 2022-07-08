@@ -4,3 +4,15 @@
     width: 100%;
     text-align: center;
 }
+
+@media(prefers-color-scheme:light) {
+    meta[name="theme-color"] {
+        attr-content: "#111111"
+    }
+}
+
+@media(prefers-color-scheme:dark) {
+    meta[name="theme-color"] {
+        attr-content: "#eeeeee"
+    }
+}

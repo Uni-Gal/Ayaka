@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import 'bootswatch/dist/darkly/bootstrap.min.css'
+import 'bootstrap-dark-5/dist/css/bootstrap-dark.min.css'
 import { appWindow } from "@tauri-apps/api/window"
 import { choose_locale, get_locale, save_locale } from './interop';
 </script>
