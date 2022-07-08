@@ -112,6 +112,10 @@ impl Context {
         self.root_path.join(&self.game.bgms)
     }
 
+    fn video_dir(&self) -> PathBuf {
+        self.root_path.join(&self.game.videos)
+    }
+
     pub fn set_locale(&mut self, loc: Locale) {
         self.loc = loc;
     }
@@ -161,6 +165,7 @@ impl Context {
         let mut switch_actions = vec![];
         let mut bg = None;
         let mut bgm = None;
+        let mut video = None;
         for line in t.0.into_iter() {
             match line {
                 Line::Str(s) => lines.push_str(&s),
@@ -191,6 +196,7 @@ impl Context {
                     }
                     Command::Bg(index) => bg = Some(index),
                     Command::Bgm(index) => bgm = Some(index),
+                    Command::Video(index) => video = Some(index),
                 },
             }
         }
@@ -210,6 +216,11 @@ impl Context {
             .filter(|p| p.exists())
             .and_then(|path| std::path::absolute(path).ok())
             .map(|p| p.to_string_lossy().into_owned());
+        let video = video
+            .map(|index| self.video_dir().join(format!("{}.mp4", index)))
+            .filter(|p| p.exists())
+            .and_then(|path| std::path::absolute(path).ok())
+            .map(|p| p.to_string_lossy().into_owned());
         Action {
             data: ActionData {
                 line: lines,
@@ -217,6 +228,7 @@ impl Context {
                 switches,
                 bg,
                 bgm,
+                video,
             },
             switch_actions,
         }
@@ -242,12 +254,14 @@ impl Context {
                     .collect();
                 let bg = data.bg.and_any();
                 let bgm = data.bgm.and_any();
+                let video = data.video.and_any();
                 ActionData {
                     line,
                     character,
                     switches,
                     bg,
                     bgm,
+                    video,
                 }
             };
             let switch_actions = actions

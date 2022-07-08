@@ -9,7 +9,9 @@ import { current_run, next_run, switch_, Action } from '../interop'
 <script lang="ts">
 enum ActionState {
     Typing,
+    Typed,
     Switching,
+    Video,
     End,
 }
 
@@ -17,7 +19,7 @@ export default {
     emits: ["quit"],
     data() {
         return {
-            action: { line: "", character: null, switches: [], bg: undefined, bgm: undefined } as Action,
+            action: { line: "", character: null, switches: [], bg: undefined, bgm: undefined, video: undefined } as Action,
             type_text: "",
             state: ActionState.End,
             mutex: new Mutex(),
@@ -60,14 +62,32 @@ export default {
             await next_run()
             await this.fetch_current_run()
         },
+        end_typing(): boolean {
+            this.type_text = this.action.line
+            if (this.action.switches.length != 0) {
+                this.state = ActionState.Switching
+                return false
+            } else {
+                return this.end_switching()
+            }
+        },
+        end_switching(): boolean {
+            if (this.action.video != undefined) {
+                this.state = ActionState.Video;
+                let element = document.getElementById("video") as HTMLVideoElement
+                element.load()
+                element.play()
+                return false
+            } else {
+                return true
+            }
+        },
         async switch_run(i: number) {
             await switch_(i)
-            await this.mutex.runExclusive(this.fetch_next_run)
-            await this.start_type_anime()
-        },
-        end_typing(wait_switch: boolean = false) {
-            this.type_text = this.action.line
-            this.state = this.action.switches.length != 0 ? (wait_switch ? this.state : ActionState.Switching) : ActionState.End
+            if (this.end_switching()) {
+                await this.mutex.runExclusive(this.fetch_next_run)
+                await this.start_type_anime()
+            }
         },
         // Shouldn't be called in mutex
         async start_type_anime() {
@@ -77,22 +97,25 @@ export default {
                 this.type_text += this.action.line[this.type_text.length]
                 await setTimeout(10)
             }
-            this.end_typing(true)
+            this.state = ActionState.Typed
         },
         async next() {
             if (this.state != ActionState.Switching) {
                 const new_text = await tryAcquire(this.mutex).runExclusive(async () => {
                     switch (this.state) {
                         case ActionState.Typing:
-                            this.end_typing()
-                            break
+                        case ActionState.Typed:
+                            return this.end_typing()
+                        case ActionState.Video:
+                            let element = document.getElementById("video") as HTMLVideoElement
+                            element.pause()
+                            this.state = ActionState.End
                         case ActionState.End:
-                            await this.fetch_next_run()
                             return true
                     }
-                    return false
                 }).catch(_ => { })
                 if (new_text) {
+                    await this.mutex.runExclusive(this.fetch_next_run)
                     await this.start_type_anime()
                 }
             }
@@ -109,6 +132,10 @@ export default {
             if (e.key == "Enter" || e.key == " " || e.key == "ArrowDown") {
                 await this.next()
             }
+        },
+        async onvideoended() {
+            this.state = ActionState.End
+            await this.next()
         }
     }
 }
@@ -116,7 +143,7 @@ export default {
 
 <template>
     <audio id="bgm" autoplay hidden>
-        <source v-bind:src="action.bgm" type="audio/mpeg">
+        <source v-bind:src="action.bgm" type="audio/mpeg" />
     </audio>
     <img class="background" v-bind:src="action.bg">
     <div class="card card-lines">
@@ -129,6 +156,9 @@ export default {
             </p>
         </div>
     </div>
+    <video id="video" class="backboard" v-bind:hidden="state != ActionState.Video" v-on:ended="onvideoended">
+        <source v-bind:src="action.video" type="video/mp4" />
+    </video>
     <div class="backboard" v-on:click="next"></div>
     <div class="commands">
         <div class="btn-group" role="group">

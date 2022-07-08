@@ -38,6 +38,8 @@ pub struct Game {
     #[serde(default)]
     pub bgms: PathBuf,
     #[serde(default)]
+    pub videos: PathBuf,
+    #[serde(default)]
     pub res: HashMap<Locale, VarMap>,
     pub base_lang: Locale,
 }
@@ -225,30 +227,33 @@ pub struct FallbackActionData {
     pub switches: Fallback<Vec<Switch>>,
     pub bg: Fallback<String>,
     pub bgm: Fallback<String>,
+    pub video: Fallback<String>,
 }
 
 impl Fallback<ActionData> {
     pub fn fallback(self) -> FallbackActionData {
         let (data, base_data) = self.unzip();
-        let (line, ch, sw, bg, bgm) = match data {
+        let (line, ch, sw, bg, bgm, video) = match data {
             Some(data) => (
                 Some(data.line),
                 data.character,
                 Some(data.switches),
                 data.bg,
                 data.bgm,
+                data.video,
             ),
-            None => (None, None, None, None, None),
+            None => (None, None, None, None, None, None),
         };
-        let (base_line, base_ch, base_sw, base_bg, base_bgm) = match base_data {
+        let (base_line, base_ch, base_sw, base_bg, base_bgm, base_video) = match base_data {
             Some(data) => (
                 Some(data.line),
                 data.character,
                 Some(data.switches),
                 data.bg,
                 data.bgm,
+                data.video,
             ),
-            None => (None, None, None, None, None),
+            None => (None, None, None, None, None, None),
         };
         FallbackActionData {
             line: Fallback::new(line, base_line),
@@ -256,6 +261,7 @@ impl Fallback<ActionData> {
             switches: Fallback::new(sw, base_sw),
             bg: Fallback::new(bg, base_bg),
             bgm: Fallback::new(bgm, base_bgm),
+            video: Fallback::new(video, base_video),
         }
     }
 }

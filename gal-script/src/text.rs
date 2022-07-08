@@ -183,6 +183,7 @@ pub enum Command {
     },
     Bg(usize),
     Bgm(usize),
+    Video(usize),
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -625,6 +626,14 @@ impl<'a> TextParser<'a> {
             "bgm" => {
                 self.check_params_count(params_count, 1, 1, loc, name)?;
                 Command::Bgm(
+                    self.concat_params(&params[0])?
+                        .parse()
+                        .map_err(|e| ParseError::new(loc, ParseErrorType::InvalidIndex(e)))?,
+                )
+            }
+            "video" => {
+                self.check_params_count(params_count, 1, 1, loc, name)?;
+                Command::Video(
                     self.concat_params(&params[0])?
                         .parse()
                         .map_err(|e| ParseError::new(loc, ParseErrorType::InvalidIndex(e)))?,

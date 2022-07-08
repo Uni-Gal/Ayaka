@@ -43,6 +43,7 @@ pub struct ActionData {
     pub switches: Vec<Switch>,
     pub bg: Option<String>,
     pub bgm: Option<String>,
+    pub video: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]

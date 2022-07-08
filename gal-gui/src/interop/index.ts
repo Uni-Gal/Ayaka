@@ -28,6 +28,7 @@ export interface Action {
     switches: Array<Switch>,
     bg: string | undefined,
     bgm: string | undefined,
+    video: string | undefined,
 }
 
 export interface Switch {
@@ -75,6 +76,9 @@ export async function current_run(): Promise<Action | null> {
         }
         if (res.bgm != undefined) {
             res.bgm = convertFileSrc(res.bgm)
+        }
+        if (res.video != undefined) {
+            res.video = convertFileSrc(res.video)
         }
     }
     return res
