@@ -2,7 +2,7 @@ use clap::Parser;
 use gal_runtime::{
     anyhow::{bail, Result},
     tokio_stream::StreamExt,
-    Context, OpenStatus,
+    Context, FrontendType, OpenStatus,
 };
 use std::{
     ffi::OsString,
@@ -39,7 +39,7 @@ fn pause(auto: bool) -> Result<()> {
 async fn main() -> Result<()> {
     let opts = Options::parse();
     env_logger::try_init()?;
-    let open = Context::open(&opts.input);
+    let open = Context::open(&opts.input, FrontendType::Text);
     tokio::pin!(open);
     while let Some(status) = open.try_next().await? {
         match status {

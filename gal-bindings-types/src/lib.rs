@@ -24,13 +24,13 @@ impl From<&log::Record<'_>> for Record {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum PluginType {
     Script,
     Action,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum FrontendType {
     Text,
     Html,

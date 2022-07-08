@@ -9,7 +9,7 @@ use gal_runtime::{
     log::{info, warn},
     tokio,
     tokio_stream::StreamExt,
-    Action, ActionData, Context, Locale, OpenStatus, RawValue,
+    Action, ActionData, Context, FrontendType, Locale, OpenStatus, RawValue,
 };
 use serde::Serialize;
 use serde_json::json;
@@ -85,7 +85,7 @@ impl OpenGameStatus {
 async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
     let window = handle.get_window("main").unwrap();
     let config = &storage.config;
-    let open = Context::open(config);
+    let open = Context::open(config, FrontendType::Html);
     tokio::pin!(open);
     while let Some(status) = open.try_next().await? {
         match status {

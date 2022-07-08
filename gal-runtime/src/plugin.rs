@@ -105,9 +105,10 @@ impl Host {
     pub fn process_action(
         &self,
         caller: impl AsContextMut<Data = WasiCtx>,
+        frontend: FrontendType,
         action: ActionData,
     ) -> Result<ActionData> {
-        self.call(caller, "process_action", (action,))
+        self.call(caller, "process_action", (frontend, action))
     }
 }
 

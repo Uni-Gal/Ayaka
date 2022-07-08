@@ -1,3 +1,5 @@
+pub use gal_bindings_types::FrontendType;
+
 use crate::{
     plugin::{LoadStatus, Runtime},
     *,
@@ -12,6 +14,7 @@ use unicode_width::UnicodeWidthStr;
 
 pub struct Context {
     pub game: Game,
+    frontend: FrontendType,
     root_path: PathBuf,
     runtime: Runtime,
     pub ctx: RawContext,
@@ -26,7 +29,10 @@ pub enum OpenStatus {
 }
 
 impl Context {
-    pub fn open(path: impl AsRef<Path>) -> impl Stream<Item = Result<OpenStatus>> {
+    pub fn open(
+        path: impl AsRef<Path>,
+        frontend: FrontendType,
+    ) -> impl Stream<Item = Result<OpenStatus>> {
         async_stream::try_stream! {
             yield OpenStatus::LoadProfile;
             let file = tokio::fs::read(path.as_ref()).await?;
@@ -49,6 +55,7 @@ impl Context {
             }
             yield OpenStatus::Loaded(Self {
                 game,
+                frontend,
                 root_path: root_path.to_path_buf(),
                 runtime: runtime.unwrap(),
                 ctx: RawContext::default(),
@@ -260,7 +267,8 @@ impl Context {
 
     fn process_action(&mut self, mut action: Action) -> Result<Action> {
         for (_, module) in &self.runtime.action_modules {
-            action.data = module.process_action(&mut self.runtime.store, action.data)?;
+            action.data =
+                module.process_action(&mut self.runtime.store, self.frontend, action.data)?;
         }
         Ok(action)
     }
