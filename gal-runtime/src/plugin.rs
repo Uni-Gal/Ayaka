@@ -1,5 +1,6 @@
 use crate::*;
 use anyhow::{anyhow, Result};
+use gal_bindings_types::*;
 use std::{collections::HashMap, path::Path};
 use tokio_stream::{wrappers::ReadDirStream, Stream, StreamExt};
 use wasmtime::*;
@@ -86,16 +87,31 @@ impl Host {
         self.export_free.call(&mut caller, (len, res))?;
         Ok(res_data)
     }
+
+    pub fn plugin_type(&self, caller: impl AsContextMut<Data = WasiCtx>) -> Result<PluginType> {
+        self.dispatch(caller, "plugin_type", &[])
+            .map(|v| v.get_num().into())
+    }
+
+    pub fn process_line(
+        &self,
+        caller: impl AsContextMut<Data = WasiCtx>,
+        line: String,
+    ) -> Result<String> {
+        self.dispatch(caller, "process_line", &[RawValue::Str(line)])
+            .map(|v| v.get_str().into_owned())
+    }
 }
 
 pub struct Runtime {
     pub store: Store<WasiCtx>,
-    pub modules: HashMap<String, Host>,
+    pub script_modules: HashMap<String, Host>,
+    pub action_modules: HashMap<String, Host>,
 }
 
 pub struct RuntimeRef<'a> {
     pub store: &'a mut Store<WasiCtx>,
-    pub modules: &'a HashMap<String, Host>,
+    pub script_modules: &'a HashMap<String, Host>,
 }
 
 pub enum LoadStatus {
@@ -116,7 +132,7 @@ impl Runtime {
                     _ => return Err(Trap::new("failed to find host memory")),
                 };
                 let data = unsafe { mem_slice(&memory, &mut caller, data, len) };
-                let data: gal_bindings_types::Record =
+                let data: Record =
                     rmp_serde::from_slice(data).map_err(|e| Trap::new(e.to_string()))?;
                 log::logger().log(
                     &log::Record::builder()
@@ -145,7 +161,8 @@ impl Runtime {
             let wasi = WasiCtxBuilder::new().inherit_env()?.inherit_stdio().build();
             let engine = Engine::default();
             let mut store = Store::new(&engine, wasi);
-            let mut modules = HashMap::new();
+            let mut script_modules = HashMap::new();
+            let mut action_modules = HashMap::new();
             let mut linker = Self::new_linker(store.engine())?;
             let mut paths = vec![];
             if names.is_empty() {
@@ -180,16 +197,19 @@ impl Runtime {
                 let buf = tokio::fs::read(&p).await?;
                 let module = Module::from_binary(store.engine(), &buf)?;
                 let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
-                modules.insert(name, runtime);
+                match runtime.plugin_type(&mut store)? {
+                    PluginType::Script => script_modules.insert(name, runtime),
+                    PluginType::Action => action_modules.insert(name, runtime),
+                };
             }
-            yield LoadStatus::Loaded(Self { store, modules })
+            yield LoadStatus::Loaded(Self { store, script_modules, action_modules })
         }
     }
 
     pub fn as_mut(&mut self) -> RuntimeRef {
         RuntimeRef {
             store: &mut self.store,
-            modules: &self.modules,
+            script_modules: &self.script_modules,
         }
     }
 }

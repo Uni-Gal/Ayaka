@@ -258,6 +258,13 @@ impl Context {
         }
     }
 
+    fn process_line(&mut self, mut action: Action) -> Result<Action> {
+        for (_, module) in &self.runtime.action_modules {
+            action.data.line = module.process_line(&mut self.runtime.store, action.data.line)?;
+        }
+        Ok(action)
+    }
+
     fn parse_text_rich_error(&self, text: &str) -> Text {
         match TextParser::new(text).parse() {
             Ok(t) => t,
@@ -286,6 +293,7 @@ impl Context {
                 self.ctx.cur_act += 1;
                 let actions = text.map(|t| self.exact_text(t));
                 self.merge_action(actions)
+                    .and_then(|act| self.process_line(act).ok())
             } else {
                 self.ctx.cur_para = cur_para
                     .and_then(|p| p.next.as_ref())

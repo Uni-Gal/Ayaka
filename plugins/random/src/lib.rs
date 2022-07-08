@@ -3,6 +3,11 @@ use log::error;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use std::sync::Mutex;
 
+#[export]
+fn plugin_type(_args: Vec<RawValue>) -> RawValue {
+    RawValue::Num(PluginType::Script as _)
+}
+
 lazy_static::lazy_static! {
     static ref RNG: Mutex<StdRng> = Mutex::new(StdRng::from_entropy());
 }

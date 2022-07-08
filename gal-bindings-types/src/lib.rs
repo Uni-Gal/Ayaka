@@ -22,3 +22,27 @@ impl From<&log::Record<'_>> for Record {
         }
     }
 }
+
+#[repr(i64)]
+pub enum PluginType {
+    Script,
+    Action,
+}
+
+impl From<i64> for PluginType {
+    fn from(v: i64) -> Self {
+        unsafe { std::mem::transmute(v) }
+    }
+}
+
+#[repr(i64)]
+pub enum FrontendType {
+    Text,
+    Html,
+}
+
+impl From<i64> for FrontendType {
+    fn from(v: i64) -> Self {
+        unsafe { std::mem::transmute(v) }
+    }
+}

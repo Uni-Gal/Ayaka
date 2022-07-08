@@ -1,4 +1,5 @@
 pub use concat_idents::concat_idents;
+pub use gal_bindings_types::{FrontendType, PluginType};
 pub use gal_primitive::*;
 pub use log;
 
