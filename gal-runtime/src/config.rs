@@ -1,3 +1,5 @@
+pub use gal_bindings_types::{ActionData, Switch};
+
 use gal_locale::Locale;
 use gal_script::{
     log::{debug, trace, warn},
@@ -192,21 +194,6 @@ impl<A: Iterator> Iterator for FallbackVecIter<A> {
 pub struct Action {
     pub data: ActionData,
     pub switch_actions: Vec<Program>,
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct ActionData {
-    pub line: String,
-    pub character: Option<String>,
-    pub switches: Vec<Switch>,
-    pub bg: Option<String>,
-    pub bgm: Option<String>,
-}
-
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct Switch {
-    pub text: String,
-    pub enabled: bool,
 }
 
 pub struct FallbackAction {

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+#[doc(hidden)]
 #[derive(Serialize, Deserialize)]
 pub struct Record {
     pub level: usize,
@@ -33,4 +34,19 @@ pub enum PluginType {
 pub enum FrontendType {
     Text,
     Html,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct ActionData {
+    pub line: String,
+    pub character: Option<String>,
+    pub switches: Vec<Switch>,
+    pub bg: Option<String>,
+    pub bgm: Option<String>,
+}
+
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct Switch {
+    pub text: String,
+    pub enabled: bool,
 }

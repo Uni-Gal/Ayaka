@@ -124,7 +124,9 @@ export default {
             <h4 class="card-title">{{ action.character }}</h4>
         </div>
         <div class="card-body lines">
-            <p class="h4 card-text">{{ type_text }}</p>
+            <p class="h4 card-text">
+                <span v-html="type_text"></span>
+            </p>
         </div>
     </div>
     <div class="backboard" v-on:click="next"></div>

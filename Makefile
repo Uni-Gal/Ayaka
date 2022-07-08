@@ -16,7 +16,7 @@ release:
 release-gui:
 	cd gal-gui && $(MAKE) release
 
-EXAMPLES:=Fibonacci Fibonacci2 Orga
+EXAMPLES:=Fibonacci Fibonacci2 Markdown Orga
 
 define example-tpl
 .PHONY: example-$(1) example-$(1)-gui

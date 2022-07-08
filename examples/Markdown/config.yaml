@@ -1,0 +1,18 @@
+title: Markdown
+author: Berrysoft
+plugins:
+  dir: ../../target/wasm32-wasi/release/
+  modules:
+    - markdown
+base_lang: en
+paras:
+  en:
+    -
+      tag: example
+      texts:
+        - '# HEAD'
+        - Normal
+        - '*Italic*'
+        - '**Bold**'
+        - '`code`'
+        - Mixed normal *italic* **bold** `code`.

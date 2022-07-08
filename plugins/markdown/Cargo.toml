@@ -1,0 +1,11 @@
+[package]
+name = "markdown"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+gal-bindings = { path = "../../gal-bindings" }
+pulldown-cmark = "0.9"
