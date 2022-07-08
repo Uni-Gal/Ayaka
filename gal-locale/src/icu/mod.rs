@@ -83,32 +83,32 @@ pub fn choose(
             imp_uenum_close(locales_enum);
             len
         })
-    }
-    .map(Locale)?;
+    }?;
     if result == ULOC_ACCEPT_FAILED {
         Ok(None)
     } else {
-        Ok(Some(loc))
+        Ok(Some(Locale(unsafe {
+            CString::from_vec_unchecked(loc.into())
+        })))
     }
 }
 
 pub fn current() -> Locale {
-    Locale(
-        unsafe { CStr::from_ptr(imp_uloc_getDefault() as _) }
-            .to_str()
-            .map(|s| s.to_string())
-            .unwrap_or_default(),
-    )
+    Locale(unsafe { CStr::from_ptr(imp_uloc_getDefault() as _) }.to_owned())
 }
 
 pub fn parse(s: &str) -> Result<Locale> {
     let s = CString::new(s)?;
+    parsec(&s)
+}
+
+pub fn parsec(s: &CStr) -> Result<Locale> {
     unsafe {
         call_with_buffer::<u8>(|buffer, len, status| {
             imp_uloc_canonicalize(s.as_ptr() as _, buffer as _, len, status)
         })
     }
-    .map(Locale)
+    .map(|s| Locale(unsafe { CString::from_vec_unchecked(s.into()) }))
 }
 
 pub fn native_name(loc: &Locale) -> Result<String> {

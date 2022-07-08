@@ -3,6 +3,7 @@ mod icu;
 use anyhow::Result;
 use icu::*;
 use serde::{Deserialize, Serialize};
+use std::ffi::CString;
 use std::fmt::Display;
 use std::str::FromStr;
 use thiserror::Error;
@@ -12,8 +13,8 @@ use thiserror::Error;
 pub struct ICUError(UErrorCode);
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(try_from = "String", into = "String")]
-pub struct Locale(String);
+#[serde(try_from = "CString", into = "CString")]
+pub struct Locale(CString);
 
 impl Locale {
     pub fn current() -> Self {
@@ -46,23 +47,23 @@ impl FromStr for Locale {
     }
 }
 
-impl TryFrom<String> for Locale {
+impl TryFrom<CString> for Locale {
     type Error = anyhow::Error;
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        value.parse()
+    fn try_from(value: CString) -> Result<Self, Self::Error> {
+        parsec(&value)
     }
 }
 
 impl Display for Locale {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(&self.0)
+        f.write_str(self.0.to_str().map_err(|_| std::fmt::Error)?)
     }
 }
 
-impl From<Locale> for String {
+impl From<Locale> for CString {
     fn from(val: Locale) -> Self {
-        val.to_string()
+        val.0
     }
 }
 
