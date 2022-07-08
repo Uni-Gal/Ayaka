@@ -96,8 +96,8 @@ pub fn current() -> Locale {
     Locale(
         unsafe { CStr::from_ptr(imp_uloc_getDefault() as _) }
             .to_str()
-            .unwrap()
-            .to_string(),
+            .map(|s| s.to_string())
+            .unwrap_or_default(),
     )
 }
 

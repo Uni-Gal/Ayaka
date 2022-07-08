@@ -196,21 +196,13 @@ impl Context {
                     .next()
             })
             .flatten()
-            .map(|path| {
-                std::path::absolute(path)
-                    .unwrap()
-                    .to_string_lossy()
-                    .into_owned()
-            });
+            .and_then(|path| std::path::absolute(path).ok())
+            .map(|p| p.to_string_lossy().into_owned());
         let bgm = bgm
             .map(|index| self.bgm_dir().join(format!("{}.mp3", index)))
             .filter(|p| p.exists())
-            .map(|path| {
-                std::path::absolute(path)
-                    .unwrap()
-                    .to_string_lossy()
-                    .into_owned()
-            });
+            .and_then(|path| std::path::absolute(path).ok())
+            .map(|p| p.to_string_lossy().into_owned());
         Action {
             data: ActionData {
                 line: lines,
