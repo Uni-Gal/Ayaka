@@ -11,7 +11,8 @@ use thiserror::Error;
 #[error("ICU error code: {0}")]
 pub struct ICUError(UErrorCode);
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(try_from = "String", into = "String")]
 pub struct Locale(String);
 
 impl Locale {
@@ -45,45 +46,23 @@ impl FromStr for Locale {
     }
 }
 
+impl TryFrom<String> for Locale {
+    type Error = anyhow::Error;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        value.parse()
+    }
+}
+
 impl Display for Locale {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str(&self.0)
     }
 }
 
-impl<'de> Deserialize<'de> for Locale {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        use serde::de::Error;
-
-        struct LocaleVisitor;
-
-        impl<'de> serde::de::Visitor<'de> for LocaleVisitor {
-            type Value = Locale;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a locale value")
-            }
-
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                v.parse().map_err(|e| Error::custom(e))
-            }
-        }
-        deserializer.deserialize_any(LocaleVisitor)
-    }
-}
-
-impl Serialize for Locale {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        serializer.serialize_str(&self.0)
+impl From<Locale> for String {
+    fn from(val: Locale) -> Self {
+        val.to_string()
     }
 }
 
