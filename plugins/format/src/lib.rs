@@ -74,8 +74,7 @@ impl FormatArgument for ValueWrap<'_> {
     }
 }
 
-export!(fmt);
-
+#[export]
 fn fmt(args: Vec<RawValue>) -> RawValue {
     if args.is_empty() {
         warn!("Format args is empty.");

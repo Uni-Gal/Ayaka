@@ -2,10 +2,11 @@
 name = "gal-bindings"
 version = "0.1.0"
 authors = ["Berrysoft <Strawberry_Str@hotmail.com>"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
 gal-primitive = { path = "../gal-primitive" }
+gal-bindings-impl = { path = "../gal-bindings-impl" }
 concat-idents = "1.1"
 rmp-serde = "1.1"
 

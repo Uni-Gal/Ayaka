@@ -1,4 +1,5 @@
 use gal_bindings::*;
+use log::error;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use std::sync::Mutex;
 
@@ -6,8 +7,7 @@ lazy_static::lazy_static! {
     static ref RNG: Mutex<StdRng> = Mutex::new(StdRng::from_entropy());
 }
 
-export!(rnd);
-
+#[export]
 fn rnd(args: Vec<RawValue>) -> RawValue {
     if let Ok(mut rng) = RNG.lock() {
         let res = match args.len() {
@@ -17,6 +17,7 @@ fn rnd(args: Vec<RawValue>) -> RawValue {
         };
         RawValue::Num(res)
     } else {
+        error!("Cannot get random engine.");
         RawValue::Unit
     }
 }

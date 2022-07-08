@@ -92,14 +92,4 @@ unsafe extern "C" fn __export_free(len: usize, data: *mut u8) {
     let _data = Box::from_raw(std::slice::from_raw_parts_mut(data, len));
 }
 
-#[macro_export]
-macro_rules! export {
-    ($name:ident) => {
-        $crate::concat_idents!(fn_name = __, $name {
-            #[export_name = stringify!($name)]
-            unsafe extern "C" fn fn_name(len: usize, data: *const u8) -> u64 {
-                $crate::__export(len, data, $name)
-            }
-        });
-    };
-}
+pub use gal_bindings_impl::export;

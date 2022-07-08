@@ -6,6 +6,8 @@ members = [
     "gal-script",
     "gal",
     "gal-gui/src-tauri",
+    "gal-bindings",
+    "gal-bindings-impl",
     "plugins/format",
     "plugins/random",
 ]
