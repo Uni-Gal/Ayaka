@@ -1,6 +1,5 @@
 use crate::*;
 use anyhow::{anyhow, Result};
-use gal_primitive::Record;
 use std::{collections::HashMap, path::Path};
 use tokio_stream::{wrappers::ReadDirStream, Stream, StreamExt};
 use wasmtime::*;
@@ -117,7 +116,7 @@ impl Runtime {
                     _ => return Err(Trap::new("failed to find host memory")),
                 };
                 let data = unsafe { mem_slice(&memory, &mut caller, data, len) };
-                let data: Record =
+                let data: gal_bindings_types::Record =
                     rmp_serde::from_slice(data).map_err(|e| Trap::new(e.to_string()))?;
                 log::logger().log(
                     &log::Record::builder()

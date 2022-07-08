@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-gal-primitive = { path = "../gal-primitive" }
+gal-bindings-types = { path = "../gal-bindings-types" }
 gal-script = { path = "../gal-script" }
 gal-locale = { path = "../gal-locale" }
 serde = { version = "1.0", features = ["derive"] }

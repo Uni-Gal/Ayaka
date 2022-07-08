@@ -63,7 +63,7 @@ impl Log for PluginLogger {
     }
 
     fn log(&self, record: &log::Record) {
-        let record: Record = record.into();
+        let record: gal_bindings_types::Record = record.into();
         let data = rmp_serde::to_vec(&record).unwrap();
         unsafe { __log(data.len(), data.as_ptr()) }
     }
