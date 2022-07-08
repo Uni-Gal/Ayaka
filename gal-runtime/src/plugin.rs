@@ -114,7 +114,7 @@ impl Host {
 pub struct Runtime {
     pub store: Store<WasiCtx>,
     pub script_modules: HashMap<String, Host>,
-    pub action_modules: HashMap<String, Host>,
+    pub action_modules: Vec<(String, Host)>,
 }
 
 pub struct RuntimeRef<'a> {
@@ -170,7 +170,7 @@ impl Runtime {
             let engine = Engine::default();
             let mut store = Store::new(&engine, wasi);
             let mut script_modules = HashMap::new();
-            let mut action_modules = HashMap::new();
+            let mut action_modules = Vec::new();
             let mut linker = Self::new_linker(store.engine())?;
             let mut paths = vec![];
             if names.is_empty() {
@@ -206,11 +206,19 @@ impl Runtime {
                 let module = Module::from_binary(store.engine(), &buf)?;
                 let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
                 match runtime.plugin_type(&mut store)? {
-                    PluginType::Script => script_modules.insert(name, runtime),
-                    PluginType::Action => action_modules.insert(name, runtime),
-                };
+                    PluginType::Script => {
+                        script_modules.insert(name, runtime);
+                    }
+                    PluginType::Action => {
+                        action_modules.push((name, runtime));
+                    }
+                }
             }
-            yield LoadStatus::Loaded(Self { store, script_modules, action_modules })
+            yield LoadStatus::Loaded(Self {
+                store,
+                script_modules,
+                action_modules,
+            })
         }
     }
 
