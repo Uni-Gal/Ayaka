@@ -12,7 +12,7 @@ update:
 plugins:
 	cd plugins && $(MAKE) plugins
 release:
-	cargo build --manifest-path=gal/Cargo.toml --release
+	cargo build --package gal --release
 release-gui:
 	cd gal-gui && $(MAKE) release
 
@@ -21,7 +21,7 @@ EXAMPLES:=Fibonacci Fibonacci2 Markdown Orga
 define example-tpl
 .PHONY: example-$(1) example-$(1)-gui
 example-$(1): examples/$(1)/config.yaml plugins
-	RUST_LOG=info cargo run --manifest-path=gal/Cargo.toml -- $$< --auto
+	RUST_LOG=info cargo run --package gal -- $$< --auto
 example-$(1)-gui: examples/$(1)/config.yaml plugins
 	cd gal-gui && $$(MAKE) run FILE=$$(realpath $$<)
 example-$(1)-release: examples/$(1)/config.yaml plugins release

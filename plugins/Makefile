@@ -8,7 +8,7 @@ plugins: $(PLUGIN_TARGETS)
 
 define plugin-tpl
 $(PROJECT_ROOT)/target/wasm32-wasi/release/$(1).wasm:
-	cargo build --manifest-path=$(1)/Cargo.toml --target=wasm32-wasi --release
+	cargo build --package $(1) --target=wasm32-wasi --release
 
 endef
 
