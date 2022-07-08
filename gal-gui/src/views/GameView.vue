@@ -98,6 +98,9 @@ export default {
                 await setTimeout(10)
             }
             this.state = ActionState.Typed
+            if (this.type_text.length == 0) {
+                await this.next()
+            }
         },
         async next() {
             if (this.state != ActionState.Switching) {
@@ -156,12 +159,14 @@ export default {
             </p>
         </div>
     </div>
-    <video id="video" class="backboard" v-bind:hidden="state != ActionState.Video" v-on:ended="onvideoended">
-        <source v-bind:src="action.video" type="video/mp4" />
-    </video>
+    <div class="container-video bg-body" v-bind:hidden="state != ActionState.Video">
+        <video id="video" class="background" v-on:ended="onvideoended">
+            <source v-bind:src="action.video" type="video/mp4" />
+        </video>
+    </div>
     <div class="backboard" v-on:click="next"></div>
     <div class="commands">
-        <div class="btn-group" role="group">
+        <div class="btn-group" role="group" v-bind:hidden="state == ActionState.Video">
             <button class="btn btn-primary btn-command">
                 <FontAwesomeIcon icon="fas fa-backward-step"></FontAwesomeIcon>
             </button>
@@ -211,6 +216,14 @@ export default {
     top: 0;
     left: 0;
     bottom: 2.5em;
+    right: 0;
+}
+
+.container-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
     right: 0;
 }
 

@@ -1,0 +1,45 @@
+title: 原神抽卡
+author: Berrysoft
+videos: videos
+base_lang: zh_Hans
+paras:
+  zh_Hans:
+    -
+      tag: start
+      texts:
+        - |
+          祈愿
+          \switch{祈愿一次}{$n = 1}
+          \switch{祈愿十次}{$n = 10}
+          \switch{退出}{$n = -1}
+      next: \exec{ if($n == 1, "pull0", if($n == 10, "pull3")) }
+    -
+      tag: pull0
+      texts:
+        - \video{0}\exec{$total += 1}
+      next: end
+    -
+      tag: pull1
+      texts:
+        - \video{1}\exec{$total += 1}
+      next: end
+    -
+      tag: pull2
+      texts:
+        - \video{2}\exec{$total += 1}
+      next: end
+    -
+      tag: pull3
+      texts:
+        - \video{3}\exec{$total += 10}
+      next: end
+    -
+      tag: pull4
+      texts:
+        - \video{4}\exec{$total += 10}
+      next: end
+    -
+      tag: end
+      texts:
+        - 你共抽了\exec{$total}发
+      next: start
