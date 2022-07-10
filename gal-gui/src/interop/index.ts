@@ -31,6 +31,11 @@ export interface Action {
     video: string | undefined,
 }
 
+export interface ActionHistoryData {
+    line: string,
+    character: string | null,
+}
+
 export interface Switch {
     text: string,
     enabled: boolean,
@@ -86,4 +91,8 @@ export async function current_run(): Promise<Action | null> {
 
 export function switch_(i: number): Promise<void> {
     return invoke("switch", { i: i })
+}
+
+export function history(): Promise<Array<ActionHistoryData>> {
+    return invoke("history")
 }

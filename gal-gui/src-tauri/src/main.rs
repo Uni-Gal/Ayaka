@@ -9,7 +9,7 @@ use gal_runtime::{
     log::{info, warn},
     tokio,
     tokio_stream::StreamExt,
-    Action, ActionData, Context, FrontendType, Locale, OpenStatus, RawValue,
+    Action, ActionData, ActionHistoryData, Context, FrontendType, Locale, OpenStatus, RawValue,
 };
 use serde::Serialize;
 use serde_json::json;
@@ -203,6 +203,17 @@ async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue
         .and_then(|action| action.switch_actions.get(i))
         .ok_or_else(|| anyhow!("Index error: {}", i))?;
     Ok(context.call(action))
+}
+
+#[command]
+async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<ActionHistoryData>> {
+    Ok(storage
+        .context
+        .lock()
+        .await
+        .as_ref()
+        .map(|context| context.ctx.history.clone())
+        .unwrap_or_default())
 }
 
 fn main() -> Result<()> {

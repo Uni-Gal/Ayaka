@@ -236,16 +236,16 @@ impl Context {
 
     fn merge_action(&self, actions: Fallback<Action>) -> Option<Action> {
         if actions.is_some() {
-            let actions = actions.fallback();
+            let actions = actions.spec();
             let data = {
-                let data = actions.data.fallback();
+                let data = actions.data.spec();
                 let line = data.line.and_any().unwrap_or_default();
                 let character = data.character.flatten().and_any();
                 let switches = data
                     .switches
                     .into_iter()
                     .map(|s| {
-                        let s = s.fallback();
+                        let s = s.spec();
                         let text = s.text.and_any().unwrap_or_default();
                         let (enabled, base_enabled) = s.enabled.unzip();
                         let enabled = base_enabled.or_else(|| enabled).unwrap_or(true);
@@ -280,6 +280,7 @@ impl Context {
     }
 
     fn process_action(&mut self, mut action: Action) -> Result<Action> {
+        self.ctx.history.push(ActionHistoryData::new(&action));
         for (_, module) in &self.runtime.action_modules {
             action.data =
                 module.process_action(&mut self.runtime.store, self.frontend, action.data)?;

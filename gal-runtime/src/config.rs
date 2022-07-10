@@ -25,6 +25,7 @@ pub struct RawContext {
     pub cur_para: String,
     pub cur_act: usize,
     pub locals: VarMap,
+    pub history: Vec<ActionHistoryData>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -114,4 +115,19 @@ impl Game {
 pub struct Action {
     pub data: ActionData,
     pub switch_actions: Vec<Program>,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub struct ActionHistoryData {
+    pub line: String,
+    pub character: Option<String>,
+}
+
+impl ActionHistoryData {
+    pub fn new(action: &Action) -> Self {
+        Self {
+            line: action.data.line.clone(),
+            character: action.data.character.clone(),
+        }
+    }
 }

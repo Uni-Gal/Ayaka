@@ -89,7 +89,7 @@ where
 }
 
 impl<T: FallbackSpec> Fallback<T> {
-    pub fn fallback(self) -> T::SpecType {
+    pub fn spec(self) -> T::SpecType {
         T::SpecType::from(self)
     }
 }
