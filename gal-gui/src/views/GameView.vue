@@ -13,6 +13,11 @@ enum ActionState {
     Switching,
     Video,
     End,
+}
+
+enum PlayState {
+    Manual,
+    Auto,
     FastForward,
 }
 
@@ -23,8 +28,8 @@ export default {
             action: { line: "", character: null, switches: [], bg: undefined, bgm: undefined, video: undefined } as Action,
             type_text: "",
             state: ActionState.End,
+            play_state: PlayState.Manual,
             mutex: new Mutex(),
-            auto_play: false,
         }
     },
     async mounted() {
@@ -128,48 +133,40 @@ export default {
             }
         },
         async on_auto_play_click() {
-            this.auto_play = !this.auto_play
-            this.end_typing()
-            while (this.auto_play && (this.state != ActionState.Switching && this.state != ActionState.Video)) {
-                const has_next = await tryAcquire(this.mutex).runExclusive(async () => {
-                    const has_next = await this.fetch_next_run()
-                    await this.start_type_anime()
-                    this.end_typing()
-                    return has_next
-                }).catch(_ => { })
-                if (!has_next) {
-                    break
+            if (this.play_state != PlayState.Auto) {
+                this.play_state = PlayState.Auto
+                this.end_typing()
+                while (this.play_state == PlayState.Auto && (this.state != ActionState.Switching && this.state != ActionState.Video)) {
+                    const has_next = await tryAcquire(this.mutex).runExclusive(async () => {
+                        const has_next = await this.fetch_next_run()
+                        await this.start_type_anime()
+                        this.end_typing()
+                        return has_next
+                    }).catch(_ => { })
+                    if (!has_next) {
+                        break
+                    }
                 }
             }
-            this.auto_play = false
-        },
-        async fast_forward() {
-            this.state = ActionState.FastForward
-            this.end_typing()
-            while (this.state == ActionState.FastForward) {
-                await setTimeout(20)
-                const has_next = await tryAcquire(this.mutex).runExclusive(async () => {
-                    const has_next = await this.fetch_next_run()
-                    this.end_typing()
-                    return has_next
-                }).catch(_ => { })
-                if (!has_next) {
-                    this.state = ActionState.End
-                }
-            }
+            this.play_state = PlayState.Manual
         },
         async on_fast_forward_click() {
-            this.auto_play = false
-            switch (this.state) {
-                case ActionState.Typing:
-                case ActionState.Typed:
-                case ActionState.End:
-                    await this.fast_forward()
-                    break
-                case ActionState.FastForward:
-                    this.state = ActionState.Typed
-                    break
+            if (this.play_state != PlayState.FastForward) {
+                this.play_state = PlayState.FastForward
+                this.end_typing()
+                while (this.play_state == PlayState.FastForward && (this.state != ActionState.Switching && this.state != ActionState.Video)) {
+                    await setTimeout(20)
+                    const has_next = await tryAcquire(this.mutex).runExclusive(async () => {
+                        const has_next = await this.fetch_next_run()
+                        this.end_typing()
+                        return has_next
+                    }).catch(_ => { })
+                    if (!has_next) {
+                        break
+                    }
+                }
             }
+            this.play_state = PlayState.Manual
         },
         async onkeydown(e: KeyboardEvent) {
             if (e.key == "Enter" || e.key == " " || e.key == "ArrowDown") {
@@ -210,13 +207,15 @@ export default {
             <button class="btn btn-primary btn-command">
                 <FontAwesomeIcon icon="fas fa-backward-step"></FontAwesomeIcon>
             </button>
-            <button class="btn btn-primary btn-command" v-on:click="on_auto_play_click">
+            <button v-bind:class='`btn btn-primary btn-command ${play_state == PlayState.Auto ? "active" : ""}`'
+                v-on:click="on_auto_play_click">
                 <FontAwesomeIcon icon="fas fa-play"></FontAwesomeIcon>
             </button>
             <button class="btn btn-primary btn-command" v-on:click="next">
                 <FontAwesomeIcon icon="fas fa-forward-step"></FontAwesomeIcon>
             </button>
-            <button class="btn btn-primary btn-command" v-on:click="on_fast_forward_click">
+            <button v-bind:class='`btn btn-primary btn-command ${play_state == PlayState.FastForward ? "active" : ""}`'
+                v-on:click="on_fast_forward_click">
                 <FontAwesomeIcon icon="fas fa-forward"></FontAwesomeIcon>
             </button>
             <button class="btn btn-primary btn-command">
