@@ -5,5 +5,6 @@ authors = ["Berrysoft <Strawberry_Str@hotmail.com>"]
 edition = "2021"
 
 [dependencies]
+gal-fallback = { path = "../gal-fallback" }
 serde = { version = "1.0", features = ["derive"] }
 log = "0.4"

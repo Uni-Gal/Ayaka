@@ -240,7 +240,7 @@ impl Context {
             let data = {
                 let data = actions.data.fallback();
                 let line = data.line.and_any().unwrap_or_default();
-                let character = data.character.and_any();
+                let character = data.character.flatten().and_any();
                 let switches = data
                     .switches
                     .into_iter()
@@ -252,9 +252,9 @@ impl Context {
                         Switch { text, enabled }
                     })
                     .collect();
-                let bg = data.bg.and_any();
-                let bgm = data.bgm.and_any();
-                let video = data.video.and_any();
+                let bg = data.bg.flatten().and_any();
+                let bgm = data.bgm.flatten().and_any();
+                let video = data.video.flatten().and_any();
                 ActionData {
                     line,
                     character,

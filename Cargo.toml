@@ -2,6 +2,8 @@
 members = [
     "gal-locale",
     "gal-primitive",
+    "gal-fallback-derive",
+    "gal-fallback",
     "gal-runtime",
     "gal-script",
     "gal",

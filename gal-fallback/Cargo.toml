@@ -1,0 +1,7 @@
+[package]
+name = "gal-fallback"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gal-fallback-derive = { path = "../gal-fallback-derive" }
