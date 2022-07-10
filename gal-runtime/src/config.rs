@@ -117,7 +117,7 @@ pub struct Action {
     pub switch_actions: Vec<Program>,
 }
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct ActionHistoryData {
     pub line: String,
     pub character: Option<String>,

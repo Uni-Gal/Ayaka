@@ -3,7 +3,7 @@ import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import router from '../router'
-import { current_run, next_run, switch_, Action } from '../interop'
+import { current_run, next_run, switch_, Action, ActionHistoryData, history } from '../interop'
 </script>
 
 <script lang="ts">
@@ -30,6 +30,8 @@ export default {
             state: ActionState.End,
             play_state: PlayState.Manual,
             mutex: new Mutex(),
+            history: [] as ActionHistoryData[],
+            show_history: false
         }
     },
     async mounted() {
@@ -176,6 +178,14 @@ export default {
         async onvideoended() {
             this.state = ActionState.End
             await this.next()
+        },
+        async on_history_click() {
+            if (!this.show_history) {
+                this.history = await history()
+                this.show_history = true
+            } else {
+                this.show_history = false
+            }
         }
     }
 }
@@ -204,7 +214,7 @@ export default {
     <div class="backboard" v-on:click="next"></div>
     <div class="commands">
         <div class="btn-group" role="group" v-bind:hidden="state == ActionState.Video">
-            <button class="btn btn-primary btn-command">
+            <button class="btn btn-primary btn-command" v-on:click="on_history_click">
                 <FontAwesomeIcon icon="fas fa-backward-step"></FontAwesomeIcon>
             </button>
             <button v-bind:class='`btn btn-primary btn-command ${play_state == PlayState.Auto ? "active" : ""}`'
@@ -237,6 +247,22 @@ export default {
                 </div>
             </div>
         </div>
+    </div>
+    <div id="history" class="container-history" v-bind:hidden="!show_history" v-on:click="on_history_click">
+        <ul class="list-group">
+            <li class="list-group-item" v-for="(h) in history">
+                <div class="card">
+                    <div class="card-header char">
+                        <h4 class="card-title">{{ h.character }}</h4>
+                    </div>
+                    <div class="card-body lines">
+                        <p class="h4 card-text">
+                            <span v-html="h.line"></span>
+                        </p>
+                    </div>
+                </div>
+            </li>
+        </ul>
     </div>
 </template>
 
@@ -305,6 +331,16 @@ export default {
     bottom: 0;
     right: 0;
     background-color: #00000077;
+}
+
+.container-history {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    height: 100%;
+    overflow-y: scroll;
 }
 
 .switches {

@@ -93,6 +93,6 @@ export function switch_(i: number): Promise<void> {
     return invoke("switch", { i: i })
 }
 
-export function history(): Promise<Array<ActionHistoryData>> {
+export function history(): Promise<ActionHistoryData[]> {
     return invoke("history")
 }

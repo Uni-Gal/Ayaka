@@ -207,13 +207,16 @@ async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue
 
 #[command]
 async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<ActionHistoryData>> {
-    Ok(storage
+    let mut hs = storage
         .context
         .lock()
         .await
         .as_ref()
         .map(|context| context.ctx.history.clone())
-        .unwrap_or_default())
+        .unwrap_or_default();
+    hs.reverse();
+    info!("Get history {:?}", hs);
+    Ok(hs)
 }
 
 fn main() -> Result<()> {
@@ -255,7 +258,8 @@ fn main() -> Result<()> {
             start_new,
             next_run,
             current_run,
-            switch
+            switch,
+            history,
         ])
         .run(tauri::generate_context!())?;
     Ok(())
