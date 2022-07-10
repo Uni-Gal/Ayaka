@@ -13,6 +13,7 @@ enum ActionState {
     Switching,
     Video,
     End,
+    FastForward,
 }
 
 export default {
@@ -23,6 +24,7 @@ export default {
             type_text: "",
             state: ActionState.End,
             mutex: new Mutex(),
+            auto_play: false,
         }
     },
     async mounted() {
@@ -58,9 +60,10 @@ export default {
             }
         },
         // Should be called in mutex
-        async fetch_next_run() {
-            await next_run()
+        async fetch_next_run(): Promise<boolean> {
+            const has_next = await next_run()
             await this.fetch_current_run()
+            return has_next
         },
         end_typing(): boolean {
             this.type_text = this.action.line
@@ -116,6 +119,7 @@ export default {
                         case ActionState.End:
                             return true
                     }
+                    return false
                 }).catch(_ => { })
                 if (new_text) {
                     await this.mutex.runExclusive(this.fetch_next_run)
@@ -123,12 +127,48 @@ export default {
                 }
             }
         },
-        async next_fast() {
-            if (this.state != ActionState.Switching) {
-                await tryAcquire(this.mutex).runExclusive(async () => {
-                    await this.fetch_next_run()
+        async on_auto_play_click() {
+            this.auto_play = !this.auto_play
+            this.end_typing()
+            while (this.auto_play && (this.state != ActionState.Switching && this.state != ActionState.Video)) {
+                const has_next = await tryAcquire(this.mutex).runExclusive(async () => {
+                    const has_next = await this.fetch_next_run()
+                    await this.start_type_anime()
                     this.end_typing()
+                    return has_next
                 }).catch(_ => { })
+                if (!has_next) {
+                    break
+                }
+            }
+            this.auto_play = false
+        },
+        async fast_forward() {
+            this.state = ActionState.FastForward
+            this.end_typing()
+            while (this.state == ActionState.FastForward) {
+                await setTimeout(20)
+                const has_next = await tryAcquire(this.mutex).runExclusive(async () => {
+                    const has_next = await this.fetch_next_run()
+                    this.end_typing()
+                    return has_next
+                }).catch(_ => { })
+                if (!has_next) {
+                    this.state = ActionState.End
+                }
+            }
+        },
+        async on_fast_forward_click() {
+            this.auto_play = false
+            switch (this.state) {
+                case ActionState.Typing:
+                case ActionState.Typed:
+                case ActionState.End:
+                    await this.fast_forward()
+                    break
+                case ActionState.FastForward:
+                    this.state = ActionState.Typed
+                    break
             }
         },
         async onkeydown(e: KeyboardEvent) {
@@ -170,13 +210,13 @@ export default {
             <button class="btn btn-primary btn-command">
                 <FontAwesomeIcon icon="fas fa-backward-step"></FontAwesomeIcon>
             </button>
-            <button class="btn btn-primary btn-command">
+            <button class="btn btn-primary btn-command" v-on:click="on_auto_play_click">
                 <FontAwesomeIcon icon="fas fa-play"></FontAwesomeIcon>
             </button>
             <button class="btn btn-primary btn-command" v-on:click="next">
                 <FontAwesomeIcon icon="fas fa-forward-step"></FontAwesomeIcon>
             </button>
-            <button class="btn btn-primary btn-command">
+            <button class="btn btn-primary btn-command" v-on:click="on_fast_forward_click">
                 <FontAwesomeIcon icon="fas fa-forward"></FontAwesomeIcon>
             </button>
             <button class="btn btn-primary btn-command">
