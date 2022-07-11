@@ -5,9 +5,9 @@ import Modal from "vue-bs-modal"
 import { createI18n } from 'vue-i18n'
 import messages from "./locale"
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faForward, faPlay, faGear, faForwardStep, faBackwardStep, faHouse, faArrowLeft } from '@fortawesome/free-solid-svg-icons'
+import { fas } from '@fortawesome/free-solid-svg-icons'
 
-library.add(faForward, faPlay, faGear, faForwardStep, faBackwardStep, faHouse, faArrowLeft)
+library.add(fas)
 
 const app = createApp(App)
 

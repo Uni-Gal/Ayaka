@@ -1,7 +1,9 @@
 {
+    "$schema": "./schema.json",
     "dialogYes": "Yes",
     "dialogNo": "No",
     "newGame": "New game",
+    "loadRecords": "Load records",
     "about": "About",
     "quit": "Quit",
     "quitConfirm": "Quit the game?"

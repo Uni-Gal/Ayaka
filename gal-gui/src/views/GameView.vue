@@ -214,8 +214,14 @@ export default {
     <div class="backboard" v-on:click="next"></div>
     <div class="commands">
         <div class="btn-group" role="group" v-bind:hidden="state == ActionState.Video">
+            <button class="btn btn-primary btn-command">
+                <FontAwesomeIcon icon="fas fa-file-arrow-down"></FontAwesomeIcon>
+            </button>
+            <button class="btn btn-primary btn-command">
+                <FontAwesomeIcon icon="fas fa-file-arrow-up"></FontAwesomeIcon>
+            </button>
             <button class="btn btn-primary btn-command" v-on:click="on_history_click">
-                <FontAwesomeIcon icon="fas fa-backward-step"></FontAwesomeIcon>
+                <FontAwesomeIcon icon="fas fa-list"></FontAwesomeIcon>
             </button>
             <button v-bind:class='`btn btn-primary btn-command ${play_state == PlayState.Auto ? "active" : ""}`'
                 v-on:click="on_auto_play_click">

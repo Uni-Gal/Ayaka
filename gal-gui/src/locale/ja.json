@@ -1,7 +1,9 @@
 {
+    "$schema": "./schema.json",
     "dialogYes": "はい",
     "dialogNo": "いいえ",
     "newGame": "始めから",
+    "loadRecords": "続きから",
     "about": "説明",
     "quit": "終了する",
     "quitConfirm": "ゲームを終了しますか？"
