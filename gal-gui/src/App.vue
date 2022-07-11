@@ -1,21 +1,11 @@
 <script setup lang="ts">
 import 'bootstrap-dark-5/dist/css/bootstrap-dark.min.css'
 import { appWindow } from "@tauri-apps/api/window"
-import { choose_locale, get_locale, save_locale } from './interop';
 </script>
 
 <script lang="ts">
 export default {
     async created() {
-        const loc = get_locale() ?? await choose_locale(this.$i18n.availableLocales)
-        if (loc != null) {
-            if (this.$i18n.availableLocales.includes(loc)) {
-                this.$i18n.locale = loc
-                save_locale(loc)
-            } else {
-                console.error("Wrong locale %s", loc)
-            }
-        }
         appWindow.listen("tauri://close-requested", async () => {
             await this.quit()
         })

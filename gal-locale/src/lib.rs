@@ -13,7 +13,7 @@ use thiserror::Error;
 pub struct ICUError(UErrorCode);
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(try_from = "CString", into = "CString")]
+#[serde(try_from = "String", into = "String")]
 pub struct Locale(CString);
 
 impl Locale {
@@ -47,11 +47,11 @@ impl FromStr for Locale {
     }
 }
 
-impl TryFrom<CString> for Locale {
+impl TryFrom<String> for Locale {
     type Error = anyhow::Error;
 
-    fn try_from(value: CString) -> Result<Self, Self::Error> {
-        parsec(&value)
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        parse(&value)
     }
 }
 
@@ -61,9 +61,9 @@ impl Display for Locale {
     }
 }
 
-impl From<Locale> for CString {
+impl From<Locale> for String {
     fn from(val: Locale) -> Self {
-        val.0
+        val.0.to_str().map(|s| s.to_string()).unwrap_or_default()
     }
 }
 

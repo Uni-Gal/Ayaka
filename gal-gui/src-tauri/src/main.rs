@@ -11,6 +11,7 @@ use gal_runtime::{
     tokio_stream::StreamExt,
     Action, ActionData, ActionHistoryData, Context, FrontendType, Locale, OpenStatus, RawValue,
 };
+use gal_settings::*;
 use serde::Serialize;
 use serde_json::json;
 use std::fmt::Display;
@@ -37,43 +38,75 @@ impl Display for CommandError {
     }
 }
 
+#[derive(Debug, Serialize)]
+struct FullSettings {
+    settings: Settings,
+    contexts: Vec<RawContext>,
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "t", content = "data")]
 enum OpenGameStatus {
+    LoadSettings,
+    LoadRecords,
     LoadProfile(String),
     CreateRuntime,
     LoadPlugin(String, usize, usize),
     Loaded,
 }
 
+fn emit_open_status(
+    handle: &AppHandle,
+    status: OpenGameStatus,
+) -> std::result::Result<(), tauri::Error> {
+    handle.emit_all("gal://open_status", status)
+}
+
 #[command]
 async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
-    let window = handle.get_window("main").unwrap();
-    let config = &storage.config;
-    let open = Context::open(config, FrontendType::Html);
-    tokio::pin!(open);
-    while let Some(status) = open.try_next().await? {
-        match status {
-            OpenStatus::LoadProfile => handle.emit_all(
-                "gal://open_status",
-                OpenGameStatus::LoadProfile(config.clone()),
-            )?,
-            OpenStatus::CreateRuntime => {
-                handle.emit_all("gal://open_status", OpenGameStatus::CreateRuntime)?
-            }
-            OpenStatus::LoadPlugin(name, i, len) => handle.emit_all(
-                "gal://open_status",
-                OpenGameStatus::LoadPlugin(name, i, len),
-            )?,
-            OpenStatus::Loaded(ctx) => {
-                window.set_title(&ctx.game.title)?;
-                handle.emit_all("gal://open_status", OpenGameStatus::Loaded)?;
-                info!("Loaded config \"{}\"", config.escape_default());
-                *storage.context.lock().await = Some(ctx);
+    {
+        emit_open_status(&handle, OpenGameStatus::LoadSettings)?;
+        *storage.settings.lock().await = Some(load_settings().await.unwrap_or_else(|e| {
+            warn!("Load settings failed: {}", e);
+            Default::default()
+        }));
+        emit_open_status(&handle, OpenGameStatus::LoadRecords)?;
+        *storage.records.lock().await = load_records().await.unwrap_or_else(|e| {
+            warn!("Load records failed: {}", e);
+            Default::default()
+        });
+    }
+    {
+        let config = &storage.config;
+        let open = Context::open(config, FrontendType::Html);
+        tokio::pin!(open);
+        while let Some(status) = open.try_next().await? {
+            match status {
+                OpenStatus::LoadProfile => {
+                    emit_open_status(&handle, OpenGameStatus::LoadProfile(config.clone()))?
+                }
+                OpenStatus::CreateRuntime => {
+                    emit_open_status(&handle, OpenGameStatus::CreateRuntime)?
+                }
+                OpenStatus::LoadPlugin(name, i, len) => {
+                    emit_open_status(&handle, OpenGameStatus::LoadPlugin(name, i, len))?
+                }
+                OpenStatus::Loaded(ctx) => {
+                    let window = handle.get_window("main").unwrap();
+                    window.set_title(&ctx.game.title)?;
+                    emit_open_status(&handle, OpenGameStatus::Loaded)?;
+                    info!("Loaded config \"{}\"", config.escape_default());
+                    *storage.context.lock().await = Some(ctx);
+                }
             }
         }
     }
     Ok(())
+}
+
+#[command]
+async fn get_settings(storage: State<'_, Storage>) -> CommandResult<Option<Settings>> {
+    Ok(storage.settings.lock().await.as_ref().cloned())
 }
 
 #[command]
@@ -92,6 +125,8 @@ fn locale_native_name(loc: Locale) -> CommandResult<String> {
 #[derive(Default)]
 struct Storage {
     config: String,
+    settings: Mutex<Option<Settings>>,
+    records: Mutex<Vec<RawContext>>,
     context: Mutex<Option<Context>>,
     action: Mutex<Option<Action>>,
 }
@@ -217,6 +252,7 @@ fn main() -> Result<()> {
         })
         .invoke_handler(tauri::generate_handler![
             open_game,
+            get_settings,
             choose_locale,
             locale_native_name,
             info,

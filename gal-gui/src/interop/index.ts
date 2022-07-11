@@ -3,18 +3,20 @@ import { Locale } from 'vue-i18n'
 
 export interface OpenGameStatus {
     t: keyof typeof OpenGameStatusType,
-    data: object | null,
+    data?: object,
 }
 
 export enum OpenGameStatusType {
+    LoadSettings,
+    LoadRecords,
     LoadProfile,
     CreateRuntime,
     LoadPlugin,
     Loaded,
 }
 
-export interface OpenGameStatusLoadProfile {
-    LoadProfile: string
+export interface Settings {
+    lang: Locale
 }
 
 export interface Info {
@@ -24,16 +26,16 @@ export interface Info {
 
 export interface Action {
     line: string,
-    character: string | null,
+    character?: string,
     switches: Array<Switch>,
-    bg: string | undefined,
-    bgm: string | undefined,
-    video: string | undefined,
+    bg?: string,
+    bgm?: string,
+    video?: string,
 }
 
 export interface ActionHistoryData {
     line: string,
-    character: string | null,
+    character?: string,
 }
 
 export interface Switch {
@@ -45,15 +47,11 @@ export function open_game(): Promise<void> {
     return invoke("open_game")
 }
 
-export function get_locale(): Locale | null {
-    return localStorage.getItem("locale")
+export function get_settings(): Promise<Settings | undefined> {
+    return invoke("get_settings")
 }
 
-export function save_locale(loc: Locale) {
-    localStorage.setItem("locale", loc)
-}
-
-export function choose_locale(locales: Locale[]): Promise<Locale | null> {
+export function choose_locale(locales: Locale[]): Promise<Locale | undefined> {
     return invoke("choose_locale", { locales: locales })
 }
 
@@ -73,16 +71,16 @@ export function next_run(): Promise<boolean> {
     return invoke("next_run")
 }
 
-export async function current_run(): Promise<Action | null> {
-    let res = await invoke<Action | null>("current_run")
-    if (res != null) {
-        if (res.bg != undefined) {
+export async function current_run(): Promise<Action | undefined> {
+    let res = await invoke<Action | undefined>("current_run")
+    if (res) {
+        if (res.bg) {
             res.bg = convertFileSrc(res.bg)
         }
-        if (res.bgm != undefined) {
+        if (res.bgm) {
             res.bgm = convertFileSrc(res.bgm)
         }
-        if (res.video != undefined) {
+        if (res.video) {
             res.video = convertFileSrc(res.video)
         }
     }

@@ -25,7 +25,7 @@ export default {
     emits: ["quit"],
     data() {
         return {
-            action: { line: "", character: null, switches: [], bg: undefined, bgm: undefined, video: undefined } as Action,
+            action: { line: "", character: undefined, switches: [], bg: undefined, bgm: undefined, video: undefined } as Action,
             type_text: "",
             state: ActionState.End,
             play_state: PlayState.Manual,
@@ -50,7 +50,7 @@ export default {
         async fetch_current_run() {
             const res = await current_run()
             console.info(res)
-            if (res != null) {
+            if (res) {
                 if (res.bg == undefined) {
                     res.bg = this.action.bg
                 }

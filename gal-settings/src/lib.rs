@@ -1,11 +1,16 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
+use dirs::config_dir;
 use gal_locale::Locale;
 use gal_primitive::RawValue;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::{collections::HashMap, path::Path};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
+use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 
-#[derive(Debug, Default, Deserialize, Serialize)]
-struct Settings {
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+pub struct Settings {
     lang: Locale,
 }
 
@@ -33,5 +38,48 @@ pub async fn load_file<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T>
 pub async fn save_file<T: Serialize>(data: &T, path: impl AsRef<Path>) -> Result<()> {
     let buffer = serde_json::to_vec_pretty(data)?;
     tokio::fs::write(path, &buffer).await?;
+    Ok(())
+}
+
+pub fn settings_path() -> Result<PathBuf> {
+    let path = config_dir().ok_or_else(|| anyhow!("Cannot find config path"))?;
+    Ok(path.join("gal").join("settings.json"))
+}
+
+pub async fn load_settings() -> Result<Settings> {
+    load_file(settings_path()?).await
+}
+
+pub async fn save_settings(data: &Settings) -> Result<()> {
+    save_file(data, settings_path()?).await
+}
+
+pub fn context_path() -> Result<PathBuf> {
+    let path = config_dir().ok_or_else(|| anyhow!("Cannot find config path"))?;
+    Ok(path.join("gal").join("save"))
+}
+
+pub async fn load_records() -> Result<Vec<RawContext>> {
+    let ctx_path = context_path()?;
+    let mut entries = ReadDirStream::new(tokio::fs::read_dir(ctx_path).await?);
+    let mut contexts = vec![];
+    while let Some(entry) = entries.try_next().await? {
+        let p = entry.path();
+        if p.extension()
+            .map(|s| s.to_string_lossy())
+            .unwrap_or_default()
+            == "json"
+        {
+            contexts.push(load_file(&p).await?);
+        }
+    }
+    Ok(contexts)
+}
+
+pub async fn save_records(contexts: &[RawContext]) -> Result<()> {
+    let ctx_path = context_path()?;
+    for (i, ctx) in contexts.iter().enumerate() {
+        save_file(ctx, ctx_path.join(i.to_string()).with_extension("json")).await?;
+    }
     Ok(())
 }
