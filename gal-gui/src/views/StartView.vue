@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { listen } from '@tauri-apps/api/event';
-import { OpenGameStatus, OpenGameStatusType, open_game, choose_locale, get_settings } from '../interop'
+import { OpenGameStatus, OpenGameStatusType, open_game, choose_locale, get_settings, set_locale } from '../interop'
 import router from '../router';
 </script>
 
@@ -62,7 +62,7 @@ export default {
             if (loc) {
                 if (this.$i18n.availableLocales.includes(loc)) {
                     this.$i18n.locale = loc
-                    //await save_locale(loc)
+                    await set_locale(loc)
                 } else {
                     console.error("Wrong locale %s", loc)
                 }

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import 'bootstrap-dark-5/dist/css/bootstrap-dark.min.css'
 import { appWindow } from "@tauri-apps/api/window"
+import { save_all } from './interop';
 </script>
 
 <script lang="ts">
@@ -19,6 +20,7 @@ export default {
                 rightBtnText: this.$t("dialogYes"),
             })
             if (confirmed) {
+                await save_all()
                 await appWindow.close()
             }
         }

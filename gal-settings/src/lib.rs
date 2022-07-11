@@ -36,6 +36,10 @@ pub async fn load_file<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T>
 }
 
 pub async fn save_file<T: Serialize>(data: &T, path: impl AsRef<Path>) -> Result<()> {
+    let path = path.as_ref();
+    if let Some(parent) = path.parent() {
+        tokio::fs::create_dir_all(parent).await?;
+    }
     let buffer = serde_json::to_vec_pretty(data)?;
     tokio::fs::write(path, &buffer).await?;
     Ok(())

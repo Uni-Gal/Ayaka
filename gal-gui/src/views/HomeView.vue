@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Locale } from 'vue-i18n'
-import { info, next_run, start_new, locale_native_name } from '../interop'
+import { info, next_run, start_new, locale_native_name, set_locale } from '../interop'
 import router from '../router'
 </script>
 
@@ -31,7 +31,7 @@ export default {
             return await locale_native_name(loc)
         },
         async on_locale_select(e: Event) {
-            //await save_locale((e.target as HTMLInputElement).value)
+            await set_locale((e.target as HTMLInputElement).value)
         }
     }
 }

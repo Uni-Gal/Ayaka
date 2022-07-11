@@ -51,6 +51,20 @@ export function get_settings(): Promise<Settings | undefined> {
     return invoke("get_settings")
 }
 
+export function set_settings(settings: Settings): Promise<void> {
+    return invoke("set_settings", { settings: settings })
+}
+
+export async function set_locale(loc: Locale): Promise<void> {
+    let settings = await get_settings() ?? { lang: "" };
+    settings.lang = loc
+    await set_settings(settings)
+}
+
+export function save_all(): Promise<void> {
+    return invoke("save_all")
+}
+
 export function choose_locale(locales: Locale[]): Promise<Locale | undefined> {
     return invoke("choose_locale", { locales: locales })
 }

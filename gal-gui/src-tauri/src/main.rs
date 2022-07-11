@@ -110,6 +110,21 @@ async fn get_settings(storage: State<'_, Storage>) -> CommandResult<Option<Setti
 }
 
 #[command]
+async fn set_settings(settings: Settings, storage: State<'_, Storage>) -> CommandResult<()> {
+    *storage.settings.lock().await = Some(settings);
+    Ok(())
+}
+
+#[command]
+async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
+    if let Some(settings) = storage.settings.lock().await.as_ref() {
+        save_settings(settings).await?;
+    }
+    save_records(&storage.records.lock().await).await?;
+    Ok(())
+}
+
+#[command]
 fn choose_locale(locales: Vec<Locale>) -> CommandResult<Option<Locale>> {
     let current = Locale::current();
     info!("Choose {} from {:?}", current, locales);
@@ -253,6 +268,8 @@ fn main() -> Result<()> {
         .invoke_handler(tauri::generate_handler![
             open_game,
             get_settings,
+            set_settings,
+            save_all,
             choose_locale,
             locale_native_name,
             info,
