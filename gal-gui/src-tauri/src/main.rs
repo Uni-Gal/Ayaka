@@ -235,22 +235,27 @@ async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<ActionHistory
 }
 
 fn main() -> Result<()> {
-    let _log_handle = if cfg!(debug_assertions) {
-        Logger::with(LogSpecification::info())
-            .log_to_stdout()
-            .set_palette("b1;3;2;4;6".to_string())
-            .start()?
-    } else {
-        Logger::with(LogSpecification::info())
-            .log_to_file(FileSpec::default().directory("logs").basename("gal-gui"))
-            .start()?
-    };
     let port =
         portpicker::pick_unused_port().ok_or_else(|| anyhow!("failed to find unused port"))?;
     info!("Picked port {}", port);
     tauri::Builder::default()
         .plugin(tauri_plugin_localhost::Builder::new(port).build())
         .setup(|app| {
+            let log_handle = if cfg!(debug_assertions) {
+                Logger::with(LogSpecification::info())
+                    .log_to_stdout()
+                    .set_palette("b1;3;2;4;6".to_string())
+                    .start()?
+            } else {
+                Logger::with(LogSpecification::info())
+                    .log_to_file(
+                        FileSpec::default()
+                            .directory(app.path_resolver().log_dir().unwrap())
+                            .basename("gal-gui"),
+                    )
+                    .start()?
+            };
+            app.manage(log_handle);
             let window = app.get_window("main").unwrap();
             #[cfg(debug_assertions)]
             window.open_devtools();

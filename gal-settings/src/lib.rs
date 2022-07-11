@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use dirs::config_dir;
+use dirs::{config_dir, data_dir};
 use gal_locale::Locale;
 use gal_primitive::RawValue;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -59,7 +59,7 @@ pub async fn save_settings(data: &Settings) -> Result<()> {
 }
 
 pub fn context_path() -> Result<PathBuf> {
-    let path = config_dir().ok_or_else(|| anyhow!("Cannot find config path"))?;
+    let path = data_dir().ok_or_else(|| anyhow!("Cannot find config path"))?;
     Ok(path.join("gal").join("save"))
 }
 
