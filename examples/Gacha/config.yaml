@@ -58,7 +58,8 @@ paras:
                 $total3 += 1
               )
             );
-            if(!current5,
+            if(current5,
+              $temp4 += 1,
               if(current4,
                 $temp4 = 0,
                 $temp4 += 1

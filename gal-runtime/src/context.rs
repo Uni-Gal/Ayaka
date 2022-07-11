@@ -288,7 +288,9 @@ impl Context {
             action.data =
                 module.process_action(&mut self.runtime.store, self.frontend, action.data)?;
         }
-        self.ctx.history.push(ActionHistoryData::from(&action));
+        if !action.data.line.is_empty() || action.data.character.is_some() {
+            self.ctx.history.push(ActionHistoryData::from(&action));
+        }
         Ok(action)
     }
 
