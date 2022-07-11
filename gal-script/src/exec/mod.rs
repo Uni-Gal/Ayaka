@@ -1,9 +1,9 @@
 use crate::*;
 use lalrpop_util::lalrpop_mod;
 
-lalrpop_mod!(exec_grammer);
+lalrpop_mod!(grammer, "/exec/grammer.rs");
 
-pub use exec_grammer::*;
+pub use grammer::*;
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Program(pub Vec<Expr>);
