@@ -16,7 +16,15 @@ export enum OpenGameStatusType {
 }
 
 export interface Settings {
-    lang: Locale
+    lang: Locale,
+}
+
+export interface RawContext {
+    cur_para: string,
+    cur_act: number,
+    history: ActionHistoryData[],
+    bg?: string,
+    bgm?: string,
 }
 
 export interface Info {
@@ -27,7 +35,7 @@ export interface Info {
 export interface Action {
     line: string,
     character?: string,
-    switches: Array<Switch>,
+    switches: Switch[],
     bg?: string,
     bgm?: string,
     video?: string,
@@ -55,6 +63,10 @@ export function set_settings(settings: Settings): Promise<void> {
     return invoke("set_settings", { settings: settings })
 }
 
+export function get_records(): Promise<RawContext[]> {
+    return invoke("get_records")
+}
+
 export async function set_locale(loc: Locale): Promise<void> {
     let settings = await get_settings() ?? { lang: "" };
     settings.lang = loc
@@ -79,6 +91,10 @@ export function info(): Promise<Info> {
 
 export function start_new(locale: Locale): Promise<void> {
     return invoke("start_new", { locale: locale })
+}
+
+export function start_record(locale: Locale, index: number): Promise<void> {
+    return invoke("start_record", { locale: locale, index: index })
 }
 
 export function next_run(): Promise<boolean> {

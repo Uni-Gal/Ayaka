@@ -16,12 +16,14 @@ pub struct Settings {
 
 pub type VarMap = HashMap<String, RawValue>;
 
-#[derive(Debug, Default, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct RawContext {
     pub cur_para: String,
     pub cur_act: usize,
     pub locals: VarMap,
     pub history: Vec<ActionHistoryData>,
+    pub bg: Option<String>,
+    pub bgm: Option<String>,
 }
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]

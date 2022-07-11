@@ -75,6 +75,10 @@ impl Context {
                 warn!("There is no paragraph in the game.");
                 Default::default()
             });
+        self.init_context(ctx)
+    }
+
+    pub fn init_context(&mut self, ctx: RawContext) {
         self.ctx = ctx;
     }
 

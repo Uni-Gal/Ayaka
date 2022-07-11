@@ -5,6 +5,14 @@
     text-align: center;
 }
 
+.content-full {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
 @media(prefers-color-scheme:light) {
     meta[name="theme-color"] {
         attr-content: "#111111"

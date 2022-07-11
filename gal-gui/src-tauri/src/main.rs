@@ -116,6 +116,11 @@ async fn set_settings(settings: Settings, storage: State<'_, Storage>) -> Comman
 }
 
 #[command]
+async fn get_records(storage: State<'_, Storage>) -> CommandResult<Vec<RawContext>> {
+    Ok(storage.records.lock().await.clone())
+}
+
+#[command]
 async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
     if let Some(settings) = storage.settings.lock().await.as_ref() {
         save_settings(settings).await?;
@@ -173,6 +178,21 @@ async fn info(storage: State<'_, Storage>) -> CommandResult<serde_json::Value> {
 async fn start_new(locale: Locale, storage: State<'_, Storage>) -> CommandResult<()> {
     if let Some(ctx) = storage.context.lock().await.as_mut() {
         ctx.init_new();
+        info!("Init new context with locale {}.", locale);
+    } else {
+        warn!("Game hasn't been loaded.")
+    }
+    Ok(())
+}
+
+#[command]
+async fn start_record(
+    locale: Locale,
+    index: usize,
+    storage: State<'_, Storage>,
+) -> CommandResult<()> {
+    if let Some(ctx) = storage.context.lock().await.as_mut() {
+        ctx.init_context(storage.records.lock().await[index].clone());
         info!("Init new context with locale {}.", locale);
     } else {
         warn!("Game hasn't been loaded.")
@@ -274,11 +294,13 @@ fn main() -> Result<()> {
             open_game,
             get_settings,
             set_settings,
+            get_records,
             save_all,
             choose_locale,
             locale_native_name,
             info,
             start_new,
+            start_record,
             next_run,
             current_run,
             switch,

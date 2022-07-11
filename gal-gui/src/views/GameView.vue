@@ -206,7 +206,7 @@ export default {
             </p>
         </div>
     </div>
-    <div class="container-video bg-body" v-bind:hidden="state != ActionState.Video">
+    <div class="content-full bg-body" v-bind:hidden="state != ActionState.Video">
         <video id="video" class="background" v-on:ended="onvideoended">
             <source v-bind:src="action.video" type="video/mp4" />
         </video>
@@ -242,7 +242,7 @@ export default {
             </button>
         </div>
     </div>
-    <div class="container-switches" v-bind:hidden="state != ActionState.Switching">
+    <div class="content-full container-switches" v-bind:hidden="state != ActionState.Switching">
         <div class="switches">
             <div class="switches-center">
                 <div class="d-grid gap-5 col-8 mx-auto">
@@ -254,9 +254,10 @@ export default {
             </div>
         </div>
     </div>
-    <div id="history" class="container-history" v-bind:hidden="!show_history" v-on:click="on_history_click">
+    <div id="history" class="content-full container-history" v-bind:hidden="!show_history"
+        v-on:click="on_history_click">
         <ul class="list-group">
-            <li class="list-group-item" v-for="(h) in history">
+            <li class="list-group-item" v-for="h in history">
                 <div class="card">
                     <div class="card-header char">
                         <h4 class="card-title">{{ h.character }}</h4>
@@ -287,14 +288,6 @@ export default {
     top: 0;
     left: 0;
     bottom: 2.5em;
-    right: 0;
-}
-
-.container-video {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
     right: 0;
 }
 
@@ -331,21 +324,10 @@ export default {
 }
 
 .container-switches {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
     background-color: #00000077;
 }
 
 .container-history {
-    position: absolute;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: 0;
-    height: 100%;
     overflow-y: scroll;
 }
 
