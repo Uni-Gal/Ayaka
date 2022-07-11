@@ -38,47 +38,12 @@ impl Display for CommandError {
 }
 
 #[derive(Debug, Clone, Serialize)]
-struct OpenGameStatus {
-    t: OpenGameStatusType,
-    data: Option<serde_json::Value>,
-}
-
-#[derive(Debug, Clone, Copy, Serialize)]
-enum OpenGameStatusType {
-    LoadProfile,
+#[serde(tag = "t", content = "data")]
+enum OpenGameStatus {
+    LoadProfile(String),
     CreateRuntime,
-    LoadPlugin,
+    LoadPlugin(String, usize, usize),
     Loaded,
-}
-
-impl OpenGameStatus {
-    pub fn load_profile(path: impl Into<String>) -> Self {
-        Self {
-            t: OpenGameStatusType::LoadProfile,
-            data: Some(json! {path.into()}),
-        }
-    }
-
-    pub fn create_runtime() -> Self {
-        Self {
-            t: OpenGameStatusType::CreateRuntime,
-            data: None,
-        }
-    }
-
-    pub fn load_plugin(name: impl Into<String>, i: usize, len: usize) -> Self {
-        Self {
-            t: OpenGameStatusType::LoadPlugin,
-            data: Some(json! {[name.into(), i, len]}),
-        }
-    }
-
-    pub fn loaded() -> Self {
-        Self {
-            t: OpenGameStatusType::Loaded,
-            data: None,
-        }
-    }
 }
 
 #[command]
@@ -91,18 +56,18 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
         match status {
             OpenStatus::LoadProfile => handle.emit_all(
                 "gal://open_status",
-                OpenGameStatus::load_profile(config.clone()),
+                OpenGameStatus::LoadProfile(config.clone()),
             )?,
             OpenStatus::CreateRuntime => {
-                handle.emit_all("gal://open_status", OpenGameStatus::create_runtime())?
+                handle.emit_all("gal://open_status", OpenGameStatus::CreateRuntime)?
             }
             OpenStatus::LoadPlugin(name, i, len) => handle.emit_all(
                 "gal://open_status",
-                OpenGameStatus::load_plugin(name, i, len),
+                OpenGameStatus::LoadPlugin(name, i, len),
             )?,
             OpenStatus::Loaded(ctx) => {
                 window.set_title(&ctx.game.title)?;
-                handle.emit_all("gal://open_status", OpenGameStatus::loaded())?;
+                handle.emit_all("gal://open_status", OpenGameStatus::Loaded)?;
                 info!("Loaded config \"{}\"", config.escape_default());
                 *storage.context.lock().await = Some(ctx);
             }
