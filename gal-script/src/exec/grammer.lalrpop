@@ -16,14 +16,6 @@ Delimiter<T, D>: Vec<T> = {
 
 pub Program: Program = Delimiter<Expr, ";"> => Program(<>);
 
-pub Expr: Expr = {
-    <o:UnaryOp> <e:Expr> => Expr::Unary(o, Box::new(e)),
-    <r:Ref> <o:AssignOp> <e:Expr> => Expr::Binary(Box::new(Expr::Ref(r)), o, Box::new(e)),
-    Expr2,
-    "(" <e:Expr> ")" => e,
-    <i:FuncName> "(" <a:Exprs> ")" => Expr::Call(i.0, i.1, a),
-}
-
 Exprs: Vec<Expr> = Delimiter<Expr, ",">;
 
 FuncName: (String, String) = {
@@ -35,6 +27,11 @@ UnaryOp: UnaryOp = {
     "+" => UnaryOp::Positive,
     "-" => UnaryOp::Negative,
     "!" => UnaryOp::Not,
+}
+
+pub Expr: Expr = {
+    <r:Ref> <o:AssignOp> <e:Expr2> => Expr::Binary(Box::new(Expr::Ref(r)), o, Box::new(e)),
+    Expr2,
 }
 
 Expr2: Expr = {
@@ -92,6 +89,9 @@ Expr10: Expr = {
 Expr11: Expr = {
     <r:Ref> => Expr::Ref(r),
     <c:Const> => Expr::Const(c),
+    <o:UnaryOp> <e:Expr11> => Expr::Unary(o, Box::new(e)),
+    "(" <e:Expr> ")" => e,
+    <i:FuncName> "(" <a:Exprs> ")" => Expr::Call(i.0, i.1, a),
 }
 
 AssignOp: BinaryOp = {
