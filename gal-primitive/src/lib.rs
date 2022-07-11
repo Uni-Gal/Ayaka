@@ -74,7 +74,7 @@ impl<'de> Deserialize<'de> for RawValue {
             type Value = RawValue;
 
             fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a boolean, integer, string value, or a piece of code")
+                formatter.write_str("a unit, boolean, integer, string value")
             }
 
             fn visit_unit<E>(self) -> Result<Self::Value, E>
@@ -124,7 +124,7 @@ impl Serialize for RawValue {
         match self {
             Self::Unit => serializer.serialize_unit(),
             Self::Bool(b) => serializer.serialize_bool(*b),
-            Self::Num(n) => n.serialize(serializer),
+            Self::Num(n) => serializer.serialize_i64(*n),
             Self::Str(s) => serializer.serialize_str(s),
         }
     }
