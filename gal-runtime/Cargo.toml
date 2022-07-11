@@ -5,6 +5,7 @@ edition = "2021"
 
 [dependencies]
 gal-bindings-types = { path = "../gal-bindings-types" }
+gal-settings = { path = "../gal-settings" }
 gal-fallback = { path = "../gal-fallback" }
 gal-script = { path = "../gal-script" }
 gal-locale = { path = "../gal-locale" }

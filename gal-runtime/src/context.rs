@@ -280,7 +280,7 @@ impl Context {
     }
 
     fn process_action(&mut self, mut action: Action) -> Result<Action> {
-        self.ctx.history.push(ActionHistoryData::new(&action));
+        self.ctx.history.push(ActionHistoryData::from(&action));
         for (_, module) in &self.runtime.action_modules {
             action.data =
                 module.process_action(&mut self.runtime.store, self.frontend, action.data)?;

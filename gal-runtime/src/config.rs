@@ -1,16 +1,15 @@
 pub use gal_bindings_types::{ActionData, Switch};
 pub use gal_fallback::Fallback;
+pub use gal_settings::*;
 
 use gal_fallback::FallbackSpec;
 use gal_locale::Locale;
 use gal_script::{
     log::{debug, warn},
-    Program, RawValue,
+    Program,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::{collections::HashMap, path::PathBuf};
-
-pub type VarMap = HashMap<String, RawValue>;
 
 #[derive(Debug, Deserialize)]
 pub struct Paragraph {
@@ -18,14 +17,6 @@ pub struct Paragraph {
     pub title: Option<String>,
     pub texts: Vec<String>,
     pub next: Option<String>,
-}
-
-#[derive(Debug, Default, Deserialize, Serialize)]
-pub struct RawContext {
-    pub cur_para: String,
-    pub cur_act: usize,
-    pub locals: VarMap,
-    pub history: Vec<ActionHistoryData>,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -117,14 +108,8 @@ pub struct Action {
     pub switch_actions: Vec<Program>,
 }
 
-#[derive(Debug, Default, Clone, Deserialize, Serialize)]
-pub struct ActionHistoryData {
-    pub line: String,
-    pub character: Option<String>,
-}
-
-impl ActionHistoryData {
-    pub fn new(action: &Action) -> Self {
+impl From<&Action> for ActionHistoryData {
+    fn from(action: &Action) -> Self {
         Self {
             line: action.data.line.clone(),
             character: action.data.character.clone(),
