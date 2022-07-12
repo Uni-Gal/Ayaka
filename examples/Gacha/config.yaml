@@ -5,7 +5,7 @@ plugins:
   dir: ../../target/wasm32-wasi/release/
   modules:
     - format
-    - slog
+    - galog
     - random
 base_lang: zh_Hans
 paras:
@@ -70,7 +70,7 @@ paras:
               $temp5 = 0,
               $temp5 += 1,
             );
-            slog.info(if(current5, 5, if(current4, 4, 3)), " star");
+            galog.info(if(current5, 5, if(current4, 4, 3)), " star");
           }
       next: |
         \exec{

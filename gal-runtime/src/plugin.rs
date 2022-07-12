@@ -145,7 +145,7 @@ impl Runtime {
                     rmp_serde::from_slice(data).map_err(|e| Trap::new(e.to_string()))?;
                 log::logger().log(
                     &log::Record::builder()
-                        .level(unsafe { std::mem::transmute(data.level) })
+                        .level(data.level)
                         .target(&data.target)
                         .args(format_args!("{}", data.msg))
                         .module_path(data.module_path.as_ref().map(|s| s.as_str()))
