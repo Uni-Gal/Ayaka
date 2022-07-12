@@ -21,7 +21,6 @@ pub fn derive_fallback_spec(input: TokenStream) -> TokenStream {
                         .iter()
                         .map(|field| {
                             let mut field = field.clone();
-                            field.attrs.clear();
                             let ty = field.ty.clone();
                             field.ty = Type::parse
                                 .parse2(quote! {::gal_fallback::Fallback<#ty>})

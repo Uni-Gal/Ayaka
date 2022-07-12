@@ -106,8 +106,8 @@ impl Host {
         &self,
         caller: impl AsContextMut<Data = WasiCtx>,
         frontend: FrontendType,
-        action: ActionData,
-    ) -> Result<ActionData> {
+        action: Action,
+    ) -> Result<Action> {
         self.call(caller, "process_action", (frontend, action))
     }
 }

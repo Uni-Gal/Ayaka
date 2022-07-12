@@ -7,7 +7,7 @@ fn plugin_type() -> PluginType {
 }
 
 #[export]
-fn process_action(frontend: FrontendType, mut action: ActionData) -> ActionData {
+fn process_action(frontend: FrontendType, mut action: Action) -> Action {
     match frontend {
         FrontendType::Html => {
             let parser = Parser::new(&action.line);

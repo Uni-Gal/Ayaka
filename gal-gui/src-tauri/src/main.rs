@@ -245,13 +245,13 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
 }
 
 #[command]
-async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<ActionData>> {
+async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<Action>> {
     Ok(storage
         .action
         .lock()
         .await
         .as_ref()
-        .map(|action| action.data.clone()))
+        .map(|action| action.clone()))
 }
 
 #[command]
@@ -270,20 +270,13 @@ async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue
 }
 
 #[command]
-async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<ActionData>> {
+async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<Action>> {
     let mut hs = storage
         .context
         .lock()
         .await
         .as_ref()
-        .map(|context| {
-            context
-                .ctx
-                .history
-                .iter()
-                .map(|act| act.data.clone())
-                .collect::<Vec<_>>()
-        })
+        .map(|context| context.ctx.history.clone())
         .unwrap_or_default();
     hs.reverse();
     info!("Get history {:?}", hs);

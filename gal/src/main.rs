@@ -56,12 +56,12 @@ async fn main() -> Result<()> {
                 }
                 ctx.init_new();
                 while let Some(action) = ctx.next_run() {
-                    if let Some(name) = &action.data.character {
+                    if let Some(name) = &action.character {
                         print!("_{}_", name);
                     }
-                    print!("{}", action.data.line);
-                    if !action.data.switches.is_empty() {
-                        for (i, s) in action.data.switches.iter().enumerate() {
+                    print!("{}", action.line);
+                    if !action.switches.is_empty() {
+                        for (i, s) in action.switches.iter().enumerate() {
                             if s.enabled {
                                 print!("\n-{}- {}", i + 1, s.text);
                             } else {
@@ -74,7 +74,7 @@ async fn main() -> Result<()> {
                             if let Ok(i) = s.trim().parse::<usize>() {
                                 let valid = i > 0
                                     && i <= action.switch_actions.len()
-                                    && action.data.switches[i - 1].enabled;
+                                    && action.switches[i - 1].enabled;
                                 if valid {
                                     ctx.call(&action.switch_actions[i - 1]);
                                     break;

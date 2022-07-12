@@ -41,16 +41,16 @@ async fn main() -> Result<()> {
 
                 ctx.init_new();
                 while let Some(action) = ctx.next_run() {
-                    if let Some(name) = &action.data.character {
+                    if let Some(name) = &action.character {
                         output
                             .write(format!("\\paragraph{{{}}}", name).as_bytes())
                             .await?;
                     }
-                    output.write(action.data.line.as_bytes()).await?;
+                    output.write(action.line.as_bytes()).await?;
                     output.write(b"\n").await?;
-                    if !action.data.switches.is_empty() {
+                    if !action.switches.is_empty() {
                         output.write(b"\\begin{itemize}\n").await?;
-                        for s in action.data.switches.iter() {
+                        for s in action.switches.iter() {
                             output.write(b"\\item ").await?;
                             if s.enabled {
                                 output.write(s.text.as_bytes()).await?;

@@ -1,14 +1,10 @@
-pub use gal_bindings_types::{ActionData, Switch};
+pub use gal_bindings_types::{Action, Switch};
 pub use gal_fallback::Fallback;
 
 use crate::*;
-use gal_fallback::FallbackSpec;
 use gal_locale::Locale;
-use gal_script::{
-    log::{debug, warn},
-    Program,
-};
-use serde::{Deserialize, Serialize};
+use gal_script::log::{debug, warn};
+use serde::Deserialize;
 use std::{collections::HashMap, path::PathBuf};
 
 #[derive(Debug, Deserialize)]
@@ -100,11 +96,4 @@ impl Game {
             self.find_res(&base_key),
         )
     }
-}
-
-#[derive(Debug, Default, Clone, Deserialize, Serialize, FallbackSpec)]
-pub struct Action {
-    #[serde(flatten)]
-    pub data: ActionData,
-    pub switch_actions: Vec<Program>,
 }

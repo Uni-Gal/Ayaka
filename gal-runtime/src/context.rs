@@ -226,14 +226,12 @@ impl Context {
             .and_then(|path| std::path::absolute(path).ok())
             .map(|p| p.to_string_lossy().into_owned());
         Action {
-            data: ActionData {
-                line: lines,
-                character: chname,
-                switches,
-                bg,
-                bgm,
-                video,
-            },
+            line: lines,
+            character: chname,
+            switches,
+            bg,
+            bgm,
+            video,
             switch_actions,
         }
     }
@@ -241,33 +239,23 @@ impl Context {
     fn merge_action(&self, actions: Fallback<Action>) -> Option<Action> {
         if actions.is_some() {
             let actions = actions.spec();
-            let data = {
-                let data = actions.data.spec();
-                let line = data.line.and_any().unwrap_or_default();
-                let character = data.character.flatten().and_any();
-                let switches = data
-                    .switches
-                    .into_iter()
-                    .map(|s| {
-                        let s = s.spec();
-                        let text = s.text.and_any().unwrap_or_default();
-                        let (enabled, base_enabled) = s.enabled.unzip();
-                        let enabled = base_enabled.or_else(|| enabled).unwrap_or(true);
-                        Switch { text, enabled }
-                    })
-                    .collect();
-                let bg = data.bg.flatten().and_any();
-                let bgm = data.bgm.flatten().and_any();
-                let video = data.video.flatten().and_any();
-                ActionData {
-                    line,
-                    character,
-                    switches,
-                    bg,
-                    bgm,
-                    video,
-                }
-            };
+
+            let line = actions.line.and_any().unwrap_or_default();
+            let character = actions.character.flatten().and_any();
+            let switches = actions
+                .switches
+                .into_iter()
+                .map(|s| {
+                    let s = s.spec();
+                    let text = s.text.and_any().unwrap_or_default();
+                    let (enabled, base_enabled) = s.enabled.unzip();
+                    let enabled = base_enabled.or_else(|| enabled).unwrap_or(true);
+                    Switch { text, enabled }
+                })
+                .collect();
+            let bg = actions.bg.flatten().and_any();
+            let bgm = actions.bgm.flatten().and_any();
+            let video = actions.video.flatten().and_any();
             let switch_actions = actions
                 .switch_actions
                 .into_iter()
@@ -275,7 +263,12 @@ impl Context {
                 .map(|p| p.unwrap_or_default())
                 .collect();
             Some(Action {
-                data,
+                line,
+                character,
+                switches,
+                bg,
+                bgm,
+                video,
                 switch_actions,
             })
         } else {
@@ -285,10 +278,9 @@ impl Context {
 
     fn process_action(&mut self, mut action: Action) -> Result<Action> {
         for (_, module) in &self.runtime.action_modules {
-            action.data =
-                module.process_action(&mut self.runtime.store, self.frontend, action.data)?;
+            action = module.process_action(&mut self.runtime.store, self.frontend, action)?;
         }
-        if !action.data.line.is_empty() || action.data.character.is_some() {
+        if !action.line.is_empty() || action.character.is_some() {
             self.ctx.history.push(action.clone());
         }
         Ok(action)

@@ -1,4 +1,5 @@
 use gal_fallback::FallbackSpec;
+use gal_script::Program;
 use serde::{Deserialize, Serialize};
 
 #[doc(hidden)]
@@ -38,13 +39,14 @@ pub enum FrontendType {
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, FallbackSpec)]
-pub struct ActionData {
+pub struct Action {
     pub line: String,
     pub character: Option<String>,
     pub switches: Vec<Switch>,
     pub bg: Option<String>,
     pub bgm: Option<String>,
     pub video: Option<String>,
+    pub switch_actions: Vec<Program>,
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, FallbackSpec)]
