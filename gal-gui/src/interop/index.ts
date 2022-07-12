@@ -67,6 +67,10 @@ export function get_records(): Promise<RawContext[]> {
     return invoke("get_records")
 }
 
+export function save_record_to(index: number): Promise<void> {
+    return invoke("save_record_to", { index: index })
+}
+
 export async function set_locale(loc: Locale): Promise<void> {
     let settings = await get_settings() ?? { lang: "" };
     settings.lang = loc

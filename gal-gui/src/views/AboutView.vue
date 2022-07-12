@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { getName, getTauriVersion, getVersion } from '@tauri-apps/api/app'
-import router from '../router'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { info } from '../interop'
 </script>
@@ -27,7 +26,7 @@ export default {
     },
     methods: {
         async go_home() {
-            await router.replace("/home")
+            await this.$router.replace("/home")
         }
     }
 }

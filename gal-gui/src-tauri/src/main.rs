@@ -122,6 +122,25 @@ async fn get_records(storage: State<'_, Storage>) -> CommandResult<Vec<RawContex
 }
 
 #[command]
+async fn save_record_to(index: usize, storage: State<'_, Storage>) -> CommandResult<()> {
+    let mut records = storage.records.lock().await;
+    if let Some(ctx) = storage
+        .context
+        .lock()
+        .await
+        .as_ref()
+        .map(|ctx| ctx.ctx.clone())
+    {
+        if index >= records.len() {
+            records.push(ctx);
+        } else {
+            records[index] = ctx;
+        }
+    }
+    Ok(())
+}
+
+#[command]
 async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
     if let Some(settings) = storage.settings.lock().await.as_ref() {
         save_settings(&storage.ident, settings).await?;
@@ -299,6 +318,7 @@ fn main() -> Result<()> {
             get_settings,
             set_settings,
             get_records,
+            save_record_to,
             save_all,
             choose_locale,
             locale_native_name,

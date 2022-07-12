@@ -2,7 +2,6 @@
 import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import router from '../router'
 import { current_run, next_run, switch_, Action, ActionHistoryData, history } from '../interop'
 </script>
 
@@ -44,7 +43,7 @@ export default {
     },
     methods: {
         async go_home() {
-            await router.replace("/home")
+            await this.$router.replace("/home")
         },
         // Should be called in mutex
         async fetch_current_run() {
@@ -186,6 +185,9 @@ export default {
             } else {
                 this.show_history = false
             }
+        },
+        async on_records_click(op: string) {
+            await this.$router.push("/records/" + op)
         }
     }
 }
@@ -214,10 +216,10 @@ export default {
     <div class="backboard" v-on:click="next"></div>
     <div class="commands">
         <div class="btn-group" role="group" v-bind:hidden="state == ActionState.Video">
-            <button class="btn btn-primary btn-command">
+            <button class="btn btn-primary btn-command" v-on:click='on_records_click("save")'>
                 <FontAwesomeIcon icon="fas fa-file-arrow-down"></FontAwesomeIcon>
             </button>
-            <button class="btn btn-primary btn-command">
+            <button class="btn btn-primary btn-command" v-on:click='on_records_click("load")'>
                 <FontAwesomeIcon icon="fas fa-file-arrow-up"></FontAwesomeIcon>
             </button>
             <button class="btn btn-primary btn-command" v-on:click="on_history_click">

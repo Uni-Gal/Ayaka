@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Locale } from 'vue-i18n'
 import { info, next_run, start_new, locale_native_name, set_locale } from '../interop'
-import router from '../router'
 </script>
 
 <script lang="ts">
@@ -24,7 +23,7 @@ export default {
         async new_game() {
             await start_new(this.$i18n.locale)
             if (await next_run()) {
-                router.replace("/game")
+                this.$router.replace("/game")
             }
         },
         async locale_native_name(loc: Locale) {
@@ -42,7 +41,7 @@ export default {
         <div class="d-grid gap-4 col-4 mx-auto">
             <h1>{{ title }}</h1>
             <button class="btn btn-primary" v-on:click="new_game">{{ $t("newGame") }}</button>
-            <router-link class="btn btn-primary" to="/records">{{ $t("loadRecords") }}</router-link>
+            <router-link class="btn btn-primary" to="/records/load">{{ $t("loadRecords") }}</router-link>
             <router-link class="btn btn-primary" to="/about">{{ $t("about") }}</router-link>
             <button class="btn btn-primary" v-on:click="$emit('quit')">{{ $t("quit") }}</button>
             <select class="form-select" v-model="$i18n.locale" v-on:change="on_locale_select">

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { RawContext, get_records, start_record, next_run } from '../interop'
-import router from '../router';
+import { RawContext, get_records, start_record, next_run, save_record_to } from '../interop'
 </script>
 
 <script lang="ts">
@@ -8,6 +7,7 @@ export default {
     emits: ["quit"],
     data() {
         return {
+            op: this.$route.params.op,
             records: [] as RawContext[],
         }
     },
@@ -16,9 +16,16 @@ export default {
     },
     methods: {
         async on_record_click(index: number) {
-            await start_record(this.$i18n.locale, index)
-            if (await next_run()) {
-                router.replace("/game")
+            if (this.op == "load") {
+                await start_record(this.$i18n.locale, index)
+                if (await next_run()) {
+                    await this.$router.replace("/game")
+                }
+            } else if (this.op == "save") {
+                await save_record_to(index)
+                await this.$router.back()
+            } else {
+                console.warn("Invalid op: %s", this.op)
             }
         }
     }
@@ -30,6 +37,9 @@ export default {
         <ul class="list-group">
             <li class="list-group-item" v-for="(rec, i) in records" v-on:click="on_record_click(i)">
                 {{ rec.history[rec.history.length - 1].line }}
+            </li>
+            <li class="list-group-item" v-on:click="on_record_click(records.length)" v-bind:hidden='op != "save"'>
+                Add new record
             </li>
         </ul>
     </div>

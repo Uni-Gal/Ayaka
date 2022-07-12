@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { listen } from '@tauri-apps/api/event';
 import { OpenGameStatus, OpenGameStatusType, open_game, choose_locale, get_settings, set_locale } from '../interop'
-import router from '../router';
 </script>
 
 <script lang="ts">
@@ -23,7 +22,7 @@ export default {
                     await this.process_settings()
                     break
                 case OpenGameStatusType.Loaded:
-                    router.replace("/home")
+                    this.$router.replace("/home")
                     break
             }
         })
