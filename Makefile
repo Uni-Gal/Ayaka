@@ -19,7 +19,7 @@ release-gui:
 EXAMPLES:=Fibonacci Fibonacci2 Gacha Markdown Orga
 
 define example-tpl
-.PHONY: example-$(1) example-$(1)-gui example-$(1)-release example-$(1)-gui-release
+.PHONY: example-$(1) example-$(1)-gui example-$(1)-release example-$(1)-gui-release examples/$(1)/config.tex
 example-$(1): examples/$(1)/config.yaml plugins
 	RUST_LOG=info cargo run --package gal -- $$< --auto
 example-$(1)-gui: examples/$(1)/config.yaml plugins
@@ -29,8 +29,14 @@ example-$(1)-release: examples/$(1)/config.yaml plugins release
 example-$(1)-gui-release: examples/$(1)/config.yaml plugins release-gui
 	target/release/gal-gui $$<
 
+examples/$(1)/config.tex: examples/$(1)/config.yaml
+	RUST_LOG=info cargo run --package gal-latex -- $$< -o $$@
+
 endef
 
 $(eval $(foreach ex,$(EXAMPLES),$(call example-tpl,$(ex))))
+
+%.pdf: %.tex
+	cd $(dir $<) && latexmk -lualatex $(notdir $<)
 
 .SECONDARY:

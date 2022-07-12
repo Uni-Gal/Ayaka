@@ -9,6 +9,7 @@ members = [
     "gal-settings",
     "gal",
     "gal-gui/src-tauri",
+    "gal-latex",
     "gal-bindings-types",
     "gal-bindings-impl",
     "gal-bindings",
