@@ -8,10 +8,10 @@ export interface OpenGameStatus {
 
 export enum OpenGameStatusType {
     LoadSettings,
-    LoadRecords,
     LoadProfile,
     CreateRuntime,
     LoadPlugin,
+    LoadRecords,
     Loaded,
 }
 

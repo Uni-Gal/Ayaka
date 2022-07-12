@@ -48,11 +48,11 @@ struct FullSettings {
 #[serde(tag = "t", content = "data")]
 enum OpenGameStatus {
     LoadSettings,
-    LoadRecords,
     LoadProfile(String),
     CreateRuntime,
     LoadPlugin(String, usize, usize),
     Loaded,
+    LoadRecords,
 }
 
 fn emit_open_status(
