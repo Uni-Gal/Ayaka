@@ -56,6 +56,6 @@ jobs:
     displayName: "Build GUI frontend"
 
   - pwsh: |
-      $env:STATIC_VCRUNTIME=false
+      $env:STATIC_VCRUNTIME="false"
       cargo build --target=$(target) --release
     displayName: "Build all"
