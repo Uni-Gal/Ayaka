@@ -35,16 +35,16 @@ export default {
             switch (OpenGameStatusType[s.t]) {
                 case OpenGameStatusType.LoadSettings:
                     return ["Loading settings...", step]
-                case OpenGameStatusType.LoadRecords:
-                    return ["Loading records...", step]
                 case OpenGameStatusType.LoadProfile:
-                    return [`Loading profile "${s.data as unknown as string}"...`, step * 3]
+                    return [`Loading profile "${s.data as unknown as string}"...`, step * 2]
                 case OpenGameStatusType.CreateRuntime:
-                    return ["Creating runtime...", step * 4]
+                    return ["Creating runtime...", step * 3]
                 case OpenGameStatusType.LoadPlugin:
                     const data = s.data as unknown as [string, number, number];
                     const percent = data[1] / data[2];
-                    return [`Loading plugin "${data[0]}"... (${data[1] + 1}/${data[2]})`, step * 5 + percent * step]
+                    return [`Loading plugin "${data[0]}"... (${data[1] + 1}/${data[2]})`, step * 4 + percent * step]
+                case OpenGameStatusType.LoadRecords:
+                    return ["Loading records...", step * 5]
                 case OpenGameStatusType.Loaded:
                     return ["Loaded.", 100]
                 default:

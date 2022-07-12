@@ -52,13 +52,13 @@ pub async fn save_settings(ident: &str, data: &Settings) -> Result<()> {
     save_file(data, settings_path(ident)?).await
 }
 
-pub fn context_path(ident: &str) -> Result<PathBuf> {
+pub fn records_path(ident: &str, game: &str) -> Result<PathBuf> {
     let path = data_local_dir().ok_or_else(|| anyhow!("Cannot find config path"))?;
-    Ok(path.join(ident).join("save"))
+    Ok(path.join(ident).join("save").join(game))
 }
 
-pub async fn load_records(ident: &str) -> Result<Vec<RawContext>> {
-    let ctx_path = context_path(ident)?;
+pub async fn load_records(ident: &str, game: &str) -> Result<Vec<RawContext>> {
+    let ctx_path = records_path(ident, game)?;
     let mut entries = ReadDirStream::new(tokio::fs::read_dir(ctx_path).await?);
     let mut contexts = vec![];
     while let Some(entry) = entries.try_next().await? {
@@ -74,8 +74,8 @@ pub async fn load_records(ident: &str) -> Result<Vec<RawContext>> {
     Ok(contexts)
 }
 
-pub async fn save_records(ident: &str, contexts: &[RawContext]) -> Result<()> {
-    let ctx_path = context_path(ident)?;
+pub async fn save_records(ident: &str, game: &str, contexts: &[RawContext]) -> Result<()> {
+    let ctx_path = records_path(ident, game)?;
     for (i, ctx) in contexts.iter().enumerate() {
         save_file(ctx, ctx_path.join(i.to_string()).with_extension("json")).await?;
     }

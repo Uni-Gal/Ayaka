@@ -71,11 +71,6 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
                 warn!("Load settings failed: {}", e);
                 Default::default()
             }));
-        emit_open_status(&handle, OpenGameStatus::LoadRecords)?;
-        *storage.records.lock().await = load_records(&storage.ident).await.unwrap_or_else(|e| {
-            warn!("Load records failed: {}", e);
-            Default::default()
-        });
     }
     {
         let config = &storage.config;
@@ -95,9 +90,15 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
                 OpenStatus::Loaded(ctx) => {
                     let window = handle.get_window("main").unwrap();
                     window.set_title(&ctx.game.title)?;
-                    emit_open_status(&handle, OpenGameStatus::Loaded)?;
-                    info!("Loaded config \"{}\"", config.escape_default());
+                    emit_open_status(&handle, OpenGameStatus::LoadRecords)?;
+                    *storage.records.lock().await = load_records(&storage.ident, &ctx.game.title)
+                        .await
+                        .unwrap_or_else(|e| {
+                            warn!("Load records failed: {}", e);
+                            Default::default()
+                        });
                     *storage.context.lock().await = Some(ctx);
+                    emit_open_status(&handle, OpenGameStatus::Loaded)?;
                 }
             }
         }
@@ -145,7 +146,10 @@ async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
     if let Some(settings) = storage.settings.lock().await.as_ref() {
         save_settings(&storage.ident, settings).await?;
     }
-    save_records(&storage.ident, &storage.records.lock().await).await?;
+    if let Some(context) = storage.context.lock().await.as_ref() {
+        let game = &context.game.title;
+        save_records(&storage.ident, game, &storage.records.lock().await).await?;
+    }
     Ok(())
 }
 
