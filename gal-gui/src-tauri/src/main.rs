@@ -66,12 +66,13 @@ fn emit_open_status(
 async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
     {
         emit_open_status(&handle, OpenGameStatus::LoadSettings)?;
-        *storage.settings.lock().await = Some(load_settings().await.unwrap_or_else(|e| {
-            warn!("Load settings failed: {}", e);
-            Default::default()
-        }));
+        *storage.settings.lock().await =
+            Some(load_settings(&storage.ident).await.unwrap_or_else(|e| {
+                warn!("Load settings failed: {}", e);
+                Default::default()
+            }));
         emit_open_status(&handle, OpenGameStatus::LoadRecords)?;
-        *storage.records.lock().await = load_records().await.unwrap_or_else(|e| {
+        *storage.records.lock().await = load_records(&storage.ident).await.unwrap_or_else(|e| {
             warn!("Load records failed: {}", e);
             Default::default()
         });
@@ -123,9 +124,9 @@ async fn get_records(storage: State<'_, Storage>) -> CommandResult<Vec<RawContex
 #[command]
 async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
     if let Some(settings) = storage.settings.lock().await.as_ref() {
-        save_settings(settings).await?;
+        save_settings(&storage.ident, settings).await?;
     }
-    save_records(&storage.records.lock().await).await?;
+    save_records(&storage.ident, &storage.records.lock().await).await?;
     Ok(())
 }
 
@@ -144,6 +145,7 @@ fn locale_native_name(loc: Locale) -> CommandResult<String> {
 
 #[derive(Default)]
 struct Storage {
+    ident: String,
     config: String,
     settings: Mutex<Option<Settings>>,
     records: Mutex<Vec<RawContext>>,
@@ -152,8 +154,9 @@ struct Storage {
 }
 
 impl Storage {
-    pub fn new(config: impl Into<String>) -> Self {
+    pub fn new(ident: impl Into<String>, config: impl Into<String>) -> Self {
         Self {
+            ident: ident.into(),
             config: config.into(),
             ..Default::default()
         }
@@ -261,6 +264,7 @@ fn main() -> Result<()> {
     tauri::Builder::default()
         .plugin(tauri_plugin_localhost::Builder::new(port).build())
         .setup(|app| {
+            let ident = app.config().tauri.bundle.identifier.clone();
             let log_handle = if cfg!(debug_assertions) {
                 Logger::with(LogSpecification::info())
                     .log_to_stdout()
@@ -287,7 +291,7 @@ fn main() -> Result<()> {
                 .as_str()
                 .map(|s| s.to_string())
                 .unwrap_or_default();
-            app.manage(Storage::new(config));
+            app.manage(Storage::new(ident, config));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

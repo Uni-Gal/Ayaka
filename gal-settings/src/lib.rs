@@ -1,5 +1,5 @@
 use anyhow::{anyhow, Result};
-use dirs::{config_dir, data_dir};
+use dirs::{config_dir, data_local_dir};
 use gal_locale::Locale;
 use gal_primitive::RawValue;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -47,26 +47,26 @@ pub async fn save_file<T: Serialize>(data: &T, path: impl AsRef<Path>) -> Result
     Ok(())
 }
 
-pub fn settings_path() -> Result<PathBuf> {
+pub fn settings_path(ident: &str) -> Result<PathBuf> {
     let path = config_dir().ok_or_else(|| anyhow!("Cannot find config path"))?;
-    Ok(path.join("gal").join("settings.json"))
+    Ok(path.join(ident).join("settings.json"))
 }
 
-pub async fn load_settings() -> Result<Settings> {
-    load_file(settings_path()?).await
+pub async fn load_settings(ident: &str) -> Result<Settings> {
+    load_file(settings_path(ident)?).await
 }
 
-pub async fn save_settings(data: &Settings) -> Result<()> {
-    save_file(data, settings_path()?).await
+pub async fn save_settings(ident: &str, data: &Settings) -> Result<()> {
+    save_file(data, settings_path(ident)?).await
 }
 
-pub fn context_path() -> Result<PathBuf> {
-    let path = data_dir().ok_or_else(|| anyhow!("Cannot find config path"))?;
-    Ok(path.join("gal").join("save"))
+pub fn context_path(ident: &str) -> Result<PathBuf> {
+    let path = data_local_dir().ok_or_else(|| anyhow!("Cannot find config path"))?;
+    Ok(path.join(ident).join("save"))
 }
 
-pub async fn load_records() -> Result<Vec<RawContext>> {
-    let ctx_path = context_path()?;
+pub async fn load_records(ident: &str) -> Result<Vec<RawContext>> {
+    let ctx_path = context_path(ident)?;
     let mut entries = ReadDirStream::new(tokio::fs::read_dir(ctx_path).await?);
     let mut contexts = vec![];
     while let Some(entry) = entries.try_next().await? {
@@ -82,8 +82,8 @@ pub async fn load_records() -> Result<Vec<RawContext>> {
     Ok(contexts)
 }
 
-pub async fn save_records(contexts: &[RawContext]) -> Result<()> {
-    let ctx_path = context_path()?;
+pub async fn save_records(ident: &str, contexts: &[RawContext]) -> Result<()> {
+    let ctx_path = context_path(ident)?;
     for (i, ctx) in contexts.iter().enumerate() {
         save_file(ctx, ctx_path.join(i.to_string()).with_extension("json")).await?;
     }
