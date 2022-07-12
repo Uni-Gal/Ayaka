@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { getName, getTauriVersion, getVersion } from '@tauri-apps/api/app'
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { info } from '../interop'
 import IconButton from '../components/IconButton.vue';
 </script>

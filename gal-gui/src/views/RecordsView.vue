@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { RawContext, get_records, start_record, save_record_to } from '../interop'
-import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
 import IconButton from '../components/IconButton.vue';
 </script>
 
@@ -37,7 +36,7 @@ export default {
         <ul class="list-group list-group-flush">
             <li class="list-group-item list-group-item-action record-item" v-for="(rec, i) in records"
                 v-on:click="on_record_click(i)">
-                <span v-html="rec.history[rec.history.length - 1].data.line"></span>
+                <span v-html="rec.history[rec.history.length - 1].line"></span>
             </li>
             <li class="list-group-item list-group-item-action record-item" v-on:click="on_record_click(records.length)"
                 v-bind:hidden='op != "save"'>

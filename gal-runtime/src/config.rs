@@ -104,6 +104,7 @@ impl Game {
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize, FallbackSpec)]
 pub struct Action {
+    #[serde(flatten)]
     pub data: ActionData,
     pub switch_actions: Vec<Program>,
 }

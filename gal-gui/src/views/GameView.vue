@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ActionCard from '../components/ActionCard.vue'
-import { current_run, next_run, switch_, ActionData, history } from '../interop'
+import { current_run, next_run, switch_, Action, history } from '../interop'
 import IconButton from '../components/IconButton.vue'
 </script>
 
@@ -26,12 +25,12 @@ export default {
     emits: ["quit"],
     data() {
         return {
-            action: { line: "", character: undefined, switches: [], bg: undefined, bgm: undefined, video: undefined } as ActionData,
+            action: { line: "", character: undefined, switches: [], bg: undefined, bgm: undefined, video: undefined } as Action,
             type_text: "",
             state: ActionState.End,
             play_state: PlayState.Manual,
             mutex: new Mutex(),
-            history: [] as ActionData[],
+            history: [] as Action[],
             show_history: false
         }
     },
