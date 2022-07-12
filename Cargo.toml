@@ -13,6 +13,7 @@ members = [
     "gal-bindings-impl",
     "gal-bindings",
     "plugins/format",
+    "plugins/slog",
     "plugins/random",
     "plugins/markdown",
 ]
