@@ -4,6 +4,7 @@ import { Mutex, tryAcquire } from 'async-mutex'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import ActionCard from '../components/ActionCard.vue'
 import { current_run, next_run, switch_, ActionData, history } from '../interop'
+import IconButton from '../components/IconButton.vue'
 </script>
 
 <script lang="ts">
@@ -210,32 +211,16 @@ export default {
     <div class="backboard" v-on:click="next"></div>
     <div class="commands">
         <div class="btn-group" role="group" v-bind:hidden="state == ActionState.Video">
-            <button class="btn btn-primary btn-command" v-on:click='on_records_click("save")'>
-                <FontAwesomeIcon icon="fas fa-file-arrow-down"></FontAwesomeIcon>
-            </button>
-            <button class="btn btn-primary btn-command" v-on:click='on_records_click("load")'>
-                <FontAwesomeIcon icon="fas fa-file-arrow-up"></FontAwesomeIcon>
-            </button>
-            <button class="btn btn-primary btn-command" v-on:click="on_history_click">
-                <FontAwesomeIcon icon="fas fa-list"></FontAwesomeIcon>
-            </button>
-            <button v-bind:class='`btn btn-primary btn-command ${play_state == PlayState.Auto ? "active" : ""}`'
-                v-on:click="on_auto_play_click">
-                <FontAwesomeIcon icon="fas fa-play"></FontAwesomeIcon>
-            </button>
-            <button class="btn btn-primary btn-command" v-on:click="next">
-                <FontAwesomeIcon icon="fas fa-forward-step"></FontAwesomeIcon>
-            </button>
-            <button v-bind:class='`btn btn-primary btn-command ${play_state == PlayState.FastForward ? "active" : ""}`'
-                v-on:click="on_fast_forward_click">
-                <FontAwesomeIcon icon="fas fa-forward"></FontAwesomeIcon>
-            </button>
-            <button class="btn btn-primary btn-command">
-                <FontAwesomeIcon icon="fas fa-gear"></FontAwesomeIcon>
-            </button>
-            <button class="btn btn-primary btn-command" v-on:click="go_home">
-                <FontAwesomeIcon icon="fas fa-house"></FontAwesomeIcon>
-            </button>
+            <IconButton icon="file-arrow-down" @click='on_records_click("save")'></IconButton>
+            <IconButton icon="file-arrow-up" @click='on_records_click("load")'></IconButton>
+            <IconButton icon="list" @click="on_history_click"></IconButton>
+            <IconButton icon="play" :btnclass='play_state == PlayState.Auto ? "active" : ""'
+                @click="on_auto_play_click"></IconButton>
+            <IconButton icon="forward-step" @click="next"></IconButton>
+            <IconButton icon="forward" :btnclass='play_state == PlayState.FastForward ? "active" : ""'
+                @click="on_fast_forward_click"></IconButton>
+            <IconButton icon="gear"></IconButton>
+            <IconButton icon="house" @click="go_home"></IconButton>
         </div>
     </div>
     <div class="content-full container-switches" v-bind:hidden="state != ActionState.Switching">

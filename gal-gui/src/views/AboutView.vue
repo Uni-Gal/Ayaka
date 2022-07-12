@@ -2,6 +2,7 @@
 import { getName, getTauriVersion, getVersion } from '@tauri-apps/api/app'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
 import { info } from '../interop'
+import IconButton from '../components/IconButton.vue';
 </script>
 
 <script lang="ts">
@@ -48,8 +49,6 @@ export default {
         </p>
     </div>
     <div>
-        <button class="btn btn-outline-primary btn-command" v-on:click="go_home">
-            <FontAwesomeIcon icon="fas fa-arrow-left"></FontAwesomeIcon>
-        </button>
+        <IconButton icon="arrow-left" @click="go_home"></IconButton>
     </div>
 </template>

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RawContext, get_records, start_record, save_record_to } from '../interop'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome';
+import IconButton from '../components/IconButton.vue';
 </script>
 
 <script lang="ts">
@@ -45,9 +46,7 @@ export default {
         </ul>
     </div>
     <div>
-        <button class="btn btn-outline-primary btn-command" v-on:click="$router.back()">
-            <FontAwesomeIcon icon="fas fa-arrow-left"></FontAwesomeIcon>
-        </button>
+        <IconButton icon="arrow-left" @click="$router.back()"></IconButton>
     </div>
 </template>
 

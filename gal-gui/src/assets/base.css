@@ -21,11 +21,6 @@
     bottom: 0;
 }
 
-.btn-command {
-    width: 2.5em;
-    height: 2.5em;
-}
-
 @media(prefers-color-scheme:light) {
     meta[name="theme-color"] {
         attr-content: "#111111"
