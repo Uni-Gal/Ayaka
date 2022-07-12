@@ -40,3 +40,6 @@ jobs:
 
   - pwsh: make release-gui
     displayName: "Build GUI"
+
+  - pwsh: make release-latex
+    displayName: "Build LaTeX compiler"

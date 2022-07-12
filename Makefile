@@ -8,13 +8,15 @@ update:
 	cargo update
 	cd gal-gui && $(MAKE) node_modules
 
-.PHONY: plugins release release-gui
+.PHONY: plugins release release-gui release-latex
 plugins:
 	cd plugins && $(MAKE) plugins
 release:
 	cargo build --package gal --release
 release-gui:
 	cd gal-gui && $(MAKE) release
+release-latex:
+	cargo build --package gal-latex --release
 
 EXAMPLES:=Fibonacci Fibonacci2 Gacha Markdown Orga
 
