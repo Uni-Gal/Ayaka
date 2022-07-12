@@ -2,6 +2,7 @@
 import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
+import ActionCard from '../components/ActionCard.vue'
 import { current_run, next_run, switch_, ActionData, history } from '../interop'
 </script>
 
@@ -198,15 +199,8 @@ export default {
         <source v-bind:src="action.bgm" type="audio/mpeg" />
     </audio>
     <img class="background" v-bind:src="action.bg">
-    <div class="card card-lines">
-        <div class="card-header char">
-            <h4 class="card-title">{{ action.character }}</h4>
-        </div>
-        <div class="card-body lines">
-            <p class="h4 card-text">
-                <span v-html="type_text"></span>
-            </p>
-        </div>
+    <div class="card-lines">
+        <ActionCard :ch="action.character" :line="type_text"></ActionCard>
     </div>
     <div class="content-full bg-body" v-bind:hidden="state != ActionState.Video">
         <video id="video" class="background" v-on:ended="onvideoended">
@@ -260,16 +254,7 @@ export default {
         v-on:click="on_history_click">
         <ul class="list-group">
             <li class="list-group-item" v-for="h in history">
-                <div class="card">
-                    <div class="card-header char">
-                        <h4 class="card-title">{{ h.character }}</h4>
-                    </div>
-                    <div class="card-body lines">
-                        <p class="h4 card-text">
-                            <span v-html="h.line"></span>
-                        </p>
-                    </div>
-                </div>
+                <ActionCard :ch="h.character" :line="h.line"></ActionCard>
             </li>
         </ul>
     </div>
@@ -298,14 +283,6 @@ export default {
     bottom: 2.5em;
     width: 100%;
     opacity: 0.8;
-}
-
-.char {
-    height: 3em;
-}
-
-.lines {
-    height: 8em;
 }
 
 /* Copied from .h4 */
