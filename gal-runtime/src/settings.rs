@@ -1,7 +1,7 @@
+use crate::*;
 use anyhow::{anyhow, Result};
 use dirs::{config_dir, data_local_dir};
 use gal_locale::Locale;
-use gal_primitive::RawValue;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -21,15 +21,7 @@ pub struct RawContext {
     pub cur_para: String,
     pub cur_act: usize,
     pub locals: VarMap,
-    pub history: Vec<ActionHistoryData>,
-    pub bg: Option<String>,
-    pub bgm: Option<String>,
-}
-
-#[derive(Debug, Default, Clone, Deserialize, Serialize)]
-pub struct ActionHistoryData {
-    pub line: String,
-    pub character: Option<String>,
+    pub history: Vec<Action>,
 }
 
 pub async fn load_file<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {

@@ -17,8 +17,8 @@ pub struct Context {
     frontend: FrontendType,
     root_path: PathBuf,
     runtime: Runtime,
-    pub ctx: RawContext,
     loc: Locale,
+    pub ctx: RawContext,
 }
 
 pub enum OpenStatus {
@@ -58,8 +58,8 @@ impl Context {
                 frontend,
                 root_path: root_path.to_path_buf(),
                 runtime: runtime.unwrap(),
-                ctx: RawContext::default(),
                 loc: Locale::current(),
+                ctx: RawContext::default(),
             })
         }
     }
@@ -289,7 +289,7 @@ impl Context {
                 module.process_action(&mut self.runtime.store, self.frontend, action.data)?;
         }
         if !action.data.line.is_empty() || action.data.character.is_some() {
-            self.ctx.history.push(ActionHistoryData::from(&action));
+            self.ctx.history.push(action.clone());
         }
         Ok(action)
     }

@@ -6,12 +6,12 @@
 use flexi_logger::{FileSpec, LogSpecification, Logger};
 use gal_runtime::{
     anyhow::{self, anyhow, Result},
+    load_records, load_settings,
     log::{info, warn},
-    tokio,
+    save_records, save_settings, tokio,
     tokio_stream::StreamExt,
-    Action, ActionData, ActionHistoryData, Context, FrontendType, Locale, OpenStatus, RawValue,
+    *,
 };
-use gal_settings::*;
 use serde::Serialize;
 use serde_json::json;
 use std::fmt::Display;
@@ -214,7 +214,10 @@ async fn start_record(
     storage: State<'_, Storage>,
 ) -> CommandResult<()> {
     if let Some(ctx) = storage.context.lock().await.as_mut() {
-        ctx.init_context(storage.records.lock().await[index].clone());
+        let raw_ctx = storage.records.lock().await[index].clone();
+        let last_line = raw_ctx.history.last().unwrap();
+        *storage.action.lock().await = Some(last_line.clone());
+        ctx.init_context(raw_ctx);
         info!("Init new context with locale {}.", locale);
     } else {
         warn!("Game hasn't been loaded.")
@@ -263,13 +266,20 @@ async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue
 }
 
 #[command]
-async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<ActionHistoryData>> {
+async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<ActionData>> {
     let mut hs = storage
         .context
         .lock()
         .await
         .as_ref()
-        .map(|context| context.ctx.history.clone())
+        .map(|context| {
+            context
+                .ctx
+                .history
+                .iter()
+                .map(|act| act.data.clone())
+                .collect::<Vec<_>>()
+        })
         .unwrap_or_default();
     hs.reverse();
     info!("Get history {:?}", hs);

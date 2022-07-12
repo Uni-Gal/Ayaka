@@ -6,7 +6,6 @@ members = [
     "gal-fallback",
     "gal-runtime",
     "gal-script",
-    "gal-settings",
     "gal",
     "gal-gui/src-tauri",
     "gal-latex",

@@ -22,7 +22,7 @@ export interface Settings {
 export interface RawContext {
     cur_para: string,
     cur_act: number,
-    history: ActionHistoryData[],
+    history: Action[],
     bg?: string,
     bgm?: string,
 }
@@ -33,17 +33,16 @@ export interface Info {
 }
 
 export interface Action {
+    data: ActionData,
+}
+
+export interface ActionData {
     line: string,
     character?: string,
     switches: Switch[],
     bg?: string,
     bgm?: string,
     video?: string,
-}
-
-export interface ActionHistoryData {
-    line: string,
-    character?: string,
 }
 
 export interface Switch {
@@ -105,8 +104,8 @@ export function next_run(): Promise<boolean> {
     return invoke("next_run")
 }
 
-export async function current_run(): Promise<Action | undefined> {
-    let res = await invoke<Action | undefined>("current_run")
+export async function current_run(): Promise<ActionData | undefined> {
+    let res = await invoke<ActionData | undefined>("current_run")
     if (res) {
         if (res.bg) {
             res.bg = convertFileSrc(res.bg)
@@ -125,6 +124,6 @@ export function switch_(i: number): Promise<void> {
     return invoke("switch", { i: i })
 }
 
-export function history(): Promise<ActionHistoryData[]> {
+export function history(): Promise<ActionData[]> {
     return invoke("history")
 }

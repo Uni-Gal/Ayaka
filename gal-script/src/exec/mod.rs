@@ -4,11 +4,12 @@ use lalrpop_util::lalrpop_mod;
 lalrpop_mod!(grammer, "/exec/grammer.rs");
 
 pub use grammer::*;
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Default, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub struct Program(pub Vec<Expr>);
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub enum Expr {
     Ref(Ref),
     Const(RawValue),
@@ -17,14 +18,14 @@ pub enum Expr {
     Call(String, String, Vec<Expr>),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
 pub enum UnaryOp {
     Positive,
     Negative,
     Not,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
 pub enum BinaryOp {
     Val(ValBinaryOp),
     Logic(LogicBinaryOp),
@@ -32,7 +33,7 @@ pub enum BinaryOp {
     Inplace(ValBinaryOp),
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
 pub enum ValBinaryOp {
     Add,
     Minus,
@@ -44,7 +45,7 @@ pub enum ValBinaryOp {
     Xor,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
 pub enum LogicBinaryOp {
     And,
     Or,
@@ -56,7 +57,7 @@ pub enum LogicBinaryOp {
     Ge,
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq)]
 pub enum Ref {
     Var(String),
     Ctx(String),
