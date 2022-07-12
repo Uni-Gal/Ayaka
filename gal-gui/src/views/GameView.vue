@@ -202,6 +202,9 @@ export default {
     <div class="card-lines">
         <ActionCard :ch="action.character" :line="type_text"></ActionCard>
     </div>
+    <div>
+        <h4><span class="badge bg-primary">{{ action.para_title }}</span></h4>
+    </div>
     <div class="content-full bg-body" v-bind:hidden="state != ActionState.Video">
         <video id="video" class="background" v-on:ended="onvideoended">
             <source v-bind:src="action.video" type="video/mp4" />

@@ -162,7 +162,7 @@ impl Context {
         )
     }
 
-    fn exact_text(&mut self, t: Text) -> Action {
+    fn exact_text(&mut self, para_title: Option<&String>, t: Text) -> Action {
         let mut lines = String::new();
         let mut chname = None;
         let mut switches = vec![];
@@ -228,6 +228,7 @@ impl Context {
         Action {
             line: lines,
             character: chname,
+            para_title: para_title.cloned(),
             switches,
             bg,
             bgm,
@@ -242,6 +243,7 @@ impl Context {
 
             let line = actions.line.and_any().unwrap_or_default();
             let character = actions.character.flatten().and_any();
+            let para_title = actions.para_title.flatten().and_any();
             let switches = actions
                 .switches
                 .into_iter()
@@ -265,6 +267,7 @@ impl Context {
             Some(Action {
                 line,
                 character,
+                para_title,
                 switches,
                 bg,
                 bgm,
@@ -311,8 +314,9 @@ impl Context {
             let cur_text = self.current_text();
             if cur_text.is_some() {
                 let text = cur_text.map(|act| self.parse_text_rich_error(act));
+                let para_title = cur_para.and_then(|p| p.title.clone());
+                let actions = text.map(|t| self.exact_text(para_title.as_ref(), t));
                 self.ctx.cur_act += 1;
-                let actions = text.map(|t| self.exact_text(t));
                 self.merge_action(actions).map(|act| {
                     self.process_action(act).unwrap_or_else(|e| {
                         error!("Error when processing action: {}", e);

@@ -42,6 +42,7 @@ pub enum FrontendType {
 pub struct Action {
     pub line: String,
     pub character: Option<String>,
+    pub para_title: Option<String>,
     pub switches: Vec<Switch>,
     pub bg: Option<String>,
     pub bgm: Option<String>,

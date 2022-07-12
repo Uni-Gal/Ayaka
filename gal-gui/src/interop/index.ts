@@ -35,6 +35,7 @@ export interface Info {
 export interface Action {
     line: string,
     character?: string,
+    para_title?: string,
     switches: Switch[],
     bg?: string,
     bgm?: string,
