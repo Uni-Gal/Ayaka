@@ -13,6 +13,19 @@
     height: 100%;
 }
 
+.content-below-command {
+    position: absolute;
+    top: 2.5em;
+    left: 0;
+    width: 100%;
+    bottom: 0;
+}
+
+.btn-command {
+    width: 2.5em;
+    height: 2.5em;
+}
+
 @media(prefers-color-scheme:light) {
     meta[name="theme-color"] {
         attr-content: "#111111"

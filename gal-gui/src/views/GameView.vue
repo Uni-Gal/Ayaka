@@ -2,7 +2,7 @@
 import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome"
-import { current_run, next_run, switch_, Action, ActionHistoryData, history } from '../interop'
+import { current_run, next_run, switch_, ActionData, history } from '../interop'
 </script>
 
 <script lang="ts">
@@ -24,12 +24,12 @@ export default {
     emits: ["quit"],
     data() {
         return {
-            action: { line: "", character: undefined, switches: [], bg: undefined, bgm: undefined, video: undefined } as Action,
+            action: { line: "", character: undefined, switches: [], bg: undefined, bgm: undefined, video: undefined } as ActionData,
             type_text: "",
             state: ActionState.End,
             play_state: PlayState.Manual,
             mutex: new Mutex(),
-            history: [] as ActionHistoryData[],
+            history: [] as ActionData[],
             show_history: false
         }
     },
@@ -318,11 +318,6 @@ export default {
     top: 100%;
     left: 100%;
     transform: translate(-100%, -100%);
-}
-
-.btn-command {
-    width: 2.5em;
-    height: 2.5em;
 }
 
 .container-switches {

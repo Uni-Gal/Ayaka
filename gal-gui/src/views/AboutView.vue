@@ -48,7 +48,7 @@ export default {
         </p>
     </div>
     <div>
-        <button class="btn btn-outline-primary" v-on:click="go_home">
+        <button class="btn btn-outline-primary btn-command" v-on:click="go_home">
             <FontAwesomeIcon icon="fas fa-arrow-left"></FontAwesomeIcon>
         </button>
     </div>
