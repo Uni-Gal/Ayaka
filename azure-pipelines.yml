@@ -19,6 +19,10 @@ jobs:
         platform: 'mac'
         target: 'x86_64-apple-darwin'
         image: 'macOS-latest'
+      macos-arm64:
+        platform: 'mac'
+        target: 'aarch64-apple-darwin'
+        image: 'macOS-latest'
   pool:
     vmImage: $(image)
   
@@ -29,17 +33,21 @@ jobs:
     condition: eq(variables.platform, 'linux')
     displayName: "Install dependencies on Linux"
 
-  - pwsh: rustup target add wasm32-wasi
-    displayName: "Install WASM32 target"
+  - pwsh: |
+      rustup target add $(target)
+      rustup target add wasm32-wasi
+    displayName: "Install targets"
 
   - pwsh: make plugins
     displayName: "Build plugins"
 
-  - pwsh: make release
-    displayName: "Build CLI"
+  - pwsh: |
+      cd gal-gui
+      npm install
+      npm run build
+    displayName: "Build GUI frontend"
 
-  - pwsh: make release-gui
-    displayName: "Build GUI"
-
-  - pwsh: make release-latex
-    displayName: "Build LaTeX compiler"
+  - pwsh: |
+      $env:STATIC_VCRUNTIME="false"
+      cargo build --target=$(target) --release
+    displayName: "Build all"
