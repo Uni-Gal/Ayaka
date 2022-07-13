@@ -181,9 +181,9 @@ pub enum Command {
         action: Program,
         enabled: Option<Program>,
     },
-    Bg(usize),
-    Bgm(usize),
-    Video(usize),
+    Bg(String),
+    Bgm(String),
+    Video(String),
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -617,27 +617,15 @@ impl<'a> TextParser<'a> {
             }
             "bg" => {
                 self.check_params_count(params_count, 1, 1, loc, name)?;
-                Command::Bg(
-                    self.concat_params(&params[0])?
-                        .parse()
-                        .map_err(|e| ParseError::new(loc, ParseErrorType::InvalidIndex(e)))?,
-                )
+                Command::Bg(self.concat_params(&params[0])?)
             }
             "bgm" => {
                 self.check_params_count(params_count, 1, 1, loc, name)?;
-                Command::Bgm(
-                    self.concat_params(&params[0])?
-                        .parse()
-                        .map_err(|e| ParseError::new(loc, ParseErrorType::InvalidIndex(e)))?,
-                )
+                Command::Bgm(self.concat_params(&params[0])?)
             }
             "video" => {
                 self.check_params_count(params_count, 1, 1, loc, name)?;
-                Command::Video(
-                    self.concat_params(&params[0])?
-                        .parse()
-                        .map_err(|e| ParseError::new(loc, ParseErrorType::InvalidIndex(e)))?,
-                )
+                Command::Video(self.concat_params(&params[0])?)
             }
             _ => parse_error(loc, ParseErrorType::InvalidCmd(name))?,
         };
