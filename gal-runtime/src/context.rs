@@ -215,7 +215,7 @@ impl Context {
             .map(|index| {
                 ["jpg", "png"]
                     .into_iter()
-                    .map(|ex| self.bg_dir().join(format!("{}.{}", index, ex)))
+                    .map(|ex| self.bg_dir().join(index.to_string()).with_extension(ex))
                     .filter(|p| p.exists())
                     .next()
             })
@@ -223,12 +223,16 @@ impl Context {
             .and_then(|path| std::path::absolute(path).ok())
             .map(|p| p.to_string_lossy().into_owned());
         let bgm = bgm
-            .map(|index| self.bgm_dir().join(format!("{}.mp3", index)))
+            .map(|index| self.bgm_dir().join(index.to_string()).with_extension("mp3"))
             .filter(|p| p.exists())
             .and_then(|path| std::path::absolute(path).ok())
             .map(|p| p.to_string_lossy().into_owned());
         let video = video
-            .map(|index| self.video_dir().join(format!("{}.mp4", index)))
+            .map(|index| {
+                self.video_dir()
+                    .join(index.to_string())
+                    .with_extension("mp4")
+            })
             .filter(|p| p.exists())
             .and_then(|path| std::path::absolute(path).ok())
             .map(|p| p.to_string_lossy().into_owned());

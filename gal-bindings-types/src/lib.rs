@@ -18,7 +18,7 @@ impl From<&log::Record<'_>> for Record {
         Self {
             level: r.level(),
             target: r.target().to_string(),
-            msg: format!("{}", r.args()),
+            msg: r.args().to_string(),
             module_path: r.module_path().map(|s| s.to_string()),
             file: r.file().map(|s| s.to_string()),
             line: r.line(),
