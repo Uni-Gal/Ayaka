@@ -258,24 +258,19 @@ impl Callable for Text {
 
 #[cfg(test)]
 mod test {
-    use crate::{
-        plugin::{LoadStatus, Runtime},
-        script::*,
-    };
+    use crate::{plugin::Runtime, script::*};
     use std::sync::Mutex;
+    use tokio_stream::StreamExt;
 
     lazy_static::lazy_static! {
         static ref RUNTIME: Mutex<Runtime> = Mutex::new(tokio_test::block_on(async {
-            use tokio_stream::StreamExt;
-            let load = Runtime::load("../target/wasm32-wasi/release", env!("CARGO_MANIFEST_DIR"), &[]);
-            let mut runtime = None;
-            tokio::pin!(load);
-            while let Some(status) = load.try_next().await.unwrap() {
-                if let LoadStatus::Loaded(r) = status {
-                    runtime = Some(r);
-                }
-            }
-            runtime.unwrap()
+            let (runtime, mut load) = Runtime::load("../target/wasm32-wasi/release", env!("CARGO_MANIFEST_DIR"), &[]);
+            let load = async move {
+                while let Some(_) = load.next().await {}
+                anyhow::Ok(())
+            };
+            let (runtime, ()) = tokio::try_join!(runtime, load).unwrap();
+            runtime
         }));
     }
 

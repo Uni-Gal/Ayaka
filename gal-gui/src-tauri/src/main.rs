@@ -74,34 +74,38 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
     }
     {
         let config = &storage.config;
-        let open = Context::open(config, FrontendType::Html);
-        tokio::pin!(open);
-        while let Some(status) = open.try_next().await? {
-            match status {
-                OpenStatus::LoadProfile => {
-                    emit_open_status(&handle, OpenGameStatus::LoadProfile(config.clone()))?
+        let (context, mut open) = Context::open(config, FrontendType::Html);
+        let open = {
+            let handle = handle.clone();
+            async move {
+                while let Some(status) = open.next().await {
+                    match status {
+                        OpenStatus::LoadProfile => {
+                            emit_open_status(&handle, OpenGameStatus::LoadProfile(config.clone()))?
+                        }
+                        OpenStatus::CreateRuntime => {
+                            emit_open_status(&handle, OpenGameStatus::CreateRuntime)?
+                        }
+                        OpenStatus::LoadPlugin(name, i, len) => {
+                            emit_open_status(&handle, OpenGameStatus::LoadPlugin(name, i, len))?
+                        }
+                    }
                 }
-                OpenStatus::CreateRuntime => {
-                    emit_open_status(&handle, OpenGameStatus::CreateRuntime)?
-                }
-                OpenStatus::LoadPlugin(name, i, len) => {
-                    emit_open_status(&handle, OpenGameStatus::LoadPlugin(name, i, len))?
-                }
-                OpenStatus::Loaded(ctx) => {
-                    let window = handle.get_window("main").unwrap();
-                    window.set_title(&ctx.game.title)?;
-                    emit_open_status(&handle, OpenGameStatus::LoadRecords)?;
-                    *storage.records.lock().await = load_records(&storage.ident, &ctx.game.title)
-                        .await
-                        .unwrap_or_else(|e| {
-                            warn!("Load records failed: {}", e);
-                            Default::default()
-                        });
-                    *storage.context.lock().await = Some(ctx);
-                    emit_open_status(&handle, OpenGameStatus::Loaded)?;
-                }
+                Ok(())
             }
-        }
+        };
+        let (ctx, ()) = tokio::try_join!(context, open)?;
+        let window = handle.get_window("main").unwrap();
+        window.set_title(&ctx.game.title)?;
+        emit_open_status(&handle, OpenGameStatus::LoadRecords)?;
+        *storage.records.lock().await = load_records(&storage.ident, &ctx.game.title)
+            .await
+            .unwrap_or_else(|e| {
+                warn!("Load records failed: {}", e);
+                Default::default()
+            });
+        *storage.context.lock().await = Some(ctx);
+        emit_open_status(&handle, OpenGameStatus::Loaded)?;
     }
     Ok(())
 }

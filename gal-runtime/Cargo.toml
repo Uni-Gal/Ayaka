@@ -16,9 +16,8 @@ anyhow = "1.0"
 wasmtime = "0.38"
 wasmtime-wasi = "0.38"
 unicode-width = "0.1"
-tokio = { version = "1", features = ["fs"] }
-tokio-stream = { version = "0.1", features = ["fs"] }
-async-stream = "0.3"
+tokio = { version = "1", features = ["fs", "macros", "sync"] }
+tokio-stream = { version = "0.1", features = ["fs", "sync"] }
 dirs = "4.0"
 
 [dev-dependencies]

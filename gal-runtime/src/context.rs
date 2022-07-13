@@ -1,4 +1,5 @@
 pub use gal_bindings_types::FrontendType;
+use tokio::sync::watch::channel;
 
 use crate::{
     plugin::{LoadStatus, Runtime},
@@ -8,8 +9,11 @@ use anyhow::{anyhow, Result};
 use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
-use std::path::{Path, PathBuf};
-use tokio_stream::{Stream, StreamExt};
+use std::{
+    future::Future,
+    path::{Path, PathBuf},
+};
+use tokio_stream::{wrappers::WatchStream, StreamExt};
 use unicode_width::UnicodeWidthStr;
 
 pub struct Context {
@@ -21,47 +25,50 @@ pub struct Context {
     pub ctx: RawContext,
 }
 
+#[derive(Debug, Clone)]
 pub enum OpenStatus {
     LoadProfile,
     CreateRuntime,
     LoadPlugin(String, usize, usize),
-    Loaded(Context),
 }
 
 impl Context {
     pub fn open(
         path: impl AsRef<Path>,
         frontend: FrontendType,
-    ) -> impl Stream<Item = Result<OpenStatus>> {
-        async_stream::try_stream! {
-            yield OpenStatus::LoadProfile;
+    ) -> (impl Future<Output = Result<Self>>, WatchStream<OpenStatus>) {
+        let (tx, rx) = channel(OpenStatus::LoadProfile);
+        let future = async move {
             let file = tokio::fs::read(path.as_ref()).await?;
             let game: Game = serde_yaml::from_slice(&file)?;
             let root_path = path
                 .as_ref()
                 .parent()
                 .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
-            yield OpenStatus::CreateRuntime;
-            let mut runtime = None;
-            {
-                let load = Runtime::load(&game.plugins.dir, root_path, &game.plugins.modules);
-                tokio::pin!(load);
-                while let Some(load_status) = load.try_next().await? {
+            let (runtime, mut progress) =
+                Runtime::load(&game.plugins.dir, root_path, &game.plugins.modules);
+            let progress = async move {
+                while let Some(load_status) = progress.next().await {
                     match load_status {
-                        LoadStatus::LoadPlugin(name, i, len) => yield OpenStatus::LoadPlugin(name, i, len),
-                        LoadStatus::Loaded(rt) => runtime = Some(rt),
+                        LoadStatus::CreateEngine => tx.send(OpenStatus::CreateRuntime)?,
+                        LoadStatus::LoadPlugin(name, i, len) => {
+                            tx.send(OpenStatus::LoadPlugin(name, i, len))?
+                        }
                     }
                 }
-            }
-            yield OpenStatus::Loaded(Self {
+                Ok(())
+            };
+            let (runtime, ()) = tokio::try_join!(runtime, progress)?;
+            Ok(Self {
                 game,
                 frontend,
                 root_path: root_path.to_path_buf(),
-                runtime: runtime.unwrap(),
+                runtime,
                 loc: Locale::current(),
                 ctx: RawContext::default(),
             })
-        }
+        };
+        (future, WatchStream::new(rx))
     }
 
     pub fn init_new(&mut self) {

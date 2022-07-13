@@ -39,54 +39,54 @@ fn pause(auto: bool) -> Result<()> {
 async fn main() -> Result<()> {
     let opts = Options::parse();
     env_logger::try_init()?;
-    let open = Context::open(&opts.input, FrontendType::Text);
-    tokio::pin!(open);
-    while let Some(status) = open.try_next().await? {
-        match status {
-            OpenStatus::LoadProfile => println!("Loading profile..."),
-            OpenStatus::CreateRuntime => println!("Creating runtime..."),
-            OpenStatus::LoadPlugin(name, i, len) => {
-                println!("Loading plugin \"{}\" ({}/{})", name, i + 1, len)
-            }
-            OpenStatus::Loaded(mut ctx) => {
-                if opts.check {
-                    if !ctx.check() {
-                        bail!("Check failed.");
-                    }
-                }
-                ctx.init_new();
-                while let Some(action) = ctx.next_run() {
-                    if let Some(name) = &action.character {
-                        print!("_{}_", name);
-                    }
-                    print!("{}", action.line);
-                    if !action.switches.is_empty() {
-                        for (i, s) in action.switches.iter().enumerate() {
-                            if s.enabled {
-                                print!("\n-{}- {}", i + 1, s.text);
-                            } else {
-                                print!("\n-x- {}", s.text);
-                            }
-                        }
-                        println!();
-                        loop {
-                            let s = read_line()?;
-                            if let Ok(i) = s.trim().parse::<usize>() {
-                                let valid = i > 0
-                                    && i <= action.switch_actions.len()
-                                    && action.switches[i - 1].enabled;
-                                if valid {
-                                    ctx.call(&action.switch_actions[i - 1]);
-                                    break;
-                                }
-                            }
-                            println!("Invalid switch, enter again!");
-                        }
-                    } else {
-                        pause(opts.auto)?;
-                    }
+    let (context, mut open) = Context::open(&opts.input, FrontendType::Text);
+    let open = async move {
+        while let Some(status) = open.next().await {
+            match status {
+                OpenStatus::LoadProfile => println!("Loading profile..."),
+                OpenStatus::CreateRuntime => println!("Creating runtime..."),
+                OpenStatus::LoadPlugin(name, i, len) => {
+                    println!("Loading plugin \"{}\" ({}/{})", name, i + 1, len)
                 }
             }
+        }
+        Ok(())
+    };
+    let (mut ctx, ()) = tokio::try_join!(context, open)?;
+    if opts.check {
+        if !ctx.check() {
+            bail!("Check failed.");
+        }
+    }
+    ctx.init_new();
+    while let Some(action) = ctx.next_run() {
+        if let Some(name) = &action.character {
+            print!("_{}_", name);
+        }
+        print!("{}", action.line);
+        if !action.switches.is_empty() {
+            for (i, s) in action.switches.iter().enumerate() {
+                if s.enabled {
+                    print!("\n-{}- {}", i + 1, s.text);
+                } else {
+                    print!("\n-x- {}", s.text);
+                }
+            }
+            println!();
+            loop {
+                let s = read_line()?;
+                if let Ok(i) = s.trim().parse::<usize>() {
+                    let valid =
+                        i > 0 && i <= action.switch_actions.len() && action.switches[i - 1].enabled;
+                    if valid {
+                        ctx.call(&action.switch_actions[i - 1]);
+                        break;
+                    }
+                }
+                println!("Invalid switch, enter again!");
+            }
+        } else {
+            pause(opts.auto)?;
         }
     }
     Ok(())

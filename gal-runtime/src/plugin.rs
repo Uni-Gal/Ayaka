@@ -2,8 +2,12 @@ use crate::*;
 use anyhow::{anyhow, Result};
 use gal_bindings_types::*;
 use serde::{de::DeserializeOwned, Serialize};
-use std::{collections::HashMap, path::Path};
-use tokio_stream::{wrappers::ReadDirStream, Stream, StreamExt};
+use std::{collections::HashMap, future::Future, path::Path};
+use tokio::sync::watch::channel;
+use tokio_stream::{
+    wrappers::{ReadDirStream, WatchStream},
+    StreamExt,
+};
 use wasmtime::*;
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
 
@@ -123,9 +127,10 @@ pub struct RuntimeRef<'a> {
     pub script_modules: &'a HashMap<String, Host>,
 }
 
+#[derive(Debug, Clone)]
 pub enum LoadStatus {
+    CreateEngine,
     LoadPlugin(String, usize, usize),
-    Loaded(Runtime),
 }
 
 impl Runtime {
@@ -160,13 +165,17 @@ impl Runtime {
         Ok(linker)
     }
 
-    pub fn load(
-        dir: impl AsRef<Path>,
-        rel_to: impl AsRef<Path>,
-        names: &[String],
-    ) -> impl Stream<Item = Result<LoadStatus>> + '_ {
-        let path = rel_to.as_ref().join(dir);
-        async_stream::try_stream! {
+    pub fn load<'a>(
+        dir: impl AsRef<Path> + 'a,
+        rel_to: impl AsRef<Path> + 'a,
+        names: &'a [String],
+    ) -> (
+        impl Future<Output = Result<Self>> + 'a,
+        WatchStream<LoadStatus>,
+    ) {
+        let (tx, rx) = channel(LoadStatus::CreateEngine);
+        let future = async move {
+            let path = rel_to.as_ref().join(dir);
             let wasi = WasiCtxBuilder::new().inherit_env()?.inherit_stdio().build();
             let engine = Engine::default();
             let mut store = Store::new(&engine, wasi);
@@ -202,7 +211,7 @@ impl Runtime {
             }
             let total_len = paths.len();
             for (i, (name, p)) in paths.into_iter().enumerate() {
-                yield LoadStatus::LoadPlugin(name.clone(), i, total_len);
+                tx.send(LoadStatus::LoadPlugin(name.clone(), i, total_len))?;
                 let buf = tokio::fs::read(&p).await?;
                 let module = Module::from_binary(store.engine(), &buf)?;
                 let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
@@ -215,12 +224,13 @@ impl Runtime {
                     }
                 }
             }
-            yield LoadStatus::Loaded(Self {
+            Ok(Self {
                 store,
                 script_modules,
                 action_modules,
             })
-        }
+        };
+        (future, WatchStream::new(rx))
     }
 
     pub fn as_mut(&mut self) -> RuntimeRef {
