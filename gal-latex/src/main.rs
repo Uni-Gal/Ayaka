@@ -1,7 +1,6 @@
 use clap::Parser;
 use gal_runtime::{
     anyhow::{Ok, Result},
-    tokio_stream::StreamExt,
     Context, FrontendType,
 };
 use std::ffi::OsString;
@@ -19,12 +18,8 @@ pub struct Options {
 async fn main() -> Result<()> {
     let opts = Options::parse();
     env_logger::try_init()?;
-    let (context, mut open) = Context::open(&opts.input, FrontendType::Text);
-    let open = async move {
-        while let Some(_) = open.next().await {}
-        Ok(())
-    };
-    let (mut ctx, ()) = tokio::try_join!(context, open)?;
+    let (context, _open) = Context::open(&opts.input, FrontendType::Text);
+    let mut ctx = context.await?;
 
     let mut output = tokio::fs::File::create(&opts.output).await?;
     output.write(b"\\documentclass{ctexart}\n").await?;

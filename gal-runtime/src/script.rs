@@ -260,17 +260,11 @@ impl Callable for Text {
 mod test {
     use crate::{plugin::Runtime, script::*};
     use std::sync::Mutex;
-    use tokio_stream::StreamExt;
 
     lazy_static::lazy_static! {
         static ref RUNTIME: Mutex<Runtime> = Mutex::new(tokio_test::block_on(async {
-            let (runtime, mut load) = Runtime::load("../target/wasm32-wasi/release", env!("CARGO_MANIFEST_DIR"), &[]);
-            let load = async move {
-                while let Some(_) = load.next().await {}
-                anyhow::Ok(())
-            };
-            let (runtime, ()) = tokio::try_join!(runtime, load).unwrap();
-            runtime
+            let (runtime, _load) = Runtime::load("../target/wasm32-wasi/release", env!("CARGO_MANIFEST_DIR"), &[]);
+            runtime.await.unwrap()
         }));
     }
 
