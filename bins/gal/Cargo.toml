@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-gal-runtime = { path = "../gal-runtime" }
+gal-runtime = { path = "../../utils/gal-runtime" }
 tokio = { version = "1", features = ["macros", "rt"] }
 clap = { version = "3.1", features = ["derive"] }
 env_logger = "0.9"

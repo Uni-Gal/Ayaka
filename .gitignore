@@ -1,4 +1,4 @@
-/target
+**/target
 **/*.rs.bk
 .cargo
 Cargo.lock
@@ -7,21 +7,3 @@ Cargo.lock
 .cache
 .clangd
 .vs
-
-# CMake
-CMakeCache.txt
-CMakeFiles
-CMakeScripts
-Testing
-cmake_install.cmake
-install_manifest.txt
-compile_commands.json
-CTestTestfile.cmake
-CMakeSettings.json
-
-# CMake build
-build
-out
-
-# logs
-logs

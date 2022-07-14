@@ -1,38 +1,36 @@
 .PHONY: test clean update
 test: plugins
-	cargo test --no-default-features
+	cd utils && $(MAKE) test
+	cd plugins && $(MAKE) test
 clean:
-	cargo clean
-	cd gal-gui && $(MAKE) clean
+	cd bins && $(MAKE) clean
+	cd utils && $(MAKE) clean
+	cd plugins && $(MAKE) clean
 update:
-	cargo update
-	cd gal-gui && $(MAKE) node_modules
+	cd bins && $(MAKE) update
+	cd utils && $(MAKE) update
+	cd plugins && $(MAKE) update
 
-.PHONY: plugins release release-gui release-latex
+.PHONY: plugins release
 plugins:
 	cd plugins && $(MAKE) plugins
 release:
-	cargo build --package gal --release
-release-gui:
-	cd gal-gui && $(MAKE) release
-release-latex:
-	cargo build --package gal-latex --release
+	cd bins && $(MAKE) release
 
 EXAMPLES:=Fibonacci Fibonacci2 Gacha Markdown Orga
 
 define example-tpl
 .PHONY: example-$(1) example-$(1)-gui example-$(1)-release example-$(1)-gui-release examples/$(1)/config.tex
 example-$(1): examples/$(1)/config.yaml plugins
-	RUST_LOG=info cargo run --package gal -- $$< --auto
+	cd bins && $$(MAKE) run FILE=$$(realpath $$<)
 example-$(1)-gui: examples/$(1)/config.yaml plugins
-	cd gal-gui && $$(MAKE) run FILE=$$(realpath $$<)
+	cd bins && $$(MAKE) run-gui FILE=$$(realpath $$<)
 example-$(1)-release: examples/$(1)/config.yaml plugins release
-	target/release/gal $$< --auto
-example-$(1)-gui-release: examples/$(1)/config.yaml plugins release-gui
-	target/release/gal-gui $$<
-
+	bins/target/release/gal $$< --auto
+example-$(1)-gui-release: examples/$(1)/config.yaml plugins release
+	bins/target/release/gal-gui $$<
 examples/$(1)/config.tex: examples/$(1)/config.yaml
-	RUST_LOG=info cargo run --package gal-latex -- $$< -o $$@
+	cd bins && $$(MAKE) run-latex FILE=$$(realpath $$<)
 
 endef
 

@@ -11,5 +11,3 @@ run: node_modules
 	npm run tauri dev -- -- --no-default-features -- $(FILE)
 dist: node_modules
 	npm run build
-release: node_modules
-	STATIC_VCRUNTIME=false npm run tauri build

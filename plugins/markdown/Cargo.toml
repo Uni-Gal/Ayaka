@@ -7,5 +7,5 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-gal-bindings = { path = "../../gal-bindings" }
+gal-bindings = { path = "../../utils/gal-bindings" }
 pulldown-cmark = "0.9"

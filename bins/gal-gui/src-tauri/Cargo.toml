@@ -7,7 +7,7 @@ edition = "2021"
 tauri-build = { version = "1.0", features = [] }
 
 [dependencies]
-gal-runtime = { path = "../../gal-runtime" }
+gal-runtime = { path = "../../../utils/gal-runtime" }
 flexi_logger = { version = "0.22", default-features = false, features = ["colors"] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
