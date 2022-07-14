@@ -3,7 +3,6 @@ use anyhow::{anyhow, Result};
 use gal_bindings_types::*;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{collections::HashMap, path::Path};
-use tokio::sync::watch::channel;
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 use wasmtime::*;
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
@@ -167,9 +166,8 @@ impl Runtime {
         rel_to: impl AsRef<Path> + 'a,
         names: Vec<String>,
     ) -> ProgressFuture<Result<Self>, LoadStatus> {
-        let (tx, rx) = channel(LoadStatus::CreateEngine);
         let path = rel_to.as_ref().join(dir);
-        let future = async move {
+        ProgressFuture::new(LoadStatus::CreateEngine, async move |tx| {
             let wasi = WasiCtxBuilder::new().inherit_env()?.inherit_stdio().build();
             let engine = Engine::default();
             let mut store = Store::new(&engine, wasi);
@@ -223,8 +221,7 @@ impl Runtime {
                 script_modules,
                 action_modules,
             })
-        };
-        ProgressFuture::new(future, rx)
+        })
     }
 
     pub fn as_mut(&mut self) -> RuntimeRef {

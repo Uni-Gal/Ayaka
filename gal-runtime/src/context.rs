@@ -10,7 +10,6 @@ use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
 use std::path::PathBuf;
-use tokio::sync::watch::channel;
 use tokio_stream::StreamExt;
 use unicode_width::UnicodeWidthStr;
 
@@ -35,9 +34,8 @@ impl Context {
         path: impl Into<PathBuf>,
         frontend: FrontendType,
     ) -> ProgressFuture<Result<Self>, OpenStatus> {
-        let (tx, rx) = channel(OpenStatus::LoadProfile);
         let path = path.into();
-        let future = async move {
+        ProgressFuture::new(OpenStatus::LoadProfile, async move |tx| {
             let file = tokio::fs::read(&path).await?;
             let game: Game = serde_yaml::from_slice(&file)?;
             let root_path = path
@@ -62,8 +60,7 @@ impl Context {
                 loc: Locale::current(),
                 ctx: RawContext::default(),
             })
-        };
-        ProgressFuture::new(future, rx)
+        })
     }
 
     pub fn init_new(&mut self) {

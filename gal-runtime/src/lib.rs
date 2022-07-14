@@ -1,4 +1,5 @@
 #![feature(absolute_path)]
+#![feature(async_closure)]
 #![feature(round_char_boundary)]
 #![feature(trait_alias)]
 

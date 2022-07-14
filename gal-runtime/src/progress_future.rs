@@ -6,7 +6,7 @@ use std::{
     task::{Context, Poll},
 };
 use tokio::{
-    sync::watch::Receiver,
+    sync::watch::{channel, Sender},
     task::{JoinError, JoinHandle},
 };
 use tokio_stream::{wrappers::WatchStream, Stream};
@@ -19,10 +19,14 @@ pub struct ProgressFuture<T, P> {
 }
 
 impl<T: Send + 'static, P: Progress> ProgressFuture<T, P> {
-    pub fn new(future: impl Future<Output = T> + Send + 'static, progress: Receiver<P>) -> Self {
+    pub fn new<F: Future<Output = T> + Send + 'static>(
+        init: P,
+        f: impl FnOnce(Sender<P>) -> F,
+    ) -> Self {
+        let (tx, rx) = channel(init);
         Self {
-            future: tokio::spawn(future),
-            progress: WatchStream::new(progress),
+            future: tokio::spawn(f(tx)),
+            progress: WatchStream::new(rx),
         }
     }
 }
