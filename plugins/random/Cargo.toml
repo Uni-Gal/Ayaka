@@ -7,6 +7,6 @@ edition = "2021"
 crate-type = ["cdylib"]
 
 [dependencies]
-gal-bindings = { path = "../../gal-bindings" }
+gal-bindings = { path = "../gal-bindings" }
 rand = "0.8"
 lazy_static = "1.4"

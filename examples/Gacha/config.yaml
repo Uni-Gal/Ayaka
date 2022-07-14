@@ -2,7 +2,7 @@ title: 原神抽卡
 author: Berrysoft
 videos: videos
 plugins:
-  dir: ../../target/wasm32-wasi/release/
+  dir: ../plugins/
   modules:
     - format
     - galog

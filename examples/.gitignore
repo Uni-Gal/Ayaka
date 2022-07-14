@@ -2,6 +2,7 @@
 bgs
 bgms
 videos
+plugins
 *.tex
 
 ## Core latex/pdflatex auxiliary files:

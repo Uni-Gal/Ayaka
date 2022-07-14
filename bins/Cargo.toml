@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "gal",
+    "gal-gui/src-tauri",
+    "gal-latex",
+]
+
+resolver = "2"
+
+[profile.release]
+lto = true
+codegen-units = 1

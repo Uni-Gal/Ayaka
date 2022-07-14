@@ -41,13 +41,5 @@ jobs:
   - pwsh: make plugins
     displayName: "Build plugins"
 
-  - pwsh: |
-      cd gal-gui
-      npm install
-      npm run build
-    displayName: "Build GUI frontend"
-
-  - pwsh: |
-      $env:STATIC_VCRUNTIME="false"
-      cargo build --target=$(target) --release
+  - pwsh: make release
     displayName: "Build all"
