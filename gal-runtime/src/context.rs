@@ -1,5 +1,4 @@
 pub use gal_bindings_types::FrontendType;
-use tokio::sync::watch::channel;
 
 use crate::{
     plugin::{LoadStatus, Runtime},
@@ -13,6 +12,7 @@ use std::{
     future::Future,
     path::{Path, PathBuf},
 };
+use tokio::sync::watch::channel;
 use tokio_stream::{wrappers::WatchStream, StreamExt};
 use unicode_width::UnicodeWidthStr;
 
