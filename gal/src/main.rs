@@ -39,20 +39,18 @@ fn pause(auto: bool) -> Result<()> {
 async fn main() -> Result<()> {
     let opts = Options::parse();
     env_logger::try_init()?;
-    let (context, mut open) = Context::open(&opts.input, FrontendType::Text);
-    let open = async move {
-        while let Some(status) = open.next().await {
-            match status {
-                OpenStatus::LoadProfile => println!("Loading profile..."),
-                OpenStatus::CreateRuntime => println!("Creating runtime..."),
-                OpenStatus::LoadPlugin(name, i, len) => {
-                    println!("Loading plugin \"{}\" ({}/{})", name, i + 1, len)
-                }
+    let context = Context::open(&opts.input, FrontendType::Text);
+    tokio::pin!(context);
+    while let Some(status) = context.next().await {
+        match status {
+            OpenStatus::LoadProfile => println!("Loading profile..."),
+            OpenStatus::CreateRuntime => println!("Creating runtime..."),
+            OpenStatus::LoadPlugin(name, i, len) => {
+                println!("Loading plugin \"{}\" ({}/{})", name, i + 1, len)
             }
         }
-        Ok(())
-    };
-    let (mut ctx, ()) = tokio::try_join!(context, open)?;
+    }
+    let mut ctx = context.await??;
     if opts.check {
         if !ctx.check() {
             bail!("Check failed.");

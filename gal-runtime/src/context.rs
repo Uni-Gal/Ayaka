@@ -2,18 +2,16 @@ pub use gal_bindings_types::FrontendType;
 
 use crate::{
     plugin::{LoadStatus, Runtime},
+    progress_future::ProgressFuture,
     *,
 };
 use anyhow::{anyhow, Result};
 use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
-use std::{
-    future::Future,
-    path::{Path, PathBuf},
-};
+use std::path::PathBuf;
 use tokio::sync::watch::channel;
-use tokio_stream::{wrappers::WatchStream, StreamExt};
+use tokio_stream::StreamExt;
 use unicode_width::UnicodeWidthStr;
 
 pub struct Context {
@@ -34,31 +32,28 @@ pub enum OpenStatus {
 
 impl Context {
     pub fn open(
-        path: impl AsRef<Path>,
+        path: impl Into<PathBuf>,
         frontend: FrontendType,
-    ) -> (impl Future<Output = Result<Self>>, WatchStream<OpenStatus>) {
+    ) -> ProgressFuture<Result<Self>, OpenStatus> {
         let (tx, rx) = channel(OpenStatus::LoadProfile);
+        let path = path.into();
         let future = async move {
-            let file = tokio::fs::read(path.as_ref()).await?;
+            let file = tokio::fs::read(&path).await?;
             let game: Game = serde_yaml::from_slice(&file)?;
             let root_path = path
-                .as_ref()
                 .parent()
                 .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
-            let (runtime, mut progress) =
-                Runtime::load(&game.plugins.dir, root_path, &game.plugins.modules);
-            let progress = async move {
-                while let Some(load_status) = progress.next().await {
-                    match load_status {
-                        LoadStatus::CreateEngine => tx.send(OpenStatus::CreateRuntime)?,
-                        LoadStatus::LoadPlugin(name, i, len) => {
-                            tx.send(OpenStatus::LoadPlugin(name, i, len))?
-                        }
+            let runtime = Runtime::load(&game.plugins.dir, root_path, game.plugins.modules.clone());
+            tokio::pin!(runtime);
+            while let Some(load_status) = runtime.next().await {
+                match load_status {
+                    LoadStatus::CreateEngine => tx.send(OpenStatus::CreateRuntime)?,
+                    LoadStatus::LoadPlugin(name, i, len) => {
+                        tx.send(OpenStatus::LoadPlugin(name, i, len))?
                     }
                 }
-                Ok(())
-            };
-            let (runtime, ()) = tokio::try_join!(runtime, progress)?;
+            }
+            let runtime = runtime.await??;
             Ok(Self {
                 game,
                 frontend,
@@ -68,7 +63,7 @@ impl Context {
                 ctx: RawContext::default(),
             })
         };
-        (future, WatchStream::new(rx))
+        ProgressFuture::new(future, rx)
     }
 
     pub fn init_new(&mut self) {

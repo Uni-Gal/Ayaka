@@ -263,8 +263,8 @@ mod test {
 
     lazy_static::lazy_static! {
         static ref RUNTIME: Mutex<Runtime> = Mutex::new(tokio_test::block_on(async {
-            let (runtime, _load) = Runtime::load("../target/wasm32-wasi/release", env!("CARGO_MANIFEST_DIR"), &[]);
-            runtime.await.unwrap()
+            let runtime = Runtime::load("../target/wasm32-wasi/release", env!("CARGO_MANIFEST_DIR"), vec![]);
+            runtime.await.unwrap().unwrap()
         }));
     }
 

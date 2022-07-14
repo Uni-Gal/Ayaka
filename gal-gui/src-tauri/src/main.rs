@@ -74,27 +74,22 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
     }
     {
         let config = &storage.config;
-        let (context, mut open) = Context::open(config, FrontendType::Html);
-        let open = {
-            let handle = handle.clone();
-            async move {
-                while let Some(status) = open.next().await {
-                    match status {
-                        OpenStatus::LoadProfile => {
-                            emit_open_status(&handle, OpenGameStatus::LoadProfile(config.clone()))?
-                        }
-                        OpenStatus::CreateRuntime => {
-                            emit_open_status(&handle, OpenGameStatus::CreateRuntime)?
-                        }
-                        OpenStatus::LoadPlugin(name, i, len) => {
-                            emit_open_status(&handle, OpenGameStatus::LoadPlugin(name, i, len))?
-                        }
-                    }
+        let context = Context::open(config, FrontendType::Html);
+        tokio::pin!(context);
+        while let Some(status) = context.next().await {
+            match status {
+                OpenStatus::LoadProfile => {
+                    emit_open_status(&handle, OpenGameStatus::LoadProfile(config.clone()))?
                 }
-                Ok(())
+                OpenStatus::CreateRuntime => {
+                    emit_open_status(&handle, OpenGameStatus::CreateRuntime)?
+                }
+                OpenStatus::LoadPlugin(name, i, len) => {
+                    emit_open_status(&handle, OpenGameStatus::LoadPlugin(name, i, len))?
+                }
             }
-        };
-        let (ctx, ()) = tokio::try_join!(context, open)?;
+        }
+        let ctx = context.await??;
         let window = handle.get_window("main").unwrap();
         window.set_title(&ctx.game.title)?;
         emit_open_status(&handle, OpenGameStatus::LoadRecords)?;

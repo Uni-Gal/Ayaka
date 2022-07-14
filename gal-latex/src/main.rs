@@ -18,8 +18,8 @@ pub struct Options {
 async fn main() -> Result<()> {
     let opts = Options::parse();
     env_logger::try_init()?;
-    let (context, _open) = Context::open(&opts.input, FrontendType::Text);
-    let mut ctx = context.await?;
+    let context = Context::open(&opts.input, FrontendType::Text);
+    let mut ctx = context.await??;
 
     let mut output = tokio::fs::File::create(&opts.output).await?;
     output.write(b"\\documentclass{ctexart}\n").await?;

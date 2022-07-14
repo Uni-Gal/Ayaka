@@ -1,9 +1,11 @@
 #![feature(absolute_path)]
 #![feature(round_char_boundary)]
+#![feature(trait_alias)]
 
 mod config;
 mod context;
 pub mod plugin;
+pub mod progress_future;
 pub mod script;
 mod settings;
 

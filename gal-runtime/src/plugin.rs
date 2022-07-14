@@ -1,13 +1,10 @@
-use crate::*;
+use crate::{progress_future::ProgressFuture, *};
 use anyhow::{anyhow, Result};
 use gal_bindings_types::*;
 use serde::{de::DeserializeOwned, Serialize};
-use std::{collections::HashMap, future::Future, path::Path};
+use std::{collections::HashMap, path::Path};
 use tokio::sync::watch::channel;
-use tokio_stream::{
-    wrappers::{ReadDirStream, WatchStream},
-    StreamExt,
-};
+use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 use wasmtime::*;
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
 
@@ -168,14 +165,11 @@ impl Runtime {
     pub fn load<'a>(
         dir: impl AsRef<Path> + 'a,
         rel_to: impl AsRef<Path> + 'a,
-        names: &'a [String],
-    ) -> (
-        impl Future<Output = Result<Self>> + 'a,
-        WatchStream<LoadStatus>,
-    ) {
+        names: Vec<String>,
+    ) -> ProgressFuture<Result<Self>, LoadStatus> {
         let (tx, rx) = channel(LoadStatus::CreateEngine);
+        let path = rel_to.as_ref().join(dir);
         let future = async move {
-            let path = rel_to.as_ref().join(dir);
             let wasi = WasiCtxBuilder::new().inherit_env()?.inherit_stdio().build();
             let engine = Engine::default();
             let mut store = Store::new(&engine, wasi);
@@ -203,7 +197,7 @@ impl Runtime {
                 }
             } else {
                 for name in names {
-                    let p = path.join(name).with_extension("wasm");
+                    let p = path.join(&name).with_extension("wasm");
                     if p.exists() {
                         paths.push((name.clone(), p));
                     }
@@ -230,7 +224,7 @@ impl Runtime {
                 action_modules,
             })
         };
-        (future, WatchStream::new(rx))
+        ProgressFuture::new(future, rx)
     }
 
     pub fn as_mut(&mut self) -> RuntimeRef {
