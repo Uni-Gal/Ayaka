@@ -11,7 +11,7 @@ use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct Settings {
-    lang: Locale,
+    pub lang: Locale,
 }
 
 pub type VarMap = HashMap<String, RawValue>;
