@@ -113,7 +113,7 @@ async fn get_settings(storage: State<'_, Storage>) -> CommandResult<Option<Setti
 #[command]
 async fn set_settings(settings: Settings, storage: State<'_, Storage>) -> CommandResult<()> {
     if let Some(context) = storage.context.lock().await.as_mut() {
-        context.set_locale(settings.lang.as_ref().into());
+        context.set_locale(&settings.lang);
     }
     *storage.settings.lock().await = Some(settings);
     Ok(())

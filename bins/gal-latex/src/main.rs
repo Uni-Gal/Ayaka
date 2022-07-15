@@ -1,7 +1,7 @@
 use clap::Parser;
 use gal_runtime::{
     anyhow::{Ok, Result},
-    Context, FrontendType,
+    Context, FrontendType, LocaleBuf,
 };
 use std::ffi::OsString;
 use tokio::io::AsyncWriteExt;
@@ -12,6 +12,8 @@ pub struct Options {
     input: OsString,
     #[clap(short, long)]
     output: OsString,
+    #[clap(short, long)]
+    locale: Option<LocaleBuf>,
 }
 
 #[tokio::main(flavor = "current_thread")]
@@ -36,6 +38,9 @@ async fn main() -> Result<()> {
     output.write(b"\\tableofcontents\n").await?;
 
     ctx.init_new();
+    if let Some(loc) = opts.locale {
+        ctx.set_locale(loc);
+    }
     while let Some(action) = ctx.next_run() {
         if let Some(name) = &action.character {
             output

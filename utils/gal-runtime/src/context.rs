@@ -9,7 +9,7 @@ use anyhow::{anyhow, Result};
 use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
-use std::{borrow::Cow, path::PathBuf};
+use std::path::PathBuf;
 use tokio_stream::StreamExt;
 use unicode_width::UnicodeWidthStr;
 
@@ -119,8 +119,8 @@ impl Context {
         self.root_path.join(&self.game.videos)
     }
 
-    pub fn set_locale(&mut self, loc: Cow<'_, Locale>) {
-        self.loc = loc.into_owned();
+    pub fn set_locale(&mut self, loc: impl Into<LocaleBuf>) {
+        self.loc = loc.into();
     }
 
     pub fn locale(&self) -> &Locale {

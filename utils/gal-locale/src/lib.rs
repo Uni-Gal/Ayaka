@@ -96,6 +96,18 @@ impl From<LocaleBuf> for Cow<'_, Locale> {
     }
 }
 
+impl From<&LocaleBuf> for LocaleBuf {
+    fn from(loc: &LocaleBuf) -> Self {
+        loc.clone()
+    }
+}
+
+impl From<&Locale> for LocaleBuf {
+    fn from(loc: &Locale) -> Self {
+        loc.to_owned()
+    }
+}
+
 impl FromStr for LocaleBuf {
     type Err = anyhow::Error;
 
