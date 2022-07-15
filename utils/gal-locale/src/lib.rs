@@ -1,41 +1,35 @@
 mod icu;
 
 use anyhow::Result;
-use icu::*;
 use serde::{Deserialize, Serialize};
-use std::borrow::Borrow;
+use std::borrow::{Borrow, Cow};
 use std::ffi::{CStr, CString};
 use std::fmt::Display;
 use std::ops::Deref;
 use std::str::FromStr;
-use thiserror::Error;
-
-#[derive(Debug, Error)]
-#[error("ICU error code: {0}")]
-pub struct ICUError(UErrorCode);
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct Locale(CStr);
 
 impl Locale {
-    pub fn new<'a>(loc: &'a CStr) -> &'a Self {
-        unsafe { &*(loc as *const CStr as *const Self) }
+    pub(crate) unsafe fn new<'a>(loc: &'a CStr) -> &'a Self {
+        &*(loc as *const CStr as *const Self)
     }
 
     pub fn current() -> &'static Self {
-        current()
+        icu::current()
     }
 
     pub fn choose_from(
         &self,
         locales: impl IntoIterator<Item = impl AsRef<Self>>,
     ) -> Result<Option<LocaleBuf>> {
-        choose([self], locales)
+        icu::choose([self], locales)
     }
 
     pub fn native_name(&self) -> Result<String> {
-        native_name(self)
+        icu::native_name(self)
     }
 }
 
@@ -53,15 +47,15 @@ impl ToOwned for Locale {
     }
 }
 
-impl Display for Locale {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.0.to_str().map_err(|_| std::fmt::Error)?)
+impl<'a> From<&'a Locale> for Cow<'a, Locale> {
+    fn from(loc: &'a Locale) -> Self {
+        Cow::Borrowed(loc)
     }
 }
 
-impl From<&Locale> for String {
-    fn from(val: &Locale) -> Self {
-        val.0.to_str().map(|s| s.to_string()).unwrap_or_default()
+impl Display for Locale {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.0.to_str().map_err(|_| std::fmt::Error)?)
     }
 }
 
@@ -72,7 +66,7 @@ pub struct LocaleBuf(CString);
 
 impl AsRef<Locale> for LocaleBuf {
     fn as_ref(&self) -> &Locale {
-        Locale::new(self.0.as_c_str())
+        unsafe { Locale::new(self.0.as_c_str()) }
     }
 }
 
@@ -90,11 +84,23 @@ impl Borrow<Locale> for LocaleBuf {
     }
 }
 
+impl<'a> From<&'a LocaleBuf> for Cow<'a, Locale> {
+    fn from(loc: &'a LocaleBuf) -> Self {
+        Cow::Borrowed(loc)
+    }
+}
+
+impl From<LocaleBuf> for Cow<'_, Locale> {
+    fn from(loc: LocaleBuf) -> Self {
+        Cow::Owned(loc)
+    }
+}
+
 impl FromStr for LocaleBuf {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        parse(s)
+        icu::parse(s)
     }
 }
 
@@ -102,7 +108,7 @@ impl TryFrom<String> for LocaleBuf {
     type Error = anyhow::Error;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        parse(&value)
+        icu::parse(&value)
     }
 }
 
@@ -113,8 +119,8 @@ impl Display for LocaleBuf {
 }
 
 impl From<LocaleBuf> for String {
-    fn from(val: LocaleBuf) -> Self {
-        val.as_ref().into()
+    fn from(loc: LocaleBuf) -> Self {
+        loc.0.to_str().map(|s| s.to_string()).unwrap_or_default()
     }
 }
 

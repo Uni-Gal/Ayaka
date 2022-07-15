@@ -14,7 +14,7 @@ cfg_if::cfg_if! {
 pub use platform::*;
 
 use crate::*;
-use std::ffi::{CStr, CString};
+use thiserror::Error;
 
 trait UChar: Sized + Default + Copy {
     fn string_from_buffer(buffer: Vec<Self>) -> String;
@@ -31,6 +31,10 @@ impl UChar for u16 {
         String::from_utf16_lossy(&buffer)
     }
 }
+
+#[derive(Debug, Error)]
+#[error("ICU error code: {0}")]
+pub struct ICUError(UErrorCode);
 
 unsafe fn call_with_buffer<T: UChar>(
     mut f: impl FnMut(*mut T, i32, *mut UErrorCode) -> i32,
@@ -94,15 +98,11 @@ pub fn choose(
 }
 
 pub fn current() -> &'static Locale {
-    Locale::new(unsafe { CStr::from_ptr(imp_uloc_getDefault() as _) })
+    unsafe { Locale::new(CStr::from_ptr(imp_uloc_getDefault() as _)) }
 }
 
 pub fn parse(s: &str) -> Result<LocaleBuf> {
     let s = CString::new(s)?;
-    parsec(&s)
-}
-
-pub fn parsec(s: &CStr) -> Result<LocaleBuf> {
     unsafe {
         call_with_buffer::<u8>(|buffer, len, status| {
             imp_uloc_canonicalize(s.as_ptr() as _, buffer as _, len, status)

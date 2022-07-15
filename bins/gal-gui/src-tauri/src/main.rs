@@ -14,7 +14,7 @@ use gal_runtime::{
 };
 use serde::Serialize;
 use serde_json::json;
-use std::{borrow::Cow, fmt::Display};
+use std::fmt::Display;
 use tauri::{async_runtime::Mutex, command, AppHandle, Manager, State};
 
 type CommandResult<T> = std::result::Result<T, CommandError>;
@@ -113,7 +113,7 @@ async fn get_settings(storage: State<'_, Storage>) -> CommandResult<Option<Setti
 #[command]
 async fn set_settings(settings: Settings, storage: State<'_, Storage>) -> CommandResult<()> {
     if let Some(context) = storage.context.lock().await.as_mut() {
-        context.set_locale(Cow::Borrowed(&settings.lang));
+        context.set_locale(settings.lang.as_ref().into());
     }
     *storage.settings.lock().await = Some(settings);
     Ok(())
