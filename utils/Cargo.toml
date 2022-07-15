@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "gal-fallback",
     "gal-locale",
     "gal-primitive",
     "gal-runtime",

@@ -1,18 +1,20 @@
+#![feature(associated_type_defaults)]
+
 pub struct Fallback<T> {
     data: Option<T>,
     base_data: Option<T>,
 }
 
 impl<T> Fallback<T> {
-    pub fn new(data: Option<T>, base_data: Option<T>) -> Self {
+    pub const fn new(data: Option<T>, base_data: Option<T>) -> Self {
         Self { data, base_data }
     }
 
-    pub fn is_some(&self) -> bool {
+    pub const fn is_some(&self) -> bool {
         self.data.is_some() || self.base_data.is_some()
     }
 
-    pub fn as_ref(&self) -> Fallback<&T> {
+    pub const fn as_ref(&self) -> Fallback<&T> {
         Fallback::new(self.data.as_ref(), self.base_data.as_ref())
     }
 
@@ -49,6 +51,16 @@ impl<T> Fallback<Vec<T>> {
     }
 }
 
+impl<T> From<Fallback<T>> for Option<T> {
+    fn from(f: Fallback<T>) -> Self {
+        if f.data.is_some() {
+            f.data
+        } else {
+            f.base_data
+        }
+    }
+}
+
 impl<T> IntoIterator for Fallback<Vec<T>> {
     type Item = Fallback<T>;
 
@@ -81,10 +93,7 @@ impl<A: Iterator> Iterator for FallbackVecIter<A> {
     }
 }
 
-pub trait FallbackSpec
-where
-    Self: Sized,
-{
+pub trait FallbackSpec: Sized {
     type SpecType: From<Fallback<Self>>;
 }
 
@@ -95,3 +104,22 @@ impl<T: FallbackSpec> Fallback<T> {
 }
 
 pub use gal_fallback_derive::FallbackSpec;
+
+#[cfg(test)]
+mod test {
+    mod gal_fallback {
+        pub use crate::*;
+    }
+    use gal_fallback::*;
+
+    #[test]
+    fn some() {
+        assert!(!Fallback::<()>::new(None, None).is_some());
+    }
+
+    #[test]
+    fn option() {
+        let f = Fallback::new(None, Some(100));
+        assert_eq!(Option::from(f), Some(100));
+    }
+}
