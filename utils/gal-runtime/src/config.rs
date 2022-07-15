@@ -2,7 +2,6 @@ pub use gal_bindings_types::{Action, Switch};
 pub use gal_fallback::Fallback;
 
 use crate::*;
-use gal_locale::Locale;
 use gal_script::log::{debug, warn};
 use serde::Deserialize;
 use std::{collections::HashMap, path::PathBuf};
@@ -20,7 +19,7 @@ pub struct Game {
     pub title: String,
     #[serde(default)]
     pub author: String,
-    pub paras: HashMap<Locale, Vec<Paragraph>>,
+    pub paras: HashMap<LocaleBuf, Vec<Paragraph>>,
     #[serde(default)]
     pub plugins: PluginsConfig,
     #[serde(default)]
@@ -30,8 +29,8 @@ pub struct Game {
     #[serde(default)]
     pub videos: PathBuf,
     #[serde(default)]
-    pub res: HashMap<Locale, VarMap>,
-    pub base_lang: Locale,
+    pub res: HashMap<LocaleBuf, VarMap>,
+    pub base_lang: LocaleBuf,
 }
 
 #[derive(Debug, Default, Deserialize)]
@@ -42,7 +41,7 @@ pub struct PluginsConfig {
 }
 
 impl Game {
-    fn choose_from_keys<V>(&self, loc: &Locale, map: &HashMap<Locale, V>) -> Locale {
+    fn choose_from_keys<V>(&self, loc: &Locale, map: &HashMap<LocaleBuf, V>) -> LocaleBuf {
         let keys = map.keys();
         debug!("Choose \"{}\" from {:?}", loc, keys);
         let res = loc

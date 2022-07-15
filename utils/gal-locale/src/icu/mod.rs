@@ -54,7 +54,7 @@ unsafe fn call_with_buffer<T: UChar>(
 pub fn choose(
     accepts: impl IntoIterator<Item = impl AsRef<Locale>>,
     locales: impl IntoIterator<Item = impl AsRef<Locale>>,
-) -> Result<Option<Locale>> {
+) -> Result<Option<LocaleBuf>> {
     let mut accepts_ptrs = accepts
         .into_iter()
         .map(|l| l.as_ref().0.as_ptr())
@@ -87,28 +87,28 @@ pub fn choose(
     if result == ULOC_ACCEPT_FAILED {
         Ok(None)
     } else {
-        Ok(Some(Locale(unsafe {
+        Ok(Some(LocaleBuf(unsafe {
             CString::from_vec_unchecked(loc.into())
         })))
     }
 }
 
-pub fn current() -> Locale {
-    Locale(unsafe { CStr::from_ptr(imp_uloc_getDefault() as _) }.to_owned())
+pub fn current() -> &'static Locale {
+    Locale::new(unsafe { CStr::from_ptr(imp_uloc_getDefault() as _) })
 }
 
-pub fn parse(s: &str) -> Result<Locale> {
+pub fn parse(s: &str) -> Result<LocaleBuf> {
     let s = CString::new(s)?;
     parsec(&s)
 }
 
-pub fn parsec(s: &CStr) -> Result<Locale> {
+pub fn parsec(s: &CStr) -> Result<LocaleBuf> {
     unsafe {
         call_with_buffer::<u8>(|buffer, len, status| {
             imp_uloc_canonicalize(s.as_ptr() as _, buffer as _, len, status)
         })
     }
-    .map(|s| Locale(unsafe { CString::from_vec_unchecked(s.into()) }))
+    .map(|s| LocaleBuf(unsafe { CString::from_vec_unchecked(s.into()) }))
 }
 
 pub fn native_name(loc: &Locale) -> Result<String> {

@@ -14,7 +14,7 @@ use gal_runtime::{
 };
 use serde::Serialize;
 use serde_json::json;
-use std::fmt::Display;
+use std::{borrow::Cow, fmt::Display};
 use tauri::{async_runtime::Mutex, command, AppHandle, Manager, State};
 
 type CommandResult<T> = std::result::Result<T, CommandError>;
@@ -113,7 +113,7 @@ async fn get_settings(storage: State<'_, Storage>) -> CommandResult<Option<Setti
 #[command]
 async fn set_settings(settings: Settings, storage: State<'_, Storage>) -> CommandResult<()> {
     if let Some(context) = storage.context.lock().await.as_mut() {
-        context.set_locale(settings.lang.clone());
+        context.set_locale(Cow::Borrowed(&settings.lang));
     }
     *storage.settings.lock().await = Some(settings);
     Ok(())
@@ -156,14 +156,14 @@ async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
 }
 
 #[command]
-fn choose_locale(locales: Vec<Locale>) -> CommandResult<Option<Locale>> {
+fn choose_locale(locales: Vec<LocaleBuf>) -> CommandResult<Option<LocaleBuf>> {
     let current = Locale::current();
     info!("Choose {} from {:?}", current, locales);
     Ok(current.choose_from(&locales)?)
 }
 
 #[command]
-fn locale_native_name(loc: Locale) -> CommandResult<String> {
+fn locale_native_name(loc: LocaleBuf) -> CommandResult<String> {
     let name = loc.native_name()?;
     Ok(name)
 }
@@ -203,7 +203,7 @@ async fn info(storage: State<'_, Storage>) -> CommandResult<serde_json::Value> {
 }
 
 #[command]
-async fn start_new(locale: Locale, storage: State<'_, Storage>) -> CommandResult<()> {
+async fn start_new(locale: LocaleBuf, storage: State<'_, Storage>) -> CommandResult<()> {
     if let Some(ctx) = storage.context.lock().await.as_mut() {
         ctx.init_new();
         info!("Init new context with locale {}.", locale);
@@ -215,7 +215,7 @@ async fn start_new(locale: Locale, storage: State<'_, Storage>) -> CommandResult
 
 #[command]
 async fn start_record(
-    locale: Locale,
+    locale: LocaleBuf,
     index: usize,
     storage: State<'_, Storage>,
 ) -> CommandResult<()> {

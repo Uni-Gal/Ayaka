@@ -9,7 +9,7 @@ use anyhow::{anyhow, Result};
 use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
-use std::path::PathBuf;
+use std::{borrow::Cow, path::PathBuf};
 use tokio_stream::StreamExt;
 use unicode_width::UnicodeWidthStr;
 
@@ -18,7 +18,7 @@ pub struct Context {
     frontend: FrontendType,
     root_path: PathBuf,
     runtime: Runtime,
-    loc: Locale,
+    loc: LocaleBuf,
     pub ctx: RawContext,
 }
 
@@ -57,7 +57,7 @@ impl Context {
                 frontend,
                 root_path: root_path.to_path_buf(),
                 runtime,
-                loc: Locale::current(),
+                loc: Locale::current().to_owned(),
                 ctx: RawContext::default(),
             })
         })
@@ -119,8 +119,8 @@ impl Context {
         self.root_path.join(&self.game.videos)
     }
 
-    pub fn set_locale(&mut self, loc: Locale) {
-        self.loc = loc;
+    pub fn set_locale(&mut self, loc: Cow<'_, Locale>) {
+        self.loc = loc.into_owned();
     }
 
     pub fn locale(&self) -> &Locale {
