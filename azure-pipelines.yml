@@ -38,6 +38,9 @@ jobs:
       rustup target add wasm32-wasi
     displayName: "Install targets"
 
+  - pwsh: make test
+    displayName: "Test"
+
   - pwsh: make plugins
     displayName: "Build plugins"
 
