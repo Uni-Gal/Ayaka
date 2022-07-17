@@ -297,6 +297,7 @@ fn main() -> Result<()> {
                 Logger::with(LogSpecification::info())
                     .log_to_stdout()
                     .set_palette("b1;3;2;4;6".to_string())
+                    .use_utc()
                     .start()?
             } else {
                 Logger::with(LogSpecification::info())
