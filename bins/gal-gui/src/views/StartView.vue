@@ -73,6 +73,7 @@ export default {
 </script>
 
 <template>
+    <img class="content-logo" src="../assets/logo.png" alt="Logo" />
     <div class="progress progress-bottom">
         <div class="progress-bar" role="progressbar" v-bind:style='`width: ${progress}%`'>{{ text }}</div>
     </div>
@@ -84,5 +85,15 @@ export default {
     top: 100%;
     width: 100%;
     transform: translateY(-100%);
+}
+
+.content-logo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: fit-content;
+    height: fit-content;
+    text-align: center;
 }
 </style>

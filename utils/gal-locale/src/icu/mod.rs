@@ -14,7 +14,7 @@ cfg_if::cfg_if! {
 pub use platform::*;
 
 use crate::*;
-use std::ffi::{CStr, CString};
+use thiserror::Error;
 
 trait UChar: Sized + Default + Copy {
     fn string_from_buffer(buffer: Vec<Self>) -> String;
@@ -32,9 +32,15 @@ impl UChar for u16 {
     }
 }
 
+#[derive(Debug, Error)]
+#[error("ICU error code: {0}")]
+pub struct ICUError(UErrorCode);
+
+pub type ICUResult<T> = std::result::Result<T, ICUError>;
+
 unsafe fn call_with_buffer<T: UChar>(
     mut f: impl FnMut(*mut T, i32, *mut UErrorCode) -> i32,
-) -> Result<String> {
+) -> ICUResult<String> {
     let mut buffer = vec![T::default(); 10];
     let mut error_code = U_ZERO_ERROR;
     let mut len = f(buffer.as_mut_ptr(), buffer.len() as _, &mut error_code);
@@ -43,7 +49,7 @@ unsafe fn call_with_buffer<T: UChar>(
         len = f(buffer.as_mut_ptr(), buffer.len() as _, &mut error_code);
     }
     if error_code != U_ZERO_ERROR {
-        return Err(ICUError(error_code).into());
+        return Err(ICUError(error_code));
     }
     if len > 0 {
         buffer.resize(len as usize, T::default());
@@ -54,7 +60,7 @@ unsafe fn call_with_buffer<T: UChar>(
 pub fn choose(
     accepts: impl IntoIterator<Item = impl AsRef<Locale>>,
     locales: impl IntoIterator<Item = impl AsRef<Locale>>,
-) -> Result<Option<Locale>> {
+) -> ICUResult<Option<LocaleBuf>> {
     let mut accepts_ptrs = accepts
         .into_iter()
         .map(|l| l.as_ref().0.as_ptr())
@@ -71,6 +77,10 @@ pub fn choose(
                 locale_ptrs.len() as _,
                 status,
             );
+            if *status != U_ZERO_ERROR {
+                return 0;
+            }
+            *status = U_ZERO_ERROR;
             let len = imp_uloc_acceptLanguage(
                 buffer as _,
                 len,
@@ -87,31 +97,27 @@ pub fn choose(
     if result == ULOC_ACCEPT_FAILED {
         Ok(None)
     } else {
-        Ok(Some(Locale(unsafe {
+        Ok(Some(LocaleBuf(unsafe {
             CString::from_vec_unchecked(loc.into())
         })))
     }
 }
 
-pub fn current() -> Locale {
-    Locale(unsafe { CStr::from_ptr(imp_uloc_getDefault() as _) }.to_owned())
+pub fn current() -> &'static Locale {
+    unsafe { Locale::new(CStr::from_ptr(imp_uloc_getDefault() as _)) }
 }
 
-pub fn parse(s: &str) -> Result<Locale> {
-    let s = CString::new(s)?;
-    parsec(&s)
-}
-
-pub fn parsec(s: &CStr) -> Result<Locale> {
+pub fn parse(s: &str) -> ICUResult<LocaleBuf> {
+    let s = unsafe { CString::from_vec_unchecked(s.into()) };
     unsafe {
         call_with_buffer::<u8>(|buffer, len, status| {
             imp_uloc_canonicalize(s.as_ptr() as _, buffer as _, len, status)
         })
     }
-    .map(|s| Locale(unsafe { CString::from_vec_unchecked(s.into()) }))
+    .map(|s| LocaleBuf(unsafe { CString::from_vec_unchecked(s.into()) }))
 }
 
-pub fn native_name(loc: &Locale) -> Result<String> {
+pub fn native_name(loc: &Locale) -> ICUResult<String> {
     let loc_ptr = loc.0.as_ptr();
     unsafe {
         call_with_buffer::<u16>(|buffer, len, status| {

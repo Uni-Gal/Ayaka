@@ -1,7 +1,7 @@
 use crate::*;
 use anyhow::{anyhow, Result};
 use dirs::{config_dir, data_local_dir};
-use gal_locale::Locale;
+use gal_locale::LocaleBuf;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -11,7 +11,7 @@ use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct Settings {
-    pub lang: Locale,
+    pub lang: LocaleBuf,
 }
 
 pub type VarMap = HashMap<String, RawValue>;

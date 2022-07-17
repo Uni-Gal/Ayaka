@@ -18,7 +18,7 @@ pub struct Context {
     frontend: FrontendType,
     root_path: PathBuf,
     runtime: Runtime,
-    loc: Locale,
+    loc: LocaleBuf,
     pub ctx: RawContext,
 }
 
@@ -57,7 +57,7 @@ impl Context {
                 frontend,
                 root_path: root_path.to_path_buf(),
                 runtime,
-                loc: Locale::current(),
+                loc: Locale::current().to_owned(),
                 ctx: RawContext::default(),
             })
         })
@@ -119,8 +119,8 @@ impl Context {
         self.root_path.join(&self.game.videos)
     }
 
-    pub fn set_locale(&mut self, loc: Locale) {
-        self.loc = loc;
+    pub fn set_locale(&mut self, loc: impl Into<LocaleBuf>) {
+        self.loc = loc.into();
     }
 
     pub fn locale(&self) -> &Locale {

@@ -11,11 +11,13 @@ update:
 	cd utils && $(MAKE) update
 	cd plugins && $(MAKE) update
 
-.PHONY: plugins release
+.PHONY: plugins release release-cross
 plugins:
 	cd plugins && $(MAKE) plugins
 release:
 	cd bins && $(MAKE) release
+release-cross:
+	cd bins && $(MAKE) release-cross TARGET=$(TARGET)
 
 EXAMPLES:=Fibonacci Fibonacci2 Gacha Markdown Orga
 

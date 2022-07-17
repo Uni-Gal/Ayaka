@@ -2,7 +2,7 @@ use clap::Parser;
 use gal_runtime::{
     anyhow::{bail, Result},
     tokio_stream::StreamExt,
-    Context, FrontendType, OpenStatus,
+    Context, FrontendType, LocaleBuf, OpenStatus,
 };
 use std::{
     ffi::OsString,
@@ -17,6 +17,8 @@ pub struct Options {
     check: bool,
     #[clap(long)]
     auto: bool,
+    #[clap(short, long)]
+    locale: Option<LocaleBuf>,
 }
 
 fn read_line() -> Result<String> {
@@ -57,6 +59,9 @@ async fn main() -> Result<()> {
         }
     }
     ctx.init_new();
+    if let Some(loc) = opts.locale {
+        ctx.set_locale(loc);
+    }
     while let Some(action) = ctx.next_run() {
         if let Some(name) = &action.character {
             print!("_{}_", name);

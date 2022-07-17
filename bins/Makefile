@@ -4,10 +4,13 @@ clean:
 update:
 	cargo update
 
-.PHONY: release
-release:
+.PHONY: dist release release-cross
+dist:
 	cd gal-gui && $(MAKE) dist
+release: dist
 	STATIC_VCRUNTIME=false cargo build --release
+release-cross: dist
+	STATIC_VCRUNTIME=false cargo build --release --target=$(TARGET)
 
 .PHONY: run run-gui run-latex
 run:
