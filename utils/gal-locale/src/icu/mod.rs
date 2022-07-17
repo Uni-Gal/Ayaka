@@ -49,7 +49,7 @@ unsafe fn call_with_buffer<T: UChar>(
         len = f(buffer.as_mut_ptr(), buffer.len() as _, &mut error_code);
     }
     if error_code != U_ZERO_ERROR {
-        return Err(ICUError(error_code).into());
+        return Err(ICUError(error_code));
     }
     if len > 0 {
         buffer.resize(len as usize, T::default());
@@ -77,6 +77,10 @@ pub fn choose(
                 locale_ptrs.len() as _,
                 status,
             );
+            if *status != U_ZERO_ERROR {
+                return 0;
+            }
+            *status = U_ZERO_ERROR;
             let len = imp_uloc_acceptLanguage(
                 buffer as _,
                 len,
