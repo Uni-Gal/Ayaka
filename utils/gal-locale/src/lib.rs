@@ -25,11 +25,11 @@ impl Locale {
         &self,
         locales: impl IntoIterator<Item = impl AsRef<Self>>,
     ) -> Result<Option<LocaleBuf>> {
-        icu::choose([self], locales)
+        Ok(icu::choose([self], locales)?)
     }
 
     pub fn native_name(&self) -> Result<String> {
-        icu::native_name(self)
+        Ok(icu::native_name(self)?)
     }
 }
 
@@ -112,7 +112,7 @@ impl FromStr for LocaleBuf {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        icu::parse(s)
+        Ok(icu::parse(s)?)
     }
 }
 
@@ -120,7 +120,7 @@ impl TryFrom<String> for LocaleBuf {
     type Error = anyhow::Error;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        icu::parse(&value)
+        Ok(icu::parse(&value)?)
     }
 }
 

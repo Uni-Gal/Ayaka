@@ -36,9 +36,11 @@ impl UChar for u16 {
 #[error("ICU error code: {0}")]
 pub struct ICUError(UErrorCode);
 
+pub type ICUResult<T> = std::result::Result<T, ICUError>;
+
 unsafe fn call_with_buffer<T: UChar>(
     mut f: impl FnMut(*mut T, i32, *mut UErrorCode) -> i32,
-) -> Result<String> {
+) -> ICUResult<String> {
     let mut buffer = vec![T::default(); 10];
     let mut error_code = U_ZERO_ERROR;
     let mut len = f(buffer.as_mut_ptr(), buffer.len() as _, &mut error_code);
@@ -58,7 +60,7 @@ unsafe fn call_with_buffer<T: UChar>(
 pub fn choose(
     accepts: impl IntoIterator<Item = impl AsRef<Locale>>,
     locales: impl IntoIterator<Item = impl AsRef<Locale>>,
-) -> Result<Option<LocaleBuf>> {
+) -> ICUResult<Option<LocaleBuf>> {
     let mut accepts_ptrs = accepts
         .into_iter()
         .map(|l| l.as_ref().0.as_ptr())
@@ -101,8 +103,8 @@ pub fn current() -> &'static Locale {
     unsafe { Locale::new(CStr::from_ptr(imp_uloc_getDefault() as _)) }
 }
 
-pub fn parse(s: &str) -> Result<LocaleBuf> {
-    let s = CString::new(s)?;
+pub fn parse(s: &str) -> ICUResult<LocaleBuf> {
+    let s = unsafe { CString::from_vec_unchecked(s.into()) };
     unsafe {
         call_with_buffer::<u8>(|buffer, len, status| {
             imp_uloc_canonicalize(s.as_ptr() as _, buffer as _, len, status)
@@ -111,7 +113,7 @@ pub fn parse(s: &str) -> Result<LocaleBuf> {
     .map(|s| LocaleBuf(unsafe { CString::from_vec_unchecked(s.into()) }))
 }
 
-pub fn native_name(loc: &Locale) -> Result<String> {
+pub fn native_name(loc: &Locale) -> ICUResult<String> {
     let loc_ptr = loc.0.as_ptr();
     unsafe {
         call_with_buffer::<u16>(|buffer, len, status| {
