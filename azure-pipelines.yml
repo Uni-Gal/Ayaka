@@ -41,5 +41,5 @@ jobs:
   - pwsh: make plugins
     displayName: "Build plugins"
 
-  - pwsh: make release
+  - pwsh: make release-cross TARGET=$(target)
     displayName: "Build all"
