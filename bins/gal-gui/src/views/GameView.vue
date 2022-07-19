@@ -120,13 +120,13 @@ export default {
                     case ActionLineType.Chars:
                         this.type_text += this.type_text_buffer[0].data[0]
                         this.type_text_buffer[0].data = this.type_text_buffer[0].data.substring(1)
+                        await setTimeout(10)
                         break
                     case ActionLineType.Block:
                         this.type_text += this.type_text_buffer[0].data
                         this.type_text_buffer[0].data = ""
                         break
                 }
-                await setTimeout(10)
             }
             this.state = ActionState.Typed
             if (this.type_text.length == 0) {
