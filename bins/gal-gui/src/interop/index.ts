@@ -33,13 +33,23 @@ export interface Info {
 }
 
 export interface Action {
-    line: string,
+    line: ActionLine[],
     character?: string,
     para_title?: string,
     switches: Switch[],
     bg?: string,
     bgm?: string,
     video?: string,
+}
+
+export interface ActionLine {
+    type: keyof typeof ActionLineType,
+    data: string
+}
+
+export enum ActionLineType {
+    Chars,
+    Block,
 }
 
 export interface Switch {
@@ -123,4 +133,12 @@ export function switch_(i: number): Promise<void> {
 
 export function history(): Promise<Action[]> {
     return invoke("history")
+}
+
+export function merge_lines(lines: ActionLine[]): string {
+    let res = ""
+    lines.forEach(s => {
+        res += s.data
+    })
+    return res
 }

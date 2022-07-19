@@ -66,7 +66,9 @@ async fn main() -> Result<()> {
         if let Some(name) = &action.character {
             print!("_{}_", name);
         }
-        print!("{}", action.line);
+        for s in action.line {
+            print!("{}", s.as_str());
+        }
         if !action.switches.is_empty() {
             for (i, s) in action.switches.iter().enumerate() {
                 if s.enabled {

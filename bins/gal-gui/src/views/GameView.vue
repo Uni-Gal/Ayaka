@@ -2,8 +2,9 @@
 import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import ActionCard from '../components/ActionCard.vue'
-import { current_run, next_run, switch_, Action, history } from '../interop'
 import IconButton from '../components/IconButton.vue'
+import { current_run, next_run, switch_, merge_lines, Action, history, ActionLineType, ActionLine } from '../interop'
+import { cloneDeep } from 'lodash'
 </script>
 
 <script lang="ts">
@@ -25,8 +26,9 @@ export default {
     emits: ["quit"],
     data() {
         return {
-            action: { line: "", character: undefined, switches: [], bg: undefined, bgm: undefined, video: undefined } as Action,
+            action: { line: [], character: undefined, switches: [], bg: undefined, bgm: undefined, video: undefined } as Action,
             type_text: "",
+            type_text_buffer: [] as ActionLine[],
             state: ActionState.End,
             play_state: PlayState.Manual,
             mutex: new Mutex(),
@@ -73,7 +75,8 @@ export default {
             return has_next
         },
         end_typing(): boolean {
-            this.type_text = this.action.line
+            this.type_text = merge_lines(this.action.line)
+            this.type_text_buffer = []
             if (this.action.switches.length != 0) {
                 this.state = ActionState.Switching
                 return false
@@ -103,9 +106,23 @@ export default {
         async start_type_anime() {
             this.state = ActionState.Typing
             this.type_text = ""
-            while (this.type_text.length < this.action.line.length) {
-                this.type_text += this.action.line[this.type_text.length]
-                await setTimeout(10)
+            this.type_text_buffer = cloneDeep(this.action.line)
+            while (this.type_text_buffer.length != 0) {
+                if (this.type_text_buffer[0].data.length == 0) {
+                    this.type_text_buffer.shift()
+                    continue
+                }
+                switch (ActionLineType[this.type_text_buffer[0].type]) {
+                    case ActionLineType.Chars:
+                        this.type_text += this.type_text_buffer[0].data[0]
+                        this.type_text_buffer[0].data = this.type_text_buffer[0].data.substring(1)
+                        await setTimeout(10)
+                        break
+                    case ActionLineType.Block:
+                        this.type_text += this.type_text_buffer[0].data
+                        this.type_text_buffer[0].data = ""
+                        break
+                }
             }
             this.state = ActionState.Typed
             if (this.type_text.length == 0) {
@@ -240,7 +257,7 @@ export default {
     <div class="content-full container-history" v-bind:hidden="!show_history" v-on:click="on_history_click">
         <ul class="list-group">
             <li class="list-group-item" v-for="h in history">
-                <ActionCard :ch="h.character" :line="h.line"></ActionCard>
+                <ActionCard :ch="h.character" :line="merge_lines(h.line)"></ActionCard>
             </li>
         </ul>
     </div>
