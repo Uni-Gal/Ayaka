@@ -37,9 +37,11 @@ export interface Action {
     character?: string,
     para_title?: string,
     switches: Switch[],
-    bg?: string,
-    bgm?: string,
-    video?: string,
+    props: {
+        bg: string | undefined,
+        bgm: string | undefined,
+        video: string | undefined,
+    },
 }
 
 export interface ActionLine {
@@ -114,14 +116,14 @@ export function next_run(): Promise<boolean> {
 export async function current_run(): Promise<Action | undefined> {
     let res = await invoke<Action | undefined>("current_run")
     if (res) {
-        if (res.bg) {
-            res.bg = convertFileSrc(res.bg)
+        if (res.props.bg) {
+            res.props.bg = convertFileSrc(res.props.bg)
         }
-        if (res.bgm) {
-            res.bgm = convertFileSrc(res.bgm)
+        if (res.props.bgm) {
+            res.props.bgm = convertFileSrc(res.props.bgm)
         }
-        if (res.video) {
-            res.video = convertFileSrc(res.video)
+        if (res.props.video) {
+            res.props.video = convertFileSrc(res.props.video)
         }
     }
     return res

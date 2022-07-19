@@ -7,13 +7,10 @@ use crate::{
 };
 use anyhow::{anyhow, bail, Result};
 use gal_bindings_types::{ActionLine, TextProcessContext};
-use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
+use gal_script::{log::info, Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, path::PathBuf};
 use tokio_stream::StreamExt;
 use unicode_width::UnicodeWidthStr;
 
@@ -111,10 +108,6 @@ impl Context {
             .flatten()
     }
 
-    pub fn join_path(&self, p: impl AsRef<Path>) -> PathBuf {
-        self.root_path.join(p)
-    }
-
     pub fn set_locale(&mut self, loc: impl Into<LocaleBuf>) {
         self.loc = loc.into();
     }
@@ -164,7 +157,7 @@ impl Context {
         let mut props = HashMap::new();
         let mut switch_actions = vec![];
         let game_context = TextProcessContext {
-            root_path: self.root_path.clone(),
+            root_path: std::path::absolute(&self.root_path).unwrap(),
             game_props: self.game.props.clone(),
         };
         for line in t.0.into_iter() {
@@ -204,6 +197,7 @@ impl Context {
                                 &args,
                                 &game_context,
                             )?;
+                            info!("Call other command \"{}\": {:?}", name, res);
                             action_line.append(&mut res.line);
                             for (key, value) in res.props.into_iter() {
                                 props.insert(key, value);

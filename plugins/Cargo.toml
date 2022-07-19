@@ -3,6 +3,7 @@ members = [
     "format",
     "galog",
     "markdown",
+    "media",
     "random",
 ]
 

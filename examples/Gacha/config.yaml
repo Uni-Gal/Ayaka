@@ -1,12 +1,14 @@
 title: 原神抽卡
 author: Berrysoft
-videos: videos
 plugins:
   dir: ../plugins/
   modules:
     - format
     - galog
+    - media
     - random
+props:
+  videos: videos
 base_lang: zh_Hans
 paras:
   zh_Hans:

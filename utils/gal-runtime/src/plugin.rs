@@ -1,6 +1,7 @@
 use crate::{progress_future::ProgressFuture, *};
 use anyhow::{anyhow, Result};
 use gal_bindings_types::*;
+use gal_script::log::info;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{collections::HashMap, path::Path};
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
@@ -232,6 +233,7 @@ impl Runtime {
                     }
                     PluginType::Text => {
                         let cmds = runtime.text_commands(&mut store)?;
+                        info!("Plugin {} registered: {:?}", name, &cmds);
                         for cmd in cmds.into_iter() {
                             text_modules.insert(cmd, name.clone());
                         }

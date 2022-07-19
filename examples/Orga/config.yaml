@@ -1,7 +1,8 @@
 title: 団長の名場面
 author: 冈田麿里
-bgs: bgs
-bgms: bgms
+props:
+  bgs: bgs
+  bgms: bgms
 res:
   ja:
     ch_rd: ライド
@@ -18,6 +19,10 @@ res:
     ch_tkk: 塔卡基
     ch_td: 查德
     ch_ass: 刺客
+plugins:
+  dir: ../plugins/
+  modules:
+    - media
 base_lang: ja
 paras:
   ja:

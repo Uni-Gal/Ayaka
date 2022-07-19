@@ -26,7 +26,7 @@ export default {
     emits: ["quit"],
     data() {
         return {
-            action: { line: [], character: undefined, switches: [], bg: undefined, bgm: undefined, video: undefined } as Action,
+            action: { line: [], character: undefined, switches: [], props: { bg: undefined, bgm: undefined, video: undefined } } as Action,
             type_text: "",
             type_text_buffer: [] as ActionLine[],
             state: ActionState.End,
@@ -53,13 +53,13 @@ export default {
             const res = await current_run()
             console.info(res)
             if (res) {
-                if (res.bg == undefined) {
-                    res.bg = this.action.bg
+                if (res.props.bg == undefined) {
+                    res.props.bg = this.action.props.bg
                 }
-                if (res.bgm == undefined) {
-                    res.bgm = this.action.bgm
+                if (res.props.bgm == undefined) {
+                    res.props.bgm = this.action.props.bgm
                 }
-                const load_new_bgm = (res.bgm != this.action.bgm);
+                const load_new_bgm = (res.props.bgm != this.action.props.bgm);
                 this.action = res
                 if (load_new_bgm) {
                     (this.$refs.bgm as HTMLAudioElement).load()
@@ -85,7 +85,7 @@ export default {
             }
         },
         end_switching(): boolean {
-            if (this.action.video != undefined) {
+            if (this.action.props.video) {
                 this.state = ActionState.Video;
                 let element = this.$refs.video as HTMLVideoElement
                 element.load()
@@ -213,9 +213,9 @@ export default {
 
 <template>
     <audio ref="bgm" autoplay hidden>
-        <source v-bind:src="action.bgm" type="audio/mpeg" />
+        <source v-bind:src="action.props.bgm" type="audio/mpeg" />
     </audio>
-    <img class="background" v-bind:src="action.bg">
+    <img class="background" v-bind:src="action.props.bg">
     <div class="card-lines">
         <ActionCard :ch="action.character" :line="type_text"></ActionCard>
     </div>
@@ -224,7 +224,7 @@ export default {
     </div>
     <div class="content-full bg-body" v-bind:hidden="state != ActionState.Video">
         <video ref="video" class="background" v-on:ended="onvideoended">
-            <source v-bind:src="action.video" type="video/mp4" />
+            <source v-bind:src="action.props.video" type="video/mp4" />
         </video>
     </div>
     <div class="backboard" v-on:click="next"></div>
