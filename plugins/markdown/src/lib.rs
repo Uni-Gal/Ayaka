@@ -41,7 +41,6 @@ enum TableState {
 struct HtmlWriter<'a, I> {
     iter: I,
     writer: Vec<ActionLine>,
-    end_newline: bool,
     table_state: TableState,
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
@@ -56,7 +55,6 @@ where
         Self {
             iter,
             writer: vec![],
-            end_newline: true,
             table_state: TableState::Head,
             table_alignments: vec![],
             table_cell_index: 0,
@@ -64,26 +62,13 @@ where
         }
     }
 
-    /// Writes a new line.
-    fn write_newline(&mut self) {
-        self.write_chars("\n");
-    }
-
     /// Writes a buffer, and tracks whether or not a newline was written.
     fn write_chars(&mut self, s: impl Into<String>) {
-        let s: String = s.into();
-        if !s.is_empty() {
-            self.end_newline = s.ends_with('\n');
-        }
-        self.writer.push(ActionLine::Chars(s));
+        self.writer.push(ActionLine::Chars(s.into()));
     }
 
     fn write_block(&mut self, s: impl Into<String>) {
-        let s: String = s.into();
-        if !s.is_empty() {
-            self.end_newline = s.ends_with('\n');
-        }
-        self.writer.push(ActionLine::Block(s));
+        self.writer.push(ActionLine::Block(s.into()));
     }
 
     fn run(mut self) -> Self {
@@ -97,7 +82,6 @@ where
                 }
                 Text(text) => {
                     self.write_chars(escape_html(&text));
-                    self.end_newline = text.ends_with('\n');
                 }
                 Code(text) => {
                     self.write_block("<code>");
@@ -108,17 +92,10 @@ where
                     self.write_block(html.into_string());
                 }
                 SoftBreak => {
-                    self.write_newline();
+                    self.write_chars("\n");
                 }
-                HardBreak => {
-                    self.write_block("<br />\n");
-                }
-                Rule => {
-                    if self.end_newline {
-                        self.write_block("<hr />\n");
-                    } else {
-                        self.write_block("\n<hr />\n");
-                    }
+                HardBreak | Rule => {
+                    self.write_block("<br />");
                 }
                 FootnoteReference(name) => {
                     let len = self.numbers.len() + 1;
@@ -130,10 +107,10 @@ where
                     self.write_block("</a></sup>");
                 }
                 TaskListMarker(true) => {
-                    self.write_block("<input disabled=\"\" type=\"checkbox\" checked=\"\"/>\n");
+                    self.write_block("<input disabled=\"\" type=\"checkbox\" checked=\"\"/>");
                 }
                 TaskListMarker(false) => {
-                    self.write_block("<input disabled=\"\" type=\"checkbox\"/>\n");
+                    self.write_block("<input disabled=\"\" type=\"checkbox\"/>");
                 }
             }
         }
@@ -143,20 +120,9 @@ where
     /// Writes the start of an HTML tag.
     fn start_tag(&mut self, tag: Tag<'a>) {
         match tag {
-            Tag::Paragraph => {
-                if self.end_newline {
-                    self.write_block("<p>")
-                } else {
-                    self.write_block("\n<p>")
-                }
-            }
+            Tag::Paragraph => self.write_block("<p>"),
             Tag::Heading(level, id, classes) => {
-                if self.end_newline {
-                    self.end_newline = false;
-                    self.write_block("<");
-                } else {
-                    self.write_block("\n<");
-                }
+                self.write_block("<");
                 self.write_block(level.to_string());
                 if let Some(id) = id {
                     self.write_block(" id=\"");
@@ -204,61 +170,28 @@ where
                     _ => self.write_block(">"),
                 }
             }
-            Tag::BlockQuote => {
-                if self.end_newline {
-                    self.write_block("<blockquote>\n")
-                } else {
-                    self.write_block("\n<blockquote>\n")
-                }
-            }
-            Tag::CodeBlock(info) => {
-                if !self.end_newline {
-                    self.write_newline();
-                }
-                match info {
-                    CodeBlockKind::Fenced(info) => {
-                        let lang = info.split(' ').next().unwrap();
-                        if lang.is_empty() {
-                            self.write_block("<pre><code>")
-                        } else {
-                            self.write_block("<pre><code class=\"language-");
-                            self.write_block(escape_html(lang));
-                            self.write_block("\">")
-                        }
+            Tag::BlockQuote => self.write_block("<blockquote>"),
+            Tag::CodeBlock(info) => match info {
+                CodeBlockKind::Fenced(info) => {
+                    let lang = info.split(' ').next().unwrap();
+                    if lang.is_empty() {
+                        self.write_block("<pre><code>")
+                    } else {
+                        self.write_block("<pre><code class=\"language-");
+                        self.write_block(escape_html(lang));
+                        self.write_block("\">")
                     }
-                    CodeBlockKind::Indented => self.write_block("<pre><code>"),
                 }
-            }
-            Tag::List(Some(1)) => {
-                if self.end_newline {
-                    self.write_block("<ol>\n")
-                } else {
-                    self.write_block("\n<ol>\n")
-                }
-            }
+                CodeBlockKind::Indented => self.write_block("<pre><code>"),
+            },
+            Tag::List(Some(1)) => self.write_block("<ol>"),
             Tag::List(Some(start)) => {
-                if self.end_newline {
-                    self.write_block("<ol start=\"");
-                } else {
-                    self.write_block("\n<ol start=\"");
-                }
+                self.write_block("<ol start=\"");
                 self.write_chars(start.to_string());
-                self.write_block("\">\n")
+                self.write_block("\">")
             }
-            Tag::List(None) => {
-                if self.end_newline {
-                    self.write_block("<ul>\n")
-                } else {
-                    self.write_block("\n<ul>\n")
-                }
-            }
-            Tag::Item => {
-                if self.end_newline {
-                    self.write_block("<li>")
-                } else {
-                    self.write_block("\n<li>")
-                }
-            }
+            Tag::List(None) => self.write_block("<ul>"),
+            Tag::Item => self.write_block("<li>"),
             Tag::Emphasis => self.write_block("<em>"),
             Tag::Strong => self.write_block("<strong>"),
             Tag::Strikethrough => self.write_block("<del>"),
@@ -292,11 +225,7 @@ where
                 self.write_block("\" />")
             }
             Tag::FootnoteDefinition(name) => {
-                if self.end_newline {
-                    self.write_block("<div class=\"footnote-definition\" id=\"");
-                } else {
-                    self.write_block("\n<div class=\"footnote-definition\" id=\"");
-                }
+                self.write_block("<div class=\"footnote-definition\" id=\"");
                 self.write_block(escape_html(&name));
                 self.write_block("\"><sup class=\"footnote-definition-label\">");
                 let len = self.numbers.len() + 1;
@@ -310,22 +239,22 @@ where
     fn end_tag(&mut self, tag: Tag) {
         match tag {
             Tag::Paragraph => {
-                self.write_block("</p>\n");
+                self.write_block("</p>");
             }
             Tag::Heading(level, _id, _classes) => {
                 self.write_block("</");
                 self.write_block(level.to_string());
-                self.write_block(">\n");
+                self.write_block(">");
             }
             Tag::Table(_) => {
-                self.write_block("</tbody></table>\n");
+                self.write_block("</tbody></table>");
             }
             Tag::TableHead => {
-                self.write_block("</tr></thead><tbody>\n");
+                self.write_block("</tr></thead><tbody>");
                 self.table_state = TableState::Body;
             }
             Tag::TableRow => {
-                self.write_block("</tr>\n");
+                self.write_block("</tr>");
             }
             Tag::TableCell => {
                 match self.table_state {
@@ -339,19 +268,19 @@ where
                 self.table_cell_index += 1;
             }
             Tag::BlockQuote => {
-                self.write_block("</blockquote>\n");
+                self.write_block("</blockquote>");
             }
             Tag::CodeBlock(_) => {
-                self.write_block("</code></pre>\n");
+                self.write_block("</code></pre>");
             }
             Tag::List(Some(_)) => {
-                self.write_block("</ol>\n");
+                self.write_block("</ol>");
             }
             Tag::List(None) => {
-                self.write_block("</ul>\n");
+                self.write_block("</ul>");
             }
             Tag::Item => {
-                self.write_block("</li>\n");
+                self.write_block("</li>");
             }
             Tag::Emphasis => {
                 self.write_block("</em>");
@@ -367,7 +296,7 @@ where
             }
             Tag::Image(_, _, _) => (), // shouldn't happen, handled in start
             Tag::FootnoteDefinition(_) => {
-                self.write_block("</div>\n");
+                self.write_block("</div>");
             }
         }
     }
@@ -386,7 +315,6 @@ where
                 }
                 Html(text) | Code(text) | Text(text) => {
                     self.write_chars(escape_html(&text));
-                    self.end_newline = text.ends_with('\n');
                 }
                 SoftBreak | HardBreak | Rule => {
                     self.write_chars(" ");
