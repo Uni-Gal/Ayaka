@@ -1,3 +1,4 @@
+use gal_bindings_types::ActionLine;
 pub use gal_bindings_types::FrontendType;
 
 use crate::{
@@ -162,7 +163,7 @@ impl Context {
     }
 
     fn exact_text(&mut self, para_title: Option<&String>, t: Text) -> Action {
-        let mut lines = String::new();
+        let mut action_line = vec![];
         let mut chname = None;
         let mut switches = vec![];
         let mut switch_actions = vec![];
@@ -171,9 +172,9 @@ impl Context {
         let mut video = None;
         for line in t.0.into_iter() {
             match line {
-                Line::Str(s) => lines.push_str(&s),
+                Line::Str(s) => action_line.push(ActionLine::Chars(s)),
                 Line::Cmd(cmd) => match cmd {
-                    Command::Par => lines.push('\n'),
+                    Command::Par => action_line.push(ActionLine::Chars("\n".to_string())),
                     Command::Character(key, alter) => {
                         chname = if alter.is_empty() {
                             // TODO: reduce allocation
@@ -186,7 +187,9 @@ impl Context {
                             Some(alter)
                         }
                     }
-                    Command::Exec(p) => lines.push_str(&self.call(&p).get_str()),
+                    Command::Exec(p) => {
+                        action_line.push(ActionLine::Chars(self.call(&p).get_str().into_owned()))
+                    }
                     Command::Switch {
                         text,
                         action,
@@ -225,7 +228,7 @@ impl Context {
             .and_then(|path| std::path::absolute(path).ok())
             .map(|p| p.to_string_lossy().into_owned());
         Action {
-            line: lines,
+            line: action_line,
             character: chname,
             para_title: para_title.cloned(),
             switches,

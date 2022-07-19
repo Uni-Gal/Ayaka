@@ -38,9 +38,30 @@ pub enum FrontendType {
     Html,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "data")]
+pub enum ActionLine {
+    Chars(String),
+    Block(String),
+}
+
+impl ActionLine {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Self::Chars(s) | Self::Block(s) => &s,
+        }
+    }
+
+    pub fn into_string(self) -> String {
+        match self {
+            Self::Chars(s) | Self::Block(s) => s,
+        }
+    }
+}
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize, FallbackSpec)]
 pub struct Action {
-    pub line: String,
+    pub line: Vec<ActionLine>,
     pub character: Option<String>,
     pub para_title: Option<String>,
     pub switches: Vec<Switch>,

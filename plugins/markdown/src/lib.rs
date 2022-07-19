@@ -10,7 +10,14 @@ fn plugin_type() -> PluginType {
 fn process_action(frontend: FrontendType, mut action: Action) -> Action {
     match frontend {
         FrontendType::Html => {
-            let parser = Parser::new(&action.line);
+            let parser = Parser::new(
+                &action
+                    .line
+                    .into_iter()
+                    .map(|s| s.into_string())
+                    .collect::<Vec<_>>()
+                    .concat(),
+            );
             let mut buffer = String::new();
             push_html(&mut buffer, parser);
             action.line = buffer.trim().into();
