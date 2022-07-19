@@ -60,7 +60,7 @@ export default {
                 const load_new_bgm = (res.bgm != this.action.bgm);
                 this.action = res
                 if (load_new_bgm) {
-                    (document.getElementById("bgm") as HTMLAudioElement).load()
+                    (this.$refs.bgm as HTMLAudioElement).load()
                 }
             } else {
                 await this.go_home()
@@ -84,7 +84,7 @@ export default {
         end_switching(): boolean {
             if (this.action.video != undefined) {
                 this.state = ActionState.Video;
-                let element = document.getElementById("video") as HTMLVideoElement
+                let element = this.$refs.video as HTMLVideoElement
                 element.load()
                 element.play()
                 return false
@@ -120,7 +120,7 @@ export default {
                         case ActionState.Typed:
                             return this.end_typing()
                         case ActionState.Video:
-                            let element = document.getElementById("video") as HTMLVideoElement
+                            let element = this.$refs.video as HTMLVideoElement
                             element.pause()
                             this.state = ActionState.End
                         case ActionState.End:
@@ -195,7 +195,7 @@ export default {
 </script>
 
 <template>
-    <audio id="bgm" autoplay hidden>
+    <audio ref="bgm" autoplay hidden>
         <source v-bind:src="action.bgm" type="audio/mpeg" />
     </audio>
     <img class="background" v-bind:src="action.bg">
@@ -206,7 +206,7 @@ export default {
         <h4><span class="badge bg-primary">{{ action.para_title }}</span></h4>
     </div>
     <div class="content-full bg-body" v-bind:hidden="state != ActionState.Video">
-        <video id="video" class="background" v-on:ended="onvideoended">
+        <video ref="video" class="background" v-on:ended="onvideoended">
             <source v-bind:src="action.video" type="video/mp4" />
         </video>
     </div>
@@ -237,8 +237,7 @@ export default {
             </div>
         </div>
     </div>
-    <div id="history" class="content-full container-history" v-bind:hidden="!show_history"
-        v-on:click="on_history_click">
+    <div class="content-full container-history" v-bind:hidden="!show_history" v-on:click="on_history_click">
         <ul class="list-group">
             <li class="list-group-item" v-for="h in history">
                 <ActionCard :ch="h.character" :line="h.line"></ActionCard>
