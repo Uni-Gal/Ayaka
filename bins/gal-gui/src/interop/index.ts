@@ -134,3 +134,11 @@ export function switch_(i: number): Promise<void> {
 export function history(): Promise<Action[]> {
     return invoke("history")
 }
+
+export function merge_lines(lines: ActionLine[]): string {
+    let res = ""
+    lines.forEach(s => {
+        res += s.data
+    })
+    return res
+}

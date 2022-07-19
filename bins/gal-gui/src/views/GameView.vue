@@ -3,7 +3,7 @@ import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import ActionCard from '../components/ActionCard.vue'
 import IconButton from '../components/IconButton.vue'
-import { current_run, next_run, switch_, Action, history, ActionLineType, ActionLine } from '../interop'
+import { current_run, next_run, switch_, merge_lines, Action, history, ActionLineType, ActionLine } from '../interop'
 import { cloneDeep } from 'lodash'
 </script>
 
@@ -75,11 +75,7 @@ export default {
             return has_next
         },
         end_typing(): boolean {
-            this.type_text = ""
-            this.type_text_buffer = this.action.line
-            this.type_text_buffer.forEach(s => {
-                this.type_text += s.data
-            })
+            this.type_text = merge_lines(this.action.line)
             this.type_text_buffer = []
             if (this.action.switches.length != 0) {
                 this.state = ActionState.Switching
@@ -261,7 +257,7 @@ export default {
     <div class="content-full container-history" v-bind:hidden="!show_history" v-on:click="on_history_click">
         <ul class="list-group">
             <li class="list-group-item" v-for="h in history">
-                <ActionCard :ch="h.character" :line="h.line"></ActionCard>
+                <ActionCard :ch="h.character" :line="merge_lines(h.line)"></ActionCard>
             </li>
         </ul>
     </div>
