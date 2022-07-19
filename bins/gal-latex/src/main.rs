@@ -47,7 +47,9 @@ async fn main() -> Result<()> {
                 .write(format!("\\paragraph{{{}}}", name).as_bytes())
                 .await?;
         }
-        output.write(action.line.as_bytes()).await?;
+        for s in action.line {
+            output.write(s.as_str().as_bytes()).await?;
+        }
         output.write(b"\n").await?;
         if !action.switches.is_empty() {
             output.write(b"\\begin{itemize}\n").await?;
