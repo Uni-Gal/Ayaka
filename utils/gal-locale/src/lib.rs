@@ -150,7 +150,6 @@ mod test {
 
     #[test]
     fn accept() {
-        let current = "zh_CN".parse::<LocaleBuf>().unwrap();
         let accepts = [
             "en".parse::<LocaleBuf>().unwrap(),
             "ja".parse().unwrap(),
@@ -158,8 +157,20 @@ mod test {
             "zh_Hant".parse().unwrap(),
         ];
         assert_eq!(
-            current.choose_from(&accepts).unwrap().unwrap().to_string(),
-            "zh_Hans"
+            "zh_CN"
+                .parse::<LocaleBuf>()
+                .unwrap()
+                .choose_from(&accepts)
+                .unwrap(),
+            Some("zh_Hans".parse::<LocaleBuf>().unwrap())
+        );
+        assert_eq!(
+            "zh_TW"
+                .parse::<LocaleBuf>()
+                .unwrap()
+                .choose_from(&accepts)
+                .unwrap(),
+            Some("zh_Hant".parse::<LocaleBuf>().unwrap())
         );
     }
 }
