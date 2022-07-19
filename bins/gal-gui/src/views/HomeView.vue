@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Locale } from 'vue-i18n'
 import { info, next_run, start_new, locale_native_name, set_locale } from '../interop'
+import Live2D from '../components/Live2D.vue';
 </script>
 
 <script lang="ts">
@@ -55,6 +56,7 @@ export default {
             </select>
         </div>
     </div>
+    <Live2D></Live2D>
 </template>
 
 <style>
