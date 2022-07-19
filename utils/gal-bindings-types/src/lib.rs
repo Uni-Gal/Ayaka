@@ -1,6 +1,7 @@
 use gal_fallback::FallbackSpec;
 use gal_script::Program;
 use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, path::PathBuf};
 
 #[doc(hidden)]
 #[derive(Serialize, Deserialize)]
@@ -66,9 +67,7 @@ pub struct Action {
     pub character: Option<String>,
     pub para_title: Option<String>,
     pub switches: Vec<Switch>,
-    pub bg: Option<String>,
-    pub bgm: Option<String>,
-    pub video: Option<String>,
+    pub props: HashMap<String, String>,
     pub switch_actions: Vec<Program>,
 }
 
@@ -76,4 +75,16 @@ pub struct Action {
 pub struct Switch {
     pub text: String,
     pub enabled: bool,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct TextProcessContext {
+    pub root_path: PathBuf,
+    pub game_props: HashMap<String, String>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct TextProcessResult {
+    pub line: Vec<ActionLine>,
+    pub props: HashMap<String, String>,
 }

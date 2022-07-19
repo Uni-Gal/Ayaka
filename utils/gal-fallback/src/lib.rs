@@ -1,5 +1,3 @@
-#![feature(associated_type_defaults)]
-
 pub struct Fallback<T> {
     data: Option<T>,
     base_data: Option<T>,
@@ -61,25 +59,12 @@ impl<T> From<Fallback<T>> for Option<T> {
     }
 }
 
-impl<T> IntoIterator for Fallback<Vec<T>> {
-    type Item = Fallback<T>;
-
-    type IntoIter = FallbackVecIter<<Vec<T> as IntoIterator>::IntoIter>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        FallbackVecIter {
-            data: self.data.unwrap_or_default().into_iter(),
-            base_data: self.base_data.unwrap_or_default().into_iter(),
-        }
-    }
-}
-
-pub struct FallbackVecIter<A> {
+pub struct FallbackIter<A> {
     data: A,
     base_data: A,
 }
 
-impl<A: Iterator> Iterator for FallbackVecIter<A> {
+impl<A: Iterator> Iterator for FallbackIter<A> {
     type Item = Fallback<A::Item>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -89,6 +74,19 @@ impl<A: Iterator> Iterator for FallbackVecIter<A> {
             Some(Fallback::new(d, based))
         } else {
             None
+        }
+    }
+}
+
+impl<T> IntoIterator for Fallback<Vec<T>> {
+    type Item = Fallback<T>;
+
+    type IntoIter = FallbackIter<<Vec<T> as IntoIterator>::IntoIter>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        FallbackIter {
+            data: self.data.unwrap_or_default().into_iter(),
+            base_data: self.base_data.unwrap_or_default().into_iter(),
         }
     }
 }

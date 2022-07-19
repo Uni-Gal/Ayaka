@@ -135,7 +135,6 @@ pub enum ParseErrorType {
     EmptyKey,
     CmdNotFound,
     CmdInCmd,
-    InvalidCmd(String),
     InvalidParamsCount(String, usize),
     InvalidProgram(String),
     InvalidIndex(ParseIntError),
@@ -149,7 +148,6 @@ impl Display for ParseErrorType {
             Self::EmptyKey => write!(f, "Key cannot be empty.")?,
             Self::CmdNotFound => write!(f, "Command not found after \"\\\".")?,
             Self::CmdInCmd => write!(f, "Embedded command is not supported.")?,
-            Self::InvalidCmd(name) => write!(f, "Invalid commmand \"{}\"", name.escape_default())?,
             Self::InvalidParamsCount(name, count) => write!(
                 f,
                 "Invalid params count {} for \"{}\"",
@@ -173,7 +171,6 @@ pub enum Line {
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum Command {
-    Par,
     Character(String, String),
     Exec(Program),
     Switch {
@@ -181,9 +178,7 @@ pub enum Command {
         action: Program,
         enabled: Option<Program>,
     },
-    Bg(String),
-    Bgm(String),
-    Video(String),
+    Other(String, Vec<String>),
 }
 
 #[derive(Debug, Default, PartialEq, Eq)]
@@ -576,10 +571,6 @@ impl<'a> TextParser<'a> {
     ) -> ParseResult<Line> {
         let params_count = params.len();
         let cmd = match name.as_str() {
-            "par" => {
-                self.check_params_count(params_count, 0, 0, loc, name)?;
-                Command::Par
-            }
             "res" => {
                 self.check_params_count(params_count, 1, 1, loc, name)?;
                 // Construct a simple program to get the resource.
@@ -615,19 +606,13 @@ impl<'a> TextParser<'a> {
                     enabled,
                 }
             }
-            "bg" => {
-                self.check_params_count(params_count, 1, 1, loc, name)?;
-                Command::Bg(self.concat_params(&params[0])?)
+            name => {
+                let mut args = vec![];
+                for p in params.iter() {
+                    args.push(self.concat_params(p)?);
+                }
+                Command::Other(name.to_string(), args)
             }
-            "bgm" => {
-                self.check_params_count(params_count, 1, 1, loc, name)?;
-                Command::Bgm(self.concat_params(&params[0])?)
-            }
-            "video" => {
-                self.check_params_count(params_count, 1, 1, loc, name)?;
-                Command::Video(self.concat_params(&params[0])?)
-            }
-            _ => parse_error(loc, ParseErrorType::InvalidCmd(name))?,
         };
         Ok(Line::Cmd(cmd))
     }

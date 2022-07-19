@@ -1,4 +1,3 @@
-use gal_bindings_types::ActionLine;
 pub use gal_bindings_types::FrontendType;
 
 use crate::{
@@ -6,11 +5,15 @@ use crate::{
     progress_future::ProgressFuture,
     *,
 };
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, bail, Result};
+use gal_bindings_types::{ActionLine, TextProcessContext};
 use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
-use std::path::PathBuf;
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 use tokio_stream::StreamExt;
 use unicode_width::UnicodeWidthStr;
 
@@ -108,16 +111,8 @@ impl Context {
             .flatten()
     }
 
-    fn bg_dir(&self) -> PathBuf {
-        self.root_path.join(&self.game.bgs)
-    }
-
-    fn bgm_dir(&self) -> PathBuf {
-        self.root_path.join(&self.game.bgms)
-    }
-
-    fn video_dir(&self) -> PathBuf {
-        self.root_path.join(&self.game.videos)
+    pub fn join_path(&self, p: impl AsRef<Path>) -> PathBuf {
+        self.root_path.join(p)
     }
 
     pub fn set_locale(&mut self, loc: impl Into<LocaleBuf>) {
@@ -162,19 +157,20 @@ impl Context {
         )
     }
 
-    fn exact_text(&mut self, para_title: Option<&String>, t: Text) -> Action {
+    fn exact_text(&mut self, para_title: Option<&String>, t: Text) -> Result<Action> {
         let mut action_line = vec![];
         let mut chname = None;
         let mut switches = vec![];
+        let mut props = HashMap::new();
         let mut switch_actions = vec![];
-        let mut bg = None;
-        let mut bgm = None;
-        let mut video = None;
+        let game_context = TextProcessContext {
+            root_path: self.root_path.clone(),
+            game_props: self.game.props.clone(),
+        };
         for line in t.0.into_iter() {
             match line {
                 Line::Str(s) => action_line.push(ActionLine::Chars(s)),
                 Line::Cmd(cmd) => match cmd {
-                    Command::Par => action_line.push(ActionLine::Chars("\n".to_string())),
                     Command::Character(key, alter) => {
                         chname = if alter.is_empty() {
                             // TODO: reduce allocation
@@ -200,43 +196,33 @@ impl Context {
                         switches.push(Switch { text, enabled });
                         switch_actions.push(action);
                     }
-                    Command::Bg(index) => bg = Some(index),
-                    Command::Bgm(index) => bgm = Some(index),
-                    Command::Video(index) => video = Some(index),
+                    Command::Other(name, args) => {
+                        if let Some(m) = self.runtime.text_modules.get(&name) {
+                            let mut res = self.runtime.modules.get(m).unwrap().dispatch_command(
+                                &mut self.runtime.store,
+                                &name,
+                                &args,
+                                &game_context,
+                            )?;
+                            action_line.append(&mut res.line);
+                            for (key, value) in res.props.into_iter() {
+                                props.insert(key, value);
+                            }
+                        } else {
+                            bail!("Invalid command {}", name);
+                        }
+                    }
                 },
             }
         }
-        let bg = bg
-            .map(|name| {
-                ["jpg", "png"]
-                    .into_iter()
-                    .map(|ex| self.bg_dir().join(&name).with_extension(ex))
-                    .filter(|p| p.exists())
-                    .next()
-            })
-            .flatten()
-            .and_then(|path| std::path::absolute(path).ok())
-            .map(|p| p.to_string_lossy().into_owned());
-        let bgm = bgm
-            .map(|name| self.bgm_dir().join(name).with_extension("mp3"))
-            .filter(|p| p.exists())
-            .and_then(|path| std::path::absolute(path).ok())
-            .map(|p| p.to_string_lossy().into_owned());
-        let video = video
-            .map(|name| self.video_dir().join(name).with_extension("mp4"))
-            .filter(|p| p.exists())
-            .and_then(|path| std::path::absolute(path).ok())
-            .map(|p| p.to_string_lossy().into_owned());
-        Action {
+        Ok(Action {
             line: action_line,
             character: chname,
             para_title: para_title.cloned(),
             switches,
-            bg,
-            bgm,
-            video,
+            props,
             switch_actions,
-        }
+        })
     }
 
     fn merge_action(&self, actions: Fallback<Action>) -> Option<Action> {
@@ -257,9 +243,14 @@ impl Context {
                     Switch { text, enabled }
                 })
                 .collect();
-            let bg = actions.bg.flatten().and_any();
-            let bgm = actions.bgm.flatten().and_any();
-            let video = actions.video.flatten().and_any();
+            let (props, base_props) = actions.props.unzip();
+            let (mut props, base_props) =
+                (props.unwrap_or_default(), base_props.unwrap_or_default());
+            for (key, value) in base_props.into_iter() {
+                if !props.contains_key(&key) {
+                    props.insert(key, value);
+                }
+            }
             let switch_actions = actions
                 .switch_actions
                 .into_iter()
@@ -271,9 +262,7 @@ impl Context {
                 character,
                 para_title,
                 switches,
-                bg,
-                bgm,
-                video,
+                props,
                 switch_actions,
             })
         } else {
@@ -317,7 +306,12 @@ impl Context {
             if cur_text.is_some() {
                 let text = cur_text.map(|act| self.parse_text_rich_error(act));
                 let para_title = cur_para.and_then(|p| p.title.clone());
-                let actions = text.map(|t| self.exact_text(para_title.as_ref(), t));
+                let actions = text.map(|t| {
+                    self.exact_text(para_title.as_ref(), t).unwrap_or_else(|e| {
+                        error!("Exact text error: {}", e);
+                        Action::default()
+                    })
+                });
                 self.ctx.cur_act += 1;
                 self.merge_action(actions).map(|act| {
                     self.process_action(act).unwrap_or_else(|e| {

@@ -23,11 +23,7 @@ pub struct Game {
     #[serde(default)]
     pub plugins: PluginsConfig,
     #[serde(default)]
-    pub bgs: PathBuf,
-    #[serde(default)]
-    pub bgms: PathBuf,
-    #[serde(default)]
-    pub videos: PathBuf,
+    pub props: HashMap<String, String>,
     #[serde(default)]
     pub res: HashMap<LocaleBuf, VarMap>,
     pub base_lang: LocaleBuf,

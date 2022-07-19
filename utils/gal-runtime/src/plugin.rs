@@ -114,6 +114,16 @@ impl Host {
     pub fn text_commands(&self, caller: impl AsContextMut<Data = WasiCtx>) -> Result<Vec<String>> {
         self.call(caller, "text_commands", ())
     }
+
+    pub fn dispatch_command(
+        &self,
+        caller: impl AsContextMut<Data = WasiCtx>,
+        name: &str,
+        args: &[String],
+        ctx: &TextProcessContext,
+    ) -> Result<TextProcessResult> {
+        self.call(caller, name, (args, ctx))
+    }
 }
 
 pub struct Runtime {
