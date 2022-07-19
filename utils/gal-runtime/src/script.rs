@@ -201,7 +201,7 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
         }
     } else {
         let args = args.iter().map(|e| e.call(ctx)).collect::<Vec<_>>();
-        if let Some(runtime) = ctx.runtime.script_modules.get(ns) {
+        if let Some(runtime) = ctx.runtime.modules.get(ns) {
             match runtime.dispatch(&mut ctx.runtime.store, name, &args) {
                 Ok(res) => res,
                 Err(e) => {

@@ -110,17 +110,22 @@ impl Host {
     ) -> Result<Action> {
         self.call(caller, "process_action", (frontend, action))
     }
+
+    pub fn text_commands(&self, caller: impl AsContextMut<Data = WasiCtx>) -> Result<Vec<String>> {
+        self.call(caller, "text_commands", ())
+    }
 }
 
 pub struct Runtime {
     pub store: Store<WasiCtx>,
-    pub script_modules: HashMap<String, Host>,
+    pub modules: HashMap<String, Host>,
     pub action_modules: Vec<(String, Host)>,
+    pub text_modules: HashMap<String, String>,
 }
 
 pub struct RuntimeRef<'a> {
     pub store: &'a mut Store<WasiCtx>,
-    pub script_modules: &'a HashMap<String, Host>,
+    pub modules: &'a HashMap<String, Host>,
 }
 
 #[derive(Debug, Clone)]
@@ -171,8 +176,9 @@ impl Runtime {
             let wasi = WasiCtxBuilder::new().inherit_env()?.inherit_stdio().build();
             let engine = Engine::default();
             let mut store = Store::new(&engine, wasi);
-            let mut script_modules = HashMap::new();
+            let mut modules = HashMap::new();
             let mut action_modules = Vec::new();
+            let mut text_modules = HashMap::new();
             let mut linker = Self::new_linker(store.engine())?;
             let mut paths = vec![];
             if names.is_empty() {
@@ -209,17 +215,25 @@ impl Runtime {
                 let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
                 match runtime.plugin_type(&mut store)? {
                     PluginType::Script => {
-                        script_modules.insert(name, runtime);
+                        modules.insert(name, runtime);
                     }
                     PluginType::Action => {
                         action_modules.push((name, runtime));
+                    }
+                    PluginType::Text => {
+                        let cmds = runtime.text_commands(&mut store)?;
+                        for cmd in cmds.into_iter() {
+                            text_modules.insert(cmd, name.clone());
+                        }
+                        modules.insert(name, runtime);
                     }
                 }
             }
             Ok(Self {
                 store,
-                script_modules,
+                modules,
                 action_modules,
+                text_modules,
             })
         })
     }
@@ -227,7 +241,7 @@ impl Runtime {
     pub fn as_mut(&mut self) -> RuntimeRef {
         RuntimeRef {
             store: &mut self.store,
-            script_modules: &self.script_modules,
+            modules: &self.modules,
         }
     }
 }

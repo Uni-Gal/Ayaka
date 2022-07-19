@@ -30,6 +30,7 @@ impl From<&log::Record<'_>> for Record {
 pub enum PluginType {
     Script,
     Action,
+    Text,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
