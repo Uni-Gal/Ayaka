@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { listen } from '@tauri-apps/api/event';
+import { listen, Event as TauriEvent, UnlistenFn } from '@tauri-apps/api/event';
 import { OpenGameStatus, OpenGameStatusType, open_game, choose_locale, get_settings, set_locale } from '../interop'
 </script>
 
@@ -10,12 +10,23 @@ export default {
         return {
             text: "",
             progress: 0,
+            unlisten_fn: null as UnlistenFn | null
         }
     },
-    async created() {
-        listen('gal://open_status', async (e) => {
+    async mounted() {
+        this.unlisten_fn = await listen('gal://open_status', this.on_open_status)
+        await open_game()
+    },
+    unmounted() {
+        if (this.unlisten_fn) {
+            this.unlisten_fn()
+            this.unlisten_fn = null
+        }
+    },
+    methods: {
+        async on_open_status(e: TauriEvent<OpenGameStatus>) {
             console.log(e.payload)
-            const status = e.payload as OpenGameStatus
+            const status = e.payload;
             [this.text, this.progress] = this.status_to_text(status)
             switch (OpenGameStatusType[status.t]) {
                 case OpenGameStatusType.LoadRecords:
@@ -25,13 +36,9 @@ export default {
                     this.$router.replace("/home")
                     break
             }
-        })
-        await open_game()
-    },
-    methods: {
+        },
         status_to_text(s: OpenGameStatus): [string, number] {
             const step = 100 / 6
-            console.log(s)
             const t = OpenGameStatusType[s.t]
             switch (t) {
                 case OpenGameStatusType.LoadSettings:
