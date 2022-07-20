@@ -39,7 +39,7 @@ export default {
     async mounted() {
         document.addEventListener('keydown', this.onkeydown)
         await this.mutex.runExclusive(this.fetch_current_run)
-        await this.start_type_anime()
+        this.start_type_anime()
     },
     async unmounted() {
         document.removeEventListener('keydown', this.onkeydown)
@@ -99,7 +99,7 @@ export default {
             await switch_(i)
             if (this.end_switching()) {
                 await this.mutex.runExclusive(this.fetch_next_run)
-                await this.start_type_anime()
+                this.start_type_anime()
             }
         },
         // Shouldn't be called in mutex
@@ -147,7 +147,7 @@ export default {
                 }).catch(_ => { })
                 if (new_text) {
                     await this.mutex.runExclusive(this.fetch_next_run)
-                    await this.start_type_anime()
+                    this.start_type_anime()
                 }
             }
         },
@@ -212,9 +212,7 @@ export default {
 </script>
 
 <template>
-    <audio ref="bgm" autoplay hidden>
-        <source v-bind:src="action.props.bgm" type="audio/mpeg" />
-    </audio>
+    <audio ref="bgm" v-bind:src="action.props.bgm" type="audio/mpeg" autoplay hidden loop> </audio>
     <img class="background" v-bind:src="action.props.bg">
     <div class="card-lines">
         <ActionCard :ch="action.character" :line="type_text"></ActionCard>
@@ -223,9 +221,8 @@ export default {
         <h4><span class="badge bg-primary">{{ action.para_title }}</span></h4>
     </div>
     <div class="content-full bg-body" v-bind:hidden="state != ActionState.Video">
-        <video ref="video" class="background" v-on:ended="onvideoended">
-            <source v-bind:src="action.props.video" type="video/mp4" />
-        </video>
+        <video ref="video" class="background" v-on:ended="onvideoended" v-bind:src="action.props.video"
+            type="video/mp4"></video>
     </div>
     <div class="backboard" v-on:click="next"></div>
     <div class="commands">

@@ -269,6 +269,21 @@ impl Context {
         for (_, module) in &self.runtime.action_modules {
             action = module.process_action(&mut self.runtime.store, self.frontend, action)?;
         }
+        while !action.line.is_empty() {
+            if action.line.last().unwrap().as_str().trim().is_empty() {
+                action.line.pop();
+            } else {
+                break;
+            }
+        }
+        // TODO: bad performance
+        while !action.line.is_empty() {
+            if action.line.first().unwrap().as_str().trim().is_empty() {
+                action.line.remove(0);
+            } else {
+                break;
+            }
+        }
         if !action.line.is_empty() || action.character.is_some() {
             self.ctx.history.push(action.clone());
         }
