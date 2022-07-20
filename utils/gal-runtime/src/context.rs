@@ -56,7 +56,7 @@ impl Context {
             Ok(Self {
                 game,
                 frontend,
-                root_path: root_path.to_path_buf(),
+                root_path: std::path::absolute(root_path)?,
                 runtime,
                 loc: Locale::current().to_owned(),
                 ctx: RawContext::default(),
@@ -157,7 +157,7 @@ impl Context {
         let mut props = HashMap::new();
         let mut switch_actions = vec![];
         let game_context = TextProcessContext {
-            root_path: std::path::absolute(&self.root_path).unwrap(),
+            root_path: self.root_path.clone(),
             game_props: self.game.props.clone(),
         };
         for line in t.0.into_iter() {

@@ -23,8 +23,7 @@ fn file(
     if let Some(path) = exs
         .into_iter()
         .map(|ex| bg_dir.join(&args[0]).with_extension(ex))
-        // TODO: enable fs for wasi
-        //.filter(|p| p.exists())
+        .filter(|p| fs::exists(p))
         .next()
     {
         res.props
@@ -35,7 +34,7 @@ fn file(
 
 #[export]
 fn bg(args: Vec<String>, ctx: TextProcessContext) -> TextProcessResult {
-    file(args, ctx, "bgs", "bg", &["jpg", "png", "gif"])
+    file(args, ctx, "bgs", "bg", &["png", "jpg", "gif"])
 }
 
 #[export]

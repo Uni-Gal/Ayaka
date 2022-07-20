@@ -6,7 +6,9 @@ pub use gal_bindings_types::*;
 pub use gal_primitive::*;
 pub use log;
 
-use log::Log;
+pub mod fs;
+mod logger;
+
 use serde::{de::DeserializeOwned, Serialize};
 use std::alloc::{self, Layout};
 
@@ -32,59 +34,13 @@ unsafe extern "C" fn __abi_free(ptr: *mut u8, len: usize, align: usize) {
     alloc::dealloc(ptr, layout);
 }
 
-#[cfg(target_arch = "wasm32")]
-#[link(wasm_import_module = "log")]
-extern "C" {
-    fn __log(len: usize, data: *const u8);
-    fn __log_flush();
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-unsafe fn __log(_len: usize, _data: *const u8) {}
-
-#[cfg(not(target_arch = "wasm32"))]
-unsafe fn __log_flush() {}
-
-struct PluginLogger;
-
-impl PluginLogger {
-    pub fn init() {
-        use std::sync::Once;
-        static INIT: Once = Once::new();
-
-        INIT.call_once(|| {
-            let r = log::set_logger(&PluginLogger);
-            if r.is_ok() {
-                log::set_max_level(log::LevelFilter::Trace);
-            }
-            r.unwrap();
-        });
-    }
-}
-
-impl Log for PluginLogger {
-    fn enabled(&self, _metadata: &log::Metadata) -> bool {
-        true
-    }
-
-    fn log(&self, record: &log::Record) {
-        let record: gal_bindings_types::Record = record.into();
-        let data = rmp_serde::to_vec(&record).unwrap();
-        unsafe { __log(data.len(), data.as_ptr()) }
-    }
-
-    fn flush(&self) {
-        unsafe { __log_flush() }
-    }
-}
-
 #[doc(hidden)]
 pub unsafe fn __export<Params: DeserializeOwned, Res: Serialize>(
     len: usize,
     data: *const u8,
     f: impl FnOnce<Params, Output = Res>,
 ) -> u64 {
-    PluginLogger::init();
+    logger::PluginLogger::init();
     let data = std::slice::from_raw_parts(data, len);
     let data = rmp_serde::from_slice(data).unwrap();
     let res = f.call_once(data);

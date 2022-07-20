@@ -3,7 +3,10 @@ use anyhow::{anyhow, Result};
 use gal_bindings_types::*;
 use gal_script::log::info;
 use serde::{de::DeserializeOwned, Serialize};
-use std::{collections::HashMap, path::Path};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 use wasmtime::*;
 use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
@@ -174,6 +177,19 @@ impl Runtime {
             },
         )?;
         linker.func_wrap("log", "__log_flush", || log::logger().flush())?;
+        linker.func_wrap(
+            "fs",
+            "__exists",
+            |mut caller: Caller<'_, WasiCtx>, len: i32, data: i32| {
+                let memory = match caller.get_export("memory") {
+                    Some(Extern::Memory(mem)) => mem,
+                    _ => return Err(Trap::new("failed to find host memory")),
+                };
+                let data = unsafe { mem_slice(&memory, &mut caller, data, len) };
+                let path = PathBuf::from(unsafe { std::str::from_utf8_unchecked(data) });
+                Ok(path.exists() as i32)
+            },
+        )?;
         Ok(linker)
     }
 
