@@ -9,19 +9,18 @@ fn plugin_type() -> PluginType {
 
 #[export]
 fn process_action(frontend: FrontendType, mut action: Action) -> Action {
-    match frontend {
-        FrontendType::Html => {
-            let line = action
-                .line
-                .into_iter()
-                .map(|s| s.into_string())
-                .collect::<Vec<_>>()
-                .concat();
-            let parser = Parser::new(&line);
-            action.line = HtmlWriter::new(parser).run().into_line()
-        }
-        _ => {}
-    }
+    let line = action
+        .line
+        .into_iter()
+        .map(|s| s.into_string())
+        .collect::<Vec<_>>()
+        .concat();
+    let parser = Parser::new(&line);
+    let writer = Writer::new(parser);
+    action.line = match frontend {
+        FrontendType::Html => writer.run_html().into_line(),
+        FrontendType::Text => writer.run_text().into_line(),
+    };
     action
 }
 
@@ -38,7 +37,7 @@ enum TableState {
     Body,
 }
 
-struct HtmlWriter<'a, I> {
+struct Writer<'a, I> {
     iter: I,
     writer: Vec<ActionLine>,
     table_state: TableState,
@@ -47,7 +46,7 @@ struct HtmlWriter<'a, I> {
     numbers: HashMap<CowStr<'a>, usize>,
 }
 
-impl<'a, I> HtmlWriter<'a, I>
+impl<'a, I> Writer<'a, I>
 where
     I: Iterator<Item = Event<'a>>,
 {
@@ -71,7 +70,18 @@ where
         self.writer.push(ActionLine::Block(s.into()));
     }
 
-    fn run(mut self) -> Self {
+    fn run_text(mut self) -> Self {
+        while let Some(event) = self.iter.next() {
+            match event {
+                Text(text) | Code(text) | Html(text) => self.write_chars(text.as_ref()),
+                SoftBreak | HardBreak | Rule => self.write_chars("\n"),
+                _ => {}
+            }
+        }
+        self
+    }
+
+    fn run_html(mut self) -> Self {
         while let Some(event) = self.iter.next() {
             match event {
                 Start(tag) => {
