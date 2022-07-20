@@ -1,5 +1,10 @@
 use crate::exec::*;
+use regex::Regex;
 use std::{error::Error, fmt::Display, iter::Peekable, num::ParseIntError, str::CharIndices};
+
+lazy_static::lazy_static! {
+    static ref SPACE_REGEX: Regex = Regex::new(r"(\s+)").unwrap();
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub struct Loc(pub usize, pub usize);
@@ -507,29 +512,8 @@ impl<'a> TextParser<'a> {
             }
         }
         if !str.is_empty() {
-            let trimmed_str = str.trim();
-            if str.is_empty() {
-                Ok(Some(Line::Str(str)))
-            } else if str.len() == 1 {
-                if trimmed_str.is_empty() {
-                    Ok(Some(Line::Str(" ".to_string())))
-                } else {
-                    Ok(Some(Line::Str(str)))
-                }
-            } else {
-                let start_space = str.chars().next().unwrap().is_whitespace();
-                let end_space = str.chars().last().unwrap().is_whitespace();
-                if str.len() == 2 && start_space && end_space {
-                    Ok(Some(Line::Str(" ".to_string())))
-                } else {
-                    Ok(Some(Line::Str(format!(
-                        "{}{}{}",
-                        if start_space { " " } else { "" },
-                        trimmed_str,
-                        if end_space { " " } else { "" }
-                    ))))
-                }
-            }
+            let trimmed_str = SPACE_REGEX.replace_all(&str, " ");
+            Ok(Some(Line::Str(trimmed_str.into_owned())))
         } else {
             Ok(None)
         }
