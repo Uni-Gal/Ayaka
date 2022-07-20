@@ -265,10 +265,7 @@ impl<'a> Iterator for TextLexer<'a> {
         while let Some(c) = self.chars.peek() {
             if is_special_char(c) {
                 if self.chars.readed() - cur > 0 {
-                    return Some(Token::text(
-                        Loc(cur, self.chars.readed()),
-                        &self.text[cur..self.chars.readed()],
-                    ));
+                    break;
                 } else {
                     self.chars.next();
                     return Some(Token::spec_char(
@@ -278,10 +275,7 @@ impl<'a> Iterator for TextLexer<'a> {
                 }
             } else if c.is_whitespace() {
                 if self.chars.readed() - cur > 0 {
-                    return Some(Token::text(
-                        Loc(cur, self.chars.readed()),
-                        &self.text[cur..self.chars.readed()],
-                    ));
+                    break;
                 } else {
                     return self.next();
                 }
@@ -513,7 +507,29 @@ impl<'a> TextParser<'a> {
             }
         }
         if !str.is_empty() {
-            Ok(Some(Line::Str(str.trim().to_string())))
+            let trimmed_str = str.trim();
+            if str.is_empty() {
+                Ok(Some(Line::Str(str)))
+            } else if str.len() == 1 {
+                if trimmed_str.is_empty() {
+                    Ok(Some(Line::Str(" ".to_string())))
+                } else {
+                    Ok(Some(Line::Str(str)))
+                }
+            } else {
+                let start_space = str.chars().next().unwrap().is_whitespace();
+                let end_space = str.chars().last().unwrap().is_whitespace();
+                if str.len() == 2 && start_space && end_space {
+                    Ok(Some(Line::Str(" ".to_string())))
+                } else {
+                    Ok(Some(Line::Str(format!(
+                        "{}{}{}",
+                        if start_space { " " } else { "" },
+                        trimmed_str,
+                        if end_space { " " } else { "" }
+                    ))))
+                }
+            }
         } else {
             Ok(None)
         }
@@ -640,11 +656,11 @@ impl<'a> Iterator for TextParser<'a> {
 }
 
 #[cfg(test)]
-mod test {
-    use crate::{text::*, *};
+mod test_lexer {
+    use crate::text::*;
 
     #[test]
-    fn basic_lexer() {
+    fn basic() {
         let lexer = TextLexer::new("\\par text");
         let res = lexer.collect::<Vec<_>>();
         assert_eq!(res.len(), 4);
@@ -655,6 +671,35 @@ mod test {
     }
 
     #[test]
+    fn space() {
+        let lexer = TextLexer::new("text \\par");
+        let res = lexer.collect::<Vec<_>>();
+        assert_eq!(res.len(), 4);
+        assert_eq!(res[0].tok, TokenType::Text("text"));
+        assert_eq!(res[1].tok, TokenType::Space);
+        assert_eq!(res[2].tok, TokenType::SpecChar('\\'));
+        assert_eq!(res[3].tok, TokenType::Text("par"));
+    }
+}
+
+#[cfg(test)]
+mod test_rich_lexer {
+    use crate::text::*;
+
+    #[test]
+    fn space() {
+        let mut lexer = TextRichLexer::new("\\cmd{123} \\cmd{123}");
+        let res = lexer.try_collect::<Vec<_>>().unwrap();
+        assert_eq!(res.len(), 3);
+        assert_eq!(res[1].tok, RichTokenType::Char(' '));
+    }
+}
+
+#[cfg(test)]
+mod test_parser {
+    use crate::{text::*, *};
+
+    #[test]
     fn basic() {
         assert_eq!(
             TextParser::new("\\\\").parse().unwrap(),
@@ -663,6 +708,18 @@ mod test {
         assert_eq!(
             TextParser::new("\\{").parse().unwrap(),
             Text(vec![Line::Str("{".to_string())])
+        );
+    }
+
+    #[test]
+    fn space() {
+        assert_eq!(
+            TextParser::new("\\cmd{123} \\cmd{123}").parse().unwrap(),
+            Text(vec![
+                Line::Cmd(Command::Other("cmd".to_string(), vec!["123".to_string()])),
+                Line::Str(" ".to_string()),
+                Line::Cmd(Command::Other("cmd".to_string(), vec!["123".to_string()])),
+            ])
         );
     }
 
@@ -718,8 +775,24 @@ mod test {
     #[test]
     fn lf() {
         assert_eq!(
+            TextParser::new(" ").parse().unwrap(),
+            Text(vec![Line::Str(" ".to_string())])
+        );
+        assert_eq!(
+            TextParser::new("  ").parse().unwrap(),
+            Text(vec![Line::Str(" ".to_string())])
+        );
+        assert_eq!(
             TextParser::new(" \n ").parse().unwrap(),
-            Text(vec![Line::Str(String::default())])
+            Text(vec![Line::Str(" ".to_string())])
+        );
+        assert_eq!(
+            TextParser::new(" 123 ").parse().unwrap(),
+            Text(vec![Line::Str(" 123 ".to_string())])
+        );
+        assert_eq!(
+            TextParser::new(" \n123\t ").parse().unwrap(),
+            Text(vec![Line::Str(" 123 ".to_string())])
         );
     }
 }
