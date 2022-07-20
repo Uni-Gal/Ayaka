@@ -1,6 +1,4 @@
 .PHONY: test clean update
-test:
-	cargo test
 clean:
 	cargo clean
 update:
@@ -8,6 +6,7 @@ update:
 
 .PHONY: plugins
 plugins:
-	cargo build --target=wasm32-wasi --release
+	cargo build --release
 	mkdir -p ../examples/plugins
 	cp target/wasm32-wasi/release/*.wasm ../examples/plugins/
+	cp target/wasm32-unknown-unknown/release/*.wasm ../examples/plugins/

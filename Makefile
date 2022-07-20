@@ -1,7 +1,6 @@
 .PHONY: test clean update
 test: plugins
 	cd utils && $(MAKE) test
-	cd plugins && $(MAKE) test
 clean:
 	cd bins && $(MAKE) clean
 	cd utils && $(MAKE) clean

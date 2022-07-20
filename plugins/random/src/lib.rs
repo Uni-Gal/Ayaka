@@ -26,14 +26,3 @@ fn rnd(args: Vec<RawValue>) -> RawValue {
         RawValue::Unit
     }
 }
-
-#[cfg(test)]
-mod test {
-    use crate::*;
-
-    #[test]
-    fn random() {
-        let value = rnd(vec![RawValue::Num(2), RawValue::Num(100)]).get_num();
-        assert!(value >= 2 && value < 100);
-    }
-}
