@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "basictex",
     "format",
     "galog",
     "markdown",

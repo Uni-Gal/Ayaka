@@ -7,7 +7,7 @@ use crate::{
 };
 use anyhow::{anyhow, bail, Result};
 use gal_bindings_types::{ActionLine, TextProcessContext};
-use gal_script::{log::info, Command, Line, Loc, ParseError, Program, Text, TextParser};
+use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
 use std::{collections::HashMap, path::PathBuf};
@@ -156,13 +156,15 @@ impl Context {
         let mut switches = vec![];
         let mut props = HashMap::new();
         let mut switch_actions = vec![];
+        // TODO: reduce allocation
         let game_context = TextProcessContext {
             root_path: self.root_path.clone(),
             game_props: self.game.props.clone(),
+            frontend: self.frontend,
         };
         for line in t.0.into_iter() {
             match line {
-                Line::Str(s) => action_line.push(ActionLine::Chars(s)),
+                Line::Str(s) => action_line.push(ActionLine::chars(s)),
                 Line::Cmd(cmd) => match cmd {
                     Command::Character(key, alter) => {
                         chname = if alter.is_empty() {
@@ -177,7 +179,7 @@ impl Context {
                         }
                     }
                     Command::Exec(p) => {
-                        action_line.push(ActionLine::Chars(self.call(&p).get_str().into_owned()))
+                        action_line.push(ActionLine::chars(self.call(&p).get_str()))
                     }
                     Command::Switch {
                         text,
@@ -197,7 +199,6 @@ impl Context {
                                 &args,
                                 &game_context,
                             )?;
-                            info!("Call other command \"{}\": {:?}", name, res);
                             action_line.append(&mut res.line);
                             for (key, value) in res.props.into_iter() {
                                 props.insert(key, value);

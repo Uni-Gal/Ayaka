@@ -48,6 +48,14 @@ pub enum ActionLine {
 }
 
 impl ActionLine {
+    pub fn chars(s: impl Into<String>) -> Self {
+        Self::Chars(s.into())
+    }
+
+    pub fn block(s: impl Into<String>) -> Self {
+        Self::Block(s.into())
+    }
+
     pub fn as_str(&self) -> &str {
         match self {
             Self::Chars(s) | Self::Block(s) => &s,
@@ -77,10 +85,11 @@ pub struct Switch {
     pub enabled: bool,
 }
 
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TextProcessContext {
     pub root_path: PathBuf,
     pub game_props: HashMap<String, String>,
+    pub frontend: FrontendType,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]

@@ -1,0 +1,30 @@
+title: Markdown
+author: Berrysoft
+plugins:
+  dir: ../plugins/
+  modules:
+    - basictex
+    - markdown
+base_lang: en
+paras:
+  en:
+    -
+      tag: md
+      texts:
+        - Markdown examples
+        - '# HEAD'
+        - Normal
+        - '*Italic*'
+        - '**Bold**'
+        - '`code`'
+        - Mixed normal *italic* **bold** `code`.
+      next: tex
+    -
+      tag: tex
+      texts:
+        - LaTeX examples
+        - This is the first line.\par This is the second line.
+        - \textrm{Roman}
+        - \textsf{Sans-serif}
+        - \texttt{Monospace}
+        - Mixed \textrm{Roman} \textsf{Sans-serif} \texttt{Monospace}

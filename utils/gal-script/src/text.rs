@@ -276,6 +276,15 @@ impl<'a> Iterator for TextLexer<'a> {
                         c,
                     ));
                 }
+            } else if c.is_whitespace() {
+                if self.chars.readed() - cur > 0 {
+                    return Some(Token::text(
+                        Loc(cur, self.chars.readed()),
+                        &self.text[cur..self.chars.readed()],
+                    ));
+                } else {
+                    return self.next();
+                }
             } else {
                 self.chars.next();
             }
@@ -633,6 +642,17 @@ impl<'a> Iterator for TextParser<'a> {
 #[cfg(test)]
 mod test {
     use crate::{text::*, *};
+
+    #[test]
+    fn basic_lexer() {
+        let lexer = TextLexer::new("\\par text");
+        let res = lexer.collect::<Vec<_>>();
+        assert_eq!(res.len(), 4);
+        assert_eq!(res[0].tok, TokenType::SpecChar('\\'));
+        assert_eq!(res[1].tok, TokenType::Text("par"));
+        assert_eq!(res[2].tok, TokenType::Space);
+        assert_eq!(res[3].tok, TokenType::Text("text"));
+    }
 
     #[test]
     fn basic() {

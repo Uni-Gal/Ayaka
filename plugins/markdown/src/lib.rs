@@ -63,11 +63,11 @@ where
 
     /// Writes a buffer, and tracks whether or not a newline was written.
     fn write_chars(&mut self, s: impl Into<String>) {
-        self.writer.push(ActionLine::Chars(s.into()));
+        self.writer.push(ActionLine::chars(s));
     }
 
     fn write_block(&mut self, s: impl Into<String>) {
-        self.writer.push(ActionLine::Block(s.into()));
+        self.writer.push(ActionLine::block(s));
     }
 
     fn run_text(mut self) -> Self {
