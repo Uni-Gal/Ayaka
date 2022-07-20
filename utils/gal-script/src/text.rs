@@ -778,5 +778,9 @@ mod test_parser {
             TextParser::new(" \n123\t ").parse().unwrap(),
             Text(vec![Line::Str(" 123 ".to_string())])
         );
+        assert_eq!(
+            TextParser::new("123").parse().unwrap(),
+            Text(vec![Line::Str("123".to_string())])
+        );
     }
 }

@@ -252,7 +252,7 @@ impl Callable for Text {
                 },
             }
         }
-        RawValue::Str(str)
+        RawValue::Str(str.trim().to_string())
     }
 }
 
@@ -334,6 +334,18 @@ mod test {
                     .call(ctx)
                     .get_num(),
                 6
+            );
+            assert_eq!(
+                ProgramParser::new()
+                    .parse(
+                        r##"
+                            if(true, "sodayo")
+                        "##
+                    )
+                    .ok()
+                    .call(ctx)
+                    .get_str(),
+                "sodayo"
             );
         });
     }
