@@ -7,7 +7,7 @@ fn plugin_type() -> PluginType {
 
 #[export]
 fn text_commands() -> Vec<&'static str> {
-    vec!["par", "textrm", "textsf", "texttt"]
+    vec!["par", "textrm", "textsf", "texttt", "ruby"]
 }
 
 #[export]
@@ -49,4 +49,24 @@ fn textsf(args: Vec<String>, ctx: TextProcessContext) -> TextProcessResult {
 #[export]
 fn texttt(args: Vec<String>, ctx: TextProcessContext) -> TextProcessResult {
     text_font(args, ctx, "Courier New")
+}
+
+#[export]
+fn ruby(args: Vec<String>, ctx: TextProcessContext) -> TextProcessResult {
+    assert_eq!(args.len(), 2);
+    let mut res = TextProcessResult::default();
+    match ctx.frontend {
+        FrontendType::Text => res
+            .line
+            .push_back(ActionLine::chars(format!("{}（{}）", args[0], args[1]))),
+        FrontendType::Html => {
+            res.line.push_back(ActionLine::block("<ruby>"));
+            res.line.push_back(ActionLine::chars(&args[0]));
+            res.line.push_back(ActionLine::block("<rp>（</rp><rt>"));
+            res.line.push_back(ActionLine::chars(&args[1]));
+            res.line.push_back(ActionLine::block("</rt><rp>）</rp>"));
+            res.line.push_back(ActionLine::block("</ruby>"));
+        }
+    }
+    res
 }

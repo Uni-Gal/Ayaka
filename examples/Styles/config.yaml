@@ -28,3 +28,4 @@ paras:
         - \textsf{Sans-serif}
         - \texttt{Monospace}
         - Mixed \textrm{Roman} \textsf{Sans-serif} \texttt{Monospace}
+        - \ruby{Ruby}{ruby}
