@@ -269,7 +269,8 @@ impl Context {
     }
 
     fn process_action(&mut self, mut action: Action) -> Result<Action> {
-        for (_, module) in &self.runtime.action_modules {
+        for action_module in &self.runtime.action_modules {
+            let module = &self.runtime.modules[action_module];
             action = module.process_action(&mut self.runtime.store, self.frontend, action)?;
         }
         while let Some(act) = action.line.back() {

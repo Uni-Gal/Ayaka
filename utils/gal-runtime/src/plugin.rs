@@ -133,7 +133,7 @@ impl Host {
 pub struct Runtime {
     pub store: Store<WasiCtx>,
     pub modules: HashMap<String, Host>,
-    pub action_modules: Vec<(String, Host)>,
+    pub action_modules: Vec<String>,
     pub text_modules: HashMap<String, String>,
 }
 
@@ -241,11 +241,9 @@ impl Runtime {
                 let module = Module::from_binary(store.engine(), &buf)?;
                 let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
                 match runtime.plugin_type(&mut store)? {
-                    PluginType::Script => {
-                        modules.insert(name, runtime);
-                    }
+                    PluginType::Script => {}
                     PluginType::Action => {
-                        action_modules.push((name, runtime));
+                        action_modules.push(name.clone());
                     }
                     PluginType::Text => {
                         let cmds = runtime.text_commands(&mut store)?;
@@ -253,9 +251,9 @@ impl Runtime {
                         for cmd in cmds.into_iter() {
                             text_modules.insert(cmd, name.clone());
                         }
-                        modules.insert(name, runtime);
                     }
                 }
+                modules.insert(name, runtime);
             }
             Ok(Self {
                 store,
