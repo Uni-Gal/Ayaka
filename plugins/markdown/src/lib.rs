@@ -1,6 +1,6 @@
 use gal_bindings::*;
 use pulldown_cmark::{Event::*, *};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 #[export]
 fn plugin_type() -> PluginType {
@@ -39,7 +39,7 @@ enum TableState {
 
 struct Writer<'a, I> {
     iter: I,
-    writer: Vec<ActionLine>,
+    writer: VecDeque<ActionLine>,
     table_state: TableState,
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
@@ -53,7 +53,7 @@ where
     fn new(iter: I) -> Self {
         Self {
             iter,
-            writer: vec![],
+            writer: VecDeque::new(),
             table_state: TableState::Head,
             table_alignments: vec![],
             table_cell_index: 0,
@@ -63,11 +63,11 @@ where
 
     /// Writes a buffer, and tracks whether or not a newline was written.
     fn write_chars(&mut self, s: impl Into<String>) {
-        self.writer.push(ActionLine::chars(s));
+        self.writer.push_back(ActionLine::chars(s));
     }
 
     fn write_block(&mut self, s: impl Into<String>) {
-        self.writer.push(ActionLine::block(s));
+        self.writer.push_back(ActionLine::block(s));
     }
 
     fn run_text(mut self) -> Self {
@@ -340,7 +340,7 @@ where
         }
     }
 
-    pub fn into_line(self) -> Vec<ActionLine> {
+    pub fn into_line(self) -> VecDeque<ActionLine> {
         self.writer
     }
 }

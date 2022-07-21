@@ -1,7 +1,10 @@
 use gal_fallback::FallbackSpec;
 use gal_script::Program;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::{HashMap, VecDeque},
+    path::PathBuf,
+};
 
 #[doc(hidden)]
 #[derive(Serialize, Deserialize)]
@@ -71,7 +74,7 @@ impl ActionLine {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, FallbackSpec)]
 pub struct Action {
-    pub line: Vec<ActionLine>,
+    pub line: VecDeque<ActionLine>,
     pub character: Option<String>,
     pub para_title: Option<String>,
     pub switches: Vec<Switch>,
@@ -94,6 +97,6 @@ pub struct TextProcessContext {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct TextProcessResult {
-    pub line: Vec<ActionLine>,
+    pub line: VecDeque<ActionLine>,
     pub props: HashMap<String, String>,
 }

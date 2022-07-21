@@ -49,6 +49,12 @@ impl<T> Fallback<Vec<T>> {
     }
 }
 
+impl<T> Fallback<VecDeque<T>> {
+    pub fn and_any(self) -> Option<VecDeque<T>> {
+        self.and_then(|s| if s.is_empty() { None } else { Some(s) })
+    }
+}
+
 impl<T> From<Fallback<T>> for Option<T> {
     fn from(f: Fallback<T>) -> Self {
         if f.data.is_some() {
@@ -100,6 +106,8 @@ impl<T: FallbackSpec> Fallback<T> {
         T::SpecType::from(self)
     }
 }
+
+use std::collections::VecDeque;
 
 pub use gal_fallback_derive::FallbackSpec;
 

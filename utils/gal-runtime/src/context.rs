@@ -10,7 +10,10 @@ use gal_bindings_types::{ActionLine, TextProcessContext};
 use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::{HashMap, VecDeque},
+    path::PathBuf,
+};
 use tokio_stream::StreamExt;
 use unicode_width::UnicodeWidthStr;
 
@@ -151,7 +154,7 @@ impl Context {
     }
 
     fn exact_text(&mut self, para_title: Option<&String>, t: Text) -> Result<Action> {
-        let mut action_line = vec![];
+        let mut action_line = VecDeque::new();
         let mut chname = None;
         let mut switches = vec![];
         let mut props = HashMap::new();
@@ -164,7 +167,7 @@ impl Context {
         };
         for line in t.0.into_iter() {
             match line {
-                Line::Str(s) => action_line.push(ActionLine::chars(s)),
+                Line::Str(s) => action_line.push_back(ActionLine::chars(s)),
                 Line::Cmd(cmd) => match cmd {
                     Command::Character(key, alter) => {
                         chname = if alter.is_empty() {
@@ -179,7 +182,7 @@ impl Context {
                         }
                     }
                     Command::Exec(p) => {
-                        action_line.push(ActionLine::chars(self.call(&p).get_str()))
+                        action_line.push_back(ActionLine::chars(self.call(&p).get_str()))
                     }
                     Command::Switch {
                         text,
@@ -269,17 +272,16 @@ impl Context {
         for (_, module) in &self.runtime.action_modules {
             action = module.process_action(&mut self.runtime.store, self.frontend, action)?;
         }
-        while !action.line.is_empty() {
-            if action.line.last().unwrap().as_str().trim().is_empty() {
-                action.line.pop();
+        while let Some(act) = action.line.back() {
+            if act.as_str().trim().is_empty() {
+                action.line.pop_back();
             } else {
                 break;
             }
         }
-        // TODO: bad performance
-        while !action.line.is_empty() {
-            if action.line.first().unwrap().as_str().trim().is_empty() {
-                action.line.remove(0);
+        while let Some(act) = action.line.front() {
+            if act.as_str().trim().is_empty() {
+                action.line.pop_front();
             } else {
                 break;
             }
