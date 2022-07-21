@@ -189,12 +189,12 @@ impl Context {
                         switch_actions.push(action);
                     }
                     Command::Other(name, args) => {
-                        let game_context = TextProcessContextRef {
-                            root_path: &self.root_path,
-                            game_props: &self.game.props,
-                            frontend: self.frontend,
-                        };
                         if let Some(m) = self.runtime.text_modules.get(&name) {
+                            let game_context = TextProcessContextRef {
+                                root_path: &self.root_path,
+                                game_props: &self.game.props,
+                                frontend: self.frontend,
+                            };
                             let mut res = self.runtime.modules.get(m).unwrap().dispatch_command(
                                 &mut self.runtime.store,
                                 &name,
