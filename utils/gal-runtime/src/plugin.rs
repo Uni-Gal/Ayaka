@@ -1,7 +1,7 @@
 use crate::{progress_future::ProgressFuture, *};
 use anyhow::{anyhow, Result};
 use gal_bindings_types::*;
-use gal_script::log::info;
+use log::warn;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{
     collections::HashMap,
@@ -247,9 +247,14 @@ impl Runtime {
                     }
                     PluginType::Text => {
                         let cmds = runtime.text_commands(&mut store)?;
-                        info!("Plugin {} registered: {:?}", name, &cmds);
                         for cmd in cmds.into_iter() {
-                            text_modules.insert(cmd, name.clone());
+                            let res = text_modules.insert(cmd.clone(), name.clone());
+                            if let Some(old_module) = res {
+                                warn!(
+                                    "Command `{}` is overrided by \"{}\" over \"{}\"",
+                                    cmd, name, old_module
+                                );
+                            }
                         }
                     }
                 }
