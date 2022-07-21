@@ -3,7 +3,7 @@ use gal_script::Program;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, VecDeque},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 #[doc(hidden)]
@@ -92,6 +92,23 @@ pub struct Switch {
 pub struct TextProcessContext {
     pub root_path: PathBuf,
     pub game_props: HashMap<String, String>,
+    pub frontend: FrontendType,
+}
+
+impl TextProcessContext {
+    pub fn as_ref<'a>(&'a self) -> TextProcessContextRef<'a> {
+        TextProcessContextRef {
+            root_path: &self.root_path,
+            game_props: &self.game_props,
+            frontend: self.frontend,
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct TextProcessContextRef<'a> {
+    pub root_path: &'a Path,
+    pub game_props: &'a HashMap<String, String>,
     pub frontend: FrontendType,
 }
 

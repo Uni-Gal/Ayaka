@@ -93,7 +93,7 @@ impl Host {
         Ok(res_data)
     }
 
-    pub fn dispatch(
+    pub fn dispatch_method(
         &self,
         caller: impl AsContextMut<Data = WasiCtx>,
         name: &str,
@@ -124,7 +124,7 @@ impl Host {
         caller: impl AsContextMut<Data = WasiCtx>,
         name: &str,
         args: &[String],
-        ctx: &TextProcessContext,
+        ctx: TextProcessContextRef,
     ) -> Result<TextProcessResult> {
         self.call(caller, name, (args, ctx))
     }

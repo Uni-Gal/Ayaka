@@ -6,7 +6,7 @@ use crate::{
     *,
 };
 use anyhow::{anyhow, bail, Result};
-use gal_bindings_types::{ActionLine, TextProcessContext};
+use gal_bindings_types::{ActionLine, TextProcessContextRef};
 use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
@@ -159,12 +159,6 @@ impl Context {
         let mut switches = vec![];
         let mut props = HashMap::new();
         let mut switch_actions = vec![];
-        // TODO: reduce allocation
-        let game_context = TextProcessContext {
-            root_path: self.root_path.clone(),
-            game_props: self.game.props.clone(),
-            frontend: self.frontend,
-        };
         for line in t.0.into_iter() {
             match line {
                 Line::Str(s) => action_line.push_back(ActionLine::chars(s)),
@@ -195,12 +189,17 @@ impl Context {
                         switch_actions.push(action);
                     }
                     Command::Other(name, args) => {
+                        let game_context = TextProcessContextRef {
+                            root_path: &self.root_path,
+                            game_props: &self.game.props,
+                            frontend: self.frontend,
+                        };
                         if let Some(m) = self.runtime.text_modules.get(&name) {
                             let mut res = self.runtime.modules.get(m).unwrap().dispatch_command(
                                 &mut self.runtime.store,
                                 &name,
                                 &args,
-                                &game_context,
+                                game_context,
                             )?;
                             action_line.append(&mut res.line);
                             for (key, value) in res.props.into_iter() {
