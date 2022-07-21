@@ -44,16 +44,16 @@ unsafe fn mem_slice_mut<'a>(
 }
 
 impl Host {
-    pub fn instantiate(
-        mut store: impl AsContextMut<Data = WasiCtx>,
+    pub fn instantiate<T>(
+        mut store: impl AsContextMut<Data = T>,
         module: &Module,
-        linker: &mut Linker<WasiCtx>,
+        linker: &mut Linker<T>,
     ) -> Result<Self> {
         let instance = linker.instantiate(&mut store, module)?;
         Ok(Self::new(store, instance)?)
     }
 
-    pub fn new(mut store: impl AsContextMut<Data = WasiCtx>, instance: Instance) -> Result<Self> {
+    pub fn new(mut store: impl AsContextMut, instance: Instance) -> Result<Self> {
         let mut store = store.as_context_mut();
         let abi_free = instance.get_typed_func(&mut store, "__abi_free")?;
         let abi_alloc = instance.get_typed_func(&mut store, "__abi_alloc")?;
@@ -72,7 +72,7 @@ impl Host {
 
     pub fn call<Params: Serialize, Res: DeserializeOwned>(
         &self,
-        mut caller: impl AsContextMut<Data = WasiCtx>,
+        mut caller: impl AsContextMut,
         name: &str,
         args: Params,
     ) -> Result<Res> {
@@ -95,33 +95,33 @@ impl Host {
 
     pub fn dispatch_method(
         &self,
-        caller: impl AsContextMut<Data = WasiCtx>,
+        caller: impl AsContextMut,
         name: &str,
         args: &[RawValue],
     ) -> Result<RawValue> {
         self.call(caller, name, (args,))
     }
 
-    pub fn plugin_type(&self, caller: impl AsContextMut<Data = WasiCtx>) -> Result<PluginType> {
+    pub fn plugin_type(&self, caller: impl AsContextMut) -> Result<PluginType> {
         self.call(caller, "plugin_type", ())
     }
 
     pub fn process_action(
         &self,
-        caller: impl AsContextMut<Data = WasiCtx>,
+        caller: impl AsContextMut,
         frontend: FrontendType,
         action: Action,
     ) -> Result<Action> {
         self.call(caller, "process_action", (frontend, action))
     }
 
-    pub fn text_commands(&self, caller: impl AsContextMut<Data = WasiCtx>) -> Result<Vec<String>> {
+    pub fn text_commands(&self, caller: impl AsContextMut) -> Result<Vec<String>> {
         self.call(caller, "text_commands", ())
     }
 
     pub fn dispatch_command(
         &self,
-        caller: impl AsContextMut<Data = WasiCtx>,
+        caller: impl AsContextMut,
         name: &str,
         args: &[String],
         ctx: TextProcessContextRef,
@@ -218,8 +218,7 @@ impl Runtime {
                         == "wasm"
                     {
                         let name = p
-                            .with_extension("")
-                            .file_name()
+                            .file_stem()
                             .map(|s| s.to_string_lossy())
                             .unwrap_or_default()
                             .into_owned();
