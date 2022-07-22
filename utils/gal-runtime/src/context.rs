@@ -193,7 +193,6 @@ impl Context {
                                 frontend: self.frontend,
                             };
                             let mut res = self.runtime.modules.get(m).unwrap().dispatch_command(
-                                &mut self.runtime.store,
                                 &name,
                                 &args,
                                 game_context,
@@ -267,7 +266,7 @@ impl Context {
     fn process_action(&mut self, mut action: Action) -> Result<Action> {
         for action_module in &self.runtime.action_modules {
             let module = &self.runtime.modules[action_module];
-            action = module.process_action(&mut self.runtime.store, self.frontend, action)?;
+            action = module.process_action(self.frontend, action)?;
         }
         while let Some(act) = action.line.back() {
             if act.as_str().trim().is_empty() {

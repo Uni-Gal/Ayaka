@@ -1,5 +1,5 @@
 use crate::{progress_future::ProgressFuture, *};
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use gal_bindings_types::*;
 use log::warn;
 use serde::{de::DeserializeOwned, Serialize};
@@ -8,137 +8,101 @@ use std::{
     path::{Path, PathBuf},
 };
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
-use wasmtime::*;
-use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
+use wasmer::*;
+use wasmer_wasi::*;
 
 pub struct Host {
-    abi_free: TypedFunc<(i32, i32, i32), ()>,
-    abi_alloc: TypedFunc<(i32, i32), i32>,
-    export_free: TypedFunc<(i32, i32), ()>,
+    abi_free: NativeFunc<(i32, i32, i32), ()>,
+    abi_alloc: NativeFunc<(i32, i32), i32>,
+    export_free: NativeFunc<(i32, i32), ()>,
     instance: Instance,
-    memory: Memory,
 }
 
-unsafe fn mem_slice<'a>(
-    memory: &Memory,
-    caller: &'a mut impl AsContextMut,
-    start: i32,
-    len: i32,
-) -> &'a [u8] {
+unsafe fn mem_slice(memory: &Memory, start: i32, len: i32) -> &[u8] {
     memory
-        .data(caller)
+        .data_unchecked()
         .get_unchecked(start as usize..)
         .get_unchecked(..len as usize)
 }
 
-unsafe fn mem_slice_mut<'a>(
-    memory: &Memory,
-    caller: &'a mut impl AsContextMut,
-    start: i32,
-    len: i32,
-) -> &'a mut [u8] {
+unsafe fn mem_slice_mut(memory: &Memory, start: i32, len: i32) -> &mut [u8] {
     memory
-        .data_mut(caller)
+        .data_unchecked_mut()
         .get_unchecked_mut(start as usize..)
         .get_unchecked_mut(..len as usize)
 }
 
 impl Host {
-    pub fn instantiate<T>(
-        mut store: impl AsContextMut<Data = T>,
-        module: &Module,
-        linker: &mut Linker<T>,
-    ) -> Result<Self> {
-        let instance = linker.instantiate(&mut store, module)?;
-        Ok(Self::new(store, instance)?)
-    }
-
-    pub fn new(mut store: impl AsContextMut, instance: Instance) -> Result<Self> {
-        let mut store = store.as_context_mut();
-        let abi_free = instance.get_typed_func(&mut store, "__abi_free")?;
-        let abi_alloc = instance.get_typed_func(&mut store, "__abi_alloc")?;
-        let export_free = instance.get_typed_func(&mut store, "__export_free")?;
-        let memory = instance
-            .get_memory(&mut store, "memory")
-            .ok_or_else(|| anyhow!("failed to find host memory"))?;
+    pub fn new(module: &Module, resolver: &(dyn Resolver + Send + Sync)) -> Result<Self> {
+        let instance = Instance::new(module, resolver)?;
+        let abi_free = instance.exports.get_native_function("__abi_free")?;
+        let abi_alloc = instance.exports.get_native_function("__abi_alloc")?;
+        let export_free = instance.exports.get_native_function("__export_free")?;
         Ok(Self {
             abi_free,
             abi_alloc,
             export_free,
             instance,
-            memory,
         })
     }
 
     pub fn call<Params: Serialize, Res: DeserializeOwned>(
         &self,
-        mut caller: impl AsContextMut,
         name: &str,
         args: Params,
     ) -> Result<Res> {
+        let memory = self.instance.exports.get_memory("memory")?;
         let func = self
             .instance
-            .get_typed_func::<(i32, i32), (u64,), _>(&mut caller, name)?;
+            .exports
+            .get_native_function::<(i32, i32), u64>(name)?;
         let data = rmp_serde::to_vec(&args)?;
-        let ptr = self.abi_alloc.call(&mut caller, (8, data.len() as i32))?;
-        unsafe { mem_slice_mut(&self.memory, &mut caller, ptr, data.len() as i32) }
-            .copy_from_slice(&data);
-        let (res,) = func.call(&mut caller, (data.len() as i32, ptr))?;
+        let ptr = self.abi_alloc.call(8, data.len() as i32)?;
+        unsafe { mem_slice_mut(&memory, ptr, data.len() as i32) }.copy_from_slice(&data);
+        let res = func.call(data.len() as i32, ptr)?;
         let (len, res) = ((res >> 32) as i32, (res & 0xFFFFFFFF) as i32);
-        self.abi_free
-            .call(&mut caller, (ptr, data.len() as i32, 8))?;
-        let res_data = unsafe { mem_slice(&self.memory, &mut caller, res, len) };
+        self.abi_free.call(ptr, data.len() as i32, 8)?;
+        let res_data = unsafe { mem_slice(&memory, res, len) };
         let res_data = rmp_serde::from_slice(res_data)?;
-        self.export_free.call(&mut caller, (len, res))?;
+        self.export_free.call(len, res)?;
         Ok(res_data)
     }
 
-    pub fn dispatch_method(
-        &self,
-        caller: impl AsContextMut,
-        name: &str,
-        args: &[RawValue],
-    ) -> Result<RawValue> {
-        self.call(caller, name, (args,))
+    pub fn dispatch_method(&self, name: &str, args: &[RawValue]) -> Result<RawValue> {
+        self.call(name, (args,))
     }
 
-    pub fn plugin_type(&self, caller: impl AsContextMut) -> Result<PluginType> {
-        self.call(caller, "plugin_type", ())
+    pub fn plugin_type(&self) -> Result<PluginType> {
+        self.call("plugin_type", ())
     }
 
-    pub fn process_action(
-        &self,
-        caller: impl AsContextMut,
-        frontend: FrontendType,
-        action: Action,
-    ) -> Result<Action> {
-        self.call(caller, "process_action", (frontend, action))
+    pub fn process_action(&self, frontend: FrontendType, action: Action) -> Result<Action> {
+        self.call("process_action", (frontend, action))
     }
 
-    pub fn text_commands(&self, caller: impl AsContextMut) -> Result<Vec<String>> {
-        self.call(caller, "text_commands", ())
+    pub fn text_commands(&self) -> Result<Vec<String>> {
+        self.call("text_commands", ())
     }
 
     pub fn dispatch_command(
         &self,
-        caller: impl AsContextMut,
         name: &str,
         args: &[String],
         ctx: TextProcessContextRef,
     ) -> Result<TextProcessResult> {
-        self.call(caller, name, (args, ctx))
+        self.call(name, (args, ctx))
     }
 }
 
 pub struct Runtime {
-    pub store: Store<WasiCtx>,
+    pub store: Store,
     pub modules: HashMap<String, Host>,
     pub action_modules: Vec<String>,
     pub text_modules: HashMap<String, String>,
 }
 
 pub struct RuntimeRef<'a> {
-    pub store: &'a mut Store<WasiCtx>,
+    pub store: &'a mut Store,
     pub modules: &'a HashMap<String, Host>,
 }
 
@@ -148,21 +112,21 @@ pub enum LoadStatus {
     LoadPlugin(String, usize, usize),
 }
 
+#[derive(Default, Clone, WasmerEnv)]
+struct RuntimeInstanceData {
+    #[wasmer(export)]
+    memory: LazyInit<Memory>,
+}
+
 impl Runtime {
-    fn new_linker(engine: &Engine) -> Result<Linker<WasiCtx>> {
-        let mut linker = Linker::new(engine);
-        wasmtime_wasi::add_to_linker(&mut linker, |s| s)?;
-        linker.func_wrap(
-            "log",
-            "__log",
-            |mut caller: Caller<'_, WasiCtx>, len: i32, data: i32| {
-                let memory = match caller.get_export("memory") {
-                    Some(Extern::Memory(mem)) => mem,
-                    _ => return Err(Trap::new("failed to find host memory")),
-                };
-                let data = unsafe { mem_slice(&memory, &mut caller, data, len) };
-                let data: Record =
-                    rmp_serde::from_slice(data).map_err(|e| Trap::new(e.to_string()))?;
+    fn imports(store: &Store) -> Result<Box<dyn NamedResolver + Send + Sync>> {
+        let log_func = Function::new_native_with_env(
+            store,
+            RuntimeInstanceData::default(),
+            |env_data: &RuntimeInstanceData, len: i32, data: i32| {
+                let memory = unsafe { env_data.memory.get_unchecked() };
+                let data = unsafe { mem_slice(memory, data, len) };
+                let data: Record = rmp_serde::from_slice(data).unwrap();
                 log::logger().log(
                     &log::Record::builder()
                         .level(data.level)
@@ -173,24 +137,31 @@ impl Runtime {
                         .line(data.line)
                         .build(),
                 );
-                Ok(())
             },
-        )?;
-        linker.func_wrap("log", "__log_flush", || log::logger().flush())?;
-        linker.func_wrap(
-            "fs",
-            "__exists",
-            |mut caller: Caller<'_, WasiCtx>, len: i32, data: i32| {
-                let memory = match caller.get_export("memory") {
-                    Some(Extern::Memory(mem)) => mem,
-                    _ => return Err(Trap::new("failed to find host memory")),
-                };
-                let data = unsafe { mem_slice(&memory, &mut caller, data, len) };
+        );
+        let log_flush_func = Function::new_native(store, || log::logger().flush());
+        let exists_func = Function::new_native_with_env(
+            store,
+            RuntimeInstanceData::default(),
+            |env_data: &RuntimeInstanceData, len: i32, data: i32| {
+                let memory = unsafe { env_data.memory.get_unchecked() };
+                let data = unsafe { mem_slice(&memory, data, len) };
                 let path = PathBuf::from(unsafe { std::str::from_utf8_unchecked(data) });
-                Ok(path.exists() as i32)
+                path.exists() as i32
             },
-        )?;
-        Ok(linker)
+        );
+        let import_object = imports! {
+            "log" => {
+                "__log" => log_func,
+                "__log_flush" => log_flush_func,
+            },
+            "fs" => {
+                "__exists" => exists_func,
+            }
+        };
+        let wasi_env = WasiState::new("gal-runtime").finalize()?;
+        let wasi_import = generate_import_object_from_env(store, wasi_env, WasiVersion::Latest);
+        Ok(Box::new(import_object.chain_front(wasi_import)))
     }
 
     pub fn load<'a>(
@@ -200,13 +171,11 @@ impl Runtime {
     ) -> ProgressFuture<Result<Self>, LoadStatus> {
         let path = rel_to.as_ref().join(dir);
         ProgressFuture::new(LoadStatus::CreateEngine, async move |tx| {
-            let wasi = WasiCtxBuilder::new().inherit_env()?.inherit_stdio().build();
-            let engine = Engine::default();
-            let mut store = Store::new(&engine, wasi);
+            let store = Store::default();
+            let import_object = Self::imports(&store)?;
             let mut modules = HashMap::new();
             let mut action_modules = Vec::new();
             let mut text_modules = HashMap::new();
-            let mut linker = Self::new_linker(store.engine())?;
             let mut paths = vec![];
             if names.is_empty() {
                 let mut dirs = ReadDirStream::new(tokio::fs::read_dir(path).await?);
@@ -237,15 +206,15 @@ impl Runtime {
             for (i, (name, p)) in paths.into_iter().enumerate() {
                 tx.send(LoadStatus::LoadPlugin(name.clone(), i, total_len))?;
                 let buf = tokio::fs::read(&p).await?;
-                let module = Module::from_binary(store.engine(), &buf)?;
-                let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
-                match runtime.plugin_type(&mut store)? {
+                let module = Module::from_binary(&store, &buf)?;
+                let runtime = Host::new(&module, &import_object)?;
+                match runtime.plugin_type()? {
                     PluginType::Script => {}
                     PluginType::Action => {
                         action_modules.push(name.clone());
                     }
                     PluginType::Text => {
-                        let cmds = runtime.text_commands(&mut store)?;
+                        let cmds = runtime.text_commands()?;
                         for cmd in cmds.into_iter() {
                             let res = text_modules.insert(cmd.clone(), name.clone());
                             if let Some(old_module) = res {
