@@ -6,14 +6,11 @@ use crate::{
     *,
 };
 use anyhow::{anyhow, bail, Result};
-use gal_bindings_types::{ActionLine, TextProcessContextRef};
+use gal_bindings_types::{ActionLine, ActionLines, TextProcessContextRef};
 use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
-use std::{
-    collections::{HashMap, VecDeque},
-    path::PathBuf,
-};
+use std::{collections::HashMap, path::PathBuf};
 use tokio_stream::StreamExt;
 use unicode_width::UnicodeWidthStr;
 
@@ -154,7 +151,7 @@ impl Context {
     }
 
     fn exact_text(&mut self, para_title: Option<&String>, t: Text) -> Result<Action> {
-        let mut action_line = VecDeque::new();
+        let mut action_line = ActionLines::default();
         let mut chname = None;
         let mut switches = vec![];
         let mut props = HashMap::new();

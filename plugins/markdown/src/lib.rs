@@ -1,6 +1,6 @@
 use gal_bindings::*;
 use pulldown_cmark::{Event::*, *};
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 
 #[export]
 fn plugin_type() -> PluginType {
@@ -18,8 +18,8 @@ fn process_action(frontend: FrontendType, mut action: Action) -> Action {
     let parser = Parser::new(&line);
     let writer = Writer::new(parser);
     action.line = match frontend {
-        FrontendType::Html => writer.run_html().into_line(),
-        FrontendType::Text => writer.run_text().into_line(),
+        FrontendType::Html => writer.run_html().into_lines(),
+        FrontendType::Text => writer.run_text().into_lines(),
     };
     action
 }
@@ -39,7 +39,7 @@ enum TableState {
 
 struct Writer<'a, I> {
     iter: I,
-    writer: VecDeque<ActionLine>,
+    writer: ActionLines,
     table_state: TableState,
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
@@ -53,7 +53,7 @@ where
     fn new(iter: I) -> Self {
         Self {
             iter,
-            writer: VecDeque::new(),
+            writer: ActionLines::default(),
             table_state: TableState::Head,
             table_alignments: vec![],
             table_cell_index: 0,
@@ -63,11 +63,11 @@ where
 
     /// Writes a buffer, and tracks whether or not a newline was written.
     fn write_chars(&mut self, s: impl Into<String>) {
-        self.writer.push_back(ActionLine::chars(s));
+        self.writer.push_back_chars(s);
     }
 
     fn write_block(&mut self, s: impl Into<String>) {
-        self.writer.push_back(ActionLine::block(s));
+        self.writer.push_back_block(s);
     }
 
     fn run_text(mut self) -> Self {
@@ -340,7 +340,7 @@ where
         }
     }
 
-    pub fn into_line(self) -> VecDeque<ActionLine> {
+    pub fn into_lines(self) -> ActionLines {
         self.writer
     }
 }

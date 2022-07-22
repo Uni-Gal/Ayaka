@@ -1,8 +1,9 @@
-use gal_fallback::FallbackSpec;
+use gal_fallback::{FallbackSpec, IsEmpty2};
 use gal_script::Program;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, VecDeque},
+    ops::{Deref, DerefMut},
     path::{Path, PathBuf},
 };
 
@@ -72,9 +73,67 @@ impl ActionLine {
     }
 }
 
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct ActionLines(VecDeque<ActionLine>);
+
+impl Deref for ActionLines {
+    type Target = VecDeque<ActionLine>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl DerefMut for ActionLines {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl IntoIterator for ActionLines {
+    type Item = ActionLine;
+
+    type IntoIter = <VecDeque<ActionLine> as IntoIterator>::IntoIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl ActionLines {
+    pub fn push_back_chars(&mut self, s: impl Into<String>) {
+        let s = s.into();
+        if let Some(act) = self.back_mut() {
+            if let ActionLine::Chars(text) = act {
+                text.push_str(&s);
+                return;
+            }
+        }
+        self.push_back(ActionLine::Chars(s))
+    }
+
+    pub fn push_back_block(&mut self, s: impl Into<String>) {
+        let s = s.into();
+        if let Some(act) = self.back_mut() {
+            if let ActionLine::Block(text) = act {
+                text.push_str(&s);
+                return;
+            }
+        }
+        self.push_back(ActionLine::Block(s))
+    }
+}
+
+impl IsEmpty2 for ActionLines {
+    fn is_empty2(&self) -> bool {
+        self.0.is_empty()
+    }
+}
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize, FallbackSpec)]
 pub struct Action {
-    pub line: VecDeque<ActionLine>,
+    pub line: ActionLines,
     pub character: Option<String>,
     pub para_title: Option<String>,
     pub switches: Vec<Switch>,
@@ -114,6 +173,6 @@ pub struct TextProcessContextRef<'a> {
 
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct TextProcessResult {
-    pub line: VecDeque<ActionLine>,
+    pub line: ActionLines,
     pub props: HashMap<String, String>,
 }

@@ -37,21 +37,25 @@ impl<T> Fallback<Option<T>> {
     }
 }
 
-impl Fallback<String> {
-    pub fn and_any(self) -> Option<String> {
-        self.and_then(|s| if s.is_empty() { None } else { Some(s) })
+pub trait IsEmpty2 {
+    fn is_empty2(&self) -> bool;
+}
+
+impl IsEmpty2 for String {
+    fn is_empty2(&self) -> bool {
+        self.is_empty()
     }
 }
 
-impl<T> Fallback<Vec<T>> {
-    pub fn and_any(self) -> Option<Vec<T>> {
-        self.and_then(|s| if s.is_empty() { None } else { Some(s) })
+impl<T> IsEmpty2 for Vec<T> {
+    fn is_empty2(&self) -> bool {
+        self.is_empty()
     }
 }
 
-impl<T> Fallback<VecDeque<T>> {
-    pub fn and_any(self) -> Option<VecDeque<T>> {
-        self.and_then(|s| if s.is_empty() { None } else { Some(s) })
+impl<T: IsEmpty2> Fallback<T> {
+    pub fn and_any(self) -> Option<T> {
+        self.and_then(|s| if s.is_empty2() { None } else { Some(s) })
     }
 }
 
@@ -106,8 +110,6 @@ impl<T: FallbackSpec> Fallback<T> {
         T::SpecType::from(self)
     }
 }
-
-use std::collections::VecDeque;
 
 pub use gal_fallback_derive::FallbackSpec;
 
