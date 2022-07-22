@@ -95,15 +95,9 @@ impl Host {
 }
 
 pub struct Runtime {
-    pub store: Store,
     pub modules: HashMap<String, Host>,
     pub action_modules: Vec<String>,
     pub text_modules: HashMap<String, String>,
-}
-
-pub struct RuntimeRef<'a> {
-    pub store: &'a mut Store,
-    pub modules: &'a HashMap<String, Host>,
 }
 
 #[derive(Debug, Clone)]
@@ -229,18 +223,10 @@ impl Runtime {
                 modules.insert(name, runtime);
             }
             Ok(Self {
-                store,
                 modules,
                 action_modules,
                 text_modules,
             })
         })
-    }
-
-    pub fn as_mut(&mut self) -> RuntimeRef {
-        RuntimeRef {
-            store: &mut self.store,
-            modules: &self.modules,
-        }
     }
 }

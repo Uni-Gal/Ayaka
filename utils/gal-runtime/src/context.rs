@@ -84,7 +84,7 @@ impl Context {
 
     fn table(&mut self) -> VarTable {
         VarTable::new(
-            self.runtime.as_mut(),
+            &self.runtime,
             self.game.find_res_fallback(&self.loc),
             &mut self.ctx.locals,
         )

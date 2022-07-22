@@ -1,17 +1,17 @@
-use crate::{plugin::RuntimeRef, *};
+use crate::{plugin::Runtime, *};
 use gal_fallback::Fallback;
 use gal_script::*;
 use log::{error, warn};
 
 pub struct VarTable<'a> {
-    pub runtime: RuntimeRef<'a>,
+    pub runtime: &'a Runtime,
     pub res: Fallback<&'a VarMap>,
     pub locals: &'a mut VarMap,
     pub vars: VarMap,
 }
 
 impl<'a> VarTable<'a> {
-    pub fn new(runtime: RuntimeRef<'a>, res: Fallback<&'a VarMap>, locals: &'a mut VarMap) -> Self {
+    pub fn new(runtime: &'a Runtime, res: Fallback<&'a VarMap>, locals: &'a mut VarMap) -> Self {
         Self {
             runtime,
             res,
@@ -269,9 +269,9 @@ mod test {
     }
 
     fn with_ctx(f: impl FnOnce(&mut VarTable)) {
-        let mut runtime = RUNTIME.lock().unwrap();
+        let runtime = RUNTIME.lock().unwrap();
         let mut locals = VarMap::default();
-        let mut ctx = VarTable::new(runtime.as_mut(), Fallback::new(None, None), &mut locals);
+        let mut ctx = VarTable::new(&runtime, Fallback::new(None, None), &mut locals);
         f(&mut ctx);
     }
 
