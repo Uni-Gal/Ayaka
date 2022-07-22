@@ -3,10 +3,7 @@ use anyhow::Result;
 use gal_bindings_types::*;
 use log::warn;
 use serde::{de::DeserializeOwned, Serialize};
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, path::Path};
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 use wasmer::*;
 use wasmer_wasi::*;
@@ -134,26 +131,16 @@ impl Runtime {
             },
         );
         let log_flush_func = Function::new_native(store, || log::logger().flush());
-        let exists_func = Function::new_native_with_env(
-            store,
-            RuntimeInstanceData::default(),
-            |env_data: &RuntimeInstanceData, len: i32, data: i32| {
-                let memory = unsafe { env_data.memory.get_unchecked() };
-                let data = unsafe { mem_slice(&memory, data, len) };
-                let path = PathBuf::from(unsafe { std::str::from_utf8_unchecked(data) });
-                path.exists() as i32
-            },
-        );
         let import_object = imports! {
             "log" => {
                 "__log" => log_func,
                 "__log_flush" => log_flush_func,
-            },
-            "fs" => {
-                "__exists" => exists_func,
             }
         };
-        let wasi_env = WasiState::new("gal-runtime").finalize()?;
+        let wasi_env = WasiState::new("gal-runtime")
+            .preopen_dir("/")?
+            .set_fs(Box::new(wasmer_vfs::host_fs::FileSystem))
+            .finalize()?;
         let wasi_import = generate_import_object_from_env(store, wasi_env, WasiVersion::Latest);
         Ok(Box::new(import_object.chain_front(wasi_import)))
     }

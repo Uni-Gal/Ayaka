@@ -23,7 +23,7 @@ fn file(
     if let Some(path) = exs
         .into_iter()
         .map(|ex| bg_dir.join(&args[0]).with_extension(ex))
-        .filter(|p| fs::exists(p))
+        .filter(|p| p.exists())
         .next()
     {
         res.props

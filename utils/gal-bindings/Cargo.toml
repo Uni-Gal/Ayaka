@@ -8,7 +8,6 @@ edition = "2021"
 gal-primitive = { path = "../gal-primitive" }
 gal-bindings-types = { path = "../gal-bindings-types" }
 gal-bindings-impl = { path = "../gal-bindings-impl" }
-concat-idents = "1.1"
 serde = "1.0"
 rmp-serde = "1.1"
 log = "0.4"

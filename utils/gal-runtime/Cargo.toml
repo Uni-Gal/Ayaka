@@ -15,6 +15,7 @@ rmp-serde = "1.1"
 anyhow = "1.0"
 wasmer = "2.3"
 wasmer-wasi = "2.3"
+wasmer-vfs = "2.3"
 unicode-width = "0.1"
 tokio = { version = "1", features = ["fs", "macros", "sync"] }
 tokio-stream = { version = "0.1", features = ["fs", "sync"] }
