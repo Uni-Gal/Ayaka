@@ -1,6 +1,7 @@
 use clap::Parser;
 use gal_runtime::{
     anyhow::{Ok, Result},
+    log::LevelFilter,
     Context, FrontendType, LocaleBuf,
 };
 use std::ffi::OsString;
@@ -19,7 +20,9 @@ pub struct Options {
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     let opts = Options::parse();
-    env_logger::try_init()?;
+    env_logger::Builder::from_default_env()
+        .filter_module("wasmer", LevelFilter::Warn)
+        .try_init()?;
     let context = Context::open(&opts.input, FrontendType::Text);
     let mut ctx = context.await??;
 
