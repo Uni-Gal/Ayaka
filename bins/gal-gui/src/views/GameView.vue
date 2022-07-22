@@ -32,8 +32,8 @@ export default {
             state: ActionState.End,
             play_state: PlayState.Manual,
             mutex: new Mutex(),
-            history: [] as Action[],
-            show_history: false
+            records: [] as Action[],
+            show_records: false
         }
     },
     async mounted() {
@@ -197,11 +197,11 @@ export default {
             await this.next()
         },
         async on_history_click() {
-            if (!this.show_history) {
-                this.history = await history()
-                this.show_history = true
+            if (!this.show_records) {
+                this.records = await history()
+                this.show_records = true
             } else {
-                this.show_history = false
+                this.show_records = false
             }
         },
         async on_records_click(op: string) {
@@ -251,9 +251,9 @@ export default {
             </div>
         </div>
     </div>
-    <div class="content-full container-history" v-bind:hidden="!show_history" v-on:click="on_history_click">
+    <div class="content-full bg-body container-history" v-bind:hidden="!show_records" v-on:click="on_history_click">
         <ul class="list-group">
-            <li class="list-group-item" v-for="h in history">
+            <li class="list-group-item" v-for="h in records">
                 <ActionCard :ch="h.character" :line="merge_lines(h.line)"></ActionCard>
             </li>
         </ul>
