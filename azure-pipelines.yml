@@ -7,9 +7,17 @@ jobs:
 - job: Build
   strategy:
     matrix:
+      win-x86:
+        platform: 'win'
+        target: 'i686-pc-windows-msvc'
+        image: 'windows-latest'
       win-x64:
         platform: 'win'
         target: 'x86_64-pc-windows-msvc'
+        image: 'windows-latest'
+      win-arm64:
+        platform: 'win'
+        target: 'aarch64-pc-windows-msvc'
         image: 'windows-latest'
       linux-x64:
         platform: 'linux'
