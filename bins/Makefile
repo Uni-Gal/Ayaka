@@ -1,6 +1,7 @@
 .PHONY: clean update
 clean:
 	cargo clean
+	cd gal-gui && $(MAKE) clean
 update:
 	cargo update
 
