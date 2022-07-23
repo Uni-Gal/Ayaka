@@ -293,14 +293,15 @@ fn main() -> Result<()> {
         .plugin(tauri_plugin_localhost::Builder::new(port).build())
         .setup(|app| {
             let ident = app.config().tauri.bundle.identifier.clone();
+            let logspec = LogSpecification::parse("info,wasmer=warn")?;
             let log_handle = if cfg!(debug_assertions) {
-                Logger::with(LogSpecification::info())
+                Logger::with(logspec)
                     .log_to_stdout()
                     .set_palette("b1;3;2;4;6".to_string())
                     .use_utc()
                     .start()?
             } else {
-                Logger::with(LogSpecification::info())
+                Logger::with(logspec)
                     .log_to_file(
                         FileSpec::default()
                             .directory(app.path_resolver().log_dir().unwrap())

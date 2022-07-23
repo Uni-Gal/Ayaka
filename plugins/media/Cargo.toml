@@ -4,7 +4,7 @@ cargo-features = ["per-package-target"]
 name = "media"
 version = "0.1.0"
 edition = "2021"
-forced-target = "wasm32-unknown-unknown"
+forced-target = "wasm32-wasi"
 
 [lib]
 crate-type = ["cdylib"]

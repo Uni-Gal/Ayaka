@@ -19,7 +19,7 @@
     "lodash": "^4.17.21",
     "timers-promises": "^1.0.1",
     "vue": "^3.2.37",
-    "vue-bs-modal": "^0.7.1",
+    "vue-bs-modal": "^0.7.3",
     "vue-i18n": "^9.1.10",
     "vue-router": "^4.1.2"
   },
