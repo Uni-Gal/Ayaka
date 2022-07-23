@@ -1,6 +1,6 @@
 use gal_bindings::*;
 use pulldown_cmark::{Event::*, *};
-use std::collections::HashMap;
+use std::{borrow::Cow, collections::HashMap};
 
 #[export]
 fn plugin_type() -> PluginType {
@@ -62,11 +62,11 @@ where
     }
 
     /// Writes a buffer, and tracks whether or not a newline was written.
-    fn write_chars(&mut self, s: impl Into<String>) {
+    fn write_chars<'s>(&mut self, s: impl Into<Cow<'s, str>>) {
         self.writer.push_back_chars(s);
     }
 
-    fn write_block(&mut self, s: impl Into<String>) {
+    fn write_block<'s>(&mut self, s: impl Into<Cow<'s, str>>) {
         self.writer.push_back_block(s);
     }
 

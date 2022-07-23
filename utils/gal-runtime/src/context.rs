@@ -6,7 +6,7 @@ use crate::{
     *,
 };
 use anyhow::{anyhow, bail, Result};
-use gal_bindings_types::{ActionLine, ActionLines, TextProcessContextRef};
+use gal_bindings_types::{ActionLines, TextProcessContextRef};
 use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
@@ -158,7 +158,7 @@ impl Context {
         let mut switch_actions = vec![];
         for line in t.0.into_iter() {
             match line {
-                Line::Str(s) => action_line.push_back(ActionLine::chars(s)),
+                Line::Str(s) => action_line.push_back_chars(s),
                 Line::Cmd(cmd) => match cmd {
                     Command::Character(key, alter) => {
                         chname = if alter.is_empty() {
@@ -172,9 +172,7 @@ impl Context {
                             Some(alter)
                         }
                     }
-                    Command::Exec(p) => {
-                        action_line.push_back(ActionLine::chars(self.call(&p).get_str()))
-                    }
+                    Command::Exec(p) => action_line.push_back_chars(self.call(&p).get_str()),
                     Command::Switch {
                         text,
                         action,

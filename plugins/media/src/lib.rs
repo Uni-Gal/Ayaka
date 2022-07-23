@@ -6,8 +6,8 @@ fn plugin_type() -> PluginType {
 }
 
 #[export]
-fn text_commands() -> Vec<&'static str> {
-    vec!["bg", "bgm", "video"]
+fn text_commands() -> &'static [&'static str] {
+    &["bg", "bgm", "video"]
 }
 
 fn file(

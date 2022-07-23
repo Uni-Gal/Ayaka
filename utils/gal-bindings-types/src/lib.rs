@@ -2,6 +2,7 @@ use gal_fallback::{FallbackSpec, IsEmpty2};
 use gal_script::Program;
 use serde::{Deserialize, Serialize};
 use std::{
+    borrow::Cow,
     collections::{HashMap, VecDeque},
     ops::{Deref, DerefMut},
     path::{Path, PathBuf},
@@ -102,7 +103,7 @@ impl IntoIterator for ActionLines {
 }
 
 impl ActionLines {
-    pub fn push_back_chars(&mut self, s: impl Into<String>) {
+    pub fn push_back_chars<'a>(&mut self, s: impl Into<Cow<'a, str>>) {
         let s = s.into();
         if let Some(act) = self.back_mut() {
             if let ActionLine::Chars(text) = act {
@@ -110,10 +111,10 @@ impl ActionLines {
                 return;
             }
         }
-        self.push_back(ActionLine::Chars(s))
+        self.push_back(ActionLine::Chars(s.into_owned()))
     }
 
-    pub fn push_back_block(&mut self, s: impl Into<String>) {
+    pub fn push_back_block<'a>(&mut self, s: impl Into<Cow<'a, str>>) {
         let s = s.into();
         if let Some(act) = self.back_mut() {
             if let ActionLine::Block(text) = act {
@@ -121,7 +122,7 @@ impl ActionLines {
                 return;
             }
         }
-        self.push_back(ActionLine::Block(s))
+        self.push_back(ActionLine::Block(s.into_owned()))
     }
 }
 

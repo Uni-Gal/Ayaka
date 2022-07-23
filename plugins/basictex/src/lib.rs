@@ -6,8 +6,8 @@ fn plugin_type() -> PluginType {
 }
 
 #[export]
-fn text_commands() -> Vec<&'static str> {
-    vec!["par", "textrm", "textsf", "texttt", "ruby"]
+fn text_commands() -> &'static [&'static str] {
+    &["par", "textrm", "textsf", "texttt", "ruby"]
 }
 
 #[export]
@@ -15,8 +15,8 @@ fn par(args: Vec<String>, ctx: TextProcessContext) -> TextProcessResult {
     assert!(args.is_empty());
     let mut res = TextProcessResult::default();
     match ctx.frontend {
-        FrontendType::Text => res.line.push_back(ActionLine::chars("\n")),
-        FrontendType::Html => res.line.push_back(ActionLine::chars("<br />")),
+        FrontendType::Text => res.line.push_back_chars("\n"),
+        FrontendType::Html => res.line.push_back_chars("<br />"),
     }
     res
 }
@@ -25,12 +25,12 @@ fn text_font(args: Vec<String>, ctx: TextProcessContext, fonts: &str) -> TextPro
     assert_eq!(args.len(), 1);
     let mut res = TextProcessResult::default();
     match ctx.frontend {
-        FrontendType::Text => res.line.push_back(ActionLine::chars(&args[0])),
+        FrontendType::Text => res.line.push_back_chars(&args[0]),
         FrontendType::Html => {
             res.line
-                .push_back(ActionLine::block(format!("<font face=\"{}\">", fonts)));
-            res.line.push_back(ActionLine::chars(&args[0]));
-            res.line.push_back(ActionLine::block("</font>"));
+                .push_back_block(format!("<font face=\"{}\">", fonts));
+            res.line.push_back_chars(&args[0]);
+            res.line.push_back_block("</font>");
         }
     }
     res
@@ -58,14 +58,14 @@ fn ruby(args: Vec<String>, ctx: TextProcessContext) -> TextProcessResult {
     match ctx.frontend {
         FrontendType::Text => res
             .line
-            .push_back(ActionLine::chars(format!("{}（{}）", args[0], args[1]))),
+            .push_back_chars(format!("{}（{}）", args[0], args[1])),
         FrontendType::Html => {
-            res.line.push_back(ActionLine::block("<ruby>"));
-            res.line.push_back(ActionLine::chars(&args[0]));
-            res.line.push_back(ActionLine::block("<rp>（</rp><rt>"));
-            res.line.push_back(ActionLine::chars(&args[1]));
-            res.line.push_back(ActionLine::block("</rt><rp>）</rp>"));
-            res.line.push_back(ActionLine::block("</ruby>"));
+            res.line.push_back_block("<ruby>");
+            res.line.push_back_chars(&args[0]);
+            res.line.push_back_block("<rp>（</rp><rt>");
+            res.line.push_back_chars(&args[1]);
+            res.line.push_back_block("</rt><rp>）</rp>");
+            res.line.push_back_block("</ruby>");
         }
     }
     res
