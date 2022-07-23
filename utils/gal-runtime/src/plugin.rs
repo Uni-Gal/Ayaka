@@ -137,10 +137,7 @@ impl Runtime {
                 "__log_flush" => log_flush_func,
             }
         };
-        let wasi_env = WasiState::new("gal-runtime")
-            .preopen_dir("/")?
-            .set_fs(Box::new(wasmer_vfs::host_fs::FileSystem))
-            .finalize()?;
+        let wasi_env = WasiState::new("gal-runtime").preopen_dir("/")?.finalize()?;
         let wasi_import = generate_import_object_from_env(store, wasi_env, WasiVersion::Latest);
         Ok(Box::new(import_object.chain_front(wasi_import)))
     }
