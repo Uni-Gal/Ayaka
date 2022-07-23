@@ -307,6 +307,7 @@ fn main() -> Result<()> {
                             .directory(app.path_resolver().log_dir().unwrap())
                             .basename("gal-gui"),
                     )
+                    .use_utc()
                     .start()?
             };
             app.manage(log_handle);
