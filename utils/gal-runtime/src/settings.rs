@@ -49,12 +49,16 @@ pub async fn load_file<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T>
     Ok(serde_json::from_slice(&buffer)?)
 }
 
-pub async fn save_file<T: Serialize>(data: &T, path: impl AsRef<Path>) -> Result<()> {
+pub async fn save_file<T: Serialize>(data: &T, path: impl AsRef<Path>, pretty: bool) -> Result<()> {
     let path = path.as_ref();
     if let Some(parent) = path.parent() {
         tokio::fs::create_dir_all(parent).await?;
     }
-    let buffer = serde_json::to_vec_pretty(data)?;
+    let buffer = if pretty {
+        serde_json::to_vec_pretty(data)
+    } else {
+        serde_json::to_vec(data)
+    }?;
     tokio::fs::write(path, &buffer).await?;
     Ok(())
 }
@@ -69,7 +73,7 @@ pub async fn load_settings(ident: &str) -> Result<Settings> {
 }
 
 pub async fn save_settings(ident: &str, data: &Settings) -> Result<()> {
-    save_file(data, settings_path(ident)?).await
+    save_file(data, settings_path(ident)?, true).await
 }
 
 pub fn records_path(ident: &str, game: &str) -> Result<PathBuf> {
@@ -97,7 +101,12 @@ pub async fn load_records(ident: &str, game: &str) -> Result<Vec<RawContext>> {
 pub async fn save_records(ident: &str, game: &str, contexts: &[RawContext]) -> Result<()> {
     let ctx_path = records_path(ident, game)?;
     for (i, ctx) in contexts.iter().enumerate() {
-        save_file(ctx, ctx_path.join(i.to_string()).with_extension("json")).await?;
+        save_file(
+            ctx,
+            ctx_path.join(i.to_string()).with_extension("json"),
+            false,
+        )
+        .await?;
     }
     Ok(())
 }
