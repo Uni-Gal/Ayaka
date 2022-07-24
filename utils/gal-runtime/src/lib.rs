@@ -6,7 +6,7 @@
 mod config;
 mod context;
 pub mod plugin;
-pub mod progress_future;
+mod progress_future;
 pub mod script;
 mod settings;
 
