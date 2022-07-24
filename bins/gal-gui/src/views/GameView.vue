@@ -32,8 +32,6 @@ export default {
             state: ActionState.End,
             play_state: PlayState.Manual,
             mutex: new Mutex(),
-            records: [] as Action[],
-            show_records: false
         }
     },
     async mounted() {
@@ -191,12 +189,7 @@ export default {
             await this.next()
         },
         async on_history_click() {
-            if (!this.show_records) {
-                this.records = await history()
-                this.show_records = true
-            } else {
-                this.show_records = false
-            }
+            this.$router.push("/history")
         },
         async on_records_click(op: string) {
             await this.$router.push("/records/" + op)
@@ -245,13 +238,6 @@ export default {
             </div>
         </div>
     </div>
-    <div class="content-full bg-body container-history" v-bind:hidden="!show_records" v-on:click="on_history_click">
-        <ul class="list-group">
-            <li class="list-group-item" v-for="h in records">
-                <ActionCard :ch="h.character" :line="merge_lines(h.line)"></ActionCard>
-            </li>
-        </ul>
-    </div>
 </template>
 
 <style>
@@ -293,10 +279,6 @@ export default {
 
 .container-switches {
     background-color: #00000077;
-}
-
-.container-history {
-    overflow-y: scroll;
 }
 
 .switches {
