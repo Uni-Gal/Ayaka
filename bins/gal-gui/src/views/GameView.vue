@@ -3,7 +3,7 @@ import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import ActionCard from '../components/ActionCard.vue'
 import IconButton from '../components/IconButton.vue'
-import { current_run, next_run, switch_, merge_lines, Action, history, ActionLineType, ActionLine } from '../interop'
+import { current_run, next_run, next_back_run, switch_, merge_lines, Action, ActionLineType, ActionLine } from '../interop'
 import { cloneDeep } from 'lodash'
 </script>
 
@@ -65,6 +65,11 @@ export default {
             const has_next = await next_run()
             await this.fetch_current_run()
             return has_next
+        },
+        async fetch_next_back_run(): Promise<boolean> {
+            const has_back = await next_back_run()
+            await this.fetch_current_run()
+            return has_back
         },
         end_typing(): boolean {
             this.type_text = merge_lines(this.action.line)
@@ -188,6 +193,12 @@ export default {
             this.state = ActionState.End
             await this.next()
         },
+        async next_back() {
+            if (this.state != ActionState.Switching) {
+                await this.mutex.runExclusive(this.fetch_next_back_run)
+                this.start_type_anime()
+            }
+        },
         async on_history_click() {
             this.$router.push("/history")
         },
@@ -217,6 +228,7 @@ export default {
             <IconButton icon="file-arrow-down" @click='on_records_click("save")'></IconButton>
             <IconButton icon="file-arrow-up" @click='on_records_click("load")'></IconButton>
             <IconButton icon="list" @click="on_history_click"></IconButton>
+            <IconButton icon="backward-step" @click="next_back"></IconButton>
             <IconButton icon="play" :btnclass='play_state == PlayState.Auto ? "active" : ""'
                 @click="on_auto_play_click"></IconButton>
             <IconButton icon="forward-step" @click="next"></IconButton>

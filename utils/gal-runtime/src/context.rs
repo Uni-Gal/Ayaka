@@ -346,11 +346,12 @@ impl Context {
     }
 
     pub fn next_back_run(&mut self) -> Option<Action> {
-        if let Some(history_action) = self.ctx.history.pop() {
+        self.ctx.history.pop();
+        if let Some(history_action) = self.ctx.history.last() {
             self.ctx.cur_act = history_action.cur_act;
-            self.ctx.cur_para = history_action.cur_para;
-            self.ctx.locals = history_action.locals;
-            Some(history_action.action)
+            self.ctx.cur_para = history_action.cur_para.clone();
+            self.ctx.locals = history_action.locals.clone();
+            Some(history_action.action.clone())
         } else {
             None
         }

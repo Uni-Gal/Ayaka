@@ -247,6 +247,20 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
 }
 
 #[command]
+async fn next_back_run(storage: State<'_, Storage>) -> CommandResult<bool> {
+    let mut context = storage.context.lock().await;
+    let action = context.as_mut().and_then(|context| context.next_back_run());
+    if let Some(action) = action {
+        info!("Last action: {:?}", action);
+        *storage.action.lock().await = Some(action);
+        Ok(true)
+    } else {
+        info!("No action in the history.");
+        Ok(false)
+    }
+}
+
+#[command]
 async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<Action>> {
     Ok(storage
         .action
@@ -338,6 +352,7 @@ fn main() -> Result<()> {
             start_new,
             start_record,
             next_run,
+            next_back_run,
             current_run,
             switch,
             history,

@@ -113,6 +113,10 @@ export function next_run(): Promise<boolean> {
     return invoke("next_run")
 }
 
+export function next_back_run(): Promise<boolean> {
+    return invoke("next_back_run")
+}
+
 export async function current_run(): Promise<Action | undefined> {
     let res = await invoke<Action | undefined>("current_run")
     if (res) {
