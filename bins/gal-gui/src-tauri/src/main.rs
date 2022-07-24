@@ -89,7 +89,7 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
                 }
             }
         }
-        let ctx = context.await??;
+        let ctx = context.await?;
         let window = handle.get_window("main").unwrap();
         window.set_title(&ctx.game.title)?;
         emit_open_status(&handle, OpenGameStatus::LoadRecords)?;

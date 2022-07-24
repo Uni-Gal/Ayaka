@@ -263,8 +263,8 @@ mod test {
 
     lazy_static::lazy_static! {
         static ref RUNTIME: Mutex<Runtime> = Mutex::new(tokio_test::block_on(async {
-            let runtime = Runtime::load("../../examples/plugins", env!("CARGO_MANIFEST_DIR"), vec![]);
-            runtime.await.unwrap().unwrap()
+            let runtime = Runtime::load("../../examples/plugins", env!("CARGO_MANIFEST_DIR"), &[]);
+            runtime.await.unwrap()
         }));
     }
 

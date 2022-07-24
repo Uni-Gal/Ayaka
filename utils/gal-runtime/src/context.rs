@@ -10,7 +10,11 @@ use gal_bindings_types::{ActionLines, ActionProcessContextRef, TextProcessContex
 use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
-use std::{collections::HashMap, path::PathBuf};
+use std::{
+    collections::HashMap,
+    future::Future,
+    path::{Path, PathBuf},
+};
 use tokio_stream::StreamExt;
 use unicode_width::UnicodeWidthStr;
 
@@ -31,28 +35,30 @@ pub enum OpenStatus {
 }
 
 impl Context {
-    pub fn open(
-        path: impl Into<PathBuf>,
+    pub fn open<'a>(
+        path: impl AsRef<Path>,
         frontend: FrontendType,
-    ) -> ProgressFuture<Result<Self>, OpenStatus> {
-        let path = path.into();
+    ) -> ProgressFuture<'a, impl Future<Output = Result<Self>> + 'a, OpenStatus> {
         ProgressFuture::new(OpenStatus::LoadProfile, async move |tx| {
             let file = tokio::fs::read(&path).await?;
             let game: Game = serde_yaml::from_slice(&file)?;
             let root_path = path
+                .as_ref()
                 .parent()
                 .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
-            let runtime = Runtime::load(&game.plugins.dir, root_path, game.plugins.modules.clone());
-            tokio::pin!(runtime);
-            while let Some(load_status) = runtime.next().await {
-                match load_status {
-                    LoadStatus::CreateEngine => tx.send(OpenStatus::CreateRuntime)?,
-                    LoadStatus::LoadPlugin(name, i, len) => {
-                        tx.send(OpenStatus::LoadPlugin(name, i, len))?
+            let runtime = {
+                let runtime = Runtime::load(&game.plugins.dir, root_path, &game.plugins.modules);
+                tokio::pin!(runtime);
+                while let Some(load_status) = runtime.next().await {
+                    match load_status {
+                        LoadStatus::CreateEngine => tx.send(OpenStatus::CreateRuntime)?,
+                        LoadStatus::LoadPlugin(name, i, len) => {
+                            tx.send(OpenStatus::LoadPlugin(name, i, len))?
+                        }
                     }
                 }
-            }
-            let runtime = runtime.await??;
+                runtime.await?
+            };
             Ok(Self {
                 game,
                 frontend,

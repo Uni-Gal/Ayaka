@@ -3,7 +3,7 @@ use anyhow::Result;
 use gal_bindings_types::*;
 use log::warn;
 use serde::{de::DeserializeOwned, Serialize};
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, future::Future, path::Path};
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 use wasmer::*;
 use wasmer_wasi::*;
@@ -145,8 +145,8 @@ impl Runtime {
     pub fn load<'a>(
         dir: impl AsRef<Path> + 'a,
         rel_to: impl AsRef<Path> + 'a,
-        names: Vec<String>,
-    ) -> ProgressFuture<Result<Self>, LoadStatus> {
+        names: &'a [String],
+    ) -> ProgressFuture<'a, impl Future<Output = Result<Self>> + 'a, LoadStatus> {
         let path = rel_to.as_ref().join(dir);
         ProgressFuture::new(LoadStatus::CreateEngine, async move |tx| {
             let store = Store::default();

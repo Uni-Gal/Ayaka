@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
         .filter_module("wasmer", LevelFilter::Warn)
         .try_init()?;
     let context = Context::open(&opts.input, FrontendType::Text);
-    let mut ctx = context.await??;
+    let mut ctx = context.await?;
 
     let mut output = tokio::fs::File::create(&opts.output).await?;
     output.write(b"\\documentclass{ctexart}\n").await?;

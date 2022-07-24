@@ -55,7 +55,7 @@ async fn main() -> Result<()> {
             }
         }
     }
-    let mut ctx = context.await??;
+    let mut ctx = context.await?;
     if opts.check {
         if !ctx.check() {
             bail!("Check failed.");
