@@ -5,7 +5,7 @@ use std::sync::Mutex;
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::Script
+    PluginType::SCRIPT
 }
 
 lazy_static::lazy_static! {

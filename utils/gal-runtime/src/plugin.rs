@@ -73,8 +73,8 @@ impl Host {
         self.call("plugin_type", ())
     }
 
-    pub fn process_action(&self, frontend: FrontendType, action: Action) -> Result<Action> {
-        self.call("process_action", (frontend, action))
+    pub fn process_action(&self, ctx: ActionProcessContextRef) -> Result<Action> {
+        self.call("process_action", (ctx,))
     }
 
     pub fn text_commands(&self) -> Result<Vec<String>> {
@@ -186,21 +186,19 @@ impl Runtime {
                 let buf = tokio::fs::read(&p).await?;
                 let module = Module::from_binary(&store, &buf)?;
                 let runtime = Host::new(&module, &import_object)?;
-                match runtime.plugin_type()? {
-                    PluginType::Script => {}
-                    PluginType::Action => {
-                        action_modules.push(name.clone());
-                    }
-                    PluginType::Text => {
-                        let cmds = runtime.text_commands()?;
-                        for cmd in cmds.into_iter() {
-                            let res = text_modules.insert(cmd.clone(), name.clone());
-                            if let Some(old_module) = res {
-                                warn!(
-                                    "Command `{}` is overrided by \"{}\" over \"{}\"",
-                                    cmd, name, old_module
-                                );
-                            }
+                let plugin_type = runtime.plugin_type()?;
+                if plugin_type.contains(PluginType::ACTION) {
+                    action_modules.push(name.clone());
+                }
+                if plugin_type.contains(PluginType::TEXT) {
+                    let cmds = runtime.text_commands()?;
+                    for cmd in cmds.into_iter() {
+                        let res = text_modules.insert(cmd.clone(), name.clone());
+                        if let Some(old_module) = res {
+                            warn!(
+                                "Command `{}` is overrided by \"{}\" over \"{}\"",
+                                cmd, name, old_module
+                            );
                         }
                     }
                 }

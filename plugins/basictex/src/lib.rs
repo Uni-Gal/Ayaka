@@ -2,7 +2,7 @@ use gal_bindings::*;
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::Text
+    PluginType::TEXT
 }
 
 #[export]

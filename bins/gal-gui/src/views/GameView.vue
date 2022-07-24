@@ -53,12 +53,6 @@ export default {
             const res = await current_run()
             console.info(res)
             if (res) {
-                if (res.props.bg == undefined) {
-                    res.props.bg = this.action.props.bg
-                }
-                if (res.props.bgm == undefined) {
-                    res.props.bgm = this.action.props.bgm
-                }
                 const load_new_bgm = (res.props.bgm != this.action.props.bgm);
                 this.action = res
                 if (load_new_bgm) {

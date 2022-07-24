@@ -21,7 +21,27 @@ pub struct RawContext {
     pub cur_para: String,
     pub cur_act: usize,
     pub locals: VarMap,
-    pub history: Vec<Action>,
+    pub history: Vec<HistoryAction>,
+}
+
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+pub struct HistoryAction {
+    pub cur_para: String,
+    pub cur_act: usize,
+    pub locals: VarMap,
+    #[serde(flatten)]
+    pub action: Action,
+}
+
+impl RawContext {
+    pub fn push_history(&mut self, action: Action) {
+        self.history.push(HistoryAction {
+            cur_para: self.cur_para.clone(),
+            cur_act: self.cur_act,
+            locals: self.locals.clone(),
+            action,
+        });
+    }
 }
 
 pub async fn load_file<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {

@@ -6,7 +6,7 @@ use crate::{
     *,
 };
 use anyhow::{anyhow, bail, Result};
-use gal_bindings_types::{ActionLines, TextProcessContextRef};
+use gal_bindings_types::{ActionLines, ActionProcessContextRef, TextProcessContextRef};
 use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
@@ -262,9 +262,15 @@ impl Context {
     }
 
     fn process_action(&mut self, mut action: Action) -> Result<Action> {
+        let last_action = self.ctx.history.last().map(|act| &act.action);
         for action_module in &self.runtime.action_modules {
             let module = &self.runtime.modules[action_module];
-            action = module.process_action(self.frontend, action)?;
+            let ctx = ActionProcessContextRef {
+                frontend: self.frontend,
+                last_action,
+                action: &action,
+            };
+            action = module.process_action(ctx)?;
         }
         while let Some(act) = action.line.back() {
             if act.as_str().trim().is_empty() {
@@ -281,7 +287,7 @@ impl Context {
             }
         }
         if !action.line.is_empty() || action.character.is_some() {
-            self.ctx.history.push(action.clone());
+            self.ctx.push_history(action.clone());
         }
         Ok(action)
     }
@@ -334,6 +340,17 @@ impl Context {
                 self.ctx.cur_act = 0;
                 self.next_run()
             }
+        } else {
+            None
+        }
+    }
+
+    pub fn next_back_run(&mut self) -> Option<Action> {
+        if let Some(history_action) = self.ctx.history.pop() {
+            self.ctx.cur_act = history_action.cur_act;
+            self.ctx.cur_para = history_action.cur_para;
+            self.ctx.locals = history_action.locals;
+            Some(history_action.action)
         } else {
             None
         }

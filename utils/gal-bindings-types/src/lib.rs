@@ -32,11 +32,13 @@ impl From<&log::Record<'_>> for Record {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
-pub enum PluginType {
-    Script,
-    Action,
-    Text,
+bitflags::bitflags! {
+    #[derive(Serialize, Deserialize)]
+    pub struct PluginType: u32 {
+        const SCRIPT = 0;
+        const ACTION = 0b1;
+        const TEXT = 0b10;
+    }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -149,20 +151,24 @@ pub struct Switch {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+pub struct ActionProcessContext {
+    pub frontend: FrontendType,
+    pub last_action: Option<Action>,
+    pub action: Action,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ActionProcessContextRef<'a> {
+    pub frontend: FrontendType,
+    pub last_action: Option<&'a Action>,
+    pub action: &'a Action,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct TextProcessContext {
     pub root_path: PathBuf,
     pub game_props: HashMap<String, String>,
     pub frontend: FrontendType,
-}
-
-impl TextProcessContext {
-    pub fn as_ref<'a>(&'a self) -> TextProcessContextRef<'a> {
-        TextProcessContextRef {
-            root_path: &self.root_path,
-            game_props: &self.game_props,
-            frontend: self.frontend,
-        }
-    }
 }
 
 #[derive(Debug, Serialize)]

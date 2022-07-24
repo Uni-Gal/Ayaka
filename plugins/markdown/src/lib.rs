@@ -4,12 +4,13 @@ use std::{borrow::Cow, collections::HashMap};
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::Action
+    PluginType::ACTION
 }
 
 #[export]
-fn process_action(frontend: FrontendType, mut action: Action) -> Action {
-    let line = action
+fn process_action(mut ctx: ActionProcessContext) -> Action {
+    let line = ctx
+        .action
         .line
         .into_iter()
         .map(|s| s.into_string())
@@ -17,11 +18,11 @@ fn process_action(frontend: FrontendType, mut action: Action) -> Action {
         .concat();
     let parser = Parser::new(&line);
     let writer = Writer::new(parser);
-    action.line = match frontend {
+    ctx.action.line = match ctx.frontend {
         FrontendType::Html => writer.run_html().into_lines(),
         FrontendType::Text => writer.run_text().into_lines(),
     };
-    action
+    ctx.action
 }
 
 // The below code are modified from pulldown_cmark
