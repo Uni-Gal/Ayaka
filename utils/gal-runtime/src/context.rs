@@ -36,9 +36,9 @@ pub enum OpenStatus {
 
 impl Context {
     pub fn open<'a>(
-        path: impl AsRef<Path>,
+        path: impl AsRef<Path> + 'a,
         frontend: FrontendType,
-    ) -> ProgressFuture<'a, impl Future<Output = Result<Self>> + 'a, OpenStatus> {
+    ) -> ProgressFuture<impl Future<Output = Result<Self>> + 'a, OpenStatus> {
         ProgressFuture::new(OpenStatus::LoadProfile, async move |tx| {
             let file = tokio::fs::read(&path).await?;
             let game: Game = serde_yaml::from_slice(&file)?;

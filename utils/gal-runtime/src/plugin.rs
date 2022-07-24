@@ -146,7 +146,7 @@ impl Runtime {
         dir: impl AsRef<Path> + 'a,
         rel_to: impl AsRef<Path> + 'a,
         names: &'a [String],
-    ) -> ProgressFuture<'a, impl Future<Output = Result<Self>> + 'a, LoadStatus> {
+    ) -> ProgressFuture<impl Future<Output = Result<Self>> + 'a, LoadStatus> {
         let path = rel_to.as_ref().join(dir);
         ProgressFuture::new(LoadStatus::CreateEngine, async move |tx| {
             let store = Store::default();

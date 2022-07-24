@@ -1,7 +1,6 @@
 use std::{
     fmt::Debug,
     future::Future,
-    marker::PhantomData,
     pin::Pin,
     task::{Context, Poll},
 };
@@ -10,26 +9,24 @@ use tokio_stream::{wrappers::WatchStream, Stream};
 
 pub trait Progress = Debug + Clone + Send + Sync + 'static;
 
-pub struct ProgressFuture<'a, F: Future + 'a, P> {
+pub struct ProgressFuture<F: Future, P> {
     future: F,
     progress: WatchStream<P>,
     result: Option<F::Output>,
-    _marker: PhantomData<&'a ()>,
 }
 
-impl<'a, F: Future + 'a, P: Progress> ProgressFuture<'a, F, P> {
+impl<F: Future, P: Progress> ProgressFuture<F, P> {
     pub fn new(init: P, f: impl FnOnce(Sender<P>) -> F) -> Self {
         let (tx, rx) = channel(init);
         Self {
             future: f(tx),
             progress: WatchStream::new(rx),
             result: None,
-            _marker: PhantomData::default(),
         }
     }
 }
 
-impl<'a, F: Future + 'a, P> Future for ProgressFuture<'a, F, P> {
+impl<F: Future, P> Future for ProgressFuture<F, P> {
     type Output = F::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
@@ -42,7 +39,7 @@ impl<'a, F: Future + 'a, P> Future for ProgressFuture<'a, F, P> {
     }
 }
 
-impl<'a, F: Future + 'a, P: Progress> Stream for ProgressFuture<'a, F, P> {
+impl<F: Future, P: Progress> Stream for ProgressFuture<F, P> {
     type Item = P;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
