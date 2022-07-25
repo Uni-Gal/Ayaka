@@ -69,7 +69,7 @@ pub fn choose(
     let mut result = ULOC_ACCEPT_FAILED;
     let loc = unsafe {
         call_with_buffer::<u8>(|buffer, len, status| {
-            let locales_enum = imp_uenum_openCharStringsEnumeration(
+            let locales_enum = versioned_function!(uenum_openCharStringsEnumeration)(
                 locale_ptrs.as_ptr() as _,
                 locale_ptrs.len() as _,
                 status,
@@ -78,7 +78,7 @@ pub fn choose(
                 return 0;
             }
             *status = U_ZERO_ERROR;
-            let len = imp_uloc_acceptLanguage(
+            let len = versioned_function!(uloc_acceptLanguage)(
                 buffer as _,
                 len,
                 &mut result,
@@ -87,7 +87,7 @@ pub fn choose(
                 locales_enum,
                 status,
             );
-            imp_uenum_close(locales_enum);
+            versioned_function!(uenum_close)(locales_enum);
             len
         })
     }?;
@@ -101,14 +101,14 @@ pub fn choose(
 }
 
 pub fn current() -> &'static Locale {
-    unsafe { Locale::new(CStr::from_ptr(imp_uloc_getDefault() as _)) }
+    unsafe { Locale::new(CStr::from_ptr(versioned_function!(uloc_getDefault)() as _)) }
 }
 
 pub fn parse(s: &str) -> ICUResult<LocaleBuf> {
     let s = unsafe { CString::from_vec_unchecked(s.into()) };
     unsafe {
         call_with_buffer::<u8>(|buffer, len, status| {
-            imp_uloc_canonicalize(s.as_ptr() as _, buffer as _, len, status)
+            versioned_function!(uloc_canonicalize)(s.as_ptr() as _, buffer as _, len, status)
         })
     }
     .map(|s| LocaleBuf(unsafe { CString::from_vec_unchecked(s.into()) }))
@@ -118,7 +118,13 @@ pub fn native_name(loc: &Locale) -> ICUResult<String> {
     let loc_ptr = loc.0.as_ptr();
     unsafe {
         call_with_buffer::<u16>(|buffer, len, status| {
-            imp_uloc_getDisplayName(loc_ptr as _, loc_ptr as _, buffer, len, status)
+            versioned_function!(uloc_getDisplayName)(
+                loc_ptr as _,
+                loc_ptr as _,
+                buffer,
+                len,
+                status,
+            )
         })
     }
 }
