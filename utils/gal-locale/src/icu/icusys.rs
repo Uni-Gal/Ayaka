@@ -12,7 +12,8 @@ pub type UChar = u16;
 #[repr(C)]
 pub struct UEnumeration(pub u8);
 
-#[link(name = "icucore")]
+#[cfg_attr(target_os = "windows", link(name = "icu"))]
+#[cfg_attr(target_os = "macos", link(name = "icucore"))]
 extern "C" {
     #[link_name = "uloc_getDefault"]
     pub fn imp_uloc_getDefault() -> *const ::std::os::raw::c_char;

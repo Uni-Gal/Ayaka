@@ -1,9 +1,6 @@
 cfg_if::cfg_if! {
-    if #[cfg(target_os = "windows")] {
-        #[path = "windows.rs"]
-        mod platform;
-    } else if #[cfg(target_os = "macos")] {
-        #[path = "macos.rs"]
+    if #[cfg(any(target_os = "windows", target_os = "macos"))] {
+        #[path = "icusys.rs"]
         mod platform;
     } else {
         #[path = "icu4c.rs"]
