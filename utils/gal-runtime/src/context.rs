@@ -39,7 +39,8 @@ impl Context {
         path: impl AsRef<Path> + 'a,
         frontend: FrontendType,
     ) -> ProgressFuture<impl Future<Output = Result<Self>> + 'a, OpenStatus> {
-        ProgressFuture::new(OpenStatus::LoadProfile, async move |tx| {
+        ProgressFuture::new(async move |tx| {
+            tx.send(OpenStatus::LoadProfile)?;
             let file = tokio::fs::read(&path).await?;
             let game: Game = serde_yaml::from_slice(&file)?;
             let root_path = path

@@ -4,23 +4,23 @@ use std::{
     pin::Pin,
     task::{Context, Poll},
 };
-use tokio::sync::watch::{channel, Sender};
-use tokio_stream::{wrappers::WatchStream, Stream};
+use tokio::sync::mpsc::{unbounded_channel, UnboundedSender};
+use tokio_stream::{wrappers::UnboundedReceiverStream, Stream};
 
-pub trait Progress = Debug + Clone + Send + Sync + 'static;
+pub trait Progress = Debug + Send + Sync + 'static;
 
 pub struct ProgressFuture<F: Future, P> {
     future: F,
-    progress: WatchStream<P>,
+    progress: UnboundedReceiverStream<P>,
     result: Option<F::Output>,
 }
 
 impl<F: Future, P: Progress> ProgressFuture<F, P> {
-    pub fn new(init: P, f: impl FnOnce(Sender<P>) -> F) -> Self {
-        let (tx, rx) = channel(init);
+    pub fn new(f: impl FnOnce(UnboundedSender<P>) -> F) -> Self {
+        let (tx, rx) = unbounded_channel();
         Self {
             future: f(tx),
-            progress: WatchStream::new(rx),
+            progress: UnboundedReceiverStream::new(rx),
             result: None,
         }
     }

@@ -148,7 +148,8 @@ impl Runtime {
         names: &'a [String],
     ) -> ProgressFuture<impl Future<Output = Result<Self>> + 'a, LoadStatus> {
         let path = rel_to.as_ref().join(dir);
-        ProgressFuture::new(LoadStatus::CreateEngine, async move |tx| {
+        ProgressFuture::new(async move |tx| {
+            tx.send(LoadStatus::CreateEngine)?;
             let store = Store::default();
             let import_object = Self::imports(&store)?;
             let mut modules = HashMap::new();
