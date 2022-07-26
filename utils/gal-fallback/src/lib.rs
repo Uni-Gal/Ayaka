@@ -1,3 +1,19 @@
+//! A fallback type.
+//!
+//! [`Fallback`] type provides functionality to fallback
+//! if a value or a part of value doesn't exist.
+
+/// Stores two [`Option`], and provides functionality to fallback.
+/// Basically, you provides a function returns [`Option`],
+/// and [`Fallback`] handles the fallback.
+/// ```
+/// # use gal_fallback::Fallback;
+/// let data = Some("hello");
+/// let base_data = Some("123");
+/// let fallback = Fallback::new(data, base_data);
+/// let num = fallback.and_then(|s| s.parse::<i32>().ok());
+/// assert_eq!(num, Some(123));
+/// ```
 pub struct Fallback<T> {
     data: Option<T>,
     base_data: Option<T>,
@@ -115,10 +131,7 @@ pub use gal_fallback_derive::FallbackSpec;
 
 #[cfg(test)]
 mod test {
-    mod gal_fallback {
-        pub use crate::*;
-    }
-    use gal_fallback::*;
+    use crate::*;
 
     #[test]
     fn some() {
