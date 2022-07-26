@@ -8,19 +8,23 @@ jobs:
   strategy:
     matrix:
       win-x64:
-        platform: 'win'
+        platform: 'win-x64'
         target: 'x86_64-pc-windows-msvc'
         image: 'windows-latest'
       linux-x64:
-        platform: 'linux'
+        platform: 'linux-x64'
         target: 'x86_64-unknown-linux-gnu'
         image: 'ubuntu-22.04'
-      macos-x64:
-        platform: 'mac'
+      linux-arm64:
+        platform: 'linux-arm64'
+        target: 'aarch64-unknown-linux-gnu'
+        image: 'ubuntu-22.04'
+      mac-x64:
+        platform: 'mac-x64'
         target: 'x86_64-apple-darwin'
         image: 'macOS-latest'
-      macos-arm64:
-        platform: 'mac'
+      mac-arm64:
+        platform: 'mac-arm64'
         target: 'aarch64-apple-darwin'
         image: 'macOS-latest'
   pool:
@@ -30,7 +34,29 @@ jobs:
   - script: |
       sudo apt update
       sudo apt install libwebkit2gtk-4.0-dev libicu-dev
-    condition: eq(variables.platform, 'linux')
+    condition: eq(variables.platform, 'linux-x64')
+    displayName: "Install dependencies on Linux"
+
+  - script: |
+      sudo dpkg --add-architecture arm64
+      sudo rm /etc/apt/sources.list.d/microsoft-prod.list
+      sudo sed -i "s/deb-src/deb-src [arch=amd64]/" /etc/apt/sources.list
+      sudo sed -i "s/deb/deb [arch=amd64]/" /etc/apt/sources.list
+      sudo sed -i "s/deb-src/deb-src [arch=amd64]/" /etc/apt/sources.list.d/*
+      sudo sed -i "s/deb/deb [arch=amd64]/" /etc/apt/sources.list.d/*
+      sudo tee /etc/apt/sources.list.d/arm-cross-compile-sources.list > /dev/null <<EOT
+      deb [arch=arm64] http://ports.ubuntu.com/ jammy main restricted universe multiverse
+      deb [arch=arm64] http://ports.ubuntu.com/ jammy-updates main restricted universe multiverse
+      deb [arch=arm64] http://ports.ubuntu.com/ jammy-backports main restricted universe multiverse
+      EOT
+      sudo apt update
+      sudo apt install libc6-dev-i386:amd64 libc6-dev-arm64-cross:amd64 gcc-aarch64-linux-gnu:amd64 binutils-aarch64-linux-gnu:amd64 libwebkit2gtk-4.0-dev:amd64 libicu-dev:amd64 libwebkit2gtk-4.0-dev:arm64 libicu-dev:arm64
+      mkdir .cargo
+      cat >> .cargo/config <<EOF
+      [target.$(target)]
+      linker = "aarch64-linux-gnu-gcc"
+      EOF
+    condition: eq(variables.platform, 'linux-arm64')
     displayName: "Install dependencies on Linux"
 
   - pwsh: |

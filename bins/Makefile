@@ -11,7 +11,7 @@ dist:
 release: dist
 	STATIC_VCRUNTIME=false cargo build --release
 release-cross: dist
-	STATIC_VCRUNTIME=false cargo build --release --target=$(TARGET)
+	STATIC_VCRUNTIME=false PKG_CONFIG_ALLOW_CROSS=1 cargo build --release --target=$(TARGET)
 
 .PHONY: run run-gui run-latex
 run:
