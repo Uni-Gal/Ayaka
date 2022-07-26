@@ -179,7 +179,7 @@ impl Context {
                             Some(alter)
                         }
                     }
-                    Command::Exec(p) => action_line.push_back_chars(self.call(&p).get_str()),
+                    Command::Exec(p) => action_line.push_back_chars(self.call(&p).into_str()),
                     Command::Switch {
                         text,
                         action,
@@ -342,7 +342,7 @@ impl Context {
                 self.ctx.cur_para = cur_para
                     .and_then(|p| p.next.as_ref())
                     .map(|next| self.parse_text_rich_error(next))
-                    .map(|text| self.call(&text).get_str().into())
+                    .map(|text| self.call(&text).into_str())
                     .unwrap_or_default();
                 self.ctx.cur_act = 0;
                 self.next_run()
