@@ -8,6 +8,7 @@ use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 use wasmer::*;
 use wasmer_wasi::*;
 
+/// An instance of a WASM plugin module.
 pub struct Host {
     abi_free: NativeFunc<(i32, i32, i32), ()>,
     abi_alloc: NativeFunc<(i32, i32), i32>,
@@ -30,6 +31,7 @@ unsafe fn mem_slice_mut(memory: &Memory, start: i32, len: i32) -> &mut [u8] {
 }
 
 impl Host {
+    /// Loads the WASM [`Module`], with some imports.
     pub fn new(module: &Module, resolver: &(dyn Resolver + Send + Sync)) -> Result<Self> {
         let instance = Instance::new(module, resolver)?;
         let abi_free = instance.exports.get_native_function("__abi_free")?;
@@ -43,6 +45,9 @@ impl Host {
         })
     }
 
+    /// Calls a method by name.
+    ///
+    /// The args and returns are passed by MessagePack with [`rmp_serde`].
     pub fn call<Params: Serialize, Res: DeserializeOwned>(
         &self,
         name: &str,
@@ -65,22 +70,27 @@ impl Host {
         Ok(res_data)
     }
 
+    /// Calls a script plugin method by name.
     pub fn dispatch_method(&self, name: &str, args: &[RawValue]) -> Result<RawValue> {
         self.call(name, (args,))
     }
 
+    /// Gets the [`PluginType`].
     pub fn plugin_type(&self) -> Result<PluginType> {
         self.call("plugin_type", ())
     }
 
+    /// Processes [`Action`] in action plugin.
     pub fn process_action(&self, ctx: ActionProcessContextRef) -> Result<Action> {
         self.call("process_action", (ctx,))
     }
 
+    /// Gets registered TeX commands of a text plugin.
     pub fn text_commands(&self) -> Result<Vec<String>> {
         self.call("text_commands", ())
     }
 
+    /// Calls a custom command in the text plugin.
     pub fn dispatch_command(
         &self,
         name: &str,
@@ -91,16 +101,30 @@ impl Host {
     }
 }
 
+/// The plugin runtime.
 pub struct Runtime {
+    /// The plugins map by name.
     pub modules: HashMap<String, Host>,
+    /// The action plugins.
     pub action_modules: Vec<String>,
+    /// The text plugins by command name.
     pub text_modules: HashMap<String, String>,
 }
 
+/// The load status of [`Runtime`].
 #[derive(Debug, Clone)]
 pub enum LoadStatus {
+    /// Start creating the engine.
     CreateEngine,
-    LoadPlugin(String, usize, usize),
+    /// Loading the plugin.
+    LoadPlugin(
+        /// Plugin name.
+        String,
+        /// Plugin index.
+        usize,
+        /// Plugin total count.
+        usize,
+    ),
 }
 
 #[derive(Default, Clone, WasmerEnv)]
@@ -142,6 +166,11 @@ impl Runtime {
         Ok(Box::new(import_object.chain_front(wasi_import)))
     }
 
+    /// Load plugins from specific directory and plugin names.
+    ///
+    /// The actual load folder will be `rel_to.join(dir)`.
+    ///
+    /// If `names` is empty, all WASM files will be loaded.
     pub fn load<'a>(
         dir: impl AsRef<Path> + 'a,
         rel_to: impl AsRef<Path> + 'a,

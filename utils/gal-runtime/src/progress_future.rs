@@ -9,6 +9,44 @@ use tokio_stream::{wrappers::UnboundedReceiverStream, Stream};
 
 pub trait Progress = Debug + Send + Sync + 'static;
 
+/// A [`Future`] with progress yielded.
+///
+/// ```
+/// #![feature(async_closure)]
+///
+/// # use std::future::Future;
+/// # use anyhow::{Result, Ok};
+/// # use gal_runtime::progress_future::ProgressFuture;
+/// #[derive(Debug)]
+/// enum Prog {
+///     Stage1,
+///     Stage2,
+///     End,
+/// }
+///
+/// fn foo() -> ProgressFuture<impl Future<Output = Result<i32>>, Prog> {
+///     ProgressFuture::new(async move |tx| {
+///         tx.send(Prog::Stage1)?;
+///         // some works...
+///         tx.send(Prog::Stage2)?;
+///         // some other works...
+///         tx.send(Prog::End)?;
+///         Ok(0)
+///     })
+/// }
+/// # use tokio_stream::StreamExt;
+/// # #[tokio::main(flavor = "current_thread")]
+/// # async fn main() -> Result<()> {
+/// let bar = foo();
+/// tokio::pin!(bar);
+/// while let Some(prog) = bar.next().await {
+///     println!("{:?}", prog);
+/// }
+/// let bar = bar.await?;
+/// assert_eq!(bar, 0);
+/// # Ok(())
+/// # }
+/// ```
 pub struct ProgressFuture<F: Future, P> {
     future: F,
     progress: UnboundedReceiverStream<P>,
@@ -16,6 +54,7 @@ pub struct ProgressFuture<F: Future, P> {
 }
 
 impl<F: Future, P: Progress> ProgressFuture<F, P> {
+    /// Creates a new [`ProgressFuture`].
     pub fn new(f: impl FnOnce(UnboundedSender<P>) -> F) -> Self {
         let (tx, rx) = unbounded_channel();
         Self {

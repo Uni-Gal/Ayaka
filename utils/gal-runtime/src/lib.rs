@@ -1,3 +1,9 @@
+//! The runtime of `gal` project.
+//!
+//! This runtime provides the game config, running context,
+//! plugin system and settings system.
+//! It can be treated as the "backend" of the game engine.
+
 #![feature(absolute_path)]
 #![feature(async_closure)]
 #![feature(round_char_boundary)]
@@ -5,8 +11,10 @@
 
 mod config;
 mod context;
+/// The plugin utilities.
 pub mod plugin;
-mod progress_future;
+pub mod progress_future;
+/// The script interpreter.
 pub mod script;
 mod settings;
 

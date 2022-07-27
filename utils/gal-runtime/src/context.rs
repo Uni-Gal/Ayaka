@@ -18,6 +18,7 @@ use std::{
 use tokio_stream::StreamExt;
 use unicode_width::UnicodeWidthStr;
 
+/// The game running context.
 pub struct Context {
     pub game: Game,
     frontend: FrontendType,
@@ -27,14 +28,26 @@ pub struct Context {
     pub ctx: RawContext,
 }
 
+/// The open status when creating [`Context`].
 #[derive(Debug, Clone)]
 pub enum OpenStatus {
+    /// Start loading config file.
     LoadProfile,
+    /// Start creating plugin runtime.
     CreateRuntime,
-    LoadPlugin(String, usize, usize),
+    /// Loading the plugin.
+    LoadPlugin(
+        /// Plugin name.
+        String,
+        /// Plugin index.
+        usize,
+        /// Plugin total count.
+        usize,
+    ),
 }
 
 impl Context {
+    /// Open a config file with frontend type.
     pub fn open<'a>(
         path: impl AsRef<Path> + 'a,
         frontend: FrontendType,
@@ -71,6 +84,7 @@ impl Context {
         })
     }
 
+    /// Initialize the [`RawContext`] to the start of the game.
     pub fn init_new(&mut self) {
         let mut ctx = RawContext::default();
         ctx.cur_para = self
@@ -85,6 +99,7 @@ impl Context {
         self.init_context(ctx)
     }
 
+    /// Initialize the [`RawContext`] with given record.
     pub fn init_context(&mut self, ctx: RawContext) {
         self.ctx = ctx;
     }
@@ -115,14 +130,17 @@ impl Context {
             .flatten()
     }
 
+    /// Set the current locale.
     pub fn set_locale(&mut self, loc: impl Into<LocaleBuf>) {
         self.loc = loc.into();
     }
 
+    /// Get the current locale.
     pub fn locale(&self) -> &Locale {
         &self.loc
     }
 
+    /// Call the part of script with this context.
     pub fn call(&mut self, expr: &impl Callable) -> RawValue {
         self.table().call(expr)
     }
@@ -318,6 +336,7 @@ impl Context {
         }
     }
 
+    /// Step to next line.
     pub fn next_run(&mut self) -> Option<Action> {
         let cur_para = self.current_paragraph();
         if cur_para.is_some() {
@@ -352,6 +371,7 @@ impl Context {
         }
     }
 
+    /// Step back to the last run.
     pub fn next_back_run(&mut self) -> Option<Action> {
         self.ctx.history.pop();
         if let Some(history_action) = self.ctx.history.last() {
@@ -364,6 +384,7 @@ impl Context {
         }
     }
 
+    /// Check all paragraphs to find grammer errors.
     pub fn check(&mut self) -> bool {
         let mut succeed = true;
         for (_, paras) in &self.game.paras {

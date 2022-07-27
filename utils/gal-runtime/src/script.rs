@@ -3,14 +3,20 @@ use gal_fallback::Fallback;
 use gal_script::*;
 use log::{error, warn};
 
+/// The variable table in scripts.
 pub struct VarTable<'a> {
+    /// The plugin runtime.
     pub runtime: &'a Runtime,
+    /// The resource map.
     pub res: Fallback<&'a VarMap>,
+    /// The context variables.
     pub locals: &'a mut VarMap,
+    /// The locale variables.
     pub vars: VarMap,
 }
 
 impl<'a> VarTable<'a> {
+    /// Creates a new [`VarTable`].
     pub fn new(runtime: &'a Runtime, res: Fallback<&'a VarMap>, locals: &'a mut VarMap) -> Self {
         Self {
             runtime,
@@ -20,12 +26,15 @@ impl<'a> VarTable<'a> {
         }
     }
 
+    /// Calls a [`Callable`] object.
     pub fn call(&mut self, c: &impl Callable) -> RawValue {
         c.call(self)
     }
 }
 
+/// Represents a callable part of a script.
 pub trait Callable {
+    /// Calls the part with the [`VarTable`].
     fn call(&self, ctx: &mut VarTable) -> RawValue;
 }
 
