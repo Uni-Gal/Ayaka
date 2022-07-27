@@ -1,3 +1,5 @@
+//! The script and text parsers.
+
 #![feature(char_indices_offset)]
 #![feature(iterator_try_collect)]
 

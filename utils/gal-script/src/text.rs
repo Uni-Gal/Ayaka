@@ -1,3 +1,5 @@
+//! The text parser.
+
 use crate::exec::*;
 use regex::Regex;
 use std::{error::Error, fmt::Display, iter::Peekable, num::ParseIntError, str::CharIndices};
@@ -6,14 +8,23 @@ lazy_static::lazy_static! {
     static ref SPACE_REGEX: Regex = Regex::new(r"(\s+)").unwrap();
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+/// The location of a token.
+/// The `Loc(start, end)` means the location `[start, end)`.
+#[derive(Debug, PartialEq, Eq, Clone, Copy, Hash)]
 pub struct Loc(pub usize, pub usize);
 
 impl Loc {
-    pub fn from_locs(locs: impl Iterator<Item = Loc>) -> Self {
+    /// Combines a series of [`Loc`].
+    ///
+    /// ```
+    /// # use gal_script::Loc;
+    /// let full_loc = Loc::from_locs([Loc(1, 2), Loc(4, 6), Loc(5, 8)]);
+    /// assert_eq!(full_loc, Loc(1, 8));
+    /// ```
+    pub fn from_locs(locs: impl IntoIterator<Item = Loc>) -> Self {
         let mut start = usize::MAX;
         let mut end = 0;
-        for loc in locs {
+        for loc in locs.into_iter() {
             start = loc.0.min(start);
             end = loc.1.max(end);
         }
@@ -168,24 +179,39 @@ impl Display for ParseErrorType {
 
 pub type ParseResult<T> = std::result::Result<T, ParseError>;
 
+/// A part of a line, either some texts or a command.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Line {
+    /// Raw texts.
     Str(String),
+    /// A command. See [`Command`].
     Cmd(Command),
 }
 
+/// A TeX-like command in the text.
 #[derive(Debug, PartialEq, Eq)]
 pub enum Command {
+    /// `\ch{}{}`
+    ///
+    /// Controls the current character.
     Character(String, String),
+    /// `\exec{}`
+    ///
+    /// Executes a program and calculates the return value into text.
     Exec(Program),
+    /// `\switch{}{}{}`
+    ///
+    /// A switch.
     Switch {
         text: String,
         action: Program,
         enabled: Option<Program>,
     },
+    /// Other custom commands.
     Other(String, Vec<String>),
 }
 
+/// A collection of [`Line`].
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Text(pub Vec<Line>);
 
@@ -450,17 +476,20 @@ impl<'a> Iterator for TextRichLexer<'a> {
     }
 }
 
+/// The parser of [`Text`].
 pub struct TextParser<'a> {
     lexer: Peekable<TextRichLexer<'a>>,
 }
 
 impl<'a> TextParser<'a> {
+    /// Create a new [`TextParser`] from a string.
     pub fn new(text: &'a str) -> Self {
         Self {
             lexer: TextRichLexer::new(text).peekable(),
         }
     }
 
+    /// Parse into [`Text`].
     pub fn parse(mut self) -> ParseResult<Text> {
         Ok(Text(self.try_collect()?))
     }
