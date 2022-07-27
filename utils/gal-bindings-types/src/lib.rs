@@ -124,7 +124,6 @@ impl ActionLine {
 ///
 /// ```
 /// # use gal_bindings_types::*;
-///
 /// let mut lines = ActionLines::default();
 /// lines.push_back_chars("Hello ");
 /// assert_eq!(lines[0], ActionLine::chars("Hello "));
