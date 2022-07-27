@@ -9,6 +9,8 @@ update:
 	cd bins && $(MAKE) update
 	cd utils && $(MAKE) update
 	cd plugins && $(MAKE) update
+doc:
+	cd utils && $(MAKE) doc
 
 .PHONY: plugins release release-cross
 plugins:
