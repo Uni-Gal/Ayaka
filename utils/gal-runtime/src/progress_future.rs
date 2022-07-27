@@ -16,7 +16,7 @@ pub trait Progress = Debug + Send + Sync + 'static;
 ///
 /// # use std::future::Future;
 /// # use anyhow::{Result, Ok};
-/// # use gal_runtime::progress_future::ProgressFuture;
+/// # use gal_runtime::ProgressFuture;
 /// #[derive(Debug)]
 /// enum Prog {
 ///     Stage1,

@@ -13,7 +13,7 @@ mod config;
 mod context;
 /// The plugin utilities.
 pub mod plugin;
-pub mod progress_future;
+mod progress_future;
 /// The script interpreter.
 pub mod script;
 mod settings;
@@ -23,6 +23,7 @@ pub use config::*;
 pub use context::*;
 pub use gal_locale::{Locale, LocaleBuf};
 pub use gal_script::{log, RawValue};
+pub use progress_future::*;
 pub use settings::*;
 pub use tokio;
 pub use tokio_stream;
