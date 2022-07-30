@@ -1,16 +1,21 @@
-.PHONY: test clean update
+.PHONY: test clean update doc serve-book
 test: plugins
 	cd utils && $(MAKE) test
+	cd book && $(MAKE) test
 clean:
 	cd bins && $(MAKE) clean
 	cd utils && $(MAKE) clean
 	cd plugins && $(MAKE) clean
+	cd book && $(MAKE) clean
 update:
 	cd bins && $(MAKE) update
 	cd utils && $(MAKE) update
 	cd plugins && $(MAKE) update
 doc:
 	cd utils && $(MAKE) doc
+	cd book && $(MAKE) build
+serve-book:
+	cd book && $(MAKE) serve
 
 .PHONY: plugins release release-cross
 plugins:
