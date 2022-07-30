@@ -1,5 +1,6 @@
 # Summary
 
+- [Introduction](./intro.md)
 - [Support platforms](./platforms.md)
 - [Quick start](./quick_start.md)
 - [Config](./config.md)
