@@ -37,7 +37,7 @@ paras:
 The TeX-like commands are embedded in the lines.
 Here are the basic commands:
 | Command   | Description                 |
-|-----------|-----------------------------|
+| --------- | --------------------------- |
 | `\res`    | Get resources.              |
 | `\ch`     | Set current character.      |
 | `\exec`   | Execute scripts.            |
@@ -46,7 +46,7 @@ Here are the basic commands:
 ### I18n
 The i18n feature are supported by ICU:
 | Platform | Library            |
-|----------|--------------------|
+| -------- | ------------------ |
 | Windows  | `icu.dll`\*        |
 | Linux    | `libicuuc.so`      |
 | macOS    | `libicucore.dylib` |
