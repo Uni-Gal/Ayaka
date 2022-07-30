@@ -23,5 +23,5 @@ res:
 You can reference resources in texts with `\res{}` command.
 ``` yaml
 - 'The foo value: \res{foo}'
-- 'The bar value: \bar{bar}'
+- 'The bar value: \res{bar}'
 ```
