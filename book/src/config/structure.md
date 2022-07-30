@@ -48,14 +48,8 @@ paras:
       texts:
         - The first line of the second paragraph.
 ```
-To run this example, you can go to the `bins` folder and run
-``` bash
-$ cargo run --package gal -- path/to/config.yaml --auto
-```
 The output will be
 ```
-Loading profile...
-Creating runtime...
 This is the first line.
 This is the second line.
 The first line of the second paragraph.

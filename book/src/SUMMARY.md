@@ -5,3 +5,6 @@
 - [Config](./config.md)
     - [File structure](./config/structure.md)
     - [Specify character](./config/character.md)
+    - [Resources](./config/resources.md)
+    - [Switches](./config/switches.md)
+    - [Script](./config/script.md)
