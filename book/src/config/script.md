@@ -15,7 +15,7 @@ Execute a piece of script(we call it *program*) with `\exec{}` command:
 - 1 + 1 = \exec{1 + 1}
 ```
 The output is
-```
+``` ignore
 1 + 1 = 2
 ```
 The script `1 + 1` is evaluated, and the result is `2`.

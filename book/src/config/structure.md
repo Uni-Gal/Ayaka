@@ -49,7 +49,7 @@ paras:
         - The first line of the second paragraph.
 ```
 The output will be
-```
+``` ignore
 This is the first line.
 This is the second line.
 The first line of the second paragraph.

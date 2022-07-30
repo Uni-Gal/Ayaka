@@ -19,7 +19,7 @@ You can then specify the character with the command:
 - \ch{bar}This is the second line.
 ```
 These two lines will output as:
-```
+``` ignore
 _A. Foo_This is the first line.
 _B. Bar_This is the second line.
 ```
@@ -31,7 +31,7 @@ Sometimes we need a temporary alias of the current character:
 - \ch{bar}{Person 2nd}This is the second line.
 ```
 The output will be
-```
+``` ignore
 _Person 1st_This is the first line.
 _Person 2nd_This is the second line.
 ```
