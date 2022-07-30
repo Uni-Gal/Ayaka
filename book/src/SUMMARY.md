@@ -7,5 +7,6 @@
     - [File structure](./config/structure.md)
     - [Specify character](./config/character.md)
     - [Resources](./config/resources.md)
+    - [Internationalization](./config/i18n.md)
     - [Switches](./config/switches.md)
     - [Script](./config/script.md)
