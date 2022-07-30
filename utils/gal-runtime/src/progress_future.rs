@@ -34,6 +34,7 @@ pub trait Progress = Debug + Send + Sync + 'static;
 ///         Ok(0)
 ///     })
 /// }
+///
 /// # use tokio_stream::StreamExt;
 /// # #[tokio::main(flavor = "current_thread")]
 /// # async fn main() -> Result<()> {
