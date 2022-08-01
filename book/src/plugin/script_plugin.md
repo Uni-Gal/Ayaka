@@ -28,13 +28,6 @@ fn hello(_args: Vec<RawValue>) -> RawValue {
     RawValue::Str("Hello".to_string())
 }
 ```
-Compile this lib with target `wasm32-unknown-unknown`, and you can now load this new plugin in the config file:
-``` yaml
-plugins:
-  dir: path/to/plugins
-  modules:
-    - meet
-```
 And call the function:
 ``` yaml
 - \exec{meet.hello()} from plugin!
@@ -43,3 +36,12 @@ If it builds successfully, and you set the right path to the plugins, it will ou
 ``` ignore
 Hello from plugin!
 ```
+
+## Existing plugins
+There are some existing script (only) plugins:
+
+| Plugin   | Description              |
+| -------- | ------------------------ |
+| `format` | Format strings.          |
+| `galog`  | Log to runtime.          |
+| `random` | Generate random numbers. |
