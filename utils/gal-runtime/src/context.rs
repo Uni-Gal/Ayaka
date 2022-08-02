@@ -291,6 +291,8 @@ impl Context {
         for action_module in &self.runtime.action_modules {
             let module = &self.runtime.modules[action_module];
             let ctx = ActionProcessContextRef {
+                root_path: &self.root_path,
+                game_props: &self.game.props,
                 frontend: self.frontend,
                 last_action,
                 action: &action,

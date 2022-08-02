@@ -233,6 +233,10 @@ pub struct Switch {
 /// ```
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ActionProcessContext {
+    /// The root path of the game profile.
+    pub root_path: PathBuf,
+    /// The global properties of the game profile.
+    pub game_props: HashMap<String, String>,
     /// The frontend type.
     pub frontend: FrontendType,
     /// The previous action in the history.
@@ -245,6 +249,8 @@ pub struct ActionProcessContext {
 #[derive(Debug, Serialize)]
 #[doc(hidden)]
 pub struct ActionProcessContextRef<'a> {
+    pub root_path: &'a Path,
+    pub game_props: &'a HashMap<String, String>,
     pub frontend: FrontendType,
     pub last_action: Option<&'a Action>,
     pub action: &'a Action,
