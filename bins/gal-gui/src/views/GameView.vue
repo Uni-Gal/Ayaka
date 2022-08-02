@@ -67,6 +67,12 @@ export default {
                 if (load_new_bgm) {
                     (this.$refs.bgm as HTMLAudioElement).load()
                 }
+                if (res.props.efm) {
+                    (this.$refs.efm as HTMLAudioElement).load()
+                }
+                if (res.props.voice) {
+                    (this.$refs.voice as HTMLAudioElement).load()
+                }
             } else {
                 await this.go_home()
             }
