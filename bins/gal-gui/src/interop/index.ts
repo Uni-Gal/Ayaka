@@ -40,6 +40,8 @@ export interface Action {
     props: {
         bg: string | undefined,
         bgm: string | undefined,
+        efm: string | undefined,
+        voice: string | undefined,
         video: string | undefined,
     },
 }
@@ -125,6 +127,12 @@ export async function current_run(): Promise<Action | undefined> {
         }
         if (res.props.bgm) {
             res.props.bgm = convertFileSrc(res.props.bgm)
+        }
+        if (res.props.efm) {
+            res.props.efm = convertFileSrc(res.props.efm)
+        }
+        if (res.props.voice) {
+            res.props.voice = convertFileSrc(res.props.voice)
         }
         if (res.props.video) {
             res.props.video = convertFileSrc(res.props.video)

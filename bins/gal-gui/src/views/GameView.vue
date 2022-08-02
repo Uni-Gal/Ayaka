@@ -26,7 +26,18 @@ export default {
     emits: ["quit"],
     data() {
         return {
-            action: { line: [], character: undefined, switches: [], props: { bg: undefined, bgm: undefined, video: undefined } } as Action,
+            action: {
+                line: [],
+                character: undefined,
+                switches: [],
+                props: {
+                    bg: undefined,
+                    bgm: undefined,
+                    efm: undefined,
+                    voice: undefined,
+                    video: undefined,
+                },
+            } as Action,
             type_text: "",
             type_text_buffer: [] as ActionLine[],
             state: ActionState.End,
@@ -210,7 +221,9 @@ export default {
 </script>
 
 <template>
-    <audio ref="bgm" v-bind:src="action.props.bgm" type="audio/mpeg" autoplay hidden loop> </audio>
+    <audio ref="bgm" v-bind:src="action.props.bgm" type="audio/mpeg" autoplay hidden loop></audio>
+    <audio ref="efm" v-bind:src="action.props.efm" type="audio/mpeg" autoplay hidden></audio>
+    <audio ref="voice" v-bind:src="action.props.voice" type="audio/mpeg" autoplay hidden></audio>
     <img class="background" v-bind:src="action.props.bg">
     <div class="card-lines">
         <ActionCard :ch="action.character" :line="type_text"></ActionCard>
