@@ -88,6 +88,12 @@ impl<T> IsEmpty2 for Vec<T> {
     }
 }
 
+impl<K, V> IsEmpty2 for HashMap<K, V> {
+    fn is_empty2(&self) -> bool {
+        self.is_empty()
+    }
+}
+
 impl<T: IsEmpty2> Fallback<T> {
     /// Treats the empty container as [`None`] and fallbacks.
     pub fn and_any(self) -> Option<T> {
@@ -194,6 +200,8 @@ impl<T: FallbackSpec> Fallback<T> {
         T::SpecType::from(self)
     }
 }
+
+use std::collections::HashMap;
 
 pub use gal_fallback_derive::FallbackSpec;
 

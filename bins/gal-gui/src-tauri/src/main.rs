@@ -222,7 +222,7 @@ async fn start_record(
     if let Some(ctx) = storage.context.lock().await.as_mut() {
         let raw_ctx = storage.records.lock().await[index].clone();
         let last_line = raw_ctx.history.last().unwrap();
-        *storage.action.lock().await = Some(last_line.action.clone());
+        *storage.action.lock().await = Some(last_line.clone());
         ctx.init_context(raw_ctx);
         info!("Init new context with locale {}.", locale);
     } else {
@@ -286,7 +286,7 @@ async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue
 }
 
 #[command]
-async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<HistoryAction>> {
+async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<Action>> {
     let mut hs = storage
         .context
         .lock()

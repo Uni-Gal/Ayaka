@@ -1,12 +1,11 @@
+pub use gal_bindings_types::VarMap;
+
 use crate::*;
 use anyhow::{anyhow, Result};
 use dirs::{config_dir, data_local_dir};
 use gal_locale::LocaleBuf;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 
 /// The settings of the game.
@@ -15,9 +14,6 @@ pub struct Settings {
     /// The display language.
     pub lang: LocaleBuf,
 }
-
-/// A map from variable name to [`RawValue`].
-pub type VarMap = HashMap<String, RawValue>;
 
 /// The serializable context, the record to be saved and loaded.
 ///
@@ -33,33 +29,7 @@ pub struct RawContext {
     /// Current local variables.
     pub locals: VarMap,
     /// The history actions.
-    pub history: Vec<HistoryAction>,
-}
-
-/// An action in the history, together with the [`RawContext`] snapshot.
-#[derive(Debug, Default, Clone, Deserialize, Serialize)]
-pub struct HistoryAction {
-    /// Current paragraph tag.
-    pub cur_para: String,
-    /// Current text index.
-    pub cur_act: usize,
-    /// Current local variables.
-    pub locals: VarMap,
-    /// Current [`Action`].
-    #[serde(flatten)]
-    pub action: Action,
-}
-
-impl RawContext {
-    /// Push history into [`RawContext`].
-    pub fn push_history(&mut self, action: Action) {
-        self.history.push(HistoryAction {
-            cur_para: self.cur_para.clone(),
-            cur_act: self.cur_act,
-            locals: self.locals.clone(),
-            action,
-        });
-    }
+    pub history: Vec<Action>,
 }
 
 async fn load_file<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {

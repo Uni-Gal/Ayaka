@@ -232,6 +232,9 @@ impl Context {
             }
         }
         Ok(Action {
+            cur_para: self.ctx.cur_para.clone(),
+            cur_act: self.ctx.cur_act,
+            locals: self.ctx.locals.clone(),
             line: action_line,
             character: chname,
             para_title: para_title.cloned(),
@@ -245,6 +248,9 @@ impl Context {
         if actions.is_some() {
             let actions = actions.spec();
 
+            let cur_para = actions.cur_para.and_any().unwrap_or_default();
+            let cur_act = actions.cur_act.and_then(|v| Some(v)).unwrap_or_default();
+            let locals = actions.locals.and_any().unwrap_or_default();
             let line = actions.line.and_any().unwrap_or_default();
             let character = actions.character.flatten().and_any();
             let para_title = actions.para_title.flatten().and_any();
@@ -274,6 +280,9 @@ impl Context {
                 .map(|p| p.unwrap_or_default())
                 .collect();
             Some(Action {
+                cur_para,
+                cur_act,
+                locals,
                 line,
                 character,
                 para_title,
@@ -287,7 +296,7 @@ impl Context {
     }
 
     fn process_action(&mut self, mut action: Action) -> Result<Action> {
-        let last_action = self.ctx.history.last().map(|act| &act.action);
+        let last_action = self.ctx.history.last();
         for action_module in &self.runtime.action_modules {
             let module = &self.runtime.modules[action_module];
             let ctx = ActionProcessContextRef {
@@ -314,7 +323,7 @@ impl Context {
             }
         }
         if !action.line.is_empty() || action.character.is_some() {
-            self.ctx.push_history(action.clone());
+            self.ctx.history.push(action.clone());
         }
         Ok(action)
     }
@@ -380,7 +389,7 @@ impl Context {
             self.ctx.cur_act = history_action.cur_act;
             self.ctx.cur_para = history_action.cur_para.clone();
             self.ctx.locals = history_action.locals.clone();
-            Some(history_action.action.clone())
+            Some(history_action.clone())
         } else {
             None
         }

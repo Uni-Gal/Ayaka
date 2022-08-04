@@ -1,7 +1,7 @@
 //! The types used in both runtime and plugins.
 
 use gal_fallback::{FallbackSpec, IsEmpty2};
-use gal_script::Program;
+use gal_script::{Program, RawValue};
 use serde::{Deserialize, Serialize};
 use std::{
     borrow::Cow,
@@ -192,10 +192,19 @@ impl IsEmpty2 for ActionLines {
     }
 }
 
+/// A map from variable name to [`RawValue`].
+pub type VarMap = HashMap<String, RawValue>;
+
 /// The full action information in one line of config.
 /// It provides the full texts and other properties exacted from [`gal_script::Text`].
 #[derive(Debug, Default, Clone, Serialize, Deserialize, FallbackSpec)]
 pub struct Action {
+    /// Current paragraph tag.
+    pub cur_para: String,
+    /// Current text index.
+    pub cur_act: usize,
+    /// Current local variables.
+    pub locals: VarMap,
     /// The full texts.
     pub line: ActionLines,
     /// The current character.
