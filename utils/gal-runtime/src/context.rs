@@ -175,7 +175,7 @@ impl Context {
         )
     }
 
-    fn exact_text(&mut self, para_title: Option<&String>, t: Text) -> Result<Action> {
+    fn exact_text(&mut self, para_title: Option<String>, t: Text) -> Result<Action> {
         let mut action_line = ActionLines::default();
         let mut chname = None;
         let mut switches = vec![];
@@ -237,7 +237,7 @@ impl Context {
             locals: self.ctx.locals.clone(),
             line: action_line,
             character: chname,
-            para_title: para_title.cloned(),
+            para_title,
             switches,
             props,
             switch_actions,
@@ -249,7 +249,7 @@ impl Context {
             let actions = actions.spec();
 
             let cur_para = actions.cur_para.and_any().unwrap_or_default();
-            let cur_act = actions.cur_act.and_then(|v| Some(v)).unwrap_or_default();
+            let cur_act = actions.cur_act.fallback().unwrap_or_default();
             let locals = actions.locals.and_any().unwrap_or_default();
             let line = actions.line.and_any().unwrap_or_default();
             let character = actions.character.flatten().and_any();
@@ -354,9 +354,9 @@ impl Context {
             let cur_text = self.current_text();
             if cur_text.is_some() {
                 let text = cur_text.map(|act| self.parse_text_rich_error(act));
-                let para_title = cur_para.and_then(|p| p.title.clone());
+                let para_title = cur_para.and_then(|p| p.title.as_ref()).cloned();
                 let actions = text.map(|t| {
-                    self.exact_text(para_title.as_ref(), t).unwrap_or_else(|e| {
+                    self.exact_text(para_title.clone(), t).unwrap_or_else(|e| {
                         error!("Exact text error: {}", e);
                         Action::default()
                     })

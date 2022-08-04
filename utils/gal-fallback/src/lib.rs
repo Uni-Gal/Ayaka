@@ -53,6 +53,11 @@ impl<T> Fallback<T> {
             .or_else(|| self.base_data.and_then(|t| f(t)))
     }
 
+    /// Fallbacks the total data.
+    pub fn fallback(self) -> Option<T> {
+        self.data.or_else(|| self.base_data)
+    }
+
     /// Maps to a new [`Fallback`].
     pub fn map<V>(self, mut f: impl FnMut(T) -> V) -> Fallback<V> {
         Fallback::new(self.data.map(|t| f(t)), self.base_data.map(|t| f(t)))
