@@ -275,15 +275,6 @@ export default {
 </template>
 
 <style>
-.background {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    max-width: 100%;
-    max-height: 100%;
-}
-
 .backboard {
     position: absolute;
     top: 0;

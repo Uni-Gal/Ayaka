@@ -9,12 +9,14 @@ export default {
     data() {
         return {
             title: "",
-            locale_names: new Map<Locale, string>()
+            bg: undefined as string | undefined,
+            locale_names: new Map<Locale, string>(),
         }
     },
     async created() {
         const res = await info()
         this.title = res.title
+        this.bg = res.props.bg
         this.$i18n.availableLocales.forEach(async (locale) => {
             this.locale_names.set(locale, await this.locale_native_name(locale))
         })
@@ -37,6 +39,8 @@ export default {
 </script>
 
 <template>
+    <img class="background" v-bind:src="bg">
+    <div class="content-full bg-body backboard-bg"></div>
     <div class="content">
         <div class="d-grid gap-4 col-4 mx-auto">
             <h1>{{ title }}</h1>
@@ -52,3 +56,9 @@ export default {
         </div>
     </div>
 </template>
+
+<style>
+.backboard-bg {
+    opacity: 0.5;
+}
+</style>

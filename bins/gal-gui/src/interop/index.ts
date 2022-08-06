@@ -103,8 +103,16 @@ export function locale_native_name(loc: Locale): Promise<string> {
     return invoke("locale_native_name", { loc: loc })
 }
 
-export function info(): Promise<GameInfo> {
-    return invoke("info")
+export async function info(): Promise<GameInfo> {
+    let res = await invoke<GameInfo | undefined>("info");
+    if (res) {
+        if (res.props.bg) {
+            res.props.bg = convertFileSrc(res.props.bg)
+        }
+    } else {
+        res = { title: "", author: "", props: { bg: undefined } }
+    }
+    return res
 }
 
 export function start_new(locale: Locale): Promise<void> {
