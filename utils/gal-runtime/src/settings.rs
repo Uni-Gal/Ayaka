@@ -126,6 +126,10 @@ pub async fn load_records(ident: &str, game: &str) -> Result<Vec<ActionRecord>> 
             .map(|s| s.to_string_lossy())
             .unwrap_or_default()
             == "json"
+            && p.file_stem()
+                .map(|s| s.to_string_lossy())
+                .unwrap_or_default()
+                != "global"
         {
             contexts.push(load_file(&p).await?);
         }
