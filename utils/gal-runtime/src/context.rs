@@ -31,6 +31,7 @@ pub struct Context {
     global_record: GlobalRecord,
     /// The inner raw context.
     pub ctx: RawContext,
+    /// The inner record.
     pub record: ActionRecord,
 }
 

@@ -35,6 +35,7 @@ pub struct GlobalRecord {
     pub record: HashMap<String, usize>,
 }
 
+/// The specific record.
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct ActionRecord {
     /// The history actions.
@@ -42,10 +43,13 @@ pub struct ActionRecord {
 }
 
 impl ActionRecord {
+    /// Get the [`RawContext`] object from the last [`Action`] in the history.
     pub fn last_ctx(&self) -> Option<&RawContext> {
         self.history.last().map(|act| &act.ctx)
     }
 
+    /// Get the [`RawContext`] object from the last [`Action`] in the history,
+    /// and if the history is empty, create a new [`RawContext`] from the game.
     pub fn last_ctx_with_game(&self, game: &Game) -> RawContext {
         self.last_ctx().cloned().unwrap_or_else(|| {
             let mut ctx = RawContext::default();
