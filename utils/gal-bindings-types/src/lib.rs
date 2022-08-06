@@ -52,13 +52,14 @@ bitflags::bitflags! {
     pub struct PluginType: u32 {
         /// The default value.
         /// All plugins are script plugins.
-        const SCRIPT = 0b00;
+        const SCRIPT = 0b000;
         /// The action plugin.
         /// This plugin processes the action after they are parsed.
-        const ACTION = 0b01;
+        const ACTION = 0b001;
         /// The text plugin.
         /// The custom text commands are dealt with this type of plugin.
-        const TEXT = 0b10;
+        const TEXT   = 0b010;
+        const GAME   = 0b100;
     }
 }
 
@@ -308,5 +309,26 @@ pub struct TextProcessResult {
     /// The lines to append.
     pub line: ActionLines,
     /// The custom properties to update.
+    pub props: HashMap<String, String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GameProcessContext {
+    pub title: String,
+    pub author: String,
+    pub root_path: PathBuf,
+    pub props: HashMap<String, String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct GameProcessContextRef<'a> {
+    pub title: &'a str,
+    pub author: &'a str,
+    pub root_path: &'a Path,
+    pub props: &'a HashMap<String, String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct GameProcessResult {
     pub props: HashMap<String, String>,
 }

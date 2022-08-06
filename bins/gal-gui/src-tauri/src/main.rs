@@ -12,9 +12,8 @@ use gal_runtime::{
     tokio_stream::StreamExt,
     *,
 };
-use serde::Serialize;
-use serde_json::json;
-use std::fmt::Display;
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, fmt::Display};
 use tauri::{async_runtime::Mutex, command, AppHandle, Manager, State};
 
 type CommandResult<T> = std::result::Result<T, CommandError>;
@@ -201,17 +200,31 @@ impl Storage {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct GameInfo {
+    pub title: String,
+    pub author: String,
+    pub props: HashMap<String, String>,
+}
+
+impl GameInfo {
+    pub fn new(game: &Game) -> Self {
+        Self {
+            title: game.title.clone(),
+            author: game.author.clone(),
+            props: game.props.clone(),
+        }
+    }
+}
+
 #[command]
-async fn info(storage: State<'_, Storage>) -> CommandResult<serde_json::Value> {
+async fn info(storage: State<'_, Storage>) -> CommandResult<Option<GameInfo>> {
     let ctx = storage.context.lock().await;
     if let Some(ctx) = ctx.as_ref() {
-        Ok(json!({
-            "title": ctx.game.title,
-            "author": ctx.game.author,
-        }))
+        Ok(Some(GameInfo::new(&ctx.game)))
     } else {
         warn!("Game hasn't been loaded.");
-        Ok(json!({}))
+        Ok(None)
     }
 }
 

@@ -1,15 +1,23 @@
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 use gal_bindings::*;
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::ACTION | PluginType::TEXT
+    PluginType::ACTION | PluginType::TEXT | PluginType::GAME
 }
 
 #[export]
 fn text_commands() -> &'static [&'static str] {
     &["bg", "bgm", "efm", "video"]
+}
+
+fn find_exists(name: &str, base_dir: impl AsRef<Path>, exs: &[&str]) -> Option<PathBuf> {
+    let base_dir = base_dir.as_ref();
+    exs.into_iter()
+        .map(|ex| base_dir.join(name).with_extension(ex))
+        .filter(|p| p.exists())
+        .next()
 }
 
 fn file(
@@ -28,12 +36,7 @@ fn file(
         exs
     );
     let mut res = TextProcessResult::default();
-    if let Some(path) = exs
-        .into_iter()
-        .map(|ex| base_dir.join(&args[0]).with_extension(ex))
-        .filter(|p| p.exists())
-        .next()
-    {
+    if let Some(path) = find_exists(&args[0], base_dir, exs) {
         res.props
             .insert(prop.to_string(), path.to_string_lossy().into_owned());
     }
@@ -110,4 +113,17 @@ fn process_action(mut ctx: ActionProcessContext) -> Action {
         ctx.action.props.insert(key, value);
     }
     ctx.action
+}
+
+#[export]
+fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {
+    let base_dir = ctx
+        .root_path
+        .join(ctx.props.get("bgs").map(|s| s.as_str()).unwrap_or(""));
+    if let Some(bg) = ctx.props.get_mut("bg") {
+        if let Some(path) = find_exists(&bg, &base_dir, &["png", "jpg", "gif"]) {
+            *bg = path.to_string_lossy().into_owned();
+        }
+    }
+    GameProcessResult { props: ctx.props }
 }

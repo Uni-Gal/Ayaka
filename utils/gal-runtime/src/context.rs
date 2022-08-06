@@ -6,7 +6,9 @@ use crate::{
     *,
 };
 use anyhow::{anyhow, bail, Result};
-use gal_bindings_types::{ActionLines, ActionProcessContextRef, TextProcessContextRef};
+use gal_bindings_types::{
+    ActionLines, ActionProcessContextRef, GameProcessContextRef, TextProcessContextRef,
+};
 use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::{error, warn};
 use script::*;
@@ -56,13 +58,14 @@ impl Context {
         ProgressFuture::new(async move |tx| {
             tx.send(OpenStatus::LoadProfile)?;
             let file = tokio::fs::read(&path).await?;
-            let game: Game = serde_yaml::from_slice(&file)?;
+            let mut game: Game = serde_yaml::from_slice(&file)?;
             let root_path = path
                 .as_ref()
                 .parent()
                 .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
+            let root_path = std::path::absolute(root_path)?;
             let runtime = {
-                let runtime = Runtime::load(&game.plugins.dir, root_path, &game.plugins.modules);
+                let runtime = Runtime::load(&game.plugins.dir, &root_path, &game.plugins.modules);
                 tokio::pin!(runtime);
                 while let Some(load_status) = runtime.next().await {
                     match load_status {
@@ -74,10 +77,23 @@ impl Context {
                 }
                 runtime.await?
             };
+            for m in &runtime.game_modules {
+                let module = &runtime.modules[m];
+                let ctx = GameProcessContextRef {
+                    title: &game.title,
+                    author: &game.author,
+                    root_path: &root_path,
+                    props: &game.props,
+                };
+                let res = module.process_game(ctx)?;
+                for (key, value) in res.props {
+                    game.props.insert(key, value);
+                }
+            }
             Ok(Self {
                 game,
                 frontend,
-                root_path: std::path::absolute(root_path)?,
+                root_path,
                 runtime,
                 settings: Settings::new(),
                 global_record: GlobalRecord::default(),

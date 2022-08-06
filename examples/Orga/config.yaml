@@ -1,6 +1,7 @@
 title: 団長の名場面
 author: 冈田麿里
 props:
+  bg: 4
   bgs: bgs
   bgms: bgms
 res:

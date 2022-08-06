@@ -28,9 +28,12 @@ export interface RawContext {
     bgm?: string,
 }
 
-export interface Info {
+export interface GameInfo {
     title: string,
     author: string,
+    props: {
+        bg: string | undefined,
+    },
 }
 
 export interface Action {
@@ -100,7 +103,7 @@ export function locale_native_name(loc: Locale): Promise<string> {
     return invoke("locale_native_name", { loc: loc })
 }
 
-export function info(): Promise<Info> {
+export function info(): Promise<GameInfo> {
     return invoke("info")
 }
 

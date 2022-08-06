@@ -99,6 +99,10 @@ impl Host {
     ) -> Result<TextProcessResult> {
         self.call(name, (args, ctx))
     }
+
+    pub fn process_game(&self, ctx: GameProcessContextRef) -> Result<GameProcessResult> {
+        self.call("process_game", (ctx,))
+    }
 }
 
 /// The plugin runtime.
@@ -109,6 +113,7 @@ pub struct Runtime {
     pub action_modules: Vec<String>,
     /// The text plugins by command name.
     pub text_modules: HashMap<String, String>,
+    pub game_modules: Vec<String>,
 }
 
 /// The load status of [`Runtime`].
@@ -182,8 +187,9 @@ impl Runtime {
             let store = Store::default();
             let import_object = Self::imports(&store)?;
             let mut modules = HashMap::new();
-            let mut action_modules = Vec::new();
+            let mut action_modules = vec![];
             let mut text_modules = HashMap::new();
+            let mut game_modules = vec![];
             let mut paths = vec![];
             if names.is_empty() {
                 let mut dirs = ReadDirStream::new(tokio::fs::read_dir(path).await?);
@@ -232,12 +238,16 @@ impl Runtime {
                         }
                     }
                 }
+                if plugin_type.contains(PluginType::GAME) {
+                    game_modules.push(name.clone());
+                }
                 modules.insert(name, runtime);
             }
             Ok(Self {
                 modules,
                 action_modules,
                 text_modules,
+                game_modules,
             })
         })
     }
