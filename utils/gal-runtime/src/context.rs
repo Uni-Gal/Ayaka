@@ -24,7 +24,8 @@ pub struct Context {
     frontend: FrontendType,
     root_path: PathBuf,
     runtime: Runtime,
-    loc: LocaleBuf,
+    settings: Settings,
+    global_record: GlobalRecord,
     pub ctx: RawContext,
 }
 
@@ -78,7 +79,8 @@ impl Context {
                 frontend,
                 root_path: std::path::absolute(root_path)?,
                 runtime,
-                loc: Locale::current().to_owned(),
+                settings: Settings::new(),
+                global_record: GlobalRecord::default(),
                 ctx: RawContext::default(),
             })
         })
@@ -107,13 +109,14 @@ impl Context {
     fn table(&mut self) -> VarTable {
         VarTable::new(
             &self.runtime,
-            self.game.find_res_fallback(&self.loc),
+            self.game.find_res_fallback(&self.locale()),
             &mut self.ctx.locals,
         )
     }
 
     fn current_paragraph(&self) -> Fallback<&Paragraph> {
-        self.game.find_para_fallback(&self.loc, &self.ctx.cur_para)
+        self.game
+            .find_para_fallback(&self.locale(), &self.ctx.cur_para)
     }
 
     fn current_text(&self) -> Fallback<&String> {
@@ -132,12 +135,37 @@ impl Context {
 
     /// Set the current locale.
     pub fn set_locale(&mut self, loc: impl Into<LocaleBuf>) {
-        self.loc = loc.into();
+        self.settings.lang = loc.into();
     }
 
     /// Get the current locale.
     pub fn locale(&self) -> &Locale {
-        &self.loc
+        &self.settings.lang
+    }
+
+    pub fn set_settings(&mut self, s: Settings) {
+        self.settings = s;
+    }
+
+    pub fn settings(&self) -> &Settings {
+        &self.settings
+    }
+
+    pub fn set_global_record(&mut self, r: GlobalRecord) {
+        self.global_record = r;
+    }
+
+    pub fn global_record(&self) -> &GlobalRecord {
+        &self.global_record
+    }
+
+    pub fn visited(&self, para: &str, act: usize) -> bool {
+        if let Some(max_act) = self.global_record.record.get(para) {
+            log::info!("Test act: {}, max act: {}", act, max_act);
+            *max_act >= act
+        } else {
+            false
+        }
     }
 
     /// Call the part of script with this context.
@@ -190,7 +218,7 @@ impl Context {
                             // TODO: reduce allocation
                             let res_key = format!("ch_{}", key);
                             self.game
-                                .find_res_fallback(&self.loc)
+                                .find_res_fallback(&self.locale())
                                 .and_then(|map| map.get(&res_key))
                                 .map(|v| v.get_str().into_owned())
                         } else {
@@ -269,9 +297,7 @@ impl Context {
             let (mut props, base_props) =
                 (props.unwrap_or_default(), base_props.unwrap_or_default());
             for (key, value) in base_props.into_iter() {
-                if !props.contains_key(&key) {
-                    props.insert(key, value);
-                }
+                props.entry(key).or_insert(value);
             }
             let switch_actions = actions
                 .switch_actions
@@ -349,6 +375,13 @@ impl Context {
 
     /// Step to next line.
     pub fn next_run(&mut self) -> Option<Action> {
+        if let Some(action) = self.ctx.history.last() {
+            self.global_record
+                .record
+                .entry(action.cur_para.clone())
+                .and_modify(|act| *act = (*act).max(action.cur_act))
+                .or_insert(action.cur_act);
+        }
         let cur_para = self.current_paragraph();
         if cur_para.is_some() {
             let cur_text = self.current_text();

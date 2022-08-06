@@ -5,7 +5,10 @@ use anyhow::{anyhow, Result};
 use dirs::{config_dir, data_local_dir};
 use gal_locale::LocaleBuf;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use std::path::{Path, PathBuf};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 
 /// The settings of the game.
@@ -13,6 +16,22 @@ use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 pub struct Settings {
     /// The display language.
     pub lang: LocaleBuf,
+}
+
+impl Settings {
+    pub fn new() -> Self {
+        Self {
+            lang: Locale::current().to_owned(),
+        }
+    }
+}
+
+/// The global record.
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+pub struct GlobalRecord {
+    /// The key is the tag of paragraphs,
+    /// the value is the maximum text index.
+    pub record: HashMap<String, usize>,
 }
 
 /// The serializable context, the record to be saved and loaded.
@@ -69,6 +88,18 @@ pub async fn save_settings(ident: &str, data: &Settings) -> Result<()> {
 fn records_path(ident: &str, game: &str) -> Result<PathBuf> {
     let path = data_local_dir().ok_or_else(|| anyhow!("Cannot find config path"))?;
     Ok(path.join(ident).join("save").join(game))
+}
+
+fn global_record_path(ident: &str, game: &str) -> Result<PathBuf> {
+    Ok(records_path(ident, game)?.join("global.json"))
+}
+
+pub async fn load_global_record(ident: &str, game: &str) -> Result<GlobalRecord> {
+    load_file(global_record_path(ident, game)?).await
+}
+
+pub async fn save_global_record(ident: &str, game: &str, data: &GlobalRecord) -> Result<()> {
+    save_file(data, global_record_path(ident, game)?, false).await
 }
 
 /// Load all [`RawContext`] from the records folder.

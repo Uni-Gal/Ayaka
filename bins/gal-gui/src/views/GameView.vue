@@ -3,7 +3,7 @@ import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import ActionCard from '../components/ActionCard.vue'
 import IconButton from '../components/IconButton.vue'
-import { current_run, next_run, next_back_run, switch_, merge_lines, Action, ActionLineType, ActionLine } from '../interop'
+import { current_run, next_run, next_back_run, switch_, merge_lines, Action, ActionLineType, ActionLine, current_visited } from '../interop'
 import { cloneDeep } from 'lodash'
 </script>
 
@@ -194,6 +194,9 @@ export default {
                         this.end_typing()
                         return has_next
                     }).catch(_ => { })
+                    if (!await current_visited()) {
+                        break
+                    }
                     if (!has_next) {
                         break
                     }

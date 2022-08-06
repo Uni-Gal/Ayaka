@@ -7,10 +7,11 @@ export interface OpenGameStatus {
 }
 
 export enum OpenGameStatusType {
-    LoadSettings,
     LoadProfile,
     CreateRuntime,
     LoadPlugin,
+    LoadSettings,
+    LoadGlobalRecords,
     LoadRecords,
     Loaded,
 }
@@ -139,6 +140,10 @@ export async function current_run(): Promise<Action | undefined> {
         }
     }
     return res
+}
+
+export async function current_visited(): Promise<boolean> {
+    return invoke("current_visited")
 }
 
 export function switch_(i: number): Promise<void> {

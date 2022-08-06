@@ -38,11 +38,9 @@ export default {
             }
         },
         status_to_text(s: OpenGameStatus): [string, number] {
-            const step = 100 / 6
+            const step = 100 / 7
             const t = OpenGameStatusType[s.t]
             switch (t) {
-                case OpenGameStatusType.LoadSettings:
-                    return ["Loading settings...", step * (t + 1)]
                 case OpenGameStatusType.LoadProfile:
                     return [`Loading profile "${s.data as unknown as string}"...`, step * (t + 1)]
                 case OpenGameStatusType.CreateRuntime:
@@ -51,6 +49,10 @@ export default {
                     const data = s.data as unknown as [string, number, number];
                     const percent = data[1] / data[2];
                     return [`Loading plugin "${data[0]}"... (${data[1] + 1}/${data[2]})`, step * (t + 1) + percent * step]
+                case OpenGameStatusType.LoadSettings:
+                    return ["Loading settings...", step * (t + 1)]
+                case OpenGameStatusType.LoadGlobalRecords:
+                    return ["Loading global records...", step * (t + 1)]
                 case OpenGameStatusType.LoadRecords:
                     return ["Loading records...", step * (t + 1)]
                 case OpenGameStatusType.Loaded:

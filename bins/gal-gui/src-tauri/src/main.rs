@@ -51,8 +51,9 @@ enum OpenGameStatus {
     LoadProfile(String),
     CreateRuntime,
     LoadPlugin(String, usize, usize),
-    Loaded,
+    LoadGlobalRecords,
     LoadRecords,
+    Loaded,
 }
 
 fn emit_open_status(
@@ -64,14 +65,6 @@ fn emit_open_status(
 
 #[command]
 async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
-    {
-        emit_open_status(&handle, OpenGameStatus::LoadSettings)?;
-        *storage.settings.lock().await =
-            Some(load_settings(&storage.ident).await.unwrap_or_else(|e| {
-                warn!("Load settings failed: {}", e);
-                Default::default()
-            }));
-    }
     {
         let config = &storage.config;
         let context = Context::open(config, FrontendType::Html);
@@ -89,9 +82,26 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
                 }
             }
         }
-        let ctx = context.await?;
+        let mut ctx = context.await?;
         let window = handle.get_window("main").unwrap();
         window.set_title(&ctx.game.title)?;
+        let settings = {
+            emit_open_status(&handle, OpenGameStatus::LoadSettings)?;
+            load_settings(&storage.ident).await.unwrap_or_else(|e| {
+                warn!("Load settings failed: {}", e);
+                Settings::new()
+            })
+        };
+        ctx.set_settings(settings);
+        emit_open_status(&handle, OpenGameStatus::LoadGlobalRecords)?;
+        ctx.set_global_record(
+            load_global_record(&storage.ident, &ctx.game.title)
+                .await
+                .unwrap_or_else(|e| {
+                    warn!("Load global records failed: {}", e);
+                    Default::default()
+                }),
+        );
         emit_open_status(&handle, OpenGameStatus::LoadRecords)?;
         *storage.records.lock().await = load_records(&storage.ident, &ctx.game.title)
             .await
@@ -107,15 +117,20 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
 
 #[command]
 async fn get_settings(storage: State<'_, Storage>) -> CommandResult<Option<Settings>> {
-    Ok(storage.settings.lock().await.as_ref().cloned())
+    Ok(storage
+        .context
+        .lock()
+        .await
+        .as_ref()
+        .map(|ctx| ctx.settings())
+        .cloned())
 }
 
 #[command]
 async fn set_settings(settings: Settings, storage: State<'_, Storage>) -> CommandResult<()> {
     if let Some(context) = storage.context.lock().await.as_mut() {
-        context.set_locale(&settings.lang);
+        context.set_settings(settings);
     }
-    *storage.settings.lock().await = Some(settings);
     Ok(())
 }
 
@@ -145,11 +160,10 @@ async fn save_record_to(index: usize, storage: State<'_, Storage>) -> CommandRes
 
 #[command]
 async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
-    if let Some(settings) = storage.settings.lock().await.as_ref() {
-        save_settings(&storage.ident, settings).await?;
-    }
     if let Some(context) = storage.context.lock().await.as_ref() {
         let game = &context.game.title;
+        save_settings(&storage.ident, context.settings()).await?;
+        save_global_record(&storage.ident, game, context.global_record()).await?;
         save_records(&storage.ident, game, &storage.records.lock().await).await?;
     }
     Ok(())
@@ -172,7 +186,6 @@ fn locale_native_name(loc: LocaleBuf) -> CommandResult<String> {
 struct Storage {
     ident: String,
     config: String,
-    settings: Mutex<Option<Settings>>,
     records: Mutex<Vec<RawContext>>,
     context: Mutex<Option<Context>>,
     action: Mutex<Option<Action>>,
@@ -258,6 +271,21 @@ async fn next_back_run(storage: State<'_, Storage>) -> CommandResult<bool> {
         info!("No action in the history.");
         Ok(false)
     }
+}
+
+#[command]
+async fn current_visited(storage: State<'_, Storage>) -> CommandResult<bool> {
+    let action = storage.action.lock().await;
+    let visited = if let Some(action) = action.as_ref() {
+        let context = storage.context.lock().await;
+        context
+            .as_ref()
+            .map(|context| context.visited(&action.cur_para, action.cur_act))
+            .unwrap_or_default()
+    } else {
+        false
+    };
+    Ok(visited)
 }
 
 #[command]
@@ -354,6 +382,7 @@ fn main() -> Result<()> {
             next_run,
             next_back_run,
             current_run,
+            current_visited,
             switch,
             history,
         ])

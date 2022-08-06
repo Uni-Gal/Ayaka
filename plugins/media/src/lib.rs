@@ -85,9 +85,10 @@ fn process_action(mut ctx: ActionProcessContext) -> Action {
     if let Some(last_action) = &ctx.last_action {
         for prop in ["bg", "bgm"] {
             if let Some(value) = last_action.props.get(prop) {
-                if !ctx.action.props.contains_key(prop) {
-                    ctx.action.props.insert(prop.to_string(), value.clone());
-                }
+                ctx.action
+                    .props
+                    .entry(prop.to_string())
+                    .or_insert(value.clone());
             }
         }
     }
