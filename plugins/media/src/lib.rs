@@ -95,7 +95,7 @@ fn process_action(mut ctx: ActionProcessContext) -> Action {
             }
         }
     }
-    let voice_id = ctx.action.cur_act.to_string();
+    let voice_id = ctx.action.ctx.cur_act.to_string();
     let res = file(
         vec![voice_id],
         ctx.root_path
@@ -105,7 +105,7 @@ fn process_action(mut ctx: ActionProcessContext) -> Action {
                     .map(|s| s.as_str())
                     .unwrap_or(""),
             )
-            .join(&ctx.action.cur_para),
+            .join(&ctx.action.ctx.cur_para),
         "voice",
         &["mp3"],
     );

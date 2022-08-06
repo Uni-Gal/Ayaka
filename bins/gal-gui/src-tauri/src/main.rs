@@ -134,24 +134,24 @@ async fn set_settings(settings: Settings, storage: State<'_, Storage>) -> Comman
 }
 
 #[command]
-async fn get_records(storage: State<'_, Storage>) -> CommandResult<Vec<RawContext>> {
+async fn get_records(storage: State<'_, Storage>) -> CommandResult<Vec<ActionRecord>> {
     Ok(storage.records.lock().await.clone())
 }
 
 #[command]
 async fn save_record_to(index: usize, storage: State<'_, Storage>) -> CommandResult<()> {
     let mut records = storage.records.lock().await;
-    if let Some(ctx) = storage
+    if let Some(record) = storage
         .context
         .lock()
         .await
         .as_ref()
-        .map(|ctx| ctx.ctx.clone())
+        .map(|ctx| ctx.record.clone())
     {
         if index >= records.len() {
-            records.push(ctx);
+            records.push(record);
         } else {
-            records[index] = ctx;
+            records[index] = record;
         }
     }
     Ok(())
@@ -185,7 +185,7 @@ fn locale_native_name(loc: LocaleBuf) -> CommandResult<String> {
 struct Storage {
     ident: String,
     config: String,
-    records: Mutex<Vec<RawContext>>,
+    records: Mutex<Vec<ActionRecord>>,
     context: Mutex<Option<Context>>,
     action: Mutex<Option<Action>>,
 }
@@ -293,7 +293,7 @@ async fn current_visited(storage: State<'_, Storage>) -> CommandResult<bool> {
         let context = storage.context.lock().await;
         context
             .as_ref()
-            .map(|context| context.visited(&action.cur_para, action.cur_act))
+            .map(|context| context.visited(&action))
             .unwrap_or_default()
     } else {
         false
@@ -333,7 +333,7 @@ async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<Action>> {
         .lock()
         .await
         .as_ref()
-        .map(|context| context.ctx.history.clone())
+        .map(|context| context.record.history.clone())
         .unwrap_or_default();
     hs.reverse();
     info!("Get history {:?}", hs);

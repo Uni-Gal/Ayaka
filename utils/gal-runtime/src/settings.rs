@@ -35,21 +35,31 @@ pub struct GlobalRecord {
     pub record: HashMap<String, usize>,
 }
 
-/// The serializable context, the record to be saved and loaded.
-///
-/// To push an [`Action`] into [`RawContext`],
-/// you should not use `Vec::push`.
-/// Instead, use `RawContext::push_history`.
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
-pub struct RawContext {
-    /// Current paragraph tag.
-    pub cur_para: String,
-    /// Current text index.
-    pub cur_act: usize,
-    /// Current local variables.
-    pub locals: VarMap,
+pub struct ActionRecord {
     /// The history actions.
     pub history: Vec<Action>,
+}
+
+impl ActionRecord {
+    pub fn last_ctx(&self) -> Option<&RawContext> {
+        self.history.last().map(|act| &act.ctx)
+    }
+
+    pub fn last_ctx_with_game(&self, game: &Game) -> RawContext {
+        self.last_ctx().cloned().unwrap_or_else(|| {
+            let mut ctx = RawContext::default();
+            ctx.cur_para = game
+                .paras
+                .get(&game.base_lang)
+                .and_then(|paras| paras.first().map(|p| p.tag.clone()))
+                .unwrap_or_else(|| {
+                    log::warn!("There is no paragraph in the game.");
+                    Default::default()
+                });
+            ctx
+        })
+    }
 }
 
 async fn load_file<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {
@@ -105,8 +115,8 @@ pub async fn save_global_record(ident: &str, game: &str, data: &GlobalRecord) ->
     save_file(data, global_record_path(ident, game)?, false).await
 }
 
-/// Load all [`RawContext`] from the records folder.
-pub async fn load_records(ident: &str, game: &str) -> Result<Vec<RawContext>> {
+/// Load all [`ActionRecord`] from the records folder.
+pub async fn load_records(ident: &str, game: &str) -> Result<Vec<ActionRecord>> {
     let ctx_path = records_path(ident, game)?;
     let mut entries = ReadDirStream::new(tokio::fs::read_dir(ctx_path).await?);
     let mut contexts = vec![];
@@ -123,8 +133,8 @@ pub async fn load_records(ident: &str, game: &str) -> Result<Vec<RawContext>> {
     Ok(contexts)
 }
 
-/// Save all [`RawContext`] into the records folder.
-pub async fn save_records(ident: &str, game: &str, contexts: &[RawContext]) -> Result<()> {
+/// Save all [`ActionRecord`] into the records folder.
+pub async fn save_records(ident: &str, game: &str, contexts: &[ActionRecord]) -> Result<()> {
     let ctx_path = records_path(ident, game)?;
     for (i, ctx) in contexts.iter().enumerate() {
         save_file(

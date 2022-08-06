@@ -200,16 +200,22 @@ impl IsEmpty2 for ActionLines {
 /// A map from variable name to [`RawValue`].
 pub type VarMap = HashMap<String, RawValue>;
 
-/// The full action information in one line of config.
-/// It provides the full texts and other properties exacted from [`gal_script::Text`].
-#[derive(Debug, Default, Clone, Serialize, Deserialize, FallbackSpec)]
-pub struct Action {
+/// The serializable context, the record to be saved and loaded.
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+pub struct RawContext {
     /// Current paragraph tag.
     pub cur_para: String,
     /// Current text index.
     pub cur_act: usize,
     /// Current local variables.
     pub locals: VarMap,
+}
+
+/// The full action information in one line of config.
+/// It provides the full texts and other properties exacted from [`gal_script::Text`].
+#[derive(Debug, Default, Clone, Serialize, Deserialize, FallbackSpec)]
+pub struct Action {
+    pub ctx: RawContext,
     /// The full texts.
     pub line: ActionLines,
     /// The current character.

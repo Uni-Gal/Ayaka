@@ -1,4 +1,4 @@
-pub use gal_bindings_types::FrontendType;
+pub use gal_bindings_types::{FrontendType, RawContext};
 
 use crate::{
     plugin::{LoadStatus, Runtime},
@@ -10,7 +10,7 @@ use gal_bindings_types::{
     ActionLines, ActionProcessContextRef, GameProcessContextRef, TextProcessContextRef,
 };
 use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
-use log::{error, warn};
+use log::error;
 use script::*;
 use std::{
     collections::HashMap,
@@ -29,8 +29,9 @@ pub struct Context {
     runtime: Runtime,
     settings: Settings,
     global_record: GlobalRecord,
-    /// The inner current record.
+    /// The inner raw context.
     pub ctx: RawContext,
+    pub record: ActionRecord,
 }
 
 /// The open status when creating [`Context`].
@@ -100,28 +101,25 @@ impl Context {
                 settings: Settings::new(),
                 global_record: GlobalRecord::default(),
                 ctx: RawContext::default(),
+                record: ActionRecord::default(),
             })
         })
     }
 
     /// Initialize the [`RawContext`] to the start of the game.
     pub fn init_new(&mut self) {
-        let mut ctx = RawContext::default();
-        ctx.cur_para = self
-            .game
-            .paras
-            .get(&self.game.base_lang)
-            .and_then(|paras| paras.first().map(|p| p.tag.clone()))
-            .unwrap_or_else(|| {
-                warn!("There is no paragraph in the game.");
-                Default::default()
-            });
-        self.init_context(ctx)
+        self.init_context(ActionRecord { history: vec![] })
     }
 
-    /// Initialize the [`RawContext`] with given record.
-    pub fn init_context(&mut self, ctx: RawContext) {
-        self.ctx = ctx;
+    /// Initialize the [`ActionRecord`] with given record.
+    pub fn init_context(&mut self, record: ActionRecord) {
+        self.ctx = record.last_ctx_with_game(&self.game);
+        self.record = record;
+        if !self.record.history.is_empty() {
+            // If the record is not empty,
+            // we need to set current context to the next one.
+            self.ctx.cur_act += 1;
+        }
     }
 
     fn table(&mut self) -> VarTable {
@@ -183,10 +181,10 @@ impl Context {
 
     /// Determine if an [`Action`] has been visited,
     /// by the paragraph tag and action index.
-    pub fn visited(&self, para: &str, act: usize) -> bool {
-        if let Some(max_act) = self.global_record.record.get(para) {
-            log::info!("Test act: {}, max act: {}", act, max_act);
-            *max_act >= act
+    pub fn visited(&self, action: &Action) -> bool {
+        if let Some(max_act) = self.global_record.record.get(&action.ctx.cur_para) {
+            log::info!("Test act: {}, max act: {}", action.ctx.cur_act, max_act);
+            *max_act >= action.ctx.cur_act
         } else {
             false
         }
@@ -284,9 +282,7 @@ impl Context {
             }
         }
         Ok(Action {
-            cur_para: self.ctx.cur_para.clone(),
-            cur_act: self.ctx.cur_act,
-            locals: self.ctx.locals.clone(),
+            ctx: self.ctx.clone(),
             line: action_line,
             character: chname,
             para_title,
@@ -300,9 +296,7 @@ impl Context {
         if actions.is_some() {
             let actions = actions.spec();
 
-            let cur_para = actions.cur_para.and_any().unwrap_or_default();
-            let cur_act = actions.cur_act.fallback().unwrap_or_default();
-            let locals = actions.locals.and_any().unwrap_or_default();
+            let ctx = actions.ctx.fallback().unwrap_or_default();
             let line = actions.line.and_any().unwrap_or_default();
             let character = actions.character.flatten().and_any();
             let para_title = actions.para_title.flatten().and_any();
@@ -330,9 +324,7 @@ impl Context {
                 .map(|p| p.unwrap_or_default())
                 .collect();
             Some(Action {
-                cur_para,
-                cur_act,
-                locals,
+                ctx,
                 line,
                 character,
                 para_title,
@@ -346,7 +338,7 @@ impl Context {
     }
 
     fn process_action(&mut self, mut action: Action) -> Result<Action> {
-        let last_action = self.ctx.history.last();
+        let last_action = self.record.history.last();
         for action_module in &self.runtime.action_modules {
             let module = &self.runtime.modules[action_module];
             let ctx = ActionProcessContextRef {
@@ -373,7 +365,7 @@ impl Context {
             }
         }
         if !action.line.is_empty() || action.character.is_some() {
-            self.ctx.history.push(action.clone());
+            self.record.history.push(action.clone());
         }
         Ok(action)
     }
@@ -399,12 +391,12 @@ impl Context {
 
     /// Step to next line.
     pub fn next_run(&mut self) -> Option<Action> {
-        if let Some(action) = self.ctx.history.last() {
+        if let Some(action) = self.record.history.last() {
             self.global_record
                 .record
-                .entry(action.cur_para.clone())
-                .and_modify(|act| *act = (*act).max(action.cur_act))
-                .or_insert(action.cur_act);
+                .entry(action.ctx.cur_para.clone())
+                .and_modify(|act| *act = (*act).max(action.ctx.cur_act))
+                .or_insert(action.ctx.cur_act);
         }
         let cur_para = self.current_paragraph();
         if cur_para.is_some() {
@@ -418,13 +410,14 @@ impl Context {
                         Action::default()
                     })
                 });
-                self.ctx.cur_act += 1;
-                self.merge_action(actions).map(|act| {
+                let res = self.merge_action(actions).map(|act| {
                     self.process_action(act).unwrap_or_else(|e| {
                         error!("Error when processing action: {}", e);
                         Action::default()
                     })
-                })
+                });
+                self.ctx.cur_act += 1;
+                res
             } else {
                 self.ctx.cur_para = cur_para
                     .and_then(|p| p.next.as_ref())
@@ -441,17 +434,15 @@ impl Context {
 
     /// Step back to the last run.
     pub fn next_back_run(&mut self) -> Option<Action> {
-        if let Some(last_action) = self.ctx.history.pop() {
-            self.ctx.cur_act = last_action.cur_act;
-            self.ctx.cur_para = last_action.cur_para;
-            self.ctx.locals = last_action.locals;
+        if let Some(last_action) = self.record.history.pop() {
+            self.ctx = last_action.ctx;
             log::info!(
                 "Back to para {}, act {}",
                 self.ctx.cur_para,
                 self.ctx.cur_act
             );
         }
-        if let Some(history_action) = self.ctx.history.last() {
+        if let Some(history_action) = self.record.history.last() {
             Some(history_action.clone())
         } else {
             None
