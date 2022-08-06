@@ -441,11 +441,17 @@ impl Context {
 
     /// Step back to the last run.
     pub fn next_back_run(&mut self) -> Option<Action> {
-        self.ctx.history.pop();
+        if let Some(last_action) = self.ctx.history.pop() {
+            self.ctx.cur_act = last_action.cur_act;
+            self.ctx.cur_para = last_action.cur_para;
+            self.ctx.locals = last_action.locals;
+            log::info!(
+                "Back to para {}, act {}",
+                self.ctx.cur_para,
+                self.ctx.cur_act
+            );
+        }
         if let Some(history_action) = self.ctx.history.last() {
-            self.ctx.cur_act = history_action.cur_act;
-            self.ctx.cur_para = history_action.cur_para.clone();
-            self.ctx.locals = history_action.locals.clone();
             Some(history_action.clone())
         } else {
             None
