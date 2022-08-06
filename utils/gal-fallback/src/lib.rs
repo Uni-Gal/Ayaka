@@ -3,6 +3,8 @@
 //! [`Fallback`] type provides functionality to fallback
 //! if a value or a part of value doesn't exist.
 
+#![warn(missing_docs)]
+
 /// Stores two [`Option`], and provides functionality to fallback.
 ///
 /// Basically, you provides a function returns [`Option`],
@@ -196,11 +198,12 @@ impl<T> IntoIterator for Fallback<Vec<T>> {
 /// }
 /// ```
 pub trait FallbackSpec: Sized {
+    /// The specialized fallback type.
     type SpecType: From<Fallback<Self>>;
 }
 
 impl<T: FallbackSpec> Fallback<T> {
-    /// Get the specialized fallback type.
+    /// Get the specialized fallback object.
     pub fn spec(self) -> T::SpecType {
         T::SpecType::from(self)
     }

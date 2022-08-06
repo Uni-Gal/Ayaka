@@ -2,7 +2,7 @@
 
 use crate::exec::*;
 use regex::Regex;
-use std::{error::Error, fmt::Display, iter::Peekable, num::ParseIntError, str::CharIndices};
+use std::{error::Error, fmt::Display, iter::Peekable, str::CharIndices};
 
 lazy_static::lazy_static! {
     static ref SPACE_REGEX: Regex = Regex::new(r"(\s+)").unwrap();
@@ -112,6 +112,7 @@ impl<'a> RichToken<'a> {
     }
 }
 
+/// The error when parsing [`Text`].
 #[derive(Debug, PartialEq, Eq)]
 pub struct ParseError {
     loc: Loc,
@@ -119,14 +120,16 @@ pub struct ParseError {
 }
 
 impl ParseError {
-    pub fn new(loc: Loc, err: ParseErrorType) -> Self {
+    pub(crate) fn new(loc: Loc, err: ParseErrorType) -> Self {
         Self { loc, err }
     }
 
+    /// The error location.
     pub fn loc(&self) -> Loc {
         self.loc
     }
 
+    /// The error type.
     pub fn error(&self) -> &ParseErrorType {
         &self.err
     }
@@ -144,16 +147,24 @@ impl Display for ParseError {
 
 impl Error for ParseError {}
 
+/// The type of [`ParseError`].
 #[derive(Debug, PartialEq, Eq)]
 pub enum ParseErrorType {
+    /// Illegal char.
+    /// Usually unexcepted char after `\`,
+    /// or redundant `/`.
     IllegalChar(char),
+    /// Illegal space.
+    /// The name in `\ch` command cannot contain spaces.
     IllegalSpace,
-    EmptyKey,
+    /// No command name found after `\`.
     CmdNotFound,
+    /// We don't support embedded command inside parameters.
     CmdInCmd,
+    /// The builtin commands check the parameters count.
     InvalidParamsCount(String, usize),
+    /// An error occurred when parsing [`Program`].
     InvalidProgram(String),
-    InvalidIndex(ParseIntError),
 }
 
 impl Display for ParseErrorType {
@@ -161,7 +172,6 @@ impl Display for ParseErrorType {
         match self {
             Self::IllegalChar(c) => write!(f, "Illegal char \"{}\".", c.escape_default())?,
             Self::IllegalSpace => write!(f, "Illegal space.")?,
-            Self::EmptyKey => write!(f, "Key cannot be empty.")?,
             Self::CmdNotFound => write!(f, "Command not found after \"\\\".")?,
             Self::CmdInCmd => write!(f, "Embedded command is not supported.")?,
             Self::InvalidParamsCount(name, count) => write!(
@@ -171,12 +181,12 @@ impl Display for ParseErrorType {
                 name.escape_default()
             )?,
             Self::InvalidProgram(err) => write!(f, "Program parse error: {}", err)?,
-            Self::InvalidIndex(e) => Display::fmt(e, f)?,
         }
         Ok(())
     }
 }
 
+/// The [`std::result::Result`] when parsing [`Text`].
 pub type ParseResult<T> = std::result::Result<T, ParseError>;
 
 /// A part of a line, either some texts or a command.
@@ -203,8 +213,11 @@ pub enum Command {
     ///
     /// A switch.
     Switch {
+        /// The text of the switch.
         text: String,
+        /// The action after choosing the switch,
         action: Program,
+        /// The expression determines whether the switch is enabled.
         enabled: Option<Program>,
     },
     /// Other custom commands.

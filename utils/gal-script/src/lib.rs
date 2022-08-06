@@ -1,5 +1,6 @@
 //! The script and text parsers.
 
+#![warn(missing_docs)]
 #![feature(char_indices_offset)]
 #![feature(iterator_try_collect)]
 

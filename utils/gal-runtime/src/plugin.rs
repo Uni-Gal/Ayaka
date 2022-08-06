@@ -100,6 +100,7 @@ impl Host {
         self.call(name, (args, ctx))
     }
 
+    /// Processes [`Game`] when opening the config file.
     pub fn process_game(&self, ctx: GameProcessContextRef) -> Result<GameProcessResult> {
         self.call("process_game", (ctx,))
     }
@@ -113,6 +114,7 @@ pub struct Runtime {
     pub action_modules: Vec<String>,
     /// The text plugins by command name.
     pub text_modules: HashMap<String, String>,
+    /// The game plugins.
     pub game_modules: Vec<String>,
 }
 

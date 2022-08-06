@@ -22,12 +22,14 @@ use unicode_width::UnicodeWidthStr;
 
 /// The game running context.
 pub struct Context {
+    /// The inner [`Game`] object.
     pub game: Game,
     frontend: FrontendType,
     root_path: PathBuf,
     runtime: Runtime,
     settings: Settings,
     global_record: GlobalRecord,
+    /// The inner current record.
     pub ctx: RawContext,
 }
 
@@ -159,22 +161,28 @@ impl Context {
         &self.settings.lang
     }
 
+    /// Set all settings.
     pub fn set_settings(&mut self, s: Settings) {
         self.settings = s;
     }
 
+    /// Get all settings.
     pub fn settings(&self) -> &Settings {
         &self.settings
     }
 
+    /// Set global record.
     pub fn set_global_record(&mut self, r: GlobalRecord) {
         self.global_record = r;
     }
 
+    /// Get global record.
     pub fn global_record(&self) -> &GlobalRecord {
         &self.global_record
     }
 
+    /// Determine if an [`Action`] has been visited,
+    /// by the paragraph tag and action index.
     pub fn visited(&self, para: &str, act: usize) -> bool {
         if let Some(max_act) = self.global_record.record.get(para) {
             log::info!("Test act: {}, max act: {}", act, max_act);

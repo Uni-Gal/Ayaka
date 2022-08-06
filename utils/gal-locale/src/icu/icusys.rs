@@ -53,6 +53,7 @@ extern "C" {
     pub fn uenum_close(en: *mut UEnumeration);
 }
 
+/// The same macro as the one in `rust_icu_sys`.
 #[macro_export]
 macro_rules! versioned_function {
     ($func_name:path) => {

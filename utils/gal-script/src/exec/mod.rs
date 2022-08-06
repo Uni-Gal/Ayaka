@@ -4,9 +4,13 @@ use crate::*;
 use lalrpop_util::lalrpop_mod;
 use serde::{Deserialize, Serialize};
 
-lalrpop_mod!(grammer, "/exec/grammer.rs");
+lalrpop_mod!(
+    #[allow(missing_docs)]
+    grammer,
+    "/exec/grammer.rs"
+);
 
-pub use grammer::*;
+pub use grammer::{ConstParser, ExprParser, ProgramParser, RefParser};
 
 /// A full script, a collection of expressions.
 ///

@@ -4,6 +4,7 @@
 //! plugin system and settings system.
 //! It can be treated as the "backend" of the game engine.
 
+#![warn(missing_docs)]
 #![feature(absolute_path)]
 #![feature(async_closure)]
 #![feature(round_char_boundary)]

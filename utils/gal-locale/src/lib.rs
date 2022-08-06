@@ -4,6 +4,8 @@
 //! They are internally a null-terminated string,
 //! and use icu4c to parse and choose.
 
+#![warn(missing_docs)]
+
 mod icu;
 
 use anyhow::Result;

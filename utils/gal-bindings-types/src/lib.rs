@@ -1,5 +1,7 @@
 //! The types used in both runtime and plugins.
 
+#![warn(missing_docs)]
+
 use gal_fallback::{FallbackSpec, IsEmpty2};
 use gal_script::{Program, RawValue};
 use serde::{Deserialize, Serialize};
@@ -59,6 +61,8 @@ bitflags::bitflags! {
         /// The text plugin.
         /// The custom text commands are dealt with this type of plugin.
         const TEXT   = 0b010;
+        /// The game plugin.
+        /// This plugin processes the game properties after it is loaded.
         const GAME   = 0b100;
     }
 }
@@ -312,15 +316,32 @@ pub struct TextProcessResult {
     pub props: HashMap<String, String>,
 }
 
+/// The argument to game plugin.
+///
+/// Every game plugin should implement `process_game`:
+/// ```ignore
+/// use gal_bindings::*;
+///
+/// #[export]
+/// fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {
+///     // Process the game...
+///     GameProcessResult { props: ctx.props }
+/// }
+/// ```
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GameProcessContext {
+    /// The title of the game.
     pub title: String,
+    /// The author of the game.
     pub author: String,
+    /// The root path of the game profile.
     pub root_path: PathBuf,
+    /// The global properties of the game.
     pub props: HashMap<String, String>,
 }
 
 #[derive(Debug, Serialize)]
+#[doc(hidden)]
 pub struct GameProcessContextRef<'a> {
     pub title: &'a str,
     pub author: &'a str,
@@ -328,7 +349,10 @@ pub struct GameProcessContextRef<'a> {
     pub props: &'a HashMap<String, String>,
 }
 
+/// The result of game plugins.
+/// See examples at [`GameProcessContext`].
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GameProcessResult {
+    /// The updated properties.
     pub props: HashMap<String, String>,
 }

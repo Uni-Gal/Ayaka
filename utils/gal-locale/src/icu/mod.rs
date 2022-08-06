@@ -8,9 +8,8 @@ cfg_if::cfg_if! {
     }
 }
 
-pub use platform::*;
-
 use crate::*;
+use platform::*;
 use thiserror::Error;
 
 trait UChar: Sized + Default + Copy {

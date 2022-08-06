@@ -19,6 +19,7 @@ pub struct Settings {
 }
 
 impl Settings {
+    /// Creates [`Settings`] object with current locale.
     pub fn new() -> Self {
         Self {
             lang: Locale::current().to_owned(),
@@ -94,10 +95,12 @@ fn global_record_path(ident: &str, game: &str) -> Result<PathBuf> {
     Ok(records_path(ident, game)?.join("global.json"))
 }
 
+/// Load [`GlobalRecord`] from the records folder.
 pub async fn load_global_record(ident: &str, game: &str) -> Result<GlobalRecord> {
     load_file(global_record_path(ident, game)?).await
 }
 
+/// Save [`GlobalRecord`] into the records folder.
 pub async fn save_global_record(ident: &str, game: &str, data: &GlobalRecord) -> Result<()> {
     save_file(data, global_record_path(ident, game)?, false).await
 }

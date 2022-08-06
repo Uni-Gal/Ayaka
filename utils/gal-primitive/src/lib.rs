@@ -4,6 +4,8 @@
 //! It is used by scripts in `gal` project.
 //! The value operation and type conversion are handled in `gal-runtime`.
 
+#![warn(missing_docs)]
+
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;
 
@@ -30,9 +32,13 @@ pub enum RawValue {
 /// Represents the type of [`RawValue`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ValueType {
+    /// The unit type.
     Unit,
+    /// The boolean type.
     Bool,
+    /// The number type.
     Num,
+    /// The string type.
     Str,
 }
 
