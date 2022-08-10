@@ -226,45 +226,6 @@ pub enum Command {
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct Text(pub Vec<Line>);
 
-struct PeekableChars<'a> {
-    iter: CharIndices<'a>,
-    head: Option<Option<(usize, char)>>,
-}
-
-impl<'a> PeekableChars<'a> {
-    pub fn new(s: &'a str) -> Self {
-        Self {
-            iter: s.char_indices(),
-            head: None,
-        }
-    }
-
-    pub fn peek(&mut self) -> Option<char> {
-        self.head
-            .get_or_insert_with(|| self.iter.next())
-            .map(|(_, c)| c)
-    }
-
-    pub fn readed(&self) -> usize {
-        match self.head {
-            Some(Some((offset, _))) => offset,
-            _ => self.iter.offset(),
-        }
-    }
-}
-
-impl<'a> Iterator for PeekableChars<'a> {
-    type Item = char;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.head.take() {
-            Some(item) => item,
-            None => self.iter.next(),
-        }
-        .map(|(_, c)| c)
-    }
-}
-
 const fn is_special_char(c: char) -> bool {
     match c {
         '\\' | '{' | '}' | '/' => true,
@@ -274,15 +235,30 @@ const fn is_special_char(c: char) -> bool {
 
 struct TextLexer<'a> {
     text: &'a str,
-    chars: PeekableChars<'a>,
+    chars: Peekable<CharIndices<'a>>,
 }
 
 impl<'a> TextLexer<'a> {
     pub fn new(text: &'a str) -> Self {
         Self {
             text,
-            chars: PeekableChars::new(text),
+            chars: text.char_indices().peekable(),
         }
+    }
+
+    fn peek_char(&mut self) -> Option<char> {
+        self.chars.peek().map(|(_, c)| *c)
+    }
+
+    fn next_char(&mut self) -> Option<char> {
+        self.chars.next().map(|(_, c)| c)
+    }
+
+    fn offset(&mut self) -> usize {
+        self.chars
+            .peek()
+            .map(|(offset, _)| *offset)
+            .unwrap_or_else(|| self.text.len())
     }
 }
 
@@ -290,45 +266,42 @@ impl<'a> Iterator for TextLexer<'a> {
     type Item = Token<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let cur = self.chars.readed();
+        let cur = self.offset();
         let mut has_whitespace = false;
-        while let Some(c) = self.chars.peek() {
+        while let Some(c) = self.peek_char() {
             if c.is_whitespace() {
-                self.chars.next();
+                self.next_char();
                 has_whitespace = true;
             } else {
                 break;
             }
         }
         if has_whitespace {
-            return Some(Token::space(Loc(cur, self.chars.readed())));
+            return Some(Token::space(Loc(cur, self.offset())));
         }
-        let cur = self.chars.readed();
-        while let Some(c) = self.chars.peek() {
+        let cur = self.offset();
+        while let Some(c) = self.peek_char() {
             if is_special_char(c) {
-                if self.chars.readed() - cur > 0 {
+                if self.offset() - cur > 0 {
                     break;
                 } else {
-                    self.chars.next();
-                    return Some(Token::spec_char(
-                        Loc(self.chars.readed() - 1, self.chars.readed()),
-                        c,
-                    ));
+                    self.next_char();
+                    return Some(Token::spec_char(Loc(self.offset() - 1, self.offset()), c));
                 }
             } else if c.is_whitespace() {
-                if self.chars.readed() - cur > 0 {
+                if self.offset() - cur > 0 {
                     break;
                 } else {
                     return self.next();
                 }
             } else {
-                self.chars.next();
+                self.next_char();
             }
         }
-        if self.chars.readed() - cur > 0 {
+        if self.offset() - cur > 0 {
             Some(Token::text(
-                Loc(cur, self.chars.readed()),
-                &self.text[cur..self.chars.readed()],
+                Loc(cur, self.offset()),
+                &self.text[cur..self.offset()],
             ))
         } else {
             None
