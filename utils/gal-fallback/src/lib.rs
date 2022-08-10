@@ -4,6 +4,7 @@
 //! if a value or a part of value doesn't exist.
 
 #![warn(missing_docs)]
+#![deny(unsafe_code)]
 
 /// Stores two [`Option`], and provides functionality to fallback.
 ///

@@ -1,6 +1,7 @@
 //! The types used in both runtime and plugins.
 
 #![warn(missing_docs)]
+#![deny(unsafe_code)]
 
 use gal_fallback::{FallbackSpec, IsEmpty2};
 use gal_script::{Program, RawValue};

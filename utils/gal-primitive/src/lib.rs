@@ -5,6 +5,7 @@
 //! The value operation and type conversion are handled in `gal-runtime`.
 
 #![warn(missing_docs)]
+#![deny(unsafe_code)]
 
 use serde::{Deserialize, Serialize};
 use std::borrow::Cow;

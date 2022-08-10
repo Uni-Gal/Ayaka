@@ -1,6 +1,7 @@
 //! The script and text parsers.
 
 #![warn(missing_docs)]
+#![deny(unsafe_code)]
 #![feature(iterator_try_collect)]
 #![feature(once_cell)]
 

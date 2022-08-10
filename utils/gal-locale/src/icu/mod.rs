@@ -104,13 +104,13 @@ pub fn current() -> &'static Locale {
 }
 
 pub fn parse(s: &str) -> ICUResult<LocaleBuf> {
-    let s = unsafe { CString::from_vec_unchecked(s.into()) };
     unsafe {
+        let s = CString::from_vec_unchecked(s.into());
         call_with_buffer::<u8>(|buffer, len, status| {
             versioned_function!(uloc_canonicalize)(s.as_ptr() as _, buffer as _, len, status)
         })
+        .map(|s| LocaleBuf(CString::from_vec_unchecked(s.into())))
     }
-    .map(|s| LocaleBuf(unsafe { CString::from_vec_unchecked(s.into()) }))
 }
 
 pub fn native_name(loc: &Locale) -> ICUResult<String> {

@@ -13,10 +13,8 @@
 
 mod config;
 mod context;
-/// The plugin utilities.
 pub mod plugin;
 mod progress_future;
-/// The script interpreter.
 pub mod script;
 mod settings;
 
