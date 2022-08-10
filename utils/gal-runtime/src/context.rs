@@ -443,11 +443,7 @@ impl Context {
                 self.ctx.cur_act
             );
         }
-        if let Some(history_action) = self.record.history.last() {
-            Some(history_action.clone())
-        } else {
-            None
-        }
+        self.record.history.last().cloned()
     }
 
     /// Check all paragraphs to find grammer errors.

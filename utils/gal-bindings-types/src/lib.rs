@@ -168,26 +168,22 @@ impl ActionLines {
     /// If the back element is also [`ActionLine::Chars`], the string is appended.
     pub fn push_back_chars<'a>(&mut self, s: impl Into<Cow<'a, str>>) {
         let s = s.into();
-        if let Some(act) = self.back_mut() {
-            if let ActionLine::Chars(text) = act {
-                text.push_str(&s);
-                return;
-            }
+        if let Some(ActionLine::Chars(text)) = self.back_mut() {
+            text.push_str(&s);
+        } else {
+            self.push_back(ActionLine::chars(s));
         }
-        self.push_back(ActionLine::chars(s))
     }
 
     /// Push the string as [`ActionLine::Block`] to the back.
     /// If the back element is also [`ActionLine::Block`], the string is appended.
     pub fn push_back_block<'a>(&mut self, s: impl Into<Cow<'a, str>>) {
         let s = s.into();
-        if let Some(act) = self.back_mut() {
-            if let ActionLine::Block(text) = act {
-                text.push_str(&s);
-                return;
-            }
+        if let Some(ActionLine::Block(text)) = self.back_mut() {
+            text.push_str(&s);
+        } else {
+            self.push_back(ActionLine::block(s));
         }
-        self.push_back(ActionLine::block(s))
     }
 }
 

@@ -120,10 +120,10 @@ fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {
     let base_dir = ctx
         .root_path
         .join(ctx.props.get("bgs").map(|s| s.as_str()).unwrap_or(""));
-    if let Some(bg) = ctx.props.get_mut("bg") {
-        if let Some(path) = find_exists(&bg, &base_dir, &["png", "jpg", "gif"]) {
-            *bg = path.to_string_lossy().into_owned();
-        }
+    if let Some(bg) = ctx.props.get_mut("bg") 
+        && let Some(path) = find_exists(&bg, &base_dir, &["png", "jpg", "gif"])
+    {
+        *bg = path.to_string_lossy().into_owned();
     }
     GameProcessResult { props: ctx.props }
 }
