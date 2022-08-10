@@ -268,14 +268,14 @@ impl Callable for Text {
 #[cfg(test)]
 mod test {
     use crate::{plugin::Runtime, script::*};
-    use std::sync::Mutex;
+    use std::sync::{LazyLock, Mutex};
 
-    lazy_static::lazy_static! {
-        static ref RUNTIME: Mutex<Runtime> = Mutex::new(tokio_test::block_on(async {
+    static RUNTIME: LazyLock<Mutex<Runtime>> = LazyLock::new(|| {
+        Mutex::new(tokio_test::block_on(async {
             let runtime = Runtime::load("../../examples/plugins", env!("CARGO_MANIFEST_DIR"), &[]);
             runtime.await.unwrap()
-        }));
-    }
+        }))
+    });
 
     fn with_ctx(f: impl FnOnce(&mut VarTable)) {
         let runtime = RUNTIME.lock().unwrap();

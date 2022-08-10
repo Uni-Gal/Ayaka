@@ -7,6 +7,7 @@
 #![warn(missing_docs)]
 #![feature(absolute_path)]
 #![feature(async_closure)]
+#![feature(once_cell)]
 #![feature(round_char_boundary)]
 #![feature(trait_alias)]
 

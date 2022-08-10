@@ -249,29 +249,29 @@ mod test {
             RawValue::Str("Hello world!".into())
         );
 
-        assert_eq!(serde_yaml::to_string(&RawValue::Unit).unwrap(), "---\n~\n");
+        assert_eq!(serde_yaml::to_string(&RawValue::Unit).unwrap(), "null\n");
 
         assert_eq!(
             serde_yaml::to_string(&RawValue::Bool(true)).unwrap(),
-            "---\ntrue\n"
+            "true\n"
         );
         assert_eq!(
             serde_yaml::to_string(&RawValue::Bool(false)).unwrap(),
-            "---\nfalse\n"
+            "false\n"
         );
 
         assert_eq!(
             serde_yaml::to_string(&RawValue::Num(114514)).unwrap(),
-            "---\n114514\n"
+            "114514\n"
         );
         assert_eq!(
             serde_yaml::to_string(&RawValue::Num(-1919)).unwrap(),
-            "---\n-1919\n"
+            "-1919\n"
         );
 
         assert_eq!(
             serde_yaml::to_string(&RawValue::Str("aaa".into())).unwrap(),
-            "---\naaa\n"
+            "aaa\n"
         );
     }
 }

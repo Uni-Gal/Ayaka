@@ -2,11 +2,9 @@
 
 use crate::exec::*;
 use regex::Regex;
-use std::{error::Error, fmt::Display, iter::Peekable, str::CharIndices};
+use std::{error::Error, fmt::Display, iter::Peekable, str::CharIndices, sync::LazyLock};
 
-lazy_static::lazy_static! {
-    static ref SPACE_REGEX: Regex = Regex::new(r"(\s+)").unwrap();
-}
+static SPACE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(\s+)").unwrap());
 
 /// The location of a token.
 /// The `Loc(start, end)` means the location `[start, end)`.

@@ -1,16 +1,16 @@
+#![feature(once_cell)]
+
 use gal_bindings::*;
 use log::error;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use std::sync::Mutex;
+use std::sync::{LazyLock, Mutex};
 
 #[export]
 fn plugin_type() -> PluginType {
     PluginType::SCRIPT
 }
 
-lazy_static::lazy_static! {
-    static ref RNG: Mutex<StdRng> = Mutex::new(StdRng::from_entropy());
-}
+static RNG: LazyLock<Mutex<StdRng>> = LazyLock::new(|| Mutex::new(StdRng::from_entropy()));
 
 #[export]
 fn rnd(args: Vec<RawValue>) -> RawValue {

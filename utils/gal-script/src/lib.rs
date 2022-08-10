@@ -3,6 +3,7 @@
 #![warn(missing_docs)]
 #![feature(char_indices_offset)]
 #![feature(iterator_try_collect)]
+#![feature(once_cell)]
 
 mod exec;
 mod text;

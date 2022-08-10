@@ -13,4 +13,4 @@ rmp-serde = "1.1"
 log = "0.4"
 
 [dev-dependencies]
-serde_yaml = "0.8"
+serde_yaml = "0.9"
