@@ -293,7 +293,7 @@ async fn current_visited(storage: State<'_, Storage>) -> CommandResult<bool> {
         let context = storage.context.lock().await;
         context
             .as_ref()
-            .map(|context| context.visited(&action))
+            .map(|context| context.visited(action))
             .unwrap_or_default()
     } else {
         false
@@ -303,12 +303,7 @@ async fn current_visited(storage: State<'_, Storage>) -> CommandResult<bool> {
 
 #[command]
 async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<Action>> {
-    Ok(storage
-        .action
-        .lock()
-        .await
-        .as_ref()
-        .map(|action| action.clone()))
+    Ok(storage.action.lock().await.as_ref().cloned())
 }
 
 #[command]

@@ -56,10 +56,8 @@ async fn main() -> Result<()> {
         }
     }
     let mut ctx = context.await?;
-    if opts.check {
-        if !ctx.check() {
-            bail!("Check failed.");
-        }
+    if opts.check && !ctx.check() {
+        bail!("Check failed.");
     }
     ctx.init_new();
     if let Some(loc) = opts.locale {

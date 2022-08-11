@@ -1,6 +1,7 @@
 //! The plugin utilities.
 
 #![allow(unsafe_code)]
+#![allow(clippy::mut_from_ref)]
 
 use crate::{progress_future::ProgressFuture, *};
 use anyhow::Result;
@@ -64,11 +65,11 @@ impl Host {
             .get_native_function::<(i32, i32), u64>(name)?;
         let data = rmp_serde::to_vec(&args)?;
         let ptr = self.abi_alloc.call(8, data.len() as i32)?;
-        unsafe { mem_slice_mut(&memory, ptr, data.len() as i32) }.copy_from_slice(&data);
+        unsafe { mem_slice_mut(memory, ptr, data.len() as i32) }.copy_from_slice(&data);
         let res = func.call(data.len() as i32, ptr)?;
         let (len, res) = ((res >> 32) as i32, (res & 0xFFFFFFFF) as i32);
         self.abi_free.call(ptr, data.len() as i32, 8)?;
-        let res_data = unsafe { mem_slice(&memory, res, len) };
+        let res_data = unsafe { mem_slice(memory, res, len) };
         let res_data = rmp_serde::from_slice(res_data)?;
         self.export_free.call(len, res)?;
         Ok(res_data)
@@ -158,8 +159,8 @@ impl Runtime {
                         .level(data.level)
                         .target(&data.target)
                         .args(format_args!("{}", data.msg))
-                        .module_path(data.module_path.as_ref().map(|s| s.as_str()))
-                        .file(data.file.as_ref().map(|s| s.as_str()))
+                        .module_path(data.module_path.as_deref())
+                        .file(data.file.as_deref())
                         .line(data.line)
                         .build(),
                 );

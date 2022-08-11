@@ -13,10 +13,9 @@ struct ValueWrap<'a>(&'a RawValue);
 impl FormatArgument for ValueWrap<'_> {
     fn supports_format(&self, specifier: &Specifier) -> bool {
         match self.0 {
-            RawValue::Unit | RawValue::Bool(_) | RawValue::Str(_) => match specifier.format {
-                Format::Debug | Format::Display => true,
-                _ => false,
-            },
+            RawValue::Unit | RawValue::Bool(_) | RawValue::Str(_) => {
+                matches!(specifier.format, Format::Debug | Format::Display)
+            }
             RawValue::Num(_) => true,
         }
     }
@@ -87,7 +86,7 @@ fn fmt(args: Vec<RawValue>) -> RawValue {
     } else {
         ParsedFormat::parse(
             &args[0].get_str(),
-            &args[1..].iter().map(|v| ValueWrap(v)).collect::<Vec<_>>(),
+            &args[1..].iter().map(ValueWrap).collect::<Vec<_>>(),
             &HashMap::<String, ValueWrap>::new(),
         )
         .map(|r| RawValue::Str(r.to_string()))

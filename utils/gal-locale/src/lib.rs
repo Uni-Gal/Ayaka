@@ -22,7 +22,7 @@ use std::str::FromStr;
 pub struct Locale(CStr);
 
 impl Locale {
-    pub(crate) unsafe fn new<'a>(loc: &'a CStr) -> &'a Self {
+    pub(crate) unsafe fn new(loc: &CStr) -> &Self {
         &*(loc as *const CStr as *const Self)
     }
 

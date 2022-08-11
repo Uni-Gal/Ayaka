@@ -227,10 +227,7 @@ pub enum Command {
 pub struct Text(pub Vec<Line>);
 
 const fn is_special_char(c: char) -> bool {
-    match c {
-        '\\' | '{' | '}' | '/' => true,
-        _ => false,
-    }
+    matches!(c, '\\' | '{' | '}' | '/')
 }
 
 struct TextLexer<'a> {

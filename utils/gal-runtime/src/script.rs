@@ -257,10 +257,11 @@ impl Callable for Text {
         for line in &self.0 {
             match line {
                 Line::Str(s) => str.push_str(s),
-                Line::Cmd(c) => match c {
-                    Command::Exec(p) => str.push_str(&p.call(ctx).get_str()),
-                    _ => {}
-                },
+                Line::Cmd(c) => {
+                    if let Command::Exec(p) = c {
+                        str.push_str(&p.call(ctx).get_str())
+                    }
+                }
             }
         }
         RawValue::Str(str.trim().to_string())

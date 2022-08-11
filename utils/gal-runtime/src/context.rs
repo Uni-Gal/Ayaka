@@ -126,14 +126,14 @@ impl Context {
     fn table(&mut self) -> VarTable {
         VarTable::new(
             &self.runtime,
-            self.game.find_res_fallback(&self.locale()),
+            self.game.find_res_fallback(self.locale()),
             &mut self.ctx.locals,
         )
     }
 
     fn current_paragraph(&self) -> Fallback<&Paragraph> {
         self.game
-            .find_para_fallback(&self.locale(), &self.ctx.cur_para)
+            .find_para_fallback(self.locale(), &self.ctx.cur_para)
     }
 
     fn current_text(&self) -> Fallback<&String> {
@@ -241,7 +241,7 @@ impl Context {
                             // TODO: reduce allocation
                             let res_key = format!("ch_{}", key);
                             self.game
-                                .find_res_fallback(&self.locale())
+                                .find_res_fallback(self.locale())
                                 .and_then(|map| map.get(&res_key))
                                 .map(|v| v.get_str().into_owned())
                         } else {
@@ -308,7 +308,7 @@ impl Context {
                     let s = s.spec();
                     let text = s.text.and_any().unwrap_or_default();
                     let (enabled, base_enabled) = s.enabled.unzip();
-                    let enabled = base_enabled.or_else(|| enabled).unwrap_or(true);
+                    let enabled = base_enabled.or(enabled).unwrap_or(true);
                     Switch { text, enabled }
                 })
                 .collect();
@@ -449,7 +449,7 @@ impl Context {
     /// Check all paragraphs to find grammer errors.
     pub fn check(&mut self) -> bool {
         let mut succeed = true;
-        for (_, paras) in &self.game.paras {
+        for paras in self.game.paras.values() {
             for para in paras {
                 self.ctx.cur_para = para.tag.clone();
                 for (index, act) in para.texts.iter().enumerate() {

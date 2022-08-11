@@ -14,10 +14,9 @@ fn text_commands() -> &'static [&'static str] {
 
 fn find_exists(name: &str, base_dir: impl AsRef<Path>, exs: &[&str]) -> Option<PathBuf> {
     let base_dir = base_dir.as_ref();
-    exs.into_iter()
+    exs.iter()
         .map(|ex| base_dir.join(name).with_extension(ex))
-        .filter(|p| p.exists())
-        .next()
+        .find(|p| p.exists())
 }
 
 fn file(
@@ -91,7 +90,7 @@ fn process_action(mut ctx: ActionProcessContext) -> Action {
                 ctx.action
                     .props
                     .entry(prop.to_string())
-                    .or_insert(value.clone());
+                    .or_insert_with(|| value.clone());
             }
         }
     }
@@ -121,7 +120,7 @@ fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {
         .root_path
         .join(ctx.props.get("bgs").map(|s| s.as_str()).unwrap_or(""));
     if let Some(bg) = ctx.props.get_mut("bg") 
-        && let Some(path) = find_exists(&bg, &base_dir, &["png", "jpg", "gif"])
+        && let Some(path) = find_exists(bg, &base_dir, &["png", "jpg", "gif"])
     {
         *bg = path.to_string_lossy().into_owned();
     }

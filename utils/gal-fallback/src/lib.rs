@@ -52,18 +52,18 @@ impl<T> Fallback<T> {
     /// Fallbacks the data or part of data.
     pub fn and_then<V>(self, mut f: impl FnMut(T) -> Option<V>) -> Option<V> {
         self.data
-            .and_then(|t| f(t))
-            .or_else(|| self.base_data.and_then(|t| f(t)))
+            .and_then(&mut f)
+            .or_else(|| self.base_data.and_then(&mut f))
     }
 
     /// Fallbacks the total data.
     pub fn fallback(self) -> Option<T> {
-        self.data.or_else(|| self.base_data)
+        self.data.or(self.base_data)
     }
 
     /// Maps to a new [`Fallback`].
     pub fn map<V>(self, mut f: impl FnMut(T) -> V) -> Fallback<V> {
-        Fallback::new(self.data.map(|t| f(t)), self.base_data.map(|t| f(t)))
+        Fallback::new(self.data.map(&mut f), self.base_data.map(&mut f))
     }
 
     /// Exacts the `data` and `base_data`.

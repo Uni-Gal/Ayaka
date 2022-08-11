@@ -107,7 +107,7 @@ impl ActionLine {
     /// Gets a reference of [`str`].
     pub fn as_str(&self) -> &str {
         match self {
-            Self::Chars(s) | Self::Block(s) => &s,
+            Self::Chars(s) | Self::Block(s) => s,
         }
     }
 
