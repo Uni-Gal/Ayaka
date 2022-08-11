@@ -1,5 +1,7 @@
 //! The plugin utilities.
 
+#![allow(unsafe_code)]
+
 use crate::{progress_future::ProgressFuture, *};
 use anyhow::Result;
 use gal_bindings_types::*;

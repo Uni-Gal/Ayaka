@@ -18,6 +18,7 @@ wasmer-wasi = "2.3"
 unicode-width = "0.1"
 tokio = { version = "1", features = ["fs", "macros", "sync"] }
 tokio-stream = { version = "0.1", features = ["fs", "sync"] }
+pin-project = "1.0"
 dirs = "4.0"
 
 [dev-dependencies]

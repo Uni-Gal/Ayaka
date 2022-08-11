@@ -1,3 +1,4 @@
+use pin_project::pin_project;
 use std::{
     fmt::Debug,
     future::Future,
@@ -48,8 +49,11 @@ pub trait Progress = Debug + Send + Sync + 'static;
 /// # Ok(())
 /// # }
 /// ```
+#[pin_project]
 pub struct ProgressFuture<F: Future, P> {
+    #[pin]
     future: F,
+    #[pin]
     progress: UnboundedReceiverStream<P>,
     result: Option<F::Output>,
 }
@@ -70,11 +74,11 @@ impl<F: Future, P> Future for ProgressFuture<F, P> {
     type Output = F::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Self::Output> {
-        let unpinned_self = unsafe { Pin::into_inner_unchecked(self) };
-        if let Some(res) = unpinned_self.result.take() {
+        let this = self.project();
+        if let Some(res) = this.result.take() {
             Poll::Ready(res)
         } else {
-            unsafe { Pin::new_unchecked(&mut unpinned_self.future) }.poll(cx)
+            this.future.poll(cx)
         }
     }
 }
@@ -83,12 +87,12 @@ impl<F: Future, P: Progress> Stream for ProgressFuture<F, P> {
     type Item = P;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        let unpinned_self = unsafe { Pin::into_inner_unchecked(self) };
-        match unsafe { Pin::new_unchecked(&mut unpinned_self.progress) }.poll_next(cx) {
+        let this = self.project();
+        match this.progress.poll_next(cx) {
             Poll::Pending => {
-                match unsafe { Pin::new_unchecked(&mut unpinned_self.future) }.poll(cx) {
+                match this.future.poll(cx) {
                     Poll::Pending => {}
-                    Poll::Ready(res) => unpinned_self.result = Some(res),
+                    Poll::Ready(res) => *this.result = Some(res),
                 };
                 Poll::Pending
             }
