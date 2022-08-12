@@ -498,18 +498,11 @@ impl<'a> TextParser<'a> {
                             break;
                         }
                     }
-                    RichTokenType::Command(_, _) => {
+                    RichTokenType::Command(name, params) => {
                         if str.is_empty() {
-                            let (loc, name, params) = if let Some(Ok(RichToken {
-                                loc,
-                                tok: RichTokenType::Command(name, params),
-                            })) = self.lexer.next()
-                            {
-                                (loc, name.to_string(), params)
-                            } else {
-                                unreachable!()
-                            };
-                            return Ok(Some(self.parse_command(loc, name, params)?));
+                            let res = Self::parse_command(tok.loc, name, params)?;
+                            self.lexer.next();
+                            return Ok(Some(res));
                         } else {
                             break;
                         }
@@ -529,7 +522,7 @@ impl<'a> TextParser<'a> {
         }
     }
 
-    fn concat_params(&self, toks: &[RichToken]) -> ParseResult<String> {
+    fn concat_params(toks: &[RichToken]) -> ParseResult<String> {
         let mut str = String::new();
         for tok in toks {
             match &tok.tok {
@@ -542,8 +535,8 @@ impl<'a> TextParser<'a> {
         Ok(str)
     }
 
-    fn parse_program(&self, toks: &[RichToken]) -> ParseResult<Program> {
-        let program = self.concat_params(toks)?;
+    fn parse_program(toks: &[RichToken]) -> ParseResult<Program> {
+        let program = Self::concat_params(toks)?;
         match ProgramParser::new().parse(&program) {
             Ok(p) => Ok(p),
             Err(e) => {
@@ -568,57 +561,56 @@ impl<'a> TextParser<'a> {
     }
 
     fn check_params_count(
-        &self,
         count: usize,
         min: usize,
         max: usize,
         loc: Loc,
-        name: String,
+        name: &str,
     ) -> ParseResult<()> {
         if count < min || count > max {
-            parse_error(loc, ParseErrorType::InvalidParamsCount(name, count))
+            parse_error(
+                loc,
+                ParseErrorType::InvalidParamsCount(name.to_string(), count),
+            )
         } else {
             Ok(())
         }
     }
 
-    fn parse_command(
-        &self,
-        loc: Loc,
-        name: String,
-        params: Vec<Vec<RichToken>>,
-    ) -> ParseResult<Line> {
+    fn parse_command(loc: Loc, name: &str, params: &[Vec<RichToken>]) -> ParseResult<Line> {
         let params_count = params.len();
-        let cmd = match name.as_str() {
+        let cmd = match name {
             "res" => {
-                self.check_params_count(params_count, 1, 1, loc, name)?;
+                Self::check_params_count(params_count, 1, 1, loc, name)?;
                 // Construct a simple program to get the resource.
                 // We don't expose this command to the front end.
-                Command::Exec(Program(vec![Expr::Ref(Ref::Res(
-                    self.concat_params(&params[0])?,
-                ))]))
+                Command::Exec(Program(vec![Expr::Ref(Ref::Res(Self::concat_params(
+                    &params[0],
+                )?))]))
             }
             "ch" => {
-                self.check_params_count(params_count, 1, 2, loc, name)?;
+                Self::check_params_count(params_count, 1, 2, loc, name)?;
                 Command::Character(
-                    self.concat_params(&params[0])?,
-                    self.concat_params(params.get(1).map(|slice| slice.as_slice()).unwrap_or(&[]))?,
+                    Self::concat_params(&params[0])?,
+                    Self::concat_params(
+                        params.get(1).map(|slice| slice.as_slice()).unwrap_or(&[]),
+                    )?,
                 )
             }
             "exec" => {
-                self.check_params_count(params_count, 1, 1, loc, name)?;
-                Command::Exec(self.parse_program(&params[0])?)
+                Self::check_params_count(params_count, 1, 1, loc, name)?;
+                Command::Exec(Self::parse_program(&params[0])?)
             }
             "switch" => {
-                self.check_params_count(params_count, 1, 3, loc, name)?;
+                Self::check_params_count(params_count, 1, 3, loc, name)?;
                 let enabled = match params.get(2) {
-                    Some(toks) => Some(self.parse_program(toks)?),
+                    Some(toks) => Some(Self::parse_program(toks)?),
                     None => None,
                 };
                 Command::Switch {
-                    text: self.concat_params(&params[0])?,
+                    text: Self::concat_params(&params[0])?,
                     action: if let Some(toks) = params.get(1) {
-                        self.parse_program(toks)?
+                        Self::parse_program(toks)?
                     } else {
                         Program::default()
                     },
@@ -628,7 +620,7 @@ impl<'a> TextParser<'a> {
             name => {
                 let mut args = vec![];
                 for p in params.iter() {
-                    args.push(self.concat_params(p)?);
+                    args.push(Self::concat_params(p)?);
                 }
                 Command::Other(name.to_string(), args)
             }
