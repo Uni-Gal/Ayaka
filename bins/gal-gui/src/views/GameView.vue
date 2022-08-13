@@ -125,7 +125,7 @@ export default {
         // Shouldn't be called in mutex
         async start_type_anime() {
             this.state = ActionState.Typing
-            let values = []
+            let values = [setTimeout(3000)]
             if (this.action.props.efm) {
                 let efm = this.$refs.efm as HTMLAudioElement
                 values.push(wait_play(efm))
