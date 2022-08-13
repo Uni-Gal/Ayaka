@@ -1,6 +1,7 @@
 use clap::Parser;
 use gal_runtime::{
     anyhow::{bail, Result},
+    log::LevelFilter,
     tokio_stream::StreamExt,
     Context, FrontendType, LocaleBuf, OpenStatus,
 };
@@ -40,7 +41,9 @@ fn pause(auto: bool) -> Result<()> {
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     let opts = Options::parse();
-    env_logger::try_init()?;
+    env_logger::Builder::from_default_env()
+        .filter_module("wasmer", LevelFilter::Warn)
+        .try_init()?;
     let context = Context::open(&opts.input, FrontendType::Text);
     tokio::pin!(context);
     while let Some(status) = context.next().await {
@@ -52,11 +55,9 @@ async fn main() -> Result<()> {
             }
         }
     }
-    let mut ctx = context.await??;
-    if opts.check {
-        if !ctx.check() {
-            bail!("Check failed.");
-        }
+    let mut ctx = context.await?;
+    if opts.check && !ctx.check() {
+        bail!("Check failed.");
     }
     ctx.init_new();
     if let Some(loc) = opts.locale {
@@ -66,7 +67,9 @@ async fn main() -> Result<()> {
         if let Some(name) = &action.character {
             print!("_{}_", name);
         }
-        print!("{}", action.line);
+        for s in action.line {
+            print!("{}", s.as_str());
+        }
         if !action.switches.is_empty() {
             for (i, s) in action.switches.iter().enumerate() {
                 if s.enabled {

@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::Script
+    PluginType::SCRIPT
 }
 
 struct ValueWrap<'a>(&'a RawValue);
@@ -13,10 +13,9 @@ struct ValueWrap<'a>(&'a RawValue);
 impl FormatArgument for ValueWrap<'_> {
     fn supports_format(&self, specifier: &Specifier) -> bool {
         match self.0 {
-            RawValue::Unit | RawValue::Bool(_) | RawValue::Str(_) => match specifier.format {
-                Format::Debug | Format::Display => true,
-                _ => false,
-            },
+            RawValue::Unit | RawValue::Bool(_) | RawValue::Str(_) => {
+                matches!(specifier.format, Format::Debug | Format::Display)
+            }
             RawValue::Num(_) => true,
         }
     }
@@ -87,7 +86,7 @@ fn fmt(args: Vec<RawValue>) -> RawValue {
     } else {
         ParsedFormat::parse(
             &args[0].get_str(),
-            &args[1..].iter().map(|v| ValueWrap(v)).collect::<Vec<_>>(),
+            &args[1..].iter().map(ValueWrap).collect::<Vec<_>>(),
             &HashMap::<String, ValueWrap>::new(),
         )
         .map(|r| RawValue::Str(r.to_string()))
@@ -95,21 +94,5 @@ fn fmt(args: Vec<RawValue>) -> RawValue {
             warn!("Format failed, stopped at {}.", i);
             Default::default()
         })
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::*;
-
-    #[test]
-    fn format() {
-        assert_eq!(
-            fmt(vec![
-                RawValue::Str("Hello, {}!".to_string()),
-                RawValue::Str("world".to_string())
-            ]),
-            RawValue::Str("Hello, world!".to_string())
-        );
     }
 }

@@ -1,179 +1,202 @@
-use crate::{progress_future::ProgressFuture, *};
-use anyhow::{anyhow, Result};
-use gal_bindings_types::*;
-use serde::{de::DeserializeOwned, Serialize};
-use std::{collections::HashMap, path::Path};
-use tokio_stream::{wrappers::ReadDirStream, StreamExt};
-use wasmtime::*;
-use wasmtime_wasi::{WasiCtx, WasiCtxBuilder};
+//! The plugin utilities.
 
+#![allow(unsafe_code)]
+#![allow(clippy::mut_from_ref)]
+
+use crate::{progress_future::ProgressFuture, *};
+use anyhow::Result;
+use gal_bindings_types::*;
+use log::warn;
+use serde::{de::DeserializeOwned, Serialize};
+use std::{collections::HashMap, future::Future, path::Path};
+use tokio_stream::{wrappers::ReadDirStream, StreamExt};
+use wasmer::*;
+use wasmer_wasi::*;
+
+/// An instance of a WASM plugin module.
 pub struct Host {
-    abi_free: TypedFunc<(i32, i32, i32), ()>,
-    abi_alloc: TypedFunc<(i32, i32), i32>,
-    export_free: TypedFunc<(i32, i32), ()>,
+    abi_free: NativeFunc<(i32, i32, i32), ()>,
+    abi_alloc: NativeFunc<(i32, i32), i32>,
+    export_free: NativeFunc<(i32, i32), ()>,
     instance: Instance,
-    memory: Memory,
 }
 
-unsafe fn mem_slice<'a>(
-    memory: &Memory,
-    caller: &'a mut impl AsContextMut,
-    start: i32,
-    len: i32,
-) -> &'a [u8] {
+unsafe fn mem_slice(memory: &Memory, start: i32, len: i32) -> &[u8] {
     memory
-        .data(caller)
+        .data_unchecked()
         .get_unchecked(start as usize..)
         .get_unchecked(..len as usize)
 }
 
-unsafe fn mem_slice_mut<'a>(
-    memory: &Memory,
-    caller: &'a mut impl AsContextMut,
-    start: i32,
-    len: i32,
-) -> &'a mut [u8] {
+unsafe fn mem_slice_mut(memory: &Memory, start: i32, len: i32) -> &mut [u8] {
     memory
-        .data_mut(caller)
+        .data_unchecked_mut()
         .get_unchecked_mut(start as usize..)
         .get_unchecked_mut(..len as usize)
 }
 
 impl Host {
-    pub fn instantiate(
-        mut store: impl AsContextMut<Data = WasiCtx>,
-        module: &Module,
-        linker: &mut Linker<WasiCtx>,
-    ) -> Result<Self> {
-        let instance = linker.instantiate(&mut store, module)?;
-        Ok(Self::new(store, instance)?)
-    }
-
-    pub fn new(mut store: impl AsContextMut<Data = WasiCtx>, instance: Instance) -> Result<Self> {
-        let mut store = store.as_context_mut();
-        let abi_free = instance.get_typed_func(&mut store, "__abi_free")?;
-        let abi_alloc = instance.get_typed_func(&mut store, "__abi_alloc")?;
-        let export_free = instance.get_typed_func(&mut store, "__export_free")?;
-        let memory = instance
-            .get_memory(&mut store, "memory")
-            .ok_or_else(|| anyhow!("failed to find host memory"))?;
+    /// Loads the WASM [`Module`], with some imports.
+    pub fn new(module: &Module, resolver: &(dyn Resolver + Send + Sync)) -> Result<Self> {
+        let instance = Instance::new(module, resolver)?;
+        let abi_free = instance.exports.get_native_function("__abi_free")?;
+        let abi_alloc = instance.exports.get_native_function("__abi_alloc")?;
+        let export_free = instance.exports.get_native_function("__export_free")?;
         Ok(Self {
             abi_free,
             abi_alloc,
             export_free,
             instance,
-            memory,
         })
     }
 
+    /// Calls a method by name.
+    ///
+    /// The args and returns are passed by MessagePack with [`rmp_serde`].
     pub fn call<Params: Serialize, Res: DeserializeOwned>(
         &self,
-        mut caller: impl AsContextMut<Data = WasiCtx>,
         name: &str,
         args: Params,
     ) -> Result<Res> {
+        let memory = self.instance.exports.get_memory("memory")?;
         let func = self
             .instance
-            .get_typed_func::<(i32, i32), (u64,), _>(&mut caller, name)?;
+            .exports
+            .get_native_function::<(i32, i32), u64>(name)?;
         let data = rmp_serde::to_vec(&args)?;
-        let ptr = self.abi_alloc.call(&mut caller, (8, data.len() as i32))?;
-        unsafe { mem_slice_mut(&self.memory, &mut caller, ptr, data.len() as i32) }
-            .copy_from_slice(&data);
-        let (res,) = func.call(&mut caller, (data.len() as i32, ptr))?;
+        let ptr = self.abi_alloc.call(8, data.len() as i32)?;
+        unsafe { mem_slice_mut(memory, ptr, data.len() as i32) }.copy_from_slice(&data);
+        let res = func.call(data.len() as i32, ptr)?;
         let (len, res) = ((res >> 32) as i32, (res & 0xFFFFFFFF) as i32);
-        self.abi_free
-            .call(&mut caller, (ptr, data.len() as i32, 8))?;
-        let res_data = unsafe { mem_slice(&self.memory, &mut caller, res, len) };
+        self.abi_free.call(ptr, data.len() as i32, 8)?;
+        let res_data = unsafe { mem_slice(memory, res, len) };
         let res_data = rmp_serde::from_slice(res_data)?;
-        self.export_free.call(&mut caller, (len, res))?;
+        self.export_free.call(len, res)?;
         Ok(res_data)
     }
 
-    pub fn dispatch(
+    /// Calls a script plugin method by name.
+    pub fn dispatch_method(&self, name: &str, args: &[RawValue]) -> Result<RawValue> {
+        self.call(name, (args,))
+    }
+
+    /// Gets the [`PluginType`].
+    pub fn plugin_type(&self) -> Result<PluginType> {
+        self.call("plugin_type", ())
+    }
+
+    /// Processes [`Action`] in action plugin.
+    pub fn process_action(&self, ctx: ActionProcessContextRef) -> Result<Action> {
+        self.call("process_action", (ctx,))
+    }
+
+    /// Gets registered TeX commands of a text plugin.
+    pub fn text_commands(&self) -> Result<Vec<String>> {
+        self.call("text_commands", ())
+    }
+
+    /// Calls a custom command in the text plugin.
+    pub fn dispatch_command(
         &self,
-        caller: impl AsContextMut<Data = WasiCtx>,
         name: &str,
-        args: &[RawValue],
-    ) -> Result<RawValue> {
-        self.call(caller, name, (args,))
+        args: &[String],
+        ctx: TextProcessContextRef,
+    ) -> Result<TextProcessResult> {
+        self.call(name, (args, ctx))
     }
 
-    pub fn plugin_type(&self, caller: impl AsContextMut<Data = WasiCtx>) -> Result<PluginType> {
-        self.call(caller, "plugin_type", ())
-    }
-
-    pub fn process_action(
-        &self,
-        caller: impl AsContextMut<Data = WasiCtx>,
-        frontend: FrontendType,
-        action: Action,
-    ) -> Result<Action> {
-        self.call(caller, "process_action", (frontend, action))
+    /// Processes [`Game`] when opening the config file.
+    pub fn process_game(&self, ctx: GameProcessContextRef) -> Result<GameProcessResult> {
+        self.call("process_game", (ctx,))
     }
 }
 
+/// The plugin runtime.
 pub struct Runtime {
-    pub store: Store<WasiCtx>,
-    pub script_modules: HashMap<String, Host>,
-    pub action_modules: Vec<(String, Host)>,
+    /// The plugins map by name.
+    pub modules: HashMap<String, Host>,
+    /// The action plugins.
+    pub action_modules: Vec<String>,
+    /// The text plugins by command name.
+    pub text_modules: HashMap<String, String>,
+    /// The game plugins.
+    pub game_modules: Vec<String>,
 }
 
-pub struct RuntimeRef<'a> {
-    pub store: &'a mut Store<WasiCtx>,
-    pub script_modules: &'a HashMap<String, Host>,
-}
-
+/// The load status of [`Runtime`].
 #[derive(Debug, Clone)]
 pub enum LoadStatus {
+    /// Start creating the engine.
     CreateEngine,
-    LoadPlugin(String, usize, usize),
+    /// Loading the plugin.
+    LoadPlugin(
+        /// Plugin name.
+        String,
+        /// Plugin index.
+        usize,
+        /// Plugin total count.
+        usize,
+    ),
+}
+
+#[derive(Default, Clone, WasmerEnv)]
+struct RuntimeInstanceData {
+    #[wasmer(export)]
+    memory: LazyInit<Memory>,
 }
 
 impl Runtime {
-    fn new_linker(engine: &Engine) -> Result<Linker<WasiCtx>> {
-        let mut linker = Linker::new(engine);
-        wasmtime_wasi::add_to_linker(&mut linker, |s| s)?;
-        linker.func_wrap(
-            "log",
-            "__log",
-            |mut caller: Caller<'_, WasiCtx>, len: i32, data: i32| {
-                let memory = match caller.get_export("memory") {
-                    Some(Extern::Memory(mem)) => mem,
-                    _ => return Err(Trap::new("failed to find host memory")),
-                };
-                let data = unsafe { mem_slice(&memory, &mut caller, data, len) };
-                let data: Record =
-                    rmp_serde::from_slice(data).map_err(|e| Trap::new(e.to_string()))?;
+    fn imports(store: &Store) -> Result<Box<dyn NamedResolver + Send + Sync>> {
+        let log_func = Function::new_native_with_env(
+            store,
+            RuntimeInstanceData::default(),
+            |env_data: &RuntimeInstanceData, len: i32, data: i32| {
+                let memory = unsafe { env_data.memory.get_unchecked() };
+                let data = unsafe { mem_slice(memory, data, len) };
+                let data: Record = rmp_serde::from_slice(data).unwrap();
                 log::logger().log(
                     &log::Record::builder()
                         .level(data.level)
                         .target(&data.target)
                         .args(format_args!("{}", data.msg))
-                        .module_path(data.module_path.as_ref().map(|s| s.as_str()))
-                        .file(data.file.as_ref().map(|s| s.as_str()))
+                        .module_path(data.module_path.as_deref())
+                        .file(data.file.as_deref())
                         .line(data.line)
                         .build(),
                 );
-                Ok(())
             },
-        )?;
-        linker.func_wrap("log", "__log_flush", || log::logger().flush())?;
-        Ok(linker)
+        );
+        let log_flush_func = Function::new_native(store, || log::logger().flush());
+        let import_object = imports! {
+            "log" => {
+                "__log" => log_func,
+                "__log_flush" => log_flush_func,
+            }
+        };
+        let wasi_env = WasiState::new("gal-runtime").preopen_dir("/")?.finalize()?;
+        let wasi_import = generate_import_object_from_env(store, wasi_env, WasiVersion::Latest);
+        Ok(Box::new(import_object.chain_front(wasi_import)))
     }
 
+    /// Load plugins from specific directory and plugin names.
+    ///
+    /// The actual load folder will be `rel_to.join(dir)`.
+    ///
+    /// If `names` is empty, all WASM files will be loaded.
     pub fn load<'a>(
         dir: impl AsRef<Path> + 'a,
         rel_to: impl AsRef<Path> + 'a,
-        names: Vec<String>,
-    ) -> ProgressFuture<Result<Self>, LoadStatus> {
+        names: &'a [String],
+    ) -> ProgressFuture<impl Future<Output = Result<Self>> + 'a, LoadStatus> {
         let path = rel_to.as_ref().join(dir);
-        ProgressFuture::new(LoadStatus::CreateEngine, async move |tx| {
-            let wasi = WasiCtxBuilder::new().inherit_env()?.inherit_stdio().build();
-            let engine = Engine::default();
-            let mut store = Store::new(&engine, wasi);
-            let mut script_modules = HashMap::new();
-            let mut action_modules = Vec::new();
-            let mut linker = Self::new_linker(store.engine())?;
+        ProgressFuture::new(async move |tx| {
+            tx.send(LoadStatus::CreateEngine)?;
+            let store = Store::default();
+            let import_object = Self::imports(&store)?;
+            let mut modules = HashMap::new();
+            let mut action_modules = vec![];
+            let mut text_modules = HashMap::new();
+            let mut game_modules = vec![];
             let mut paths = vec![];
             if names.is_empty() {
                 let mut dirs = ReadDirStream::new(tokio::fs::read_dir(path).await?);
@@ -185,8 +208,7 @@ impl Runtime {
                         == "wasm"
                     {
                         let name = p
-                            .with_extension("")
-                            .file_name()
+                            .file_stem()
                             .map(|s| s.to_string_lossy())
                             .unwrap_or_default()
                             .into_owned();
@@ -205,29 +227,35 @@ impl Runtime {
             for (i, (name, p)) in paths.into_iter().enumerate() {
                 tx.send(LoadStatus::LoadPlugin(name.clone(), i, total_len))?;
                 let buf = tokio::fs::read(&p).await?;
-                let module = Module::from_binary(store.engine(), &buf)?;
-                let runtime = Host::instantiate(&mut store, &module, &mut linker)?;
-                match runtime.plugin_type(&mut store)? {
-                    PluginType::Script => {
-                        script_modules.insert(name, runtime);
-                    }
-                    PluginType::Action => {
-                        action_modules.push((name, runtime));
+                let module = Module::from_binary(&store, &buf)?;
+                let runtime = Host::new(&module, &import_object)?;
+                let plugin_type = runtime.plugin_type()?;
+                if plugin_type.contains(PluginType::ACTION) {
+                    action_modules.push(name.clone());
+                }
+                if plugin_type.contains(PluginType::TEXT) {
+                    let cmds = runtime.text_commands()?;
+                    for cmd in cmds.into_iter() {
+                        let res = text_modules.insert(cmd.clone(), name.clone());
+                        if let Some(old_module) = res {
+                            warn!(
+                                "Command `{}` is overrided by \"{}\" over \"{}\"",
+                                cmd, name, old_module
+                            );
+                        }
                     }
                 }
+                if plugin_type.contains(PluginType::GAME) {
+                    game_modules.push(name.clone());
+                }
+                modules.insert(name, runtime);
             }
             Ok(Self {
-                store,
-                script_modules,
+                modules,
                 action_modules,
+                text_modules,
+                game_modules,
             })
         })
-    }
-
-    pub fn as_mut(&mut self) -> RuntimeRef {
-        RuntimeRef {
-            store: &mut self.store,
-            script_modules: &self.script_modules,
-        }
     }
 }

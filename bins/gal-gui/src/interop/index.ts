@@ -7,10 +7,11 @@ export interface OpenGameStatus {
 }
 
 export enum OpenGameStatusType {
-    LoadSettings,
     LoadProfile,
     CreateRuntime,
     LoadPlugin,
+    LoadSettings,
+    LoadGlobalRecords,
     LoadRecords,
     Loaded,
 }
@@ -27,19 +28,36 @@ export interface RawContext {
     bgm?: string,
 }
 
-export interface Info {
+export interface GameInfo {
     title: string,
     author: string,
+    props: {
+        bg: string | undefined,
+    },
 }
 
 export interface Action {
-    line: string,
+    line: ActionLine[],
     character?: string,
     para_title?: string,
     switches: Switch[],
-    bg?: string,
-    bgm?: string,
-    video?: string,
+    props: {
+        bg: string | undefined,
+        bgm: string | undefined,
+        efm: string | undefined,
+        voice: string | undefined,
+        video: string | undefined,
+    },
+}
+
+export interface ActionLine {
+    type: keyof typeof ActionLineType,
+    data: string
+}
+
+export enum ActionLineType {
+    Chars,
+    Block,
 }
 
 export interface Switch {
@@ -85,8 +103,16 @@ export function locale_native_name(loc: Locale): Promise<string> {
     return invoke("locale_native_name", { loc: loc })
 }
 
-export function info(): Promise<Info> {
-    return invoke("info")
+export async function info(): Promise<GameInfo> {
+    let res = await invoke<GameInfo | undefined>("info");
+    if (res) {
+        if (res.props.bg) {
+            res.props.bg = convertFileSrc(res.props.bg)
+        }
+    } else {
+        res = { title: "", author: "", props: { bg: undefined } }
+    }
+    return res
 }
 
 export function start_new(locale: Locale): Promise<void> {
@@ -101,20 +127,34 @@ export function next_run(): Promise<boolean> {
     return invoke("next_run")
 }
 
+export function next_back_run(): Promise<boolean> {
+    return invoke("next_back_run")
+}
+
 export async function current_run(): Promise<Action | undefined> {
     let res = await invoke<Action | undefined>("current_run")
     if (res) {
-        if (res.bg) {
-            res.bg = convertFileSrc(res.bg)
+        if (res.props.bg) {
+            res.props.bg = convertFileSrc(res.props.bg)
         }
-        if (res.bgm) {
-            res.bgm = convertFileSrc(res.bgm)
+        if (res.props.bgm) {
+            res.props.bgm = convertFileSrc(res.props.bgm)
         }
-        if (res.video) {
-            res.video = convertFileSrc(res.video)
+        if (res.props.efm) {
+            res.props.efm = convertFileSrc(res.props.efm)
+        }
+        if (res.props.voice) {
+            res.props.voice = convertFileSrc(res.props.voice)
+        }
+        if (res.props.video) {
+            res.props.video = convertFileSrc(res.props.video)
         }
     }
     return res
+}
+
+export async function current_visited(): Promise<boolean> {
+    return invoke("current_visited")
 }
 
 export function switch_(i: number): Promise<void> {
@@ -123,4 +163,12 @@ export function switch_(i: number): Promise<void> {
 
 export function history(): Promise<Action[]> {
     return invoke("history")
+}
+
+export function merge_lines(lines: ActionLine[]): string {
+    let res = ""
+    lines.forEach(s => {
+        res += s.data
+    })
+    return res
 }

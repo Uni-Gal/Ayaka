@@ -1,16 +1,16 @@
+#![feature(once_cell)]
+
 use gal_bindings::*;
 use log::error;
 use rand::{rngs::StdRng, Rng, SeedableRng};
-use std::sync::Mutex;
+use std::sync::{LazyLock, Mutex};
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::Script
+    PluginType::SCRIPT
 }
 
-lazy_static::lazy_static! {
-    static ref RNG: Mutex<StdRng> = Mutex::new(StdRng::from_entropy());
-}
+static RNG: LazyLock<Mutex<StdRng>> = LazyLock::new(|| Mutex::new(StdRng::from_entropy()));
 
 #[export]
 fn rnd(args: Vec<RawValue>) -> RawValue {
@@ -24,16 +24,5 @@ fn rnd(args: Vec<RawValue>) -> RawValue {
     } else {
         error!("Cannot get random engine.");
         RawValue::Unit
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::*;
-
-    #[test]
-    fn random() {
-        let value = rnd(vec![RawValue::Num(2), RawValue::Num(100)]).get_num();
-        assert!(value >= 2 && value < 100);
     }
 }

@@ -2,8 +2,9 @@
 import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import ActionCard from '../components/ActionCard.vue'
-import { current_run, next_run, switch_, Action, history } from '../interop'
 import IconButton from '../components/IconButton.vue'
+import { current_run, next_run, next_back_run, switch_, merge_lines, Action, ActionLineType, ActionLine, current_visited } from '../interop'
+import { cloneDeep } from 'lodash'
 </script>
 
 <script lang="ts">
@@ -21,23 +22,39 @@ enum PlayState {
     FastForward,
 }
 
+function wait_play(e: HTMLAudioElement): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+        e.addEventListener("ended", () => { resolve() }, { once: true })
+    })
+}
+
 export default {
     emits: ["quit"],
     data() {
         return {
-            action: { line: "", character: undefined, switches: [], bg: undefined, bgm: undefined, video: undefined } as Action,
+            action: {
+                line: [],
+                character: undefined,
+                switches: [],
+                props: {
+                    bg: undefined,
+                    bgm: undefined,
+                    efm: undefined,
+                    voice: undefined,
+                    video: undefined,
+                },
+            } as Action,
             type_text: "",
+            type_text_buffer: [] as ActionLine[],
             state: ActionState.End,
             play_state: PlayState.Manual,
             mutex: new Mutex(),
-            history: [] as Action[],
-            show_history: false
         }
     },
     async mounted() {
         document.addEventListener('keydown', this.onkeydown)
         await this.mutex.runExclusive(this.fetch_current_run)
-        await this.start_type_anime()
+        this.start_type_anime()
     },
     async unmounted() {
         document.removeEventListener('keydown', this.onkeydown)
@@ -51,16 +68,16 @@ export default {
             const res = await current_run()
             console.info(res)
             if (res) {
-                if (res.bg == undefined) {
-                    res.bg = this.action.bg
-                }
-                if (res.bgm == undefined) {
-                    res.bgm = this.action.bgm
-                }
-                const load_new_bgm = (res.bgm != this.action.bgm);
+                const load_new_bgm = (res.props.bgm != this.action.props.bgm);
                 this.action = res
                 if (load_new_bgm) {
-                    (document.getElementById("bgm") as HTMLAudioElement).load()
+                    (this.$refs.bgm as HTMLAudioElement).load()
+                }
+                if (res.props.efm) {
+                    (this.$refs.efm as HTMLAudioElement).load()
+                }
+                if (res.props.voice) {
+                    (this.$refs.voice as HTMLAudioElement).load()
                 }
             } else {
                 await this.go_home()
@@ -72,8 +89,14 @@ export default {
             await this.fetch_current_run()
             return has_next
         },
+        async fetch_next_back_run(): Promise<boolean> {
+            const has_back = await next_back_run()
+            await this.fetch_current_run()
+            return has_back
+        },
         end_typing(): boolean {
-            this.type_text = this.action.line
+            this.type_text = merge_lines(this.action.line)
+            this.type_text_buffer = []
             if (this.action.switches.length != 0) {
                 this.state = ActionState.Switching
                 return false
@@ -82,9 +105,9 @@ export default {
             }
         },
         end_switching(): boolean {
-            if (this.action.video != undefined) {
+            if (this.action.props.video) {
                 this.state = ActionState.Video;
-                let element = document.getElementById("video") as HTMLVideoElement
+                let element = this.$refs.video as HTMLVideoElement
                 element.load()
                 element.play()
                 return false
@@ -96,17 +119,43 @@ export default {
             await switch_(i)
             if (this.end_switching()) {
                 await this.mutex.runExclusive(this.fetch_next_run)
-                await this.start_type_anime()
+                this.start_type_anime()
             }
         },
         // Shouldn't be called in mutex
         async start_type_anime() {
             this.state = ActionState.Typing
-            this.type_text = ""
-            while (this.type_text.length < this.action.line.length) {
-                this.type_text += this.action.line[this.type_text.length]
-                await setTimeout(10)
+            let values = [setTimeout(3000)]
+            if (this.action.props.efm) {
+                let efm = this.$refs.efm as HTMLAudioElement
+                values.push(wait_play(efm))
+                efm.play()
             }
+            if (this.action.props.voice) {
+                let voice = this.$refs.voice as HTMLAudioElement
+                values.push(wait_play(voice))
+                voice.play()
+            }
+            this.type_text = ""
+            this.type_text_buffer = cloneDeep(this.action.line)
+            while (this.type_text_buffer.length != 0) {
+                if (this.type_text_buffer[0].data.length == 0) {
+                    this.type_text_buffer.shift()
+                    continue
+                }
+                switch (ActionLineType[this.type_text_buffer[0].type]) {
+                    case ActionLineType.Chars:
+                        this.type_text += this.type_text_buffer[0].data[0]
+                        this.type_text_buffer[0].data = this.type_text_buffer[0].data.substring(1)
+                        await setTimeout(10)
+                        break
+                    case ActionLineType.Block:
+                        this.type_text += this.type_text_buffer[0].data
+                        this.type_text_buffer[0].data = ""
+                        break
+                }
+            }
+            await Promise.all(values)
             this.state = ActionState.Typed
             if (this.type_text.length == 0) {
                 await this.next()
@@ -120,7 +169,7 @@ export default {
                         case ActionState.Typed:
                             return this.end_typing()
                         case ActionState.Video:
-                            let element = document.getElementById("video") as HTMLVideoElement
+                            let element = this.$refs.video as HTMLVideoElement
                             element.pause()
                             this.state = ActionState.End
                         case ActionState.End:
@@ -130,7 +179,7 @@ export default {
                 }).catch(_ => { })
                 if (new_text) {
                     await this.mutex.runExclusive(this.fetch_next_run)
-                    await this.start_type_anime()
+                    this.start_type_anime()
                 }
             }
         },
@@ -163,6 +212,9 @@ export default {
                         this.end_typing()
                         return has_next
                     }).catch(_ => { })
+                    if (!await current_visited()) {
+                        break
+                    }
                     if (!has_next) {
                         break
                     }
@@ -179,13 +231,14 @@ export default {
             this.state = ActionState.End
             await this.next()
         },
-        async on_history_click() {
-            if (!this.show_history) {
-                this.history = await history()
-                this.show_history = true
-            } else {
-                this.show_history = false
+        async next_back() {
+            if (this.state != ActionState.Switching) {
+                await this.mutex.runExclusive(this.fetch_next_back_run)
+                this.start_type_anime()
             }
+        },
+        async on_history_click() {
+            this.$router.push("/history")
         },
         async on_records_click(op: string) {
             await this.$router.push("/records/" + op)
@@ -195,10 +248,10 @@ export default {
 </script>
 
 <template>
-    <audio id="bgm" autoplay hidden>
-        <source v-bind:src="action.bgm" type="audio/mpeg" />
-    </audio>
-    <img class="background" v-bind:src="action.bg">
+    <audio ref="bgm" v-bind:src="action.props.bgm" type="audio/mpeg" autoplay hidden loop></audio>
+    <audio ref="efm" v-bind:src="action.props.efm" type="audio/mpeg" hidden></audio>
+    <audio ref="voice" v-bind:src="action.props.voice" type="audio/mpeg" hidden></audio>
+    <img class="background" v-bind:src="action.props.bg">
     <div class="card-lines">
         <ActionCard :ch="action.character" :line="type_text"></ActionCard>
     </div>
@@ -206,9 +259,8 @@ export default {
         <h4><span class="badge bg-primary">{{ action.para_title }}</span></h4>
     </div>
     <div class="content-full bg-body" v-bind:hidden="state != ActionState.Video">
-        <video id="video" class="background" v-on:ended="onvideoended">
-            <source v-bind:src="action.video" type="video/mp4" />
-        </video>
+        <video ref="video" class="background" v-on:ended="onvideoended" v-bind:src="action.props.video"
+            type="video/mp4"></video>
     </div>
     <div class="backboard" v-on:click="next"></div>
     <div class="commands">
@@ -216,6 +268,7 @@ export default {
             <IconButton icon="file-arrow-down" @click='on_records_click("save")'></IconButton>
             <IconButton icon="file-arrow-up" @click='on_records_click("load")'></IconButton>
             <IconButton icon="list" @click="on_history_click"></IconButton>
+            <IconButton icon="backward-step" @click="next_back"></IconButton>
             <IconButton icon="play" :btnclass='play_state == PlayState.Auto ? "active" : ""'
                 @click="on_auto_play_click"></IconButton>
             <IconButton icon="forward-step" @click="next"></IconButton>
@@ -237,26 +290,9 @@ export default {
             </div>
         </div>
     </div>
-    <div id="history" class="content-full container-history" v-bind:hidden="!show_history"
-        v-on:click="on_history_click">
-        <ul class="list-group">
-            <li class="list-group-item" v-for="h in history">
-                <ActionCard :ch="h.character" :line="h.line"></ActionCard>
-            </li>
-        </ul>
-    </div>
 </template>
 
 <style>
-.background {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    max-width: 100%;
-    max-height: 100%;
-}
-
 .backboard {
     position: absolute;
     top: 0;
@@ -286,10 +322,6 @@ export default {
 
 .container-switches {
     background-color: #00000077;
-}
-
-.container-history {
-    overflow-y: scroll;
 }
 
 .switches {

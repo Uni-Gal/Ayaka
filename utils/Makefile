@@ -5,3 +5,5 @@ clean:
 	cargo clean
 update:
 	cargo update
+doc:
+	cargo doc --no-deps

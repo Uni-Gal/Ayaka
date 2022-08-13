@@ -1,15 +1,21 @@
-.PHONY: test clean update
+.PHONY: test clean update doc serve-book
 test: plugins
 	cd utils && $(MAKE) test
-	cd plugins && $(MAKE) test
+	cd book && $(MAKE) test
 clean:
 	cd bins && $(MAKE) clean
 	cd utils && $(MAKE) clean
 	cd plugins && $(MAKE) clean
+	cd book && $(MAKE) clean
 update:
 	cd bins && $(MAKE) update
 	cd utils && $(MAKE) update
 	cd plugins && $(MAKE) update
+doc:
+	cd utils && $(MAKE) doc
+	cd book && $(MAKE) build
+serve-book:
+	cd book && $(MAKE) serve
 
 .PHONY: plugins release release-cross
 plugins:
@@ -19,7 +25,7 @@ release:
 release-cross:
 	cd bins && $(MAKE) release-cross TARGET=$(TARGET)
 
-EXAMPLES:=Fibonacci Fibonacci2 Gacha Markdown Orga
+EXAMPLES:=Fibonacci Fibonacci2 Gacha Orga Styles
 
 define example-tpl
 .PHONY: example-$(1) example-$(1)-gui example-$(1)-release example-$(1)-gui-release examples/$(1)/config.tex

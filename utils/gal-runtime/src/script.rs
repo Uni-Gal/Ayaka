@@ -1,17 +1,25 @@
-use crate::{plugin::RuntimeRef, *};
+//! The script interpreter.
+
+use crate::{plugin::Runtime, *};
 use gal_fallback::Fallback;
 use gal_script::*;
 use log::{error, warn};
 
+/// The variable table in scripts.
 pub struct VarTable<'a> {
-    pub runtime: RuntimeRef<'a>,
+    /// The plugin runtime.
+    pub runtime: &'a Runtime,
+    /// The resource map.
     pub res: Fallback<&'a VarMap>,
+    /// The context variables.
     pub locals: &'a mut VarMap,
+    /// The locale variables.
     pub vars: VarMap,
 }
 
 impl<'a> VarTable<'a> {
-    pub fn new(runtime: RuntimeRef<'a>, res: Fallback<&'a VarMap>, locals: &'a mut VarMap) -> Self {
+    /// Creates a new [`VarTable`].
+    pub fn new(runtime: &'a Runtime, res: Fallback<&'a VarMap>, locals: &'a mut VarMap) -> Self {
         Self {
             runtime,
             res,
@@ -20,12 +28,15 @@ impl<'a> VarTable<'a> {
         }
     }
 
+    /// Calls a [`Callable`] object.
     pub fn call(&mut self, c: &impl Callable) -> RawValue {
         c.call(self)
     }
 }
 
+/// Represents a callable part of a script.
 pub trait Callable {
+    /// Calls the part with the [`VarTable`].
     fn call(&self, ctx: &mut VarTable) -> RawValue;
 }
 
@@ -201,8 +212,8 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
         }
     } else {
         let args = args.iter().map(|e| e.call(ctx)).collect::<Vec<_>>();
-        if let Some(runtime) = ctx.runtime.script_modules.get(ns) {
-            match runtime.dispatch(&mut ctx.runtime.store, name, &args) {
+        if let Some(runtime) = ctx.runtime.modules.get(ns) {
+            match runtime.dispatch_method(name, &args) {
                 Ok(res) => res,
                 Err(e) => {
                     error!("Calling `{}.{}` error: {}", ns, name, e);
@@ -246,32 +257,33 @@ impl Callable for Text {
         for line in &self.0 {
             match line {
                 Line::Str(s) => str.push_str(s),
-                Line::Cmd(c) => match c {
-                    Command::Exec(p) => str.push_str(&p.call(ctx).get_str()),
-                    _ => {}
-                },
+                Line::Cmd(c) => {
+                    if let Command::Exec(p) = c {
+                        str.push_str(&p.call(ctx).get_str())
+                    }
+                }
             }
         }
-        RawValue::Str(str)
+        RawValue::Str(str.trim().to_string())
     }
 }
 
 #[cfg(test)]
 mod test {
     use crate::{plugin::Runtime, script::*};
-    use std::sync::Mutex;
+    use std::sync::{LazyLock, Mutex};
 
-    lazy_static::lazy_static! {
-        static ref RUNTIME: Mutex<Runtime> = Mutex::new(tokio_test::block_on(async {
-            let runtime = Runtime::load("../../examples/plugins", env!("CARGO_MANIFEST_DIR"), vec![]);
-            runtime.await.unwrap().unwrap()
-        }));
-    }
+    static RUNTIME: LazyLock<Mutex<Runtime>> = LazyLock::new(|| {
+        Mutex::new(tokio_test::block_on(async {
+            let runtime = Runtime::load("../../examples/plugins", env!("CARGO_MANIFEST_DIR"), &[]);
+            runtime.await.unwrap()
+        }))
+    });
 
     fn with_ctx(f: impl FnOnce(&mut VarTable)) {
-        let mut runtime = RUNTIME.lock().unwrap();
+        let runtime = RUNTIME.lock().unwrap();
         let mut locals = VarMap::default();
-        let mut ctx = VarTable::new(runtime.as_mut(), Fallback::new(None, None), &mut locals);
+        let mut ctx = VarTable::new(&runtime, Fallback::new(None, None), &mut locals);
         f(&mut ctx);
     }
 
@@ -334,6 +346,18 @@ mod test {
                     .call(ctx)
                     .get_num(),
                 6
+            );
+            assert_eq!(
+                ProgramParser::new()
+                    .parse(
+                        r##"
+                            if(true, "sodayo")
+                        "##
+                    )
+                    .ok()
+                    .call(ctx)
+                    .get_str(),
+                "sodayo"
             );
         });
     }

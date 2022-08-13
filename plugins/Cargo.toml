@@ -1,12 +1,12 @@
 [workspace]
 members = [
+    "basictex",
     "format",
     "galog",
     "markdown",
+    "media",
     "random",
 ]
-
-resolver = "2"
 
 [profile.release]
 lto = true

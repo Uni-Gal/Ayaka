@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { listen } from '@tauri-apps/api/event';
+import { listen, Event as TauriEvent, UnlistenFn } from '@tauri-apps/api/event';
 import { OpenGameStatus, OpenGameStatusType, open_game, choose_locale, get_settings, set_locale } from '../interop'
 </script>
 
@@ -10,12 +10,23 @@ export default {
         return {
             text: "",
             progress: 0,
+            unlisten_fn: null as UnlistenFn | null
         }
     },
-    async created() {
-        listen('gal://open_status', async (e) => {
+    async mounted() {
+        this.unlisten_fn = await listen('gal://open_status', this.on_open_status)
+        await open_game()
+    },
+    unmounted() {
+        if (this.unlisten_fn) {
+            this.unlisten_fn()
+            this.unlisten_fn = null
+        }
+    },
+    methods: {
+        async on_open_status(e: TauriEvent<OpenGameStatus>) {
             console.log(e.payload)
-            const status = e.payload as OpenGameStatus
+            const status = e.payload;
             [this.text, this.progress] = this.status_to_text(status)
             switch (OpenGameStatusType[status.t]) {
                 case OpenGameStatusType.LoadRecords:
@@ -25,17 +36,11 @@ export default {
                     this.$router.replace("/home")
                     break
             }
-        })
-        await open_game()
-    },
-    methods: {
+        },
         status_to_text(s: OpenGameStatus): [string, number] {
-            const step = 100 / 6
-            console.log(s)
+            const step = 100 / 7
             const t = OpenGameStatusType[s.t]
             switch (t) {
-                case OpenGameStatusType.LoadSettings:
-                    return ["Loading settings...", step * (t + 1)]
                 case OpenGameStatusType.LoadProfile:
                     return [`Loading profile "${s.data as unknown as string}"...`, step * (t + 1)]
                 case OpenGameStatusType.CreateRuntime:
@@ -44,6 +49,10 @@ export default {
                     const data = s.data as unknown as [string, number, number];
                     const percent = data[1] / data[2];
                     return [`Loading plugin "${data[0]}"... (${data[1] + 1}/${data[2]})`, step * (t + 1) + percent * step]
+                case OpenGameStatusType.LoadSettings:
+                    return ["Loading settings...", step * (t + 1)]
+                case OpenGameStatusType.LoadGlobalRecords:
+                    return ["Loading global records...", step * (t + 1)]
                 case OpenGameStatusType.LoadRecords:
                     return ["Loading records...", step * (t + 1)]
                 case OpenGameStatusType.Loaded:

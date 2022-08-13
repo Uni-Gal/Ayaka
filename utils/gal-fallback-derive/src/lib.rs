@@ -8,8 +8,7 @@ use syn::{
 
 #[proc_macro_derive(FallbackSpec)]
 pub fn derive_fallback_spec(input: TokenStream) -> TokenStream {
-    let struct_input = input.clone();
-    let struct_input = parse_macro_input!(struct_input as DeriveInput);
+    let struct_input = parse_macro_input!(input as DeriveInput);
     let struct_name = struct_input.ident;
     let vis = struct_input.vis;
     let (fallback_data_declare, data_idents, base_data_idents, some_exact, none_exact, construct) =

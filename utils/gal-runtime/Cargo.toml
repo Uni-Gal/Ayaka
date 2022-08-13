@@ -9,18 +9,17 @@ gal-fallback = { path = "../gal-fallback" }
 gal-script = { path = "../gal-script" }
 gal-locale = { path = "../gal-locale" }
 serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.8"
+serde_yaml = "0.9"
 serde_json = "1.0"
 rmp-serde = "1.1"
 anyhow = "1.0"
-wasmtime = "0.38"
-wasmtime-wasi = "0.38"
+wasmer = "2.3"
+wasmer-wasi = "2.3"
 unicode-width = "0.1"
 tokio = { version = "1", features = ["fs", "macros", "sync"] }
 tokio-stream = { version = "0.1", features = ["fs", "sync"] }
+pin-project = "1.0"
 dirs = "4.0"
 
 [dev-dependencies]
-serde_yaml = "0.8"
-lazy_static = "1.4"
 tokio-test = "0.4"

@@ -12,9 +12,8 @@ use gal_runtime::{
     tokio_stream::StreamExt,
     *,
 };
-use serde::Serialize;
-use serde_json::json;
-use std::fmt::Display;
+use serde::{Deserialize, Serialize};
+use std::{collections::HashMap, fmt::Display};
 use tauri::{async_runtime::Mutex, command, AppHandle, Manager, State};
 
 type CommandResult<T> = std::result::Result<T, CommandError>;
@@ -51,8 +50,9 @@ enum OpenGameStatus {
     LoadProfile(String),
     CreateRuntime,
     LoadPlugin(String, usize, usize),
-    Loaded,
+    LoadGlobalRecords,
     LoadRecords,
+    Loaded,
 }
 
 fn emit_open_status(
@@ -64,14 +64,6 @@ fn emit_open_status(
 
 #[command]
 async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
-    {
-        emit_open_status(&handle, OpenGameStatus::LoadSettings)?;
-        *storage.settings.lock().await =
-            Some(load_settings(&storage.ident).await.unwrap_or_else(|e| {
-                warn!("Load settings failed: {}", e);
-                Default::default()
-            }));
-    }
     {
         let config = &storage.config;
         let context = Context::open(config, FrontendType::Html);
@@ -89,9 +81,26 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
                 }
             }
         }
-        let ctx = context.await??;
+        let mut ctx = context.await?;
         let window = handle.get_window("main").unwrap();
         window.set_title(&ctx.game.title)?;
+        let settings = {
+            emit_open_status(&handle, OpenGameStatus::LoadSettings)?;
+            load_settings(&storage.ident).await.unwrap_or_else(|e| {
+                warn!("Load settings failed: {}", e);
+                Settings::new()
+            })
+        };
+        ctx.set_settings(settings);
+        emit_open_status(&handle, OpenGameStatus::LoadGlobalRecords)?;
+        ctx.set_global_record(
+            load_global_record(&storage.ident, &ctx.game.title)
+                .await
+                .unwrap_or_else(|e| {
+                    warn!("Load global records failed: {}", e);
+                    Default::default()
+                }),
+        );
         emit_open_status(&handle, OpenGameStatus::LoadRecords)?;
         *storage.records.lock().await = load_records(&storage.ident, &ctx.game.title)
             .await
@@ -107,37 +116,42 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
 
 #[command]
 async fn get_settings(storage: State<'_, Storage>) -> CommandResult<Option<Settings>> {
-    Ok(storage.settings.lock().await.as_ref().cloned())
+    Ok(storage
+        .context
+        .lock()
+        .await
+        .as_ref()
+        .map(|ctx| ctx.settings())
+        .cloned())
 }
 
 #[command]
 async fn set_settings(settings: Settings, storage: State<'_, Storage>) -> CommandResult<()> {
     if let Some(context) = storage.context.lock().await.as_mut() {
-        context.set_locale(&settings.lang);
+        context.set_settings(settings);
     }
-    *storage.settings.lock().await = Some(settings);
     Ok(())
 }
 
 #[command]
-async fn get_records(storage: State<'_, Storage>) -> CommandResult<Vec<RawContext>> {
+async fn get_records(storage: State<'_, Storage>) -> CommandResult<Vec<ActionRecord>> {
     Ok(storage.records.lock().await.clone())
 }
 
 #[command]
 async fn save_record_to(index: usize, storage: State<'_, Storage>) -> CommandResult<()> {
     let mut records = storage.records.lock().await;
-    if let Some(ctx) = storage
+    if let Some(record) = storage
         .context
         .lock()
         .await
         .as_ref()
-        .map(|ctx| ctx.ctx.clone())
+        .map(|ctx| ctx.record.clone())
     {
         if index >= records.len() {
-            records.push(ctx);
+            records.push(record);
         } else {
-            records[index] = ctx;
+            records[index] = record;
         }
     }
     Ok(())
@@ -145,11 +159,10 @@ async fn save_record_to(index: usize, storage: State<'_, Storage>) -> CommandRes
 
 #[command]
 async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
-    if let Some(settings) = storage.settings.lock().await.as_ref() {
-        save_settings(&storage.ident, settings).await?;
-    }
     if let Some(context) = storage.context.lock().await.as_ref() {
         let game = &context.game.title;
+        save_settings(&storage.ident, context.settings()).await?;
+        save_global_record(&storage.ident, game, context.global_record()).await?;
         save_records(&storage.ident, game, &storage.records.lock().await).await?;
     }
     Ok(())
@@ -172,8 +185,7 @@ fn locale_native_name(loc: LocaleBuf) -> CommandResult<String> {
 struct Storage {
     ident: String,
     config: String,
-    settings: Mutex<Option<Settings>>,
-    records: Mutex<Vec<RawContext>>,
+    records: Mutex<Vec<ActionRecord>>,
     context: Mutex<Option<Context>>,
     action: Mutex<Option<Action>>,
 }
@@ -188,17 +200,31 @@ impl Storage {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct GameInfo {
+    pub title: String,
+    pub author: String,
+    pub props: HashMap<String, String>,
+}
+
+impl GameInfo {
+    pub fn new(game: &Game) -> Self {
+        Self {
+            title: game.title.clone(),
+            author: game.author.clone(),
+            props: game.props.clone(),
+        }
+    }
+}
+
 #[command]
-async fn info(storage: State<'_, Storage>) -> CommandResult<serde_json::Value> {
+async fn info(storage: State<'_, Storage>) -> CommandResult<Option<GameInfo>> {
     let ctx = storage.context.lock().await;
     if let Some(ctx) = ctx.as_ref() {
-        Ok(json!({
-            "title": ctx.game.title,
-            "author": ctx.game.author,
-        }))
+        Ok(Some(GameInfo::new(&ctx.game)))
     } else {
         warn!("Game hasn't been loaded.");
-        Ok(json!({}))
+        Ok(None)
     }
 }
 
@@ -247,13 +273,37 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
 }
 
 #[command]
+async fn next_back_run(storage: State<'_, Storage>) -> CommandResult<bool> {
+    let mut context = storage.context.lock().await;
+    let action = context.as_mut().and_then(|context| context.next_back_run());
+    if let Some(action) = action {
+        info!("Last action: {:?}", action);
+        *storage.action.lock().await = Some(action);
+        Ok(true)
+    } else {
+        info!("No action in the history.");
+        Ok(false)
+    }
+}
+
+#[command]
+async fn current_visited(storage: State<'_, Storage>) -> CommandResult<bool> {
+    let action = storage.action.lock().await;
+    let visited = if let Some(action) = action.as_ref() {
+        let context = storage.context.lock().await;
+        context
+            .as_ref()
+            .map(|context| context.visited(action))
+            .unwrap_or_default()
+    } else {
+        false
+    };
+    Ok(visited)
+}
+
+#[command]
 async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<Action>> {
-    Ok(storage
-        .action
-        .lock()
-        .await
-        .as_ref()
-        .map(|action| action.clone()))
+    Ok(storage.action.lock().await.as_ref().cloned())
 }
 
 #[command]
@@ -278,7 +328,7 @@ async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<Action>> {
         .lock()
         .await
         .as_ref()
-        .map(|context| context.ctx.history.clone())
+        .map(|context| context.record.history.clone())
         .unwrap_or_default();
     hs.reverse();
     info!("Get history {:?}", hs);
@@ -293,18 +343,21 @@ fn main() -> Result<()> {
         .plugin(tauri_plugin_localhost::Builder::new(port).build())
         .setup(|app| {
             let ident = app.config().tauri.bundle.identifier.clone();
+            let logspec = LogSpecification::parse("info,wasmer=warn")?;
             let log_handle = if cfg!(debug_assertions) {
-                Logger::with(LogSpecification::info())
+                Logger::with(logspec)
                     .log_to_stdout()
                     .set_palette("b1;3;2;4;6".to_string())
+                    .use_utc()
                     .start()?
             } else {
-                Logger::with(LogSpecification::info())
+                Logger::with(logspec)
                     .log_to_file(
                         FileSpec::default()
                             .directory(app.path_resolver().log_dir().unwrap())
                             .basename("gal-gui"),
                     )
+                    .use_utc()
                     .start()?
             };
             app.manage(log_handle);
@@ -335,7 +388,9 @@ fn main() -> Result<()> {
             start_new,
             start_record,
             next_run,
+            next_back_run,
             current_run,
+            current_visited,
             switch,
             history,
         ])

@@ -1,3 +1,11 @@
+//! The internal locale lib.
+//!
+//! This crate provides the [`Locale`] and [`LocaleBuf`] types.
+//! They are internally a null-terminated string,
+//! and use icu4c to parse and choose.
+
+#![warn(missing_docs)]
+
 mod icu;
 
 use anyhow::Result;
@@ -8,19 +16,46 @@ use std::fmt::Display;
 use std::ops::Deref;
 use std::str::FromStr;
 
+/// Representation of a borrowed [`LocaleBuf`].
 #[derive(Debug, PartialEq, Eq, Hash)]
 #[repr(transparent)]
 pub struct Locale(CStr);
 
 impl Locale {
-    pub(crate) unsafe fn new<'a>(loc: &'a CStr) -> &'a Self {
+    pub(crate) unsafe fn new(loc: &CStr) -> &Self {
         &*(loc as *const CStr as *const Self)
     }
 
+    /// Get the current locale of the system.
+    /// Internally it calles `uloc_getDefault`.
+    ///
+    /// ```
+    /// # use gal_locale::Locale;
+    /// println!("Current locale: {}", Locale::current());
+    /// ```
     pub fn current() -> &'static Self {
         icu::current()
     }
 
+    /// Choose the best match from the provided locales.
+    /// Internally it calls `uloc_acceptLanguage`.
+    ///
+    /// Returns [`None`] if it cannot choose a best match.
+    ///
+    /// ```
+    /// # use gal_locale::LocaleBuf;
+    /// let current = "zh_CN".parse::<LocaleBuf>().unwrap();
+    /// let accepts = [
+    ///     "en".parse::<LocaleBuf>().unwrap(),
+    ///     "ja".parse().unwrap(),
+    ///     "zh_Hans".parse().unwrap(),
+    ///     "zh_Hant".parse().unwrap(),
+    /// ];
+    /// assert_eq!(
+    ///     current.choose_from(&accepts).unwrap().unwrap().to_string(),
+    ///     "zh_Hans"
+    /// );
+    /// ```
     pub fn choose_from(
         &self,
         locales: impl IntoIterator<Item = impl AsRef<Self>>,
@@ -28,6 +63,16 @@ impl Locale {
         Ok(icu::choose([self], locales)?)
     }
 
+    /// Get the native display name of the locale.
+    /// Internally it calls `uloc_getDisplayName`.
+    ///
+    /// ```
+    /// # use gal_locale::LocaleBuf;
+    /// assert_eq!(
+    ///     "en".parse::<LocaleBuf>().unwrap().native_name().unwrap(),
+    ///     "English",
+    /// );
+    /// ```
     pub fn native_name(&self) -> Result<String> {
         Ok(icu::native_name(self)?)
     }
@@ -59,6 +104,7 @@ impl Display for Locale {
     }
 }
 
+/// Represents an owned locale string.
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[repr(transparent)]
 #[serde(try_from = "String", into = "String")]
