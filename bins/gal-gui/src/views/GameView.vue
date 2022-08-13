@@ -22,6 +22,12 @@ enum PlayState {
     FastForward,
 }
 
+function wait_play(e: HTMLAudioElement): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+        e.addEventListener("ended", () => { resolve() }, { once: true })
+    })
+}
+
 export default {
     emits: ["quit"],
     data() {
@@ -119,6 +125,17 @@ export default {
         // Shouldn't be called in mutex
         async start_type_anime() {
             this.state = ActionState.Typing
+            let values = []
+            if (this.action.props.efm) {
+                let efm = this.$refs.efm as HTMLAudioElement
+                values.push(wait_play(efm))
+                efm.play()
+            }
+            if (this.action.props.voice) {
+                let voice = this.$refs.voice as HTMLAudioElement
+                values.push(wait_play(voice))
+                voice.play()
+            }
             this.type_text = ""
             this.type_text_buffer = cloneDeep(this.action.line)
             while (this.type_text_buffer.length != 0) {
@@ -138,6 +155,7 @@ export default {
                         break
                 }
             }
+            await Promise.all(values)
             this.state = ActionState.Typed
             if (this.type_text.length == 0) {
                 await this.next()
@@ -231,8 +249,8 @@ export default {
 
 <template>
     <audio ref="bgm" v-bind:src="action.props.bgm" type="audio/mpeg" autoplay hidden loop></audio>
-    <audio ref="efm" v-bind:src="action.props.efm" type="audio/mpeg" autoplay hidden></audio>
-    <audio ref="voice" v-bind:src="action.props.voice" type="audio/mpeg" autoplay hidden></audio>
+    <audio ref="efm" v-bind:src="action.props.efm" type="audio/mpeg" hidden></audio>
+    <audio ref="voice" v-bind:src="action.props.voice" type="audio/mpeg" hidden></audio>
     <img class="background" v-bind:src="action.props.bg">
     <div class="card-lines">
         <ActionCard :ch="action.character" :line="type_text"></ActionCard>

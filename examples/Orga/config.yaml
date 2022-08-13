@@ -4,6 +4,7 @@ props:
   bg: 4
   bgs: bgs
   bgms: bgms
+  voices: voices
 res:
   ja:
     ch_rd: ライド
