@@ -7,7 +7,7 @@ import messages from "./locale"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { fas } from '@fortawesome/free-solid-svg-icons'
 import { Ticker } from '@pixi/ticker'
-import { Live2DModel } from 'pixi-live2d-display/cubism4'
+import { Live2DModel } from 'pixi-live2d-display'
 
 Live2DModel.registerTicker(Ticker)
 

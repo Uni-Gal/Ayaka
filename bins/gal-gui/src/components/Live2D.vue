@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import * as PIXI from 'pixi.js'
-import { Live2DModel } from 'pixi-live2d-display/cubism4'
+import { Live2DModel } from 'pixi-live2d-display'
 </script>
 
 <script lang="ts">
