@@ -20,6 +20,10 @@
             "description": "The load records button at HomeView",
             "type": "string"
         },
+        "settings": {
+            "description": "The settings button at HomeView, and title at SettingsView",
+            "type": "string"
+        },
         "about": {
             "description": "The about button at HomeView",
             "type": "string"
