@@ -119,9 +119,9 @@ export default {
             }
         },
         // Shouldn't be called in mutex
-        async start_type_anime() {
+        async start_type_anime(timeout: boolean = false) {
             this.state = ActionState.Typing
-            let values = [setTimeout(3000)]
+            let values = timeout ? [setTimeout(3000)] : []
             if (this.action.props.efm) {
                 let efm = this.$refs.efm as HTMLAudioElement
                 values.push(wait_play(efm))
@@ -186,7 +186,7 @@ export default {
                 while (this.play_state == PlayState.Auto && (this.state != ActionState.Switching && this.state != ActionState.Video)) {
                     const has_next = await tryAcquire(this.mutex).runExclusive(async () => {
                         const has_next = await this.fetch_next_run()
-                        await this.start_type_anime()
+                        await this.start_type_anime(true)
                         this.end_typing()
                         return has_next
                     }).catch(_ => { })
