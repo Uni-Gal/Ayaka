@@ -21,7 +21,7 @@ fn process_action(mut ctx: ActionProcessContext) -> Action {
         if let Some(path) = model_path {
             ctx.action
                 .props
-                .insert("model".to_string(), path.to_string_lossy().into_owned());
+                .insert("ch_model".to_string(), path.to_string_lossy().into_owned());
         }
     }
     ctx.action

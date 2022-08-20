@@ -9,35 +9,31 @@ export default {
     data() {
         return {
             app: undefined as PIXI.Application | undefined,
-            model: undefined as PIXI.DisplayObject | undefined,
         }
     },
-    async mounted() {
-        if (this.source) {
-            const app = new PIXI.Application({
-                view: this.$refs.canvas as HTMLCanvasElement,
-                backgroundAlpha: 0,
-                resizeTo: this.$refs.canvas as HTMLElement,
-            });
-            this.app = app
-
-            const model = await Live2DModel.from(this.source);
-
-            app.stage.addChild(model);
-            this.model = model
-
-            model.scale.set(0.3);
-        }
+    created() {
+        this.app = new PIXI.Application({
+            view: this.$refs.canvas as HTMLCanvasElement,
+            backgroundAlpha: 0,
+            resizeTo: this.$refs.canvas as HTMLElement,
+        })
     },
-    async unmounted() {
+    async updated() {
         if (this.app) {
-            if (this.model) {
-                this.app.stage.removeChild(this.model as PIXI.DisplayObject)
-                this.model = undefined
+            this.app.stage.removeChildren(0);
+            if (this.source) {
+                const model = await Live2DModel.from(this.source);
+
+                this.app.stage.addChild(model)
+
+                model.scale.set(0.3)
             }
-            this.app = undefined
         }
-    }
+    },
+    destroyed() {
+        this.app?.destroy()
+        this.app = undefined
+    },
 }
 </script>
 
