@@ -3,8 +3,9 @@ import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import ActionCard from '../components/ActionCard.vue'
 import IconButton from '../components/IconButton.vue'
-import { current_run, next_run, next_back_run, switch_, merge_lines, Action, ActionLineType, ActionLine, current_visited } from '../interop'
+import { conv_src, current_run, next_run, next_back_run, switch_, merge_lines, Action, ActionLineType, ActionLine, current_visited } from '../interop'
 import { cloneDeep } from 'lodash'
+import Live2D from '../components/Live2D.vue'
 </script>
 
 <script lang="ts">
@@ -23,7 +24,7 @@ enum PlayState {
 }
 
 function wait_play(e: HTMLAudioElement): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _) => {
         e.addEventListener("ended", () => { resolve() }, { once: true })
     })
 }
@@ -34,15 +35,8 @@ export default {
         return {
             action: {
                 line: [],
-                character: undefined,
                 switches: [],
-                props: {
-                    bg: undefined,
-                    bgm: undefined,
-                    efm: undefined,
-                    voice: undefined,
-                    video: undefined,
-                },
+                props: {},
             } as Action,
             type_text: "",
             type_text_buffer: [] as ActionLine[],
@@ -248,10 +242,11 @@ export default {
 </script>
 
 <template>
-    <audio ref="bgm" v-bind:src="action.props.bgm" type="audio/mpeg" autoplay hidden loop></audio>
-    <audio ref="efm" v-bind:src="action.props.efm" type="audio/mpeg" hidden></audio>
-    <audio ref="voice" v-bind:src="action.props.voice" type="audio/mpeg" hidden></audio>
-    <img class="background" v-bind:src="action.props.bg">
+    <audio ref="bgm" v-bind:src="conv_src(action.props.bgm)" type="audio/mpeg" autoplay hidden loop></audio>
+    <audio ref="efm" v-bind:src="conv_src(action.props.efm)" type="audio/mpeg" hidden></audio>
+    <audio ref="voice" v-bind:src="conv_src(action.props.voice)" type="audio/mpeg" hidden></audio>
+    <img class="background" v-bind:src="conv_src(action.props.bg)">
+    <Live2D :source="conv_src(action.props.ch_model)"></Live2D>
     <div class="card-lines">
         <ActionCard :ch="action.character" :line="type_text"></ActionCard>
     </div>
@@ -259,7 +254,7 @@ export default {
         <h4><span class="badge bg-primary">{{ action.para_title }}</span></h4>
     </div>
     <div class="content-full bg-body" v-bind:hidden="state != ActionState.Video">
-        <video ref="video" class="background" v-on:ended="onvideoended" v-bind:src="action.props.video"
+        <video ref="video" class="background" v-on:ended="onvideoended" v-bind:src="conv_src(action.props.video)"
             type="video/mp4"></video>
     </div>
     <div class="backboard" v-on:click="next"></div>

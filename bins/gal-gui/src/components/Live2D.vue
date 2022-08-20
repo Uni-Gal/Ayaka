@@ -21,8 +21,7 @@ export default {
             });
             this.app = app
 
-            const source = decodeURIComponent(this.source)
-            const model = await Live2DModel.from(source);
+            const model = await Live2DModel.from(this.source);
 
             app.stage.addChild(model);
             this.model = model

@@ -1,6 +1,13 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/tauri"
 import { Locale } from 'vue-i18n'
 
+export function conv_src(path?: string): string | undefined {
+    if (path) {
+        return decodeURIComponent(convertFileSrc(path))
+    }
+    return undefined
+}
+
 export interface OpenGameStatus {
     t: keyof typeof OpenGameStatusType,
     data?: object,
@@ -32,7 +39,7 @@ export interface GameInfo {
     title: string,
     author: string,
     props: {
-        bg: string | undefined,
+        bg?: string,
     },
 }
 
@@ -42,11 +49,12 @@ export interface Action {
     para_title?: string,
     switches: Switch[],
     props: {
-        bg: string | undefined,
-        bgm: string | undefined,
-        efm: string | undefined,
-        voice: string | undefined,
-        video: string | undefined,
+        bg?: string,
+        bgm?: string,
+        efm?: string,
+        voice?: string,
+        video?: string,
+        ch_model?: string,
     },
 }
 
@@ -105,14 +113,7 @@ export function locale_native_name(loc: Locale): Promise<string> {
 
 export async function info(): Promise<GameInfo> {
     let res = await invoke<GameInfo | undefined>("info");
-    if (res) {
-        if (res.props.bg) {
-            res.props.bg = convertFileSrc(res.props.bg)
-        }
-    } else {
-        res = { title: "", author: "", props: { bg: undefined } }
-    }
-    return res
+    return res ?? { title: "", author: "", props: {} }
 }
 
 export function start_new(locale: Locale): Promise<void> {
@@ -131,26 +132,8 @@ export function next_back_run(): Promise<boolean> {
     return invoke("next_back_run")
 }
 
-export async function current_run(): Promise<Action | undefined> {
-    let res = await invoke<Action | undefined>("current_run")
-    if (res) {
-        if (res.props.bg) {
-            res.props.bg = convertFileSrc(res.props.bg)
-        }
-        if (res.props.bgm) {
-            res.props.bgm = convertFileSrc(res.props.bgm)
-        }
-        if (res.props.efm) {
-            res.props.efm = convertFileSrc(res.props.efm)
-        }
-        if (res.props.voice) {
-            res.props.voice = convertFileSrc(res.props.voice)
-        }
-        if (res.props.video) {
-            res.props.video = convertFileSrc(res.props.video)
-        }
-    }
-    return res
+export function current_run(): Promise<Action | undefined> {
+    return invoke("current_run")
 }
 
 export async function current_visited(): Promise<boolean> {
