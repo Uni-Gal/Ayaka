@@ -1,10 +1,12 @@
 title: Live2D
 author: Berrysoft
 props:
-  models: models
+  ch_models: ch_models
 res:
   ja:
     ch_Haru: はる
+    ch_Hiyori: ひより
+    ch_Mao: まお
 plugins:
   dir: ../plugins/
   modules:
@@ -15,4 +17,6 @@ paras:
     -
       tag: show
       texts:
-        - /Haru//~~~ヾ(＾∇＾)おはよー♪
+        - /Haru//おはよう
+        - /Hiyori//~~~ヾ(＾∇＾)おはよー♪
+        - /Mao//お早う

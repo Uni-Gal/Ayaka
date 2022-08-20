@@ -10,7 +10,7 @@ fn process_action(mut ctx: ActionProcessContext) -> Action {
     if let Some(ch) = &ctx.action.ch_key {
         let base_dir = ctx.root_path.join(
             ctx.game_props
-                .get("models")
+                .get("ch_models")
                 .map(|s| s.as_str())
                 .unwrap_or(""),
         );
