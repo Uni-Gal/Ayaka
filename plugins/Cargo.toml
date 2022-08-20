@@ -3,6 +3,7 @@ members = [
     "basictex",
     "format",
     "galog",
+    "live2d",
     "markdown",
     "media",
     "random",

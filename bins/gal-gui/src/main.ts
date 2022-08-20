@@ -6,6 +6,10 @@ import { createI18n } from 'vue-i18n'
 import messages from "./locale"
 import { library } from '@fortawesome/fontawesome-svg-core'
 import { fas } from '@fortawesome/free-solid-svg-icons'
+import { Ticker } from '@pixi/ticker'
+import { Live2DModel } from 'pixi-live2d-display'
+
+Live2DModel.registerTicker(Ticker)
 
 library.add(fas)
 

@@ -216,6 +216,8 @@ pub struct Action {
     pub ctx: RawContext,
     /// The full texts.
     pub line: ActionLines,
+    /// The key of current character.
+    pub ch_key: Option<String>,
     /// The current character.
     pub character: Option<String>,
     /// The title of current paragraph.
