@@ -5,7 +5,7 @@ import { Live2DModel } from 'pixi-live2d-display'
 
 <script lang="ts">
 export default {
-    props: { source: String },
+    props: { source: String, scale: Number },
     data() {
         return {
             app: undefined as PIXI.Application | undefined,
@@ -24,7 +24,7 @@ export default {
             if (this.source) {
                 const model = await Live2DModel.from(this.source);
                 this.app.stage.addChild(model)
-                model.scale.set(0.3)
+                model.scale.set(this.scale, this.scale)
             }
         }
     },

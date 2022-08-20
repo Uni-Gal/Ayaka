@@ -45,6 +45,7 @@ export interface GameInfo {
 
 export interface Action {
     line: ActionLine[],
+    ch_key?: string,
     character?: string,
     para_title?: string,
     switches: Switch[],
