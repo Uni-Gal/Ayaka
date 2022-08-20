@@ -241,7 +241,7 @@ export default {
         },
         model_scale(): number {
             if (this.action.ch_key) {
-                return (this.game.props as any)["ch_" + this.action.ch_key + "_scale"]
+                return parseFloat((this.game.props as any)["ch_" + this.action.ch_key + "_scale"])
             }
             return 0
         }
