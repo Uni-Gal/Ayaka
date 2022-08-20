@@ -1,0 +1,18 @@
+title: Live2D
+author: Berrysoft
+props:
+  models: models
+res:
+  ja:
+    ch_Haru: はる
+plugins:
+  dir: ../plugins/
+  modules:
+    - live2d
+base_lang: ja
+paras:
+  ja:
+    -
+      tag: show
+      texts:
+        - /Haru//~~~ヾ(＾∇＾)おはよー♪
