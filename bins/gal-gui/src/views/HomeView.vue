@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Locale } from 'vue-i18n'
-import { info, next_run, start_new, locale_native_name, set_locale } from '../interop'
+import { conv_src, info, next_run, start_new, locale_native_name, set_locale } from '../interop'
 </script>
 
 <script lang="ts">
@@ -39,7 +39,7 @@ export default {
 </script>
 
 <template>
-    <img class="background" v-bind:src="bg">
+    <img class="background" v-bind:src="conv_src(bg)">
     <div class="content-full bg-body backboard-bg"></div>
     <div class="content">
         <div class="d-grid gap-4 col-4 mx-auto">
