@@ -37,6 +37,7 @@ export default {
                         if (!m) {
                             const path = conv_src((this.game.props as any)["ch_" + name + "_model"]) ?? ""
                             m = await Live2DModel.from(path)
+                            console.log("Loaded Live2D model: %O", m);
                             m.name = name
                             this.models.set(name, m)
                         }
