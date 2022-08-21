@@ -30,7 +30,7 @@ function wait_play(e: HTMLAudioElement): Promise<void> {
 }
 
 function live2d_names(props: any): string[] {
-    return ((props.ch_models ?? "") as string).split(",")
+    return ((props.ch_models ?? "") as string).split(",").filter(s => s.length != 0)
 }
 
 export default {
