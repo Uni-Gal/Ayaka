@@ -3,7 +3,7 @@ import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import ActionCard from '../components/ActionCard.vue'
 import IconButton from '../components/IconButton.vue'
-import { conv_src, current_run, next_run, next_back_run, switch_, merge_lines, Action, ActionLineType, ActionLine, current_visited, GameInfo, info } from '../interop'
+import { conv_src, current_run, next_run, next_back_run, switch_, merge_lines, Action, ActionLineType, ActionLine, current_visited } from '../interop'
 import { cloneDeep } from 'lodash'
 import Live2D from '../components/Live2D.vue'
 </script>
@@ -29,11 +29,31 @@ function wait_play(e: HTMLAudioElement): Promise<void> {
     })
 }
 
+function live2d_models(props: any): string[] {
+    const count = parseInt(props.ch_models_count ?? "0");
+    let models = []
+    for (let i = 0; i < count; i++) {
+        const src = conv_src(props["ch_model_" + i])
+        if (src) {
+            models.push(src)
+        }
+    }
+    return models
+}
+
+function live2d_names(props: any): string[] {
+    const count = parseInt(props.ch_models_count ?? "0");
+    let names = []
+    for (let i = 0; i < count; i++) {
+        names.push(props["ch_model_" + i + "_name"])
+    }
+    return names
+}
+
 export default {
     emits: ["quit"],
     data() {
         return {
-            game: {} as GameInfo,
             action: {
                 line: [],
                 switches: [],
@@ -47,7 +67,6 @@ export default {
         }
     },
     async mounted() {
-        this.game = await info()
         document.addEventListener('keydown', this.onkeydown)
         await this.mutex.runExclusive(this.fetch_current_run)
         this.start_type_anime()
@@ -238,12 +257,6 @@ export default {
         },
         async on_records_click(op: string) {
             await this.$router.push("/records/" + op)
-        },
-        model_scale(): number {
-            if (this.action.ch_key) {
-                return parseFloat((this.game.props as any)["ch_" + this.action.ch_key + "_scale"])
-            }
-            return 0
         }
     }
 }
@@ -254,7 +267,7 @@ export default {
     <audio ref="efm" v-bind:src="conv_src(action.props.efm)" type="audio/mpeg" hidden></audio>
     <audio ref="voice" v-bind:src="conv_src(action.props.voice)" type="audio/mpeg" hidden></audio>
     <img class="background" v-bind:src="conv_src(action.props.bg)">
-    <Live2D :source="conv_src(action.props.ch_model)" :scale="model_scale()"></Live2D>
+    <Live2D :sources="live2d_models(action.props)" :names="live2d_names(action.props)"></Live2D>
     <div class="card-lines">
         <ActionCard :ch="action.character" :line="type_text"></ActionCard>
     </div>

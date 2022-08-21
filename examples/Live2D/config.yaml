@@ -20,6 +20,6 @@ paras:
     -
       tag: show
       texts:
-        - /Haru//おはよう
-        - /Hiyori//~~~ヾ(＾∇＾)おはよー♪
-        - /Mao//お早う
+        - /Haru//おはよう\show{Haru}
+        - /Hiyori//~~~ヾ(＾∇＾)おはよー♪\show{Haru}{Hiyori}
+        - /Mao//お早う\show{Mao}

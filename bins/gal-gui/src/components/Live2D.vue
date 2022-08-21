@@ -1,15 +1,22 @@
 <script setup lang="ts">
 import * as PIXI from 'pixi.js'
 import { Live2DModel } from 'pixi-live2d-display'
+import { Mutex } from 'async-mutex'
+import { GameInfo, info } from '../interop';
 </script>
 
 <script lang="ts">
 export default {
-    props: { source: String, scale: Number },
+    props: { sources: Array<string>, names: Array<string> },
     data() {
         return {
+            game: {} as GameInfo,
             app: undefined as PIXI.Application | undefined,
+            mutex: new Mutex(),
         }
+    },
+    async created() {
+        this.game = await info()
     },
     async mounted() {
         this.app = new PIXI.Application({
@@ -20,14 +27,19 @@ export default {
         window.addEventListener("resize", this.onresize)
     },
     async updated() {
-        if (this.app) {
-            this.app.stage.removeChildren(0);
-            if (this.source) {
-                const model = await Live2DModel.from(this.source);
-                this.app.stage.addChild(model)
-                this.onresize()
+        await this.mutex.runExclusive(async () => {
+            if (this.app) {
+                this.app.stage.removeChildren(0)
+                if (this.sources) {
+                    for (const [s, name] of this.sources.map((s, i) => [s, this.names?.at(i) ?? ""])) {
+                        let model = await Live2DModel.from(s)
+                        model.name = name
+                        this.app.stage.addChild(model)
+                    }
+                    this.onresize()
+                }
             }
-        }
+        })
     },
     unmounted() {
         window.removeEventListener("resize", this.onresize)
@@ -38,13 +50,21 @@ export default {
         onresize() {
             if (this.app) {
                 let canvas_scale = window.innerHeight / 600.0
-                if (this.scale) {
-                    canvas_scale *= this.scale
-                }
-                this.app.stage.children.forEach(c => {
-                    c.scale.set(canvas_scale)
+                const count = this.app.stage.children.length
+                const width_per_ch = this.app.view.clientWidth / count
+                this.app.stage.children.forEach((c, i) => {
+                    let m = c as Live2DModel;
+                    m.x = width_per_ch * (i as number) + width_per_ch / 2
+                    m.anchor.set(0.5, 0)
+                    m.scale.set(canvas_scale * this.model_scale(m.name))
                 })
             }
+        },
+        model_scale(key?: string): number {
+            if (key) {
+                return parseFloat((this.game.props as any)["ch_" + key + "_scale"])
+            }
+            return 1
         }
     }
 }
