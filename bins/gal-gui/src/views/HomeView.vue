@@ -29,16 +29,16 @@ export default {
 </script>
 
 <template>
-    <img class="background" v-bind:src="conv_src(bg)">
+    <img class="background" :src="conv_src(bg)">
     <div class="content-full bg-body backboard-bg"></div>
     <div class="content">
         <div class="d-grid gap-4 col-4 mx-auto">
             <h1>{{ title }}</h1>
-            <button class="btn btn-primary" v-on:click="new_game">{{ $t("newGame") }}</button>
+            <button class="btn btn-primary" @click="new_game">{{ $t("newGame") }}</button>
             <router-link class="btn btn-primary" to="/records/load">{{ $t("loadRecords") }}</router-link>
             <router-link class="btn btn-primary" to="/settings">{{ $t("settings") }}</router-link>
             <router-link class="btn btn-primary" to="/about">{{ $t("about") }}</router-link>
-            <button class="btn btn-primary" v-on:click="$emit('quit')">{{ $t("quit") }}</button>
+            <button class="btn btn-primary" @click="$emit('quit')">{{ $t("quit") }}</button>
         </div>
     </div>
 </template>

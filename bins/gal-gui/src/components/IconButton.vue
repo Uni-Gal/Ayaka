@@ -10,8 +10,8 @@ export default {
 </script>
 
 <template>
-    <button v-bind:class='`btn btn-primary btn-command ${btnclass}`' v-on:click='$emit("click")'>
-        <FontAwesomeIcon v-bind:icon='`fas fa-${icon}`'></FontAwesomeIcon>
+    <button :class='`btn btn-primary btn-command ${btnclass}`' @click='$emit("click")'>
+        <FontAwesomeIcon :icon='`fas fa-${icon}`'></FontAwesomeIcon>
     </button>
 </template>
 

@@ -236,20 +236,23 @@ export default {
             }
         },
         async on_history_click() {
-            this.$router.push("/history")
+            await this.$router.push("/history")
         },
         async on_records_click(op: string) {
             await this.$router.push("/records/" + op)
+        },
+        async on_settings_click() {
+            await this.$router.push("/settings")
         }
     }
 }
 </script>
 
 <template>
-    <audio ref="bgm" v-bind:src="conv_src(action.props.bgm)" type="audio/mpeg" autoplay hidden loop></audio>
-    <audio ref="efm" v-bind:src="conv_src(action.props.efm)" type="audio/mpeg" hidden></audio>
-    <audio ref="voice" v-bind:src="conv_src(action.props.voice)" type="audio/mpeg" hidden></audio>
-    <img class="background" v-bind:src="conv_src(action.props.bg)">
+    <audio ref="bgm" :src="conv_src(action.props.bgm)" type="audio/mpeg" autoplay hidden loop></audio>
+    <audio ref="efm" :src="conv_src(action.props.efm)" type="audio/mpeg" hidden></audio>
+    <audio ref="voice" :src="conv_src(action.props.voice)" type="audio/mpeg" hidden></audio>
+    <img class="background" :src="conv_src(action.props.bg)">
     <Live2D :names="live2d_names(action.props)"></Live2D>
     <div class="card-lines">
         <ActionCard :ch="action.character" :line="type_text"></ActionCard>
@@ -257,13 +260,13 @@ export default {
     <div>
         <h4><span class="badge bg-primary">{{ action.para_title }}</span></h4>
     </div>
-    <div class="content-full bg-body" v-bind:hidden="state != ActionState.Video">
-        <video ref="video" class="background" v-on:ended="onvideoended" v-bind:src="conv_src(action.props.video)"
+    <div class="content-full bg-body" :hidden="state != ActionState.Video">
+        <video ref="video" class="background" @ended="onvideoended" :src="conv_src(action.props.video)"
             type="video/mp4"></video>
     </div>
-    <div class="backboard" v-on:click="next"></div>
+    <div class="backboard" @click="next"></div>
     <div class="commands">
-        <div class="btn-group" role="group" v-bind:hidden="state == ActionState.Video">
+        <div class="btn-group" role="group" :hidden="state == ActionState.Video">
             <IconButton icon="file-arrow-down" @click='on_records_click("save")'></IconButton>
             <IconButton icon="file-arrow-up" @click='on_records_click("load")'></IconButton>
             <IconButton icon="list" @click="on_history_click"></IconButton>
@@ -273,16 +276,16 @@ export default {
             <IconButton icon="forward-step" @click="next"></IconButton>
             <IconButton icon="forward" :btnclass='play_state == PlayState.FastForward ? "active" : ""'
                 @click="on_fast_forward_click"></IconButton>
-            <IconButton icon="gear"></IconButton>
+            <IconButton icon="gear" @click="on_settings_click"></IconButton>
             <IconButton icon="house" @click="go_home"></IconButton>
         </div>
     </div>
-    <div class="content-full container-switches" v-bind:hidden="state != ActionState.Switching">
+    <div class="content-full container-switches" :hidden="state != ActionState.Switching">
         <div class="switches">
             <div class="switches-center">
                 <div class="d-grid gap-5 col-8 mx-auto">
-                    <button class="btn btn-primary switch" v-for="(s, i) in action.switches" v-on:click="switch_run(i)"
-                        v-bind:disabled="!s.enabled">
+                    <button class="btn btn-primary switch" v-for="(s, i) in action.switches" @click="switch_run(i)"
+                        :disabled="!s.enabled">
                         {{ s.text }}
                     </button>
                 </div>

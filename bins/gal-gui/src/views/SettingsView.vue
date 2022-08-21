@@ -29,7 +29,7 @@ export default {
     <div class="content">
         <div class="d-grid gap-4 col-4 mx-auto">
             <h1>{{ $t("settings") }}</h1>
-            <select class="form-select" v-model="$i18n.locale" v-on:change="on_locale_select">
+            <select class="form-select" v-model="$i18n.locale" @change="on_locale_select">
                 <option v-for="locale in $i18n.availableLocales" :key="`locale-${locale}`" :value="locale">
                     {{ locale_names.get(locale) ?? locale }}
                 </option>

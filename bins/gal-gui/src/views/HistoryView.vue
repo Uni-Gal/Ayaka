@@ -18,7 +18,7 @@ export default {
 </script>
 
 <template>
-    <div class="content-full container-history" v-on:click="$router.back">
+    <div class="content-full container-history" @click="$router.back">
         <ul class="list-group">
             <li class="list-group-item" v-for="h in records">
                 <ActionCard :ch="h.character" :line="merge_lines(h.line)"></ActionCard>
