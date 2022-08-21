@@ -6,7 +6,7 @@ use std::{
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::TEXT
+    PluginType::TEXT | PluginType::GAME
 }
 
 #[export]
@@ -35,15 +35,28 @@ fn find_model(
 fn show(args: Vec<String>, ctx: TextProcessContext) -> TextProcessResult {
     let models = args
         .into_iter()
-        .filter_map(|ch| find_model(&ch, &ctx.root_path, &ctx.game_props).map(|path| (ch, path)))
+        .filter(|name| ctx.game_props.contains_key(&format!("ch_{}_model", name)))
         .collect::<Vec<_>>();
     let mut res = TextProcessResult::default();
     res.props
         .insert("ch_models_count".to_string(), models.len().to_string());
-    for (i, (name, m)) in models.into_iter().enumerate() {
-        res.props
-            .insert(format!("ch_model_{}", i), m.to_string_lossy().into_owned());
-        res.props.insert(format!("ch_model_{}_name", i), name);
+    for (i, name) in models.into_iter().enumerate() {
+        res.props.insert(format!("ch_model_{}", i), name);
     }
     res
+}
+
+#[export]
+fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {
+    if let Some(names) = ctx.props.remove("ch_names") {
+        for name in names.split(',') {
+            if let Some(path) = find_model(name, &ctx.root_path, &ctx.props) {
+                ctx.props.insert(
+                    format!("ch_{}_model", name),
+                    path.to_string_lossy().into_owned(),
+                );
+            }
+        }
+    }
+    GameProcessResult { props: ctx.props }
 }

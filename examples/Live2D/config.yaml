@@ -2,6 +2,7 @@ title: Live2D
 author: Berrysoft
 props:
   ch_models: ch_models
+  ch_names: Haru,Hiyori,Mao
   ch_Haru_scale: 0.25
   ch_Hiyori_scale: 0.2
   ch_Mao_scale: 0.1

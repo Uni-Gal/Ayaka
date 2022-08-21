@@ -29,23 +29,11 @@ function wait_play(e: HTMLAudioElement): Promise<void> {
     })
 }
 
-function live2d_models(props: any): string[] {
-    const count = parseInt(props.ch_models_count ?? "0");
-    let models = []
-    for (let i = 0; i < count; i++) {
-        const src = conv_src(props["ch_model_" + i])
-        if (src) {
-            models.push(src)
-        }
-    }
-    return models
-}
-
 function live2d_names(props: any): string[] {
     const count = parseInt(props.ch_models_count ?? "0");
     let names = []
     for (let i = 0; i < count; i++) {
-        names.push(props["ch_model_" + i + "_name"])
+        names.push(props["ch_model_" + i])
     }
     return names
 }
@@ -267,7 +255,7 @@ export default {
     <audio ref="efm" v-bind:src="conv_src(action.props.efm)" type="audio/mpeg" hidden></audio>
     <audio ref="voice" v-bind:src="conv_src(action.props.voice)" type="audio/mpeg" hidden></audio>
     <img class="background" v-bind:src="conv_src(action.props.bg)">
-    <Live2D :sources="live2d_models(action.props)" :names="live2d_names(action.props)"></Live2D>
+    <Live2D :names="live2d_names(action.props)"></Live2D>
     <div class="card-lines">
         <ActionCard :ch="action.character" :line="type_text"></ActionCard>
     </div>

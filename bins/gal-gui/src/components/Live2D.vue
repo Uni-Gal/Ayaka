@@ -2,15 +2,16 @@
 import * as PIXI from 'pixi.js'
 import { Live2DModel } from 'pixi-live2d-display'
 import { Mutex } from 'async-mutex'
-import { GameInfo, info } from '../interop';
+import { conv_src, GameInfo, info } from '../interop';
 </script>
 
 <script lang="ts">
 export default {
-    props: { sources: Array<string>, names: Array<string> },
+    props: { names: Array<string> },
     data() {
         return {
             game: {} as GameInfo,
+            models: new Map<string, Live2DModel>(),
             app: undefined as PIXI.Application | undefined,
             mutex: new Mutex(),
         }
@@ -30,11 +31,16 @@ export default {
         await this.mutex.runExclusive(async () => {
             if (this.app) {
                 this.app.stage.removeChildren(0)
-                if (this.sources) {
-                    for (const [s, name] of this.sources.map((s, i) => [s, this.names?.at(i) ?? ""])) {
-                        let model = await Live2DModel.from(s)
-                        model.name = name
-                        this.app.stage.addChild(model)
+                if (this.names) {
+                    for (const name of this.names) {
+                        let m = this.models.get(name)
+                        if (!m) {
+                            const path = conv_src((this.game.props as any)["ch_" + name + "_model"]) ?? ""
+                            m = await Live2DModel.from(path)
+                            m.name = name
+                            this.models.set(name, m)
+                        }
+                        this.app.stage.addChild(m)
                     }
                     this.onresize()
                 }
