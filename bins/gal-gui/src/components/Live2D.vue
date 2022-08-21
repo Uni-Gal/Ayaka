@@ -17,6 +17,7 @@ export default {
             backgroundAlpha: 0,
             resizeTo: this.$refs.canvas as HTMLElement,
         })
+        window.addEventListener("resize", this.onresize)
     },
     async updated() {
         if (this.app) {
@@ -24,14 +25,28 @@ export default {
             if (this.source) {
                 const model = await Live2DModel.from(this.source);
                 this.app.stage.addChild(model)
-                model.scale.set(this.scale, this.scale)
+                this.onresize()
             }
         }
     },
     unmounted() {
+        window.removeEventListener("resize", this.onresize)
         this.app?.destroy()
         this.app = undefined
     },
+    methods: {
+        onresize() {
+            if (this.app) {
+                let canvas_scale = window.innerHeight / 600.0
+                if (this.scale) {
+                    canvas_scale *= this.scale
+                }
+                this.app.stage.children.forEach(c => {
+                    c.scale.set(canvas_scale)
+                })
+            }
+        }
+    }
 }
 </script>
 
