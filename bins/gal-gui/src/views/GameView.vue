@@ -58,8 +58,19 @@ export default {
         document.removeEventListener('keydown', this.onkeydown)
     },
     methods: {
-        async go_home() {
-            await this.$router.replace("/home")
+        async go_home(ask: boolean = false) {
+            let confirmed = true;
+            if (ask) {
+                confirmed = await this.$vbsModal.confirm({
+                    title: this.$t("goHome"),
+                    message: this.$t("goHomeConfirm"),
+                    leftBtnText: this.$t("dialogNo"),
+                    rightBtnText: this.$t("dialogYes"),
+                })
+            }
+            if (confirmed) {
+                await this.$router.replace("/home")
+            }
         },
         // Should be called in mutex
         async fetch_current_run() {
@@ -277,7 +288,7 @@ export default {
             <IconButton icon="forward" :btnclass='play_state == PlayState.FastForward ? "active" : ""'
                 @click="on_fast_forward_click"></IconButton>
             <IconButton icon="gear" @click="on_settings_click"></IconButton>
-            <IconButton icon="house" @click="go_home"></IconButton>
+            <IconButton icon="house" @click="go_home(true)"></IconButton>
         </div>
     </div>
     <div class="content-full container-switches" :hidden="state != ActionState.Switching">

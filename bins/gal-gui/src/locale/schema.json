@@ -28,6 +28,14 @@
             "description": "The about button at HomeView",
             "type": "string"
         },
+        "goHome": {
+            "description": "The go home button at GameView",
+            "type": "string"
+        },
+        "goHomeConfirm": {
+            "description": "The confirm message in go home confirm dialog",
+            "type": "string"
+        },
         "quit": {
             "description": "The quit button at HomeView",
             "type": "string"
