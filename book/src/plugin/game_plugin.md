@@ -18,6 +18,7 @@ fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {
 ```
 
 ## Existing plugins
-| Plugin  | Description                                   |
-| ------- | --------------------------------------------- |
-| `media` | Get correct path of background image at home. |
+| Plugin   | Description                                   |
+| -------- | --------------------------------------------- |
+| `live2d` | Get correct path of Live2D models.            |
+| `media`  | Get correct path of background image at home. |

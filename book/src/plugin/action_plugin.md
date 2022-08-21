@@ -41,5 +41,6 @@ You may notice that the HTML tags are treated as `ActionLine::Chars`, which mean
 ## Existing plugins
 | Plugin     | Description                                      |
 | ---------- | ------------------------------------------------ |
+| `live2d`   | Inherit models layout and deal with hiding.      |
 | `markdown` | Process Markdown texts.                          |
 | `media`    | Inherit background image and music from history. |
