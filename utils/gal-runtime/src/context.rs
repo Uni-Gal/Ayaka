@@ -151,7 +151,7 @@ impl Context {
     }
 
     /// Set the current locale.
-    pub fn set_locale(&mut self, loc: impl Into<LocaleBuf>) {
+    pub fn set_locale(&mut self, loc: impl Into<Locale>) {
         self.settings.lang = loc.into();
     }
 
@@ -228,6 +228,7 @@ impl Context {
 
     fn exact_text(&mut self, para_title: Option<String>, t: Text) -> Result<Action> {
         let mut action_line = ActionLines::default();
+        let mut chkey = None;
         let mut chname = None;
         let mut switches = vec![];
         let mut props = HashMap::new();
@@ -237,8 +238,9 @@ impl Context {
                 Line::Str(s) => action_line.push_back_chars(s),
                 Line::Cmd(cmd) => match cmd {
                     Command::Character(key, alter) => {
+                        // TODO: reduce allocation
+                        chkey = Some(key.clone());
                         chname = if alter.is_empty() {
-                            // TODO: reduce allocation
                             let res_key = format!("ch_{}", key);
                             self.game
                                 .find_res_fallback(self.locale())
@@ -285,6 +287,7 @@ impl Context {
         Ok(Action {
             ctx: self.ctx.clone(),
             line: action_line,
+            ch_key: chkey,
             character: chname,
             para_title,
             switches,
@@ -299,6 +302,7 @@ impl Context {
 
             let ctx = actions.ctx.fallback().unwrap_or_default();
             let line = actions.line.and_any().unwrap_or_default();
+            let ch_key = actions.ch_key.flatten().and_any();
             let character = actions.character.flatten().and_any();
             let para_title = actions.para_title.flatten().and_any();
             let switches = actions
@@ -327,6 +331,7 @@ impl Context {
             Some(Action {
                 ctx,
                 line,
+                ch_key,
                 character,
                 para_title,
                 switches,

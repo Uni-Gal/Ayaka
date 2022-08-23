@@ -42,4 +42,5 @@ The `TextProcessResult` object is some lines and properties to be added to the c
 | Plugin     | Description          |
 | ---------- | -------------------- |
 | `basictex` | Basic TeX commands.  |
+| `live2d`   | Live2D commands.     |
 | `media`    | Multimedia commands. |

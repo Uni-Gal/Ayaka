@@ -1,0 +1,29 @@
+title: Live2D
+author: Berrysoft
+props:
+  ch_models: ch_models
+  ch_names: Haru,Hiyori,Mao
+  ch_Haru_scale: 0.25
+  ch_Hiyori_scale: 0.2
+  ch_Mao_scale: 0.1
+res:
+  ja:
+    ch_Haru: はる
+    ch_Hiyori: ひより
+    ch_Mao: まお
+plugins:
+  dir: ../plugins/
+  modules:
+    - live2d
+base_lang: ja
+paras:
+  ja:
+    -
+      tag: show
+      texts:
+        - /Haru//おはよう\show
+        - /Haru//元気ですか
+        - /Hiyori//~~~ヾ(＾∇＾)おはよー♪\show{Haru}{Hiyori}
+        - /Hiyori//今日もよろしく\hide{Haru}
+        - /Mao/？？？/お早う\hide
+        - /Mao//元気？\show

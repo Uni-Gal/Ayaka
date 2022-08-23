@@ -23,11 +23,6 @@ export default {
         this.app_name = await getName();
         this.app_ver = await getVersion();
         this.tauri_ver = await getTauriVersion();
-    },
-    methods: {
-        async go_home() {
-            await this.$router.replace("/home")
-        }
     }
 }
 </script>
@@ -48,6 +43,6 @@ export default {
         </p>
     </div>
     <div>
-        <IconButton icon="arrow-left" @click="go_home"></IconButton>
+        <IconButton icon="arrow-left" @click="$router.back()"></IconButton>
     </div>
 </template>

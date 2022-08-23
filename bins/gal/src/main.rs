@@ -3,7 +3,7 @@ use gal_runtime::{
     anyhow::{bail, Result},
     log::LevelFilter,
     tokio_stream::StreamExt,
-    Context, FrontendType, LocaleBuf, OpenStatus,
+    Context, FrontendType, Locale, OpenStatus,
 };
 use std::{
     ffi::OsString,
@@ -19,7 +19,7 @@ pub struct Options {
     #[clap(long)]
     auto: bool,
     #[clap(short, long)]
-    locale: Option<LocaleBuf>,
+    locale: Option<Locale>,
 }
 
 fn read_line() -> Result<String> {

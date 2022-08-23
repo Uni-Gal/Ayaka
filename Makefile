@@ -25,7 +25,7 @@ release:
 release-cross:
 	cd bins && $(MAKE) release-cross TARGET=$(TARGET)
 
-EXAMPLES:=Fibonacci Fibonacci2 Gacha Orga Styles
+EXAMPLES:=Fibonacci Fibonacci2 Gacha Live2D Orga Styles
 
 define example-tpl
 .PHONY: example-$(1) example-$(1)-gui example-$(1)-release example-$(1)-gui-release examples/$(1)/config.tex

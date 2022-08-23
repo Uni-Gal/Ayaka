@@ -17,4 +17,6 @@
     - [Text plugin](./plugin/text_plugin.md)
     - [Action plugin](./plugin/action_plugin.md)
     - [Game plugin](./plugin/game_plugin.md)
+- [GUI](./gui/summary.md)
+    - [Live2D](./gui/live2d.md)
 - [Support platforms](./platforms.md)

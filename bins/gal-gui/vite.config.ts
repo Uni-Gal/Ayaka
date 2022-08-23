@@ -1,4 +1,3 @@
-import { fileURLToPath, URL } from 'url'
 import { env } from 'process'
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
@@ -12,6 +11,7 @@ export default defineConfig({
     target: ['es2021', 'chrome97', 'safari13'],
     minify: !env.TAURI_DEBUG ? 'esbuild' : false,
     sourcemap: !!env.TAURI_DEBUG,
+    chunkSizeWarningLimit: 1000,
   },
   server: {
     fs: {

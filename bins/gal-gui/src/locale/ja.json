@@ -4,7 +4,10 @@
     "dialogNo": "いいえ",
     "newGame": "始めから",
     "loadRecords": "続きから",
+    "settings": "設定",
     "about": "説明",
+    "goHome": "ホーム",
+    "goHomeConfirm": "ホームに戻りますか？",
     "quit": "終了する",
     "quitConfirm": "ゲームを終了しますか？"
 }

@@ -7,9 +7,7 @@ import { save_all } from './interop';
 <script lang="ts">
 export default {
     async created() {
-        appWindow.listen("tauri://close-requested", async () => {
-            await this.quit()
-        })
+        appWindow.listen("tauri://close-requested", this.quit)
     },
     methods: {
         async quit() {

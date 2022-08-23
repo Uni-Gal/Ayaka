@@ -84,7 +84,7 @@ export default {
 <template>
     <img class="content-logo" src="../assets/logo.png" alt="Logo" />
     <div class="progress progress-bottom">
-        <div class="progress-bar" role="progressbar" v-bind:style='`width: ${progress}%`'>{{ text }}</div>
+        <div class="progress-bar" role="progressbar" :style='`width: ${progress}%`'>{{ text }}</div>
     </div>
 </template>
 

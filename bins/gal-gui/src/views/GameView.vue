@@ -3,8 +3,9 @@ import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import ActionCard from '../components/ActionCard.vue'
 import IconButton from '../components/IconButton.vue'
-import { current_run, next_run, next_back_run, switch_, merge_lines, Action, ActionLineType, ActionLine, current_visited } from '../interop'
+import { conv_src, current_run, next_run, next_back_run, switch_, merge_lines, Action, ActionLineType, ActionLine, current_visited } from '../interop'
 import { cloneDeep } from 'lodash'
+import Live2D from '../components/Live2D.vue'
 </script>
 
 <script lang="ts">
@@ -23,9 +24,13 @@ enum PlayState {
 }
 
 function wait_play(e: HTMLAudioElement): Promise<void> {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<void>((resolve, _) => {
         e.addEventListener("ended", () => { resolve() }, { once: true })
     })
+}
+
+function live2d_names(props: any): string[] {
+    return ((props.ch_models ?? "") as string).split(",").filter(s => s.length != 0)
 }
 
 export default {
@@ -34,15 +39,8 @@ export default {
         return {
             action: {
                 line: [],
-                character: undefined,
                 switches: [],
-                props: {
-                    bg: undefined,
-                    bgm: undefined,
-                    efm: undefined,
-                    voice: undefined,
-                    video: undefined,
-                },
+                props: {},
             } as Action,
             type_text: "",
             type_text_buffer: [] as ActionLine[],
@@ -60,8 +58,19 @@ export default {
         document.removeEventListener('keydown', this.onkeydown)
     },
     methods: {
-        async go_home() {
-            await this.$router.replace("/home")
+        async go_home(ask: boolean = false) {
+            let confirmed = true;
+            if (ask) {
+                confirmed = await this.$vbsModal.confirm({
+                    title: this.$t("goHome"),
+                    message: this.$t("goHomeConfirm"),
+                    leftBtnText: this.$t("dialogNo"),
+                    rightBtnText: this.$t("dialogYes"),
+                })
+            }
+            if (confirmed) {
+                await this.$router.replace("/home")
+            }
         },
         // Should be called in mutex
         async fetch_current_run() {
@@ -123,9 +132,9 @@ export default {
             }
         },
         // Shouldn't be called in mutex
-        async start_type_anime() {
+        async start_type_anime(timeout: boolean = false) {
             this.state = ActionState.Typing
-            let values = [setTimeout(3000)]
+            let values = timeout ? [setTimeout(3000)] : []
             if (this.action.props.efm) {
                 let efm = this.$refs.efm as HTMLAudioElement
                 values.push(wait_play(efm))
@@ -190,7 +199,7 @@ export default {
                 while (this.play_state == PlayState.Auto && (this.state != ActionState.Switching && this.state != ActionState.Video)) {
                     const has_next = await tryAcquire(this.mutex).runExclusive(async () => {
                         const has_next = await this.fetch_next_run()
-                        await this.start_type_anime()
+                        await this.start_type_anime(true)
                         this.end_typing()
                         return has_next
                     }).catch(_ => { })
@@ -238,33 +247,37 @@ export default {
             }
         },
         async on_history_click() {
-            this.$router.push("/history")
+            await this.$router.push("/history")
         },
         async on_records_click(op: string) {
             await this.$router.push("/records/" + op)
+        },
+        async on_settings_click() {
+            await this.$router.push("/settings")
         }
     }
 }
 </script>
 
 <template>
-    <audio ref="bgm" v-bind:src="action.props.bgm" type="audio/mpeg" autoplay hidden loop></audio>
-    <audio ref="efm" v-bind:src="action.props.efm" type="audio/mpeg" hidden></audio>
-    <audio ref="voice" v-bind:src="action.props.voice" type="audio/mpeg" hidden></audio>
-    <img class="background" v-bind:src="action.props.bg">
+    <audio ref="bgm" :src="conv_src(action.props.bgm)" type="audio/mpeg" autoplay hidden loop></audio>
+    <audio ref="efm" :src="conv_src(action.props.efm)" type="audio/mpeg" hidden></audio>
+    <audio ref="voice" :src="conv_src(action.props.voice)" type="audio/mpeg" hidden></audio>
+    <img class="background" :src="conv_src(action.props.bg)">
+    <Live2D :names="live2d_names(action.props)"></Live2D>
     <div class="card-lines">
         <ActionCard :ch="action.character" :line="type_text"></ActionCard>
     </div>
     <div>
         <h4><span class="badge bg-primary">{{ action.para_title }}</span></h4>
     </div>
-    <div class="content-full bg-body" v-bind:hidden="state != ActionState.Video">
-        <video ref="video" class="background" v-on:ended="onvideoended" v-bind:src="action.props.video"
+    <div class="content-full bg-body" :hidden="state != ActionState.Video">
+        <video ref="video" class="background" @ended="onvideoended" :src="conv_src(action.props.video)"
             type="video/mp4"></video>
     </div>
-    <div class="backboard" v-on:click="next"></div>
+    <div class="backboard" @click="next"></div>
     <div class="commands">
-        <div class="btn-group" role="group" v-bind:hidden="state == ActionState.Video">
+        <div class="btn-group" role="group" :hidden="state == ActionState.Video">
             <IconButton icon="file-arrow-down" @click='on_records_click("save")'></IconButton>
             <IconButton icon="file-arrow-up" @click='on_records_click("load")'></IconButton>
             <IconButton icon="list" @click="on_history_click"></IconButton>
@@ -274,16 +287,16 @@ export default {
             <IconButton icon="forward-step" @click="next"></IconButton>
             <IconButton icon="forward" :btnclass='play_state == PlayState.FastForward ? "active" : ""'
                 @click="on_fast_forward_click"></IconButton>
-            <IconButton icon="gear"></IconButton>
-            <IconButton icon="house" @click="go_home"></IconButton>
+            <IconButton icon="gear" @click="on_settings_click"></IconButton>
+            <IconButton icon="house" @click="go_home(true)"></IconButton>
         </div>
     </div>
-    <div class="content-full container-switches" v-bind:hidden="state != ActionState.Switching">
+    <div class="content-full container-switches" :hidden="state != ActionState.Switching">
         <div class="switches">
             <div class="switches-center">
                 <div class="d-grid gap-5 col-8 mx-auto">
-                    <button class="btn btn-primary switch" v-for="(s, i) in action.switches" v-on:click="switch_run(i)"
-                        v-bind:disabled="!s.enabled">
+                    <button class="btn btn-primary switch" v-for="(s, i) in action.switches" @click="switch_run(i)"
+                        :disabled="!s.enabled">
                         {{ s.text }}
                     </button>
                 </div>

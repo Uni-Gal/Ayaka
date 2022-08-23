@@ -35,11 +35,11 @@ export default {
     <div class="content-below-command">
         <ul class="list-group list-group-flush">
             <li class="list-group-item list-group-item-action record-item" v-for="(rec, i) in records"
-                v-on:click="on_record_click(i)">
+                @click="on_record_click(i)">
                 <span v-html="merge_lines(rec.history[rec.history.length - 1].line)"></span>
             </li>
-            <li class="list-group-item list-group-item-action record-item" v-on:click="on_record_click(records.length)"
-                v-bind:hidden='op != "save"'>
+            <li class="list-group-item list-group-item-action record-item" @click="on_record_click(records.length)"
+                :hidden='op != "save"'>
                 Add new record
             </li>
         </ul>
