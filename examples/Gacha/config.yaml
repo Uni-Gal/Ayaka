@@ -9,9 +9,9 @@ plugins:
     - random
 props:
   videos: videos
-base_lang: zh_Hans
+base_lang: zh-Hans
 paras:
-  zh_Hans:
+  zh-Hans:
     -
       tag: init
       texts:

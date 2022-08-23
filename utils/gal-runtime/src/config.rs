@@ -2,7 +2,7 @@ pub use gal_bindings_types::{Action, Switch};
 pub use gal_fallback::Fallback;
 
 use crate::*;
-use gal_script::log::{debug, warn};
+use gal_script::log::debug;
 use serde::Deserialize;
 use std::{collections::HashMap, path::PathBuf};
 
@@ -33,7 +33,7 @@ pub struct Game {
     #[serde(default)]
     pub author: String,
     /// The paragraphs, indexed by locale.
-    pub paras: HashMap<LocaleBuf, Vec<Paragraph>>,
+    pub paras: HashMap<Locale, Vec<Paragraph>>,
     /// The plugin config.
     #[serde(default)]
     pub plugins: PluginConfig,
@@ -42,11 +42,11 @@ pub struct Game {
     pub props: HashMap<String, String>,
     /// The resources, indexed by locale.
     #[serde(default)]
-    pub res: HashMap<LocaleBuf, VarMap>,
+    pub res: HashMap<Locale, VarMap>,
     /// The base language.
     /// If the runtime fails to choose a best match,
     /// it fallbacks to this one.
-    pub base_lang: LocaleBuf,
+    pub base_lang: Locale,
 }
 
 /// The plugin config.
@@ -60,15 +60,11 @@ pub struct PluginConfig {
 }
 
 impl Game {
-    fn choose_from_keys<V>(&self, loc: &Locale, map: &HashMap<LocaleBuf, V>) -> LocaleBuf {
+    fn choose_from_keys<V>(&self, loc: &Locale, map: &HashMap<Locale, V>) -> Locale {
         let keys = map.keys();
         debug!("Choose \"{}\" from {:?}", loc, keys);
         let res = loc
-            .choose_from(keys)
-            .unwrap_or_else(|e| {
-                warn!("Cannot choose locale: {}", e);
-                None
-            })
+            .choose_from(keys.cloned())
             .unwrap_or_else(|| self.base_lang.clone());
         debug!("Chose \"{}\"", res);
         res

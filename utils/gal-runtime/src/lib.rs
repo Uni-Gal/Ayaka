@@ -22,7 +22,7 @@ mod settings;
 pub use anyhow;
 pub use config::*;
 pub use context::*;
-pub use gal_locale::{Locale, LocaleBuf};
+pub use gal_locale::Locale;
 pub use gal_script::{log, RawValue};
 pub use progress_future::*;
 pub use settings::*;

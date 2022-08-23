@@ -3,7 +3,7 @@ pub use gal_bindings_types::VarMap;
 use crate::*;
 use anyhow::{anyhow, Result};
 use dirs::{config_dir, data_local_dir};
-use gal_locale::LocaleBuf;
+use gal_locale::Locale;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -15,14 +15,14 @@ use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct Settings {
     /// The display language.
-    pub lang: LocaleBuf,
+    pub lang: Locale,
 }
 
 impl Settings {
     /// Creates [`Settings`] object with current locale.
     pub fn new() -> Self {
         Self {
-            lang: Locale::current().to_owned(),
+            lang: Locale::current(),
         }
     }
 }

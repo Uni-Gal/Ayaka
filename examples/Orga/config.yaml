@@ -14,7 +14,7 @@ res:
     ch_td: チャド
     ch_ass: 暗殺者
     ch_mktk: 三日月
-  zh_Hans:
+  zh-Hans:
     ch_rd: 莱德
     ch_org: 奥尔加
     ch_kdr: 古荻莉亚
@@ -84,7 +84,7 @@ paras:
       texts:
         - /org//俺は止まんねぇからよ、お前らが止まんねぇかぎり、その先に俺はいるぞ！\bgm{0}\bg{4}
         - /org//だからよ、止まるんじゃねぇぞ……
-  zh_Hans:
+  zh-Hans:
     -
       tag: pre_car
       title: 备车

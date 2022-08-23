@@ -1,31 +1,29 @@
 //! The internal locale lib.
 //!
-//! This crate provides the [`Locale`] and [`LocaleBuf`] types.
+//! This crate provides the [`Locale`] and [`Locale`] types.
 //! They are internally a null-terminated string,
 //! and use icu4c to parse and choose.
 
 #![warn(missing_docs)]
+#![feature(once_cell)]
 
-mod icu;
+mod matcher;
 
-use anyhow::Result;
+use icu_locid::LanguageIdentifier;
+use matcher::LanguageMatcher;
 use serde::{Deserialize, Serialize};
-use std::borrow::{Borrow, Cow};
-use std::ffi::{CStr, CString};
-use std::fmt::Display;
-use std::ops::Deref;
-use std::str::FromStr;
+use std::{fmt::Display, str::FromStr, sync::LazyLock};
+use sys_locale::get_locale;
+use thiserror::Error;
 
-/// Representation of a borrowed [`LocaleBuf`].
-#[derive(Debug, PartialEq, Eq, Hash)]
+static MATCHER: LazyLock<LanguageMatcher> = LazyLock::new(|| LanguageMatcher::new());
+
+/// Representation of a borrowed [`Locale`].
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[repr(transparent)]
-pub struct Locale(CStr);
+pub struct Locale(LanguageIdentifier);
 
 impl Locale {
-    pub(crate) unsafe fn new(loc: &CStr) -> &Self {
-        &*(loc as *const CStr as *const Self)
-    }
-
     /// Get the current locale of the system.
     /// Internally it calles `uloc_getDefault`.
     ///
@@ -33,8 +31,10 @@ impl Locale {
     /// # use gal_locale::Locale;
     /// println!("Current locale: {}", Locale::current());
     /// ```
-    pub fn current() -> &'static Self {
-        icu::current()
+    pub fn current() -> Self {
+        get_locale()
+            .and_then(|loc| loc.parse().ok())
+            .unwrap_or_else(|| "en".parse().unwrap())
     }
 
     /// Choose the best match from the provided locales.
@@ -43,169 +43,75 @@ impl Locale {
     /// Returns [`None`] if it cannot choose a best match.
     ///
     /// ```
-    /// # use gal_locale::LocaleBuf;
-    /// let current = "zh_CN".parse::<LocaleBuf>().unwrap();
+    /// # use gal_locale::Locale;
+    /// let current = "zh-CN".parse::<Locale>().unwrap();
     /// let accepts = [
-    ///     "en".parse::<LocaleBuf>().unwrap(),
+    ///     "en".parse::<Locale>().unwrap(),
     ///     "ja".parse().unwrap(),
-    ///     "zh_Hans".parse().unwrap(),
-    ///     "zh_Hant".parse().unwrap(),
+    ///     "zh-Hans".parse().unwrap(),
+    ///     "zh-Hant".parse().unwrap(),
     /// ];
     /// assert_eq!(
-    ///     current.choose_from(&accepts).unwrap().unwrap().to_string(),
-    ///     "zh_Hans"
+    ///     current.choose_from(accepts).unwrap().to_string(),
+    ///     "zh-Hans"
     /// );
     /// ```
-    pub fn choose_from(
-        &self,
-        locales: impl IntoIterator<Item = impl AsRef<Self>>,
-    ) -> Result<Option<LocaleBuf>> {
-        Ok(icu::choose([self], locales)?)
-    }
-
-    /// Get the native display name of the locale.
-    /// Internally it calls `uloc_getDisplayName`.
-    ///
-    /// ```
-    /// # use gal_locale::LocaleBuf;
-    /// assert_eq!(
-    ///     "en".parse::<LocaleBuf>().unwrap().native_name().unwrap(),
-    ///     "English",
-    /// );
-    /// ```
-    pub fn native_name(&self) -> Result<String> {
-        Ok(icu::native_name(self)?)
+    pub fn choose_from(&self, locales: impl IntoIterator<Item = Self>) -> Option<Self> {
+        MATCHER
+            .matches(self.0.clone(), locales.into_iter().map(|loc| loc.0))
+            .map(|(lang, _)| Self(lang))
     }
 }
 
-impl AsRef<Locale> for Locale {
-    fn as_ref(&self) -> &Locale {
-        self
-    }
-}
-
-impl ToOwned for Locale {
-    type Owned = LocaleBuf;
-
-    fn to_owned(&self) -> Self::Owned {
-        LocaleBuf(self.0.to_owned())
-    }
-}
-
-impl<'a> From<&'a Locale> for Cow<'a, Locale> {
-    fn from(loc: &'a Locale) -> Self {
-        Cow::Borrowed(loc)
+impl Default for Locale {
+    fn default() -> Self {
+        "en".parse().unwrap()
     }
 }
 
 impl Display for Locale {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(self.0.to_str().map_err(|_| std::fmt::Error)?)
+        self.0.fmt(f)
     }
 }
 
-/// Represents an owned locale string.
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[repr(transparent)]
-#[serde(try_from = "String", into = "String")]
-pub struct LocaleBuf(CString);
-
-impl AsRef<Locale> for LocaleBuf {
-    fn as_ref(&self) -> &Locale {
-        unsafe { Locale::new(self.0.as_c_str()) }
-    }
-}
-
-impl Deref for LocaleBuf {
-    type Target = Locale;
-
-    fn deref(&self) -> &Self::Target {
-        self.as_ref()
-    }
-}
-
-impl Borrow<Locale> for LocaleBuf {
-    fn borrow(&self) -> &Locale {
-        self.as_ref()
-    }
-}
-
-impl<'a> From<&'a LocaleBuf> for Cow<'a, Locale> {
-    fn from(loc: &'a LocaleBuf) -> Self {
-        Cow::Borrowed(loc)
-    }
-}
-
-impl From<LocaleBuf> for Cow<'_, Locale> {
-    fn from(loc: LocaleBuf) -> Self {
-        Cow::Owned(loc)
-    }
-}
-
-impl From<&LocaleBuf> for LocaleBuf {
-    fn from(loc: &LocaleBuf) -> Self {
-        loc.clone()
-    }
-}
-
-impl From<&Locale> for LocaleBuf {
-    fn from(loc: &Locale) -> Self {
-        loc.to_owned()
-    }
-}
-
-impl FromStr for LocaleBuf {
-    type Err = anyhow::Error;
+impl FromStr for Locale {
+    type Err = ParserError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(icu::parse(s)?)
+        Ok(Self(s.parse()?))
     }
 }
 
-impl TryFrom<String> for LocaleBuf {
-    type Error = anyhow::Error;
+#[derive(Debug, Error)]
+#[error("{0}")]
+#[doc(hidden)]
+pub struct ParserError(icu_locid::ParserError);
 
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        Ok(icu::parse(&value)?)
-    }
-}
-
-impl Display for LocaleBuf {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.as_ref().fmt(f)
-    }
-}
-
-impl From<LocaleBuf> for String {
-    fn from(loc: LocaleBuf) -> Self {
-        loc.0.to_str().map(|s| s.to_string()).unwrap_or_default()
+impl From<icu_locid::ParserError> for ParserError {
+    fn from(err: icu_locid::ParserError) -> Self {
+        Self(err)
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::LocaleBuf;
+    use crate::Locale;
 
     #[test]
     fn parse() {
-        assert_eq!(
-            "zh_Hans".parse::<LocaleBuf>().unwrap().to_string(),
-            "zh_Hans"
-        );
+        assert_eq!("zh-Hans".parse::<Locale>().unwrap().to_string(), "zh-Hans");
     }
 
     #[test]
     fn accept() {
-        let current = "zh_CN".parse::<LocaleBuf>().unwrap();
+        let current = "zh-CN".parse::<Locale>().unwrap();
         let accepts = [
-            "en".parse::<LocaleBuf>().unwrap(),
+            "en".parse::<Locale>().unwrap(),
             "ja".parse().unwrap(),
-            "zh_Hans".parse().unwrap(),
-            "zh_Hant".parse().unwrap(),
+            "zh-Hans".parse().unwrap(),
+            "zh-Hant".parse().unwrap(),
         ];
-        assert_eq!(
-            current.choose_from(&accepts).unwrap().unwrap().to_string(),
-            "zh_Hans"
-        );
+        assert_eq!(current.choose_from(accepts).unwrap().to_string(), "zh-Hans");
     }
 }

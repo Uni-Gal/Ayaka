@@ -169,10 +169,10 @@ async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
 }
 
 #[command]
-fn choose_locale(locales: Vec<LocaleBuf>) -> CommandResult<Option<LocaleBuf>> {
+fn choose_locale(locales: Vec<Locale>) -> CommandResult<Option<Locale>> {
     let current = Locale::current();
     info!("Choose {} from {:?}", current, locales);
-    Ok(current.choose_from(&locales)?)
+    Ok(current.choose_from(locales))
 }
 
 #[derive(Default)]
@@ -223,7 +223,7 @@ async fn info(storage: State<'_, Storage>) -> CommandResult<Option<GameInfo>> {
 }
 
 #[command]
-async fn start_new(locale: LocaleBuf, storage: State<'_, Storage>) -> CommandResult<()> {
+async fn start_new(locale: Locale, storage: State<'_, Storage>) -> CommandResult<()> {
     if let Some(ctx) = storage.context.lock().await.as_mut() {
         ctx.init_new();
         info!("Init new context with locale {}.", locale);
@@ -235,7 +235,7 @@ async fn start_new(locale: LocaleBuf, storage: State<'_, Storage>) -> CommandRes
 
 #[command]
 async fn start_record(
-    locale: LocaleBuf,
+    locale: Locale,
     index: usize,
     storage: State<'_, Storage>,
 ) -> CommandResult<()> {

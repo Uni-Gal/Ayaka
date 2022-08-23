@@ -2,7 +2,7 @@ use clap::Parser;
 use gal_runtime::{
     anyhow::{Ok, Result},
     log::LevelFilter,
-    Context, FrontendType, LocaleBuf,
+    Context, FrontendType, Locale,
 };
 use std::ffi::OsString;
 use tokio::io::AsyncWriteExt;
@@ -14,7 +14,7 @@ pub struct Options {
     #[clap(short, long)]
     output: OsString,
     #[clap(short, long)]
-    locale: Option<LocaleBuf>,
+    locale: Option<Locale>,
 }
 
 #[tokio::main(flavor = "current_thread")]

@@ -151,7 +151,7 @@ impl Context {
     }
 
     /// Set the current locale.
-    pub fn set_locale(&mut self, loc: impl Into<LocaleBuf>) {
+    pub fn set_locale(&mut self, loc: impl Into<Locale>) {
         self.settings.lang = loc.into();
     }
 
