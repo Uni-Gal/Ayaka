@@ -65,11 +65,11 @@ jobs:
       rustup target add wasm32-wasi
     displayName: "Install targets"
 
-  - pwsh: make test
-    displayName: "Test"
-
   - pwsh: make plugins
     displayName: "Build plugins"
+
+  - pwsh: make test
+    displayName: "Test"
 
   - pwsh: make release-cross TARGET=$(target)
     displayName: "Build all"
