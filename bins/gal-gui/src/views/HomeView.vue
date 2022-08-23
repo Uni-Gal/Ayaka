@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { Locale } from 'vue-i18n'
-import { conv_src, info, next_run, start_new, locale_native_name, set_locale } from '../interop'
+import { conv_src, info, next_run, start_new } from '../interop'
 </script>
 
 <script lang="ts">

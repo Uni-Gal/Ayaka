@@ -175,12 +175,6 @@ fn choose_locale(locales: Vec<LocaleBuf>) -> CommandResult<Option<LocaleBuf>> {
     Ok(current.choose_from(&locales)?)
 }
 
-#[command]
-fn locale_native_name(loc: LocaleBuf) -> CommandResult<String> {
-    let name = loc.native_name()?;
-    Ok(name)
-}
-
 #[derive(Default)]
 struct Storage {
     ident: String,
@@ -383,7 +377,6 @@ fn main() -> Result<()> {
             save_record_to,
             save_all,
             choose_locale,
-            locale_native_name,
             info,
             start_new,
             start_record,

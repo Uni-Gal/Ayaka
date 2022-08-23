@@ -108,8 +108,8 @@ export function choose_locale(locales: Locale[]): Promise<Locale | undefined> {
     return invoke("choose_locale", { locales: locales })
 }
 
-export function locale_native_name(loc: Locale): Promise<string> {
-    return invoke("locale_native_name", { loc: loc })
+export function locale_native_name(loc: Locale): string {
+    return new Intl.DisplayNames(loc, { type: "language" }).of(loc) ?? ""
 }
 
 export async function info(): Promise<GameInfo> {

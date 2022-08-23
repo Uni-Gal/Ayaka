@@ -13,8 +13,8 @@ export default {
         }
     },
     async created() {
-        this.$i18n.availableLocales.forEach(async (locale) => {
-            this.locale_names.set(locale, await locale_native_name(locale))
+        this.$i18n.availableLocales.forEach(locale => {
+            this.locale_names.set(locale, locale_native_name(locale))
         })
     },
     methods: {
