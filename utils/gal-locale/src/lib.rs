@@ -103,13 +103,25 @@ mod test {
 
     #[test]
     fn accept() {
-        let current = "zh-CN".parse::<Locale>().unwrap();
         let accepts = [
             "en".parse::<Locale>().unwrap(),
             "ja".parse().unwrap(),
             "zh-Hans".parse().unwrap(),
             "zh-Hant".parse().unwrap(),
         ];
-        assert_eq!(current.choose_from(accepts).unwrap().to_string(), "zh-Hans");
+        assert_eq!(
+            "zh_CN"
+                .parse::<Locale>()
+                .unwrap()
+                .choose_from(accepts.clone()),
+            Some("zh_Hans".parse::<Locale>().unwrap())
+        );
+        assert_eq!(
+            "zh_TW"
+                .parse::<Locale>()
+                .unwrap()
+                .choose_from(accepts.clone()),
+            Some("zh_Hant".parse::<Locale>().unwrap())
+        );
     }
 }

@@ -1,7 +1,6 @@
 .PHONY: test clean update doc serve-book
 test: plugins
 	cd utils && $(MAKE) test
-	cd book && $(MAKE) test
 clean:
 	cd bins && $(MAKE) clean
 	cd utils && $(MAKE) clean
