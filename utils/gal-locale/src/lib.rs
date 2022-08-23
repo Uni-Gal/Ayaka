@@ -1,8 +1,6 @@
 //! The internal locale lib.
 //!
-//! This crate provides the [`Locale`] and [`Locale`] types.
-//! They are internally a null-terminated string,
-//! and use icu4c to parse and choose.
+//! This crate provides the [`Locale`] type.
 
 #![warn(missing_docs)]
 #![feature(once_cell)]
