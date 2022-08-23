@@ -22,4 +22,4 @@ pin-project = "1.0"
 dirs = "4.0"
 
 [dev-dependencies]
-tokio-test = "0.4"
+tokio = { version = "1", features = ["parking_lot", "rt"] }

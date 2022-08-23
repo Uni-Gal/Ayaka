@@ -271,24 +271,28 @@ impl Callable for Text {
 #[cfg(test)]
 mod test {
     use crate::{plugin::Runtime, script::*};
-    use std::sync::{LazyLock, Mutex};
+    use tokio::sync::OnceCell;
 
-    static RUNTIME: LazyLock<Mutex<Runtime>> = LazyLock::new(|| {
-        Mutex::new(tokio_test::block_on(async {
-            let runtime = Runtime::load("../../examples/plugins", env!("CARGO_MANIFEST_DIR"), &[]);
-            runtime.await.unwrap()
-        }))
-    });
+    static RUNTIME: OnceCell<Runtime> = OnceCell::const_new();
 
-    fn with_ctx(f: impl FnOnce(&mut VarTable)) {
-        let runtime = RUNTIME.lock().unwrap();
+    async fn with_ctx(f: impl FnOnce(&mut VarTable)) {
+        let runtime = RUNTIME
+            .get_or_init(|| async {
+                let runtime = Runtime::load(
+                    "../../examples/plugins",
+                    env!("CARGO_MANIFEST_DIR"),
+                    &["format"],
+                );
+                runtime.await.unwrap()
+            })
+            .await;
         let mut locals = VarMap::default();
-        let mut ctx = VarTable::new(&runtime, Fallback::new(None, None), &mut locals);
+        let mut ctx = VarTable::new(runtime, Fallback::new(None, None), &mut locals);
         f(&mut ctx);
     }
 
-    #[test]
-    fn vars() {
+    #[tokio::test]
+    async fn vars() {
         with_ctx(|ctx| {
             assert_eq!(
                 ProgramParser::new()
@@ -329,11 +333,12 @@ mod test {
                 ProgramParser::new().parse("$a").ok().call(ctx),
                 RawValue::Num(1)
             );
-        });
+        })
+        .await;
     }
 
-    #[test]
-    fn if_test() {
+    #[tokio::test]
+    async fn if_test() {
         with_ctx(|ctx| {
             assert_eq!(
                 ProgramParser::new()
@@ -359,11 +364,12 @@ mod test {
                     .get_str(),
                 "sodayo"
             );
-        });
+        })
+        .await;
     }
 
-    #[test]
-    fn format() {
+    #[tokio::test]
+    async fn format() {
         with_ctx(|ctx| {
             assert_eq!(
                 ProgramParser::new()
@@ -378,5 +384,6 @@ mod test {
                 "Hello 114514!"
             )
         })
+        .await;
     }
 }

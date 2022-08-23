@@ -186,7 +186,7 @@ impl Runtime {
     pub fn load<'a>(
         dir: impl AsRef<Path> + 'a,
         rel_to: impl AsRef<Path> + 'a,
-        names: &'a [String],
+        names: &'a [impl AsRef<str>],
     ) -> ProgressFuture<impl Future<Output = Result<Self>> + 'a, LoadStatus> {
         let path = rel_to.as_ref().join(dir);
         ProgressFuture::new(async move |tx| {
@@ -217,9 +217,9 @@ impl Runtime {
                 }
             } else {
                 for name in names {
-                    let p = path.join(&name).with_extension("wasm");
+                    let p = path.join(name.as_ref()).with_extension("wasm");
                     if p.exists() {
-                        paths.push((name.clone(), p));
+                        paths.push((name.as_ref().to_string(), p));
                     }
                 }
             }
