@@ -8,12 +8,11 @@
 
 mod matcher;
 
-use icu_locid::LanguageIdentifier;
+use icu_locid::{LanguageIdentifier, ParserError};
 use matcher::LanguageMatcher;
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr, sync::LazyLock};
 use sys_locale::get_locale;
-use thiserror::Error;
 
 static MATCHER: LazyLock<LanguageMatcher> = LazyLock::new(|| LanguageMatcher::new());
 
@@ -79,17 +78,6 @@ impl FromStr for Locale {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(s.parse()?))
-    }
-}
-
-#[derive(Debug, Error)]
-#[error("{0}")]
-#[doc(hidden)]
-pub struct ParserError(icu_locid::ParserError);
-
-impl From<icu_locid::ParserError> for ParserError {
-    fn from(err: icu_locid::ParserError) -> Self {
-        Self(err)
     }
 }
 
