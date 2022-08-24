@@ -17,13 +17,13 @@ use sys_locale::get_locale;
 static MATCHER: LazyLock<LanguageMatcher> = LazyLock::new(|| LanguageMatcher::new());
 
 /// Representation of a borrowed [`Locale`].
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[repr(transparent)]
 pub struct Locale(pub LanguageIdentifier);
 
 impl Locale {
     /// Get the current locale of the system.
-    /// Internally it calles `uloc_getDefault`.
+    /// Internally it calles [`sys_locale::get_locale`].
     ///
     /// ```
     /// # use gal_locale::Locale;
@@ -32,11 +32,10 @@ impl Locale {
     pub fn current() -> Self {
         get_locale()
             .and_then(|loc| loc.parse().ok())
-            .unwrap_or_else(|| locale!("en"))
+            .unwrap_or_default()
     }
 
     /// Choose the best match from the provided locales.
-    /// Internally it calls `uloc_acceptLanguage`.
     ///
     /// Returns [`None`] if it cannot choose a best match.
     ///
@@ -58,12 +57,6 @@ impl Locale {
         MATCHER
             .matches(self.0.clone(), locales.into_iter().map(|loc| loc.0))
             .map(|(lang, _)| Self(lang))
-    }
-}
-
-impl Default for Locale {
-    fn default() -> Self {
-        locale!("en")
     }
 }
 
