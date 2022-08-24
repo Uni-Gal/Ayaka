@@ -16,7 +16,7 @@ use sys_locale::get_locale;
 
 static MATCHER: LazyLock<LanguageMatcher> = LazyLock::new(|| LanguageMatcher::new());
 
-/// Representation of a borrowed [`Locale`].
+/// Representation of a language identifier     .
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[repr(transparent)]
 pub struct Locale(pub LanguageIdentifier);
@@ -40,17 +40,17 @@ impl Locale {
     /// Returns [`None`] if it cannot choose a best match.
     ///
     /// ```
-    /// # use gal_locale::Locale;
-    /// let current = "zh-CN".parse::<Locale>().unwrap();
+    /// # use gal_locale::locale;
+    /// let current = locale!("zh-CN");
     /// let accepts = [
-    ///     "en".parse::<Locale>().unwrap(),
-    ///     "ja".parse().unwrap(),
-    ///     "zh-Hans".parse().unwrap(),
-    ///     "zh-Hant".parse().unwrap(),
+    ///     locale!("en"),
+    ///     locale!("ja"),
+    ///     locale!("zh-Hans"),
+    ///     locale!("zh-Hant"),
     /// ];
     /// assert_eq!(
-    ///     current.choose_from(accepts).unwrap().to_string(),
-    ///     "zh-Hans"
+    ///     current.choose_from(accepts),
+    ///     Some(locale!("zh-Hans")),
     /// );
     /// ```
     pub fn choose_from(&self, locales: impl IntoIterator<Item = Self>) -> Option<Self> {
