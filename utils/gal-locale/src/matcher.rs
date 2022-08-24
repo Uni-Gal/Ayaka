@@ -4,15 +4,19 @@ use icu_provider_blob::StaticDataProvider;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 
+trait Rule<T> {
+    fn matches(self, tag: T, vars: &Variables) -> bool;
+}
+
 #[derive(Debug, PartialEq)]
-enum MatchTag {
+enum SubTagRule {
     Str(String),
     Var(String),
     VarExclude(String),
     All,
 }
 
-impl From<&'_ str> for MatchTag {
+impl From<&'_ str> for SubTagRule {
     fn from(s: &'_ str) -> Self {
         if s == "*" {
             Self::All
@@ -26,20 +30,21 @@ impl From<&'_ str> for MatchTag {
     }
 }
 
-impl MatchTag {
-    pub fn matches(&self, tag: &str, vars: &Variables) -> bool {
+impl Rule<&'_ str> for &'_ SubTagRule {
+    fn matches(self, tag: &str, vars: &Variables) -> bool {
         match self {
-            Self::Str(s) => s == tag,
-            Self::Var(key) => vars[key].contains(tag),
-            Self::VarExclude(key) => !vars[key].contains(tag),
-            Self::All => true,
+            SubTagRule::Str(s) => s == tag,
+            SubTagRule::Var(key) => vars[key].contains(tag),
+            SubTagRule::VarExclude(key) => !vars[key].contains(tag),
+            SubTagRule::All => true,
         }
     }
+}
 
-    pub fn option_matches(s: Option<&Self>, tag: Option<&str>, vars: &Variables) -> bool {
-        match (s, tag) {
-            (None, None) => true,
-            (Some(Self::All), _) => true,
+impl Rule<Option<&'_ str>> for Option<&'_ SubTagRule> {
+    fn matches(self, tag: Option<&str>, vars: &Variables) -> bool {
+        match (self, tag) {
+            (None, None) | (Some(SubTagRule::All), _) => true,
             (Some(s), Some(tag)) => s.matches(tag, vars),
             _ => false,
         }
@@ -48,13 +53,13 @@ impl MatchTag {
 
 #[derive(Debug, PartialEq, Deserialize)]
 #[serde(from = "String")]
-struct MatchLanguage {
-    pub language: MatchTag,
-    pub script: Option<MatchTag>,
-    pub region: Option<MatchTag>,
+struct LanguageIdentifierRule {
+    pub language: SubTagRule,
+    pub script: Option<SubTagRule>,
+    pub region: Option<SubTagRule>,
 }
 
-impl From<&'_ str> for MatchLanguage {
+impl From<&'_ str> for LanguageIdentifierRule {
     fn from(s: &'_ str) -> Self {
         let mut parts = s.split('_');
         let language = parts.next().unwrap().into();
@@ -68,25 +73,23 @@ impl From<&'_ str> for MatchLanguage {
     }
 }
 
-impl From<String> for MatchLanguage {
+impl From<String> for LanguageIdentifierRule {
     fn from(s: String) -> Self {
         s.as_str().into()
     }
 }
 
-impl MatchLanguage {
-    pub fn matches(&self, lang: &LanguageIdentifier, vars: &Variables) -> bool {
+impl Rule<&'_ LanguageIdentifier> for &'_ LanguageIdentifierRule {
+    fn matches(self, lang: &LanguageIdentifier, vars: &Variables) -> bool {
         self.language.matches(lang.language.as_str(), vars)
-            && MatchTag::option_matches(
-                self.script.as_ref(),
-                lang.script.as_ref().map(|s| s.as_str()),
-                vars,
-            )
-            && MatchTag::option_matches(
-                self.region.as_ref(),
-                lang.region.as_ref().map(|s| s.as_str()),
-                vars,
-            )
+            && self
+                .script
+                .as_ref()
+                .matches(lang.script.as_ref().map(|s| s.as_str()), vars)
+            && self
+                .region
+                .as_ref()
+                .matches(lang.region.as_ref().map(|s| s.as_str()), vars)
     }
 }
 
@@ -111,8 +114,8 @@ struct MatchVariable {
 
 #[derive(Debug, Deserialize, PartialEq)]
 struct LanguageMatch {
-    pub desired: MatchLanguage,
-    pub supported: MatchLanguage,
+    pub desired: LanguageIdentifierRule,
+    pub supported: LanguageIdentifierRule,
     pub distance: u16,
     #[serde(default)]
     pub oneway: bool,
@@ -127,7 +130,7 @@ struct LanguageMatches {
 #[derive(Debug, Deserialize, PartialEq)]
 struct LanguageMatching {
     #[serde(rename = "$value")]
-    pub matches: LanguageMatches,
+    pub language_matches: LanguageMatches,
 }
 
 #[derive(Debug, Deserialize, PartialEq)]
@@ -143,7 +146,7 @@ const LANGUAGE_INFO: &str = include_str!(concat!(
 const CLDR_BIN: &[u8] = include_bytes!(concat!(env!("CARGO_MANIFEST_DIR"), "/data/cldr.bin"));
 
 pub struct LanguageMatcher {
-    paradiam: Vec<LanguageIdentifier>,
+    paradiam: HashSet<LanguageIdentifier>,
     vars: Variables,
     rules: Vec<LanguageMatch>,
     expander: LocaleExpander,
@@ -153,18 +156,15 @@ type Variables = HashMap<String, HashSet<String>>;
 
 impl From<SupplementalData> for LanguageMatcher {
     fn from(data: SupplementalData) -> Self {
-        let mut paradiam = vec![];
+        let mut paradiam = HashSet::new();
         let mut vars = HashMap::new();
         let mut rules = vec![];
-        let data = data.language_matching.matches.matches;
+        let data = data.language_matching.language_matches.matches;
         for item in data {
             match item {
                 LanguageMatchItem::ParadigmLocales(ParadigmLocales { locales }) => {
-                    let mut locales = locales
-                        .split(' ')
-                        .map(|s| s.parse().unwrap())
-                        .collect::<Vec<_>>();
-                    paradiam.append(&mut locales);
+                    let locales = locales.split(' ').map(|s| s.parse().unwrap());
+                    paradiam.extend(locales)
                 }
                 LanguageMatchItem::MatchVariable(MatchVariable { id, value }) => {
                     assert!(id.starts_with('$'));
@@ -247,9 +247,8 @@ impl LanguageMatcher {
             }
             if matches {
                 let mut distance = rule.distance * 10;
-                match (self.is_paradiam(desired), self.is_paradiam(supported)) {
-                    (true, false) | (false, true) => distance -= 1,
-                    _ => {}
+                if self.is_paradiam(desired) ^ self.is_paradiam(supported) {
+                    distance -= 1
                 }
                 return distance;
             }
@@ -258,6 +257,6 @@ impl LanguageMatcher {
     }
 
     fn is_paradiam(&self, lang: &LanguageIdentifier) -> bool {
-        self.paradiam.iter().find(|p| p == &lang).is_some()
+        self.paradiam.contains(lang)
     }
 }
