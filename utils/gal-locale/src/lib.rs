@@ -20,7 +20,7 @@ static MATCHER: LazyLock<LanguageMatcher> = LazyLock::new(|| LanguageMatcher::ne
 /// Representation of a borrowed [`Locale`].
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[repr(transparent)]
-pub struct Locale(LanguageIdentifier);
+pub struct Locale(pub LanguageIdentifier);
 
 impl Locale {
     /// Get the current locale of the system.
@@ -33,7 +33,7 @@ impl Locale {
     pub fn current() -> Self {
         get_locale()
             .and_then(|loc| loc.parse().ok())
-            .unwrap_or_else(|| "en".parse().unwrap())
+            .unwrap_or_else(|| locale!("en"))
     }
 
     /// Choose the best match from the provided locales.
@@ -64,7 +64,7 @@ impl Locale {
 
 impl Default for Locale {
     fn default() -> Self {
-        "en".parse().unwrap()
+        locale!("en")
     }
 }
 
@@ -93,36 +93,49 @@ impl From<icu_locid::ParserError> for ParserError {
     }
 }
 
+#[doc(hidden)]
+pub use icu_locid::langid;
+
+/// A macro allowing for compile-time construction of valid [`Locale`].
+/// See [`icu_locid::langid!`].
+///
+/// ```
+/// # use gal_locale::{locale, Locale};
+/// const ZH_CN: Locale = locale!("zh_CN");
+/// let zh_cn: Locale = "zh_CN".parse().unwrap();
+/// assert_eq!(ZH_CN, zh_cn);
+/// ```
+#[macro_export]
+macro_rules! locale {
+    ($langid:literal) => {
+        $crate::Locale($crate::langid!($langid))
+    };
+}
+
 #[cfg(test)]
 mod test {
-    use crate::Locale;
+    use crate::locale;
 
     #[test]
     fn parse() {
-        assert_eq!("zh-Hans".parse::<Locale>().unwrap().to_string(), "zh-Hans");
+        assert_eq!(locale!("zh-Hans").to_string(), "zh-Hans");
     }
 
     #[test]
     fn accept() {
         let accepts = [
-            "en".parse::<Locale>().unwrap(),
-            "ja".parse().unwrap(),
-            "zh-Hans".parse().unwrap(),
-            "zh-Hant".parse().unwrap(),
+            locale!("en"),
+            locale!("ja"),
+            locale!("zh-Hans"),
+            locale!("zh-Hant"),
         ];
         assert_eq!(
-            "zh_CN"
-                .parse::<Locale>()
-                .unwrap()
-                .choose_from(accepts.clone()),
-            Some("zh_Hans".parse::<Locale>().unwrap())
+            locale!("zh-CN").choose_from(accepts.clone()),
+            Some(locale!("zh-Hans"))
         );
         assert_eq!(
-            "zh_TW"
-                .parse::<Locale>()
-                .unwrap()
-                .choose_from(accepts.clone()),
-            Some("zh_Hant".parse::<Locale>().unwrap())
+            locale!("zh-TW").choose_from(accepts.clone()),
+            Some(locale!("zh-Hant"))
         );
     }
 }
