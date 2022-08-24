@@ -198,12 +198,17 @@ impl LanguageMatcher {
 
     pub fn matches(
         &self,
-        desired: LanguageIdentifier,
+        mut desired: LanguageIdentifier,
         supported: impl IntoIterator<Item = LanguageIdentifier>,
     ) -> Option<(LanguageIdentifier, u16)> {
+        self.expander.maximize(&mut desired);
         supported
             .into_iter()
-            .map(|s| (s.clone(), self.distance(desired.clone(), s)))
+            .map(|s| {
+                let mut max_s = s.clone();
+                self.expander.maximize(&mut max_s);
+                (s, self.distance(desired.clone(), max_s))
+            })
             .min_by_key(|(_, dis)| *dis)
             .filter(|(_, dis)| *dis < 1000)
     }
@@ -215,29 +220,41 @@ impl LanguageMatcher {
     ) -> u16 {
         self.expander.maximize(&mut desired);
         self.expander.maximize(&mut supported);
+        self.distance_impl(desired, supported)
+    }
+
+    fn distance_impl(
+        &self,
+        mut desired: LanguageIdentifier,
+        mut supported: LanguageIdentifier,
+    ) -> u16 {
+        debug_assert!(desired.region.is_some());
+        debug_assert!(desired.script.is_some());
+        debug_assert!(supported.region.is_some());
+        debug_assert!(supported.script.is_some());
 
         let mut distance = 0;
 
         if desired.region != supported.region {
-            distance += self.distance_impl(&desired, &supported);
+            distance += self.distance_match(&desired, &supported);
         }
         desired.region = None;
         supported.region = None;
 
         if desired.script != supported.script {
-            distance += self.distance_impl(&desired, &supported);
+            distance += self.distance_match(&desired, &supported);
         }
         desired.script = None;
         supported.script = None;
 
         if desired.language != supported.language {
-            distance += self.distance_impl(&desired, &supported);
+            distance += self.distance_match(&desired, &supported);
         }
 
         distance
     }
 
-    fn distance_impl(&self, desired: &LanguageIdentifier, supported: &LanguageIdentifier) -> u16 {
+    fn distance_match(&self, desired: &LanguageIdentifier, supported: &LanguageIdentifier) -> u16 {
         for rule in &self.rules {
             let mut matches = rule.desired.matches(desired, &self.vars)
                 && rule.supported.matches(supported, &self.vars);
@@ -258,5 +275,21 @@ impl LanguageMatcher {
 
     fn is_paradiam(&self, lang: &LanguageIdentifier) -> bool {
         self.paradiam.contains(lang)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::LanguageMatcher;
+    use icu_locid::langid;
+
+    #[test]
+    fn distance() {
+        let matcher = LanguageMatcher::new();
+
+        assert_eq!(matcher.distance(langid!("zh-CN"), langid!("zh-Hans")), 0);
+        assert_eq!(matcher.distance(langid!("zh-TW"), langid!("zh-Hant")), 0);
+        assert_eq!(matcher.distance(langid!("zh-HK"), langid!("zh-MO")), 40);
+        assert_eq!(matcher.distance(langid!("zh-HK"), langid!("zh-Hant")), 50);
     }
 }

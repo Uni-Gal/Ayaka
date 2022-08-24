@@ -3,6 +3,7 @@
 //! This crate provides the [`Locale`] type.
 
 #![warn(missing_docs)]
+#![deny(unsafe_code)]
 #![feature(once_cell)]
 
 mod matcher;
