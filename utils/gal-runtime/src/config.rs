@@ -1,5 +1,5 @@
+pub use fallback::Fallback;
 pub use gal_bindings_types::{Action, Switch};
-pub use gal_fallback::Fallback;
 
 use crate::*;
 use gal_script::log::debug;

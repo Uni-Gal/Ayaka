@@ -1,7 +1,7 @@
 //! The script interpreter.
 
 use crate::{plugin::Runtime, *};
-use gal_fallback::Fallback;
+use fallback::Fallback;
 use gal_script::*;
 use log::{error, warn};
 

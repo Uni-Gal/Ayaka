@@ -26,7 +26,7 @@ impl Locale {
     /// Internally it calles [`sys_locale::get_locale`].
     ///
     /// ```
-    /// # use gal_locale::Locale;
+    /// # use locale::Locale;
     /// println!("Current locale: {}", Locale::current());
     /// ```
     pub fn current() -> Self {
@@ -40,7 +40,7 @@ impl Locale {
     /// Returns [`None`] if it cannot choose a best match.
     ///
     /// ```
-    /// # use gal_locale::locale;
+    /// # use locale::locale;
     /// let current = locale!("zh-CN");
     /// let accepts = [
     ///     locale!("en"),
@@ -81,7 +81,7 @@ pub use icu_locid::langid;
 /// See [`icu_locid::langid!`].
 ///
 /// ```
-/// # use gal_locale::{locale, Locale};
+/// # use locale::{locale, Locale};
 /// const ZH_CN: Locale = locale!("zh_CN");
 /// let zh_cn: Locale = "zh_CN".parse().unwrap();
 /// assert_eq!(ZH_CN, zh_cn);

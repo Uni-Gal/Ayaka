@@ -3,7 +3,7 @@
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
 
-use gal_fallback::{FallbackSpec, IsEmpty2};
+use fallback::{FallbackSpec, IsEmpty2};
 use gal_script::{Program, RawValue};
 use serde::{Deserialize, Serialize};
 use std::{

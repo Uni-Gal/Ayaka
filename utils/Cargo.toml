@@ -1,7 +1,7 @@
 [workspace]
 members = [
-    "gal-fallback",
-    "gal-locale",
+    "fallback",
+    "locale",
     "gal-primitive",
     "gal-runtime",
     "gal-script",

@@ -1,5 +1,5 @@
 [package]
-name = "gal-locale"
+name = "locale"
 version = "0.1.0"
 edition = "2021"
 

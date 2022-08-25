@@ -3,7 +3,6 @@ pub use gal_bindings_types::VarMap;
 use crate::*;
 use anyhow::{anyhow, Result};
 use dirs::{config_dir, data_local_dir};
-use gal_locale::Locale;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
     collections::HashMap,

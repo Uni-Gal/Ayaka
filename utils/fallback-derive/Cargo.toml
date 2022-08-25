@@ -1,5 +1,5 @@
 [package]
-name = "gal-fallback-derive"
+name = "fallback-derive"
 version = "0.1.0"
 authors = ["Berrysoft <Strawberry_Str@hotmail.com>"]
 edition = "2021"

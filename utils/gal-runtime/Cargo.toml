@@ -5,9 +5,9 @@ edition = "2021"
 
 [dependencies]
 gal-bindings-types = { path = "../gal-bindings-types" }
-gal-fallback = { path = "../gal-fallback" }
 gal-script = { path = "../gal-script" }
-gal-locale = { path = "../gal-locale" }
+fallback = { path = "../fallback" }
+locale = { path = "../locale" }
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 serde_json = "1.0"

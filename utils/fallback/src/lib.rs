@@ -11,7 +11,7 @@
 /// Basically, you provides a function returns [`Option`],
 /// and [`Fallback`] handles the fallback.
 /// ```
-/// # use gal_fallback::Fallback;
+/// # use fallback::Fallback;
 /// let data = Some("hello");
 /// let base_data = Some("123");
 /// let fallback = Fallback::new(data, base_data);
@@ -20,7 +20,7 @@
 /// ```
 /// And you can map the [`Fallback`]:
 /// ```
-/// # use gal_fallback::Fallback;
+/// # use fallback::Fallback;
 /// let data = Some(123);
 /// let base_data = Some(123456);
 /// let fallback = Fallback::new(data, base_data);
@@ -156,7 +156,7 @@ impl<T> IntoIterator for Fallback<Vec<T>> {
 ///
 /// The code
 /// ```
-/// # use gal_fallback::FallbackSpec;
+/// # use fallback::FallbackSpec;
 /// #[derive(FallbackSpec)]
 /// struct Foo {
 ///     data1: i32,
@@ -165,7 +165,7 @@ impl<T> IntoIterator for Fallback<Vec<T>> {
 /// ```
 /// is the same as
 /// ```
-/// # use gal_fallback::*;
+/// # use fallback::*;
 /// struct Foo {
 ///     data1: i32,
 ///     data2: String,
@@ -212,7 +212,7 @@ impl<T: FallbackSpec> Fallback<T> {
 
 use std::collections::HashMap;
 
-pub use gal_fallback_derive::FallbackSpec;
+pub use fallback_derive::FallbackSpec;
 
 #[cfg(test)]
 mod test {

@@ -22,7 +22,7 @@ pub fn derive_fallback_spec(input: TokenStream) -> TokenStream {
                             let mut field = field.clone();
                             let ty = field.ty.clone();
                             field.ty = Type::parse
-                                .parse2(quote! {::gal_fallback::Fallback<#ty>})
+                                .parse2(quote! {::fallback::Fallback<#ty>})
                                 .unwrap();
                             field
                         })
@@ -56,7 +56,7 @@ pub fn derive_fallback_spec(input: TokenStream) -> TokenStream {
                         .iter()
                         .map(|field| {
                             parse_str::<FieldValue>(&format!(
-                                "{0}: ::gal_fallback::Fallback::new({0}, base_{0})",
+                                "{0}: ::fallback::Fallback::new({0}, base_{0})",
                                 field.ident.clone().unwrap()
                             ))
                             .expect("Parse field value failed")
@@ -87,8 +87,8 @@ pub fn derive_fallback_spec(input: TokenStream) -> TokenStream {
             type SpecType = #fallback_struct_name;
         }
 
-        impl From<::gal_fallback::Fallback<#struct_name>> for #fallback_struct_name {
-            fn from(data: ::gal_fallback::Fallback<#struct_name>) -> Self {
+        impl From<::fallback::Fallback<#struct_name>> for #fallback_struct_name {
+            fn from(data: ::fallback::Fallback<#struct_name>) -> Self {
                 let (data, base_data) = data.unzip();
                 let (#(#data_idents ,)*) = match data {
                     Some(data) => (#(#some_exact ,)*),
