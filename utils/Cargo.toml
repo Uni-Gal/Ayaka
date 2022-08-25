@@ -2,6 +2,7 @@
 members = [
     "fallback",
     "locale",
+    "progress-future",
     "gal-primitive",
     "gal-runtime",
     "gal-script",

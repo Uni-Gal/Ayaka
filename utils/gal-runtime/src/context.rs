@@ -2,7 +2,6 @@ pub use gal_bindings_types::{FrontendType, RawContext};
 
 use crate::{
     plugin::{LoadStatus, Runtime},
-    progress_future::ProgressFuture,
     *,
 };
 use anyhow::{anyhow, bail, Result};
@@ -14,7 +13,6 @@ use log::error;
 use script::*;
 use std::{
     collections::HashMap,
-    future::Future,
     path::{Path, PathBuf},
 };
 use tokio_stream::StreamExt;
@@ -55,55 +53,51 @@ pub enum OpenStatus {
 
 impl Context {
     /// Open a config file with frontend type.
-    pub fn open<'a>(
-        path: impl AsRef<Path> + 'a,
-        frontend: FrontendType,
-    ) -> ProgressFuture<impl Future<Output = Result<Self>> + 'a, OpenStatus> {
-        ProgressFuture::new(async move |tx| {
-            tx.send(OpenStatus::LoadProfile)?;
-            let file = tokio::fs::read(&path).await?;
-            let mut game: Game = serde_yaml::from_slice(&file)?;
-            let root_path = path
-                .as_ref()
-                .parent()
-                .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
-            let root_path = std::path::absolute(root_path)?;
-            let runtime = {
-                let runtime = Runtime::load(&game.plugins.dir, &root_path, &game.plugins.modules);
-                tokio::pin!(runtime);
-                while let Some(load_status) = runtime.next().await {
-                    match load_status {
-                        LoadStatus::CreateEngine => tx.send(OpenStatus::CreateRuntime)?,
-                        LoadStatus::LoadPlugin(name, i, len) => {
-                            tx.send(OpenStatus::LoadPlugin(name, i, len))?
-                        }
+    #[progress(OpenStatus, lifetime = "'a")]
+    pub async fn open<'a>(path: impl AsRef<Path> + 'a, frontend: FrontendType) -> Result<Self> {
+        yield OpenStatus::LoadProfile;
+        let file = tokio::fs::read(&path).await?;
+        let mut game: Game = serde_yaml::from_slice(&file)?;
+        let root_path = path
+            .as_ref()
+            .parent()
+            .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
+        let root_path = std::path::absolute(root_path)?;
+        let runtime = {
+            let runtime = Runtime::load(&game.plugins.dir, &root_path, &game.plugins.modules);
+            tokio::pin!(runtime);
+            while let Some(load_status) = runtime.next().await {
+                match load_status {
+                    LoadStatus::CreateEngine => yield OpenStatus::CreateRuntime,
+                    LoadStatus::LoadPlugin(name, i, len) => {
+                        yield OpenStatus::LoadPlugin(name, i, len)
                     }
-                }
-                runtime.await?
-            };
-            for m in &runtime.game_modules {
-                let module = &runtime.modules[m];
-                let ctx = GameProcessContextRef {
-                    title: &game.title,
-                    author: &game.author,
-                    root_path: &root_path,
-                    props: &game.props,
                 };
-                let res = module.process_game(ctx)?;
-                for (key, value) in res.props {
-                    game.props.insert(key, value);
-                }
             }
-            Ok(Self {
-                game,
-                frontend,
-                root_path,
-                runtime,
-                settings: Settings::new(),
-                global_record: GlobalRecord::default(),
-                ctx: RawContext::default(),
-                record: ActionRecord::default(),
-            })
+            runtime.await?
+        };
+        for m in &runtime.game_modules {
+            let module = &runtime.modules[m];
+            let ctx = GameProcessContextRef {
+                title: &game.title,
+                author: &game.author,
+                root_path: &root_path,
+                props: &game.props,
+            };
+            let res = module.process_game(ctx)?;
+            for (key, value) in res.props {
+                game.props.insert(key, value);
+            }
+        }
+        Ok(Self {
+            game,
+            frontend,
+            root_path,
+            runtime,
+            settings: Settings::new(),
+            global_record: GlobalRecord::default(),
+            ctx: RawContext::default(),
+            record: ActionRecord::default(),
         })
     }
 

@@ -3,12 +3,12 @@
 #![allow(unsafe_code)]
 #![allow(clippy::mut_from_ref)]
 
-use crate::{progress_future::ProgressFuture, *};
+use crate::*;
 use anyhow::Result;
 use gal_bindings_types::*;
 use log::warn;
 use serde::{de::DeserializeOwned, Serialize};
-use std::{collections::HashMap, future::Future, path::Path};
+use std::{collections::HashMap, path::Path};
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
 use wasmer::*;
 use wasmer_wasi::*;
@@ -183,79 +183,78 @@ impl Runtime {
     /// The actual load folder will be `rel_to.join(dir)`.
     ///
     /// If `names` is empty, all WASM files will be loaded.
-    pub fn load<'a>(
+    #[progress(LoadStatus, lifetime = "'a")]
+    pub async fn load<'a>(
         dir: impl AsRef<Path> + 'a,
         rel_to: impl AsRef<Path> + 'a,
         names: &'a [impl AsRef<str>],
-    ) -> ProgressFuture<impl Future<Output = Result<Self>> + 'a, LoadStatus> {
+    ) -> Result<Self> {
         let path = rel_to.as_ref().join(dir);
-        ProgressFuture::new(async move |tx| {
-            tx.send(LoadStatus::CreateEngine)?;
-            let store = Store::default();
-            let import_object = Self::imports(&store)?;
-            let mut modules = HashMap::new();
-            let mut action_modules = vec![];
-            let mut text_modules = HashMap::new();
-            let mut game_modules = vec![];
-            let mut paths = vec![];
-            if names.is_empty() {
-                let mut dirs = ReadDirStream::new(tokio::fs::read_dir(path).await?);
-                while let Some(f) = dirs.try_next().await? {
-                    let p = f.path();
-                    if p.extension()
+        yield LoadStatus::CreateEngine;
+        let store = Store::default();
+        let import_object = Self::imports(&store)?;
+        let mut modules = HashMap::new();
+        let mut action_modules = vec![];
+        let mut text_modules = HashMap::new();
+        let mut game_modules = vec![];
+        let mut paths = vec![];
+        if names.is_empty() {
+            let mut dirs = ReadDirStream::new(tokio::fs::read_dir(path).await?);
+            while let Some(f) = dirs.try_next().await? {
+                let p = f.path();
+                if p.extension()
+                    .map(|s| s.to_string_lossy())
+                    .unwrap_or_default()
+                    == "wasm"
+                {
+                    let name = p
+                        .file_stem()
                         .map(|s| s.to_string_lossy())
                         .unwrap_or_default()
-                        == "wasm"
-                    {
-                        let name = p
-                            .file_stem()
-                            .map(|s| s.to_string_lossy())
-                            .unwrap_or_default()
-                            .into_owned();
-                        paths.push((name, p));
-                    }
+                        .into_owned();
+                    paths.push((name, p));
                 }
-            } else {
-                for name in names {
-                    let p = path.join(name.as_ref()).with_extension("wasm");
-                    if p.exists() {
-                        paths.push((name.as_ref().to_string(), p));
+            }
+        } else {
+            for name in names {
+                let p = path.join(name.as_ref()).with_extension("wasm");
+                if p.exists() {
+                    paths.push((name.as_ref().to_string(), p));
+                }
+            }
+        }
+        let total_len = paths.len();
+        for (i, (name, p)) in paths.into_iter().enumerate() {
+            yield LoadStatus::LoadPlugin(name.clone(), i, total_len);
+            let buf = tokio::fs::read(&p).await?;
+            let module = Module::from_binary(&store, &buf)?;
+            let runtime = Host::new(&module, &import_object)?;
+            let plugin_type = runtime.plugin_type()?;
+            if plugin_type.contains(PluginType::ACTION) {
+                action_modules.push(name.clone());
+            }
+            if plugin_type.contains(PluginType::TEXT) {
+                let cmds = runtime.text_commands()?;
+                for cmd in cmds.into_iter() {
+                    let res = text_modules.insert(cmd.clone(), name.clone());
+                    if let Some(old_module) = res {
+                        warn!(
+                            "Command `{}` is overrided by \"{}\" over \"{}\"",
+                            cmd, name, old_module
+                        );
                     }
                 }
             }
-            let total_len = paths.len();
-            for (i, (name, p)) in paths.into_iter().enumerate() {
-                tx.send(LoadStatus::LoadPlugin(name.clone(), i, total_len))?;
-                let buf = tokio::fs::read(&p).await?;
-                let module = Module::from_binary(&store, &buf)?;
-                let runtime = Host::new(&module, &import_object)?;
-                let plugin_type = runtime.plugin_type()?;
-                if plugin_type.contains(PluginType::ACTION) {
-                    action_modules.push(name.clone());
-                }
-                if plugin_type.contains(PluginType::TEXT) {
-                    let cmds = runtime.text_commands()?;
-                    for cmd in cmds.into_iter() {
-                        let res = text_modules.insert(cmd.clone(), name.clone());
-                        if let Some(old_module) = res {
-                            warn!(
-                                "Command `{}` is overrided by \"{}\" over \"{}\"",
-                                cmd, name, old_module
-                            );
-                        }
-                    }
-                }
-                if plugin_type.contains(PluginType::GAME) {
-                    game_modules.push(name.clone());
-                }
-                modules.insert(name, runtime);
+            if plugin_type.contains(PluginType::GAME) {
+                game_modules.push(name.clone());
             }
-            Ok(Self {
-                modules,
-                action_modules,
-                text_modules,
-                game_modules,
-            })
+            modules.insert(name, runtime);
+        }
+        Ok(Self {
+            modules,
+            action_modules,
+            text_modules,
+            game_modules,
         })
     }
 }
