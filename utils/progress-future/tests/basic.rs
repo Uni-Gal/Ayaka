@@ -56,7 +56,7 @@ async fn future() {
 async fn timeout() {
     #[progress]
     async fn foo() {
-        let mut timer = interval(Duration::from_secs(1));
+        let mut timer = interval(Duration::from_micros(10));
         timer.tick().await;
         timer.tick().await;
     }

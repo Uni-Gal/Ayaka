@@ -114,4 +114,6 @@ impl VisitMut for AwaitYieldVisitor {
             _ => visit_expr_mut(self, i),
         }
     }
+
+    fn visit_expr_async_mut(&mut self, _i: &mut syn::ExprAsync) {}
 }
