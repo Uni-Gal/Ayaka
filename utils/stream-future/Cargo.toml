@@ -5,10 +5,10 @@ edition = "2021"
 
 [dependencies]
 stream-future-impl = { path = "../stream-future-impl" }
-tokio = "1"
-tokio-stream = "0.1"
+futures-core = "0.3"
 pin-project = "1.0"
 
 [dev-dependencies]
 anyhow = "1.0"
 tokio = { version = "1", features = ["macros", "rt"] }
+tokio-stream = "0.1"

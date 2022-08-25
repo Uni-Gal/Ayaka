@@ -61,7 +61,7 @@
 //! ```
 
 #![no_std]
-#![feature(generators, generator_trait, negative_impls)]
+#![feature(generator_trait)]
 
 use core::{
     future::Future,
@@ -72,8 +72,8 @@ use core::{
 };
 use pin_project::pin_project;
 
+pub use futures_core::Stream;
 pub use stream_future_impl::stream;
-pub use tokio_stream::Stream;
 
 /// See [`core::future::ResumeTy`].
 #[doc(hidden)]
@@ -102,7 +102,7 @@ pub struct GenFuture<P, T: Generator<ResumeTy, Yield = Poll<P>>> {
 }
 
 impl<P, T: Generator<ResumeTy, Yield = Poll<P>>> GenFuture<P, T> {
-    pub fn new(gen: T) -> Self {
+    pub const fn new(gen: T) -> Self {
         Self { gen, ret: None }
     }
 }
