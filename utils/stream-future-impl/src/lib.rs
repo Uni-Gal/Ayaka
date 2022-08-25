@@ -69,27 +69,10 @@ struct AwaitYieldVisitor;
 impl VisitMut for AwaitYieldVisitor {
     fn visit_expr_mut(&mut self, i: &mut Expr) {
         match i {
-            Expr::Yield(expr_yield) => {
-                let attrs = &expr_yield.attrs;
-                let mut inner_expr = expr_yield
-                    .expr
-                    .clone()
-                    .unwrap_or_else(|| Box::new(Expr::parse.parse2(quote!(())).unwrap()));
-                visit_expr_mut(self, &mut inner_expr);
-                *i = Expr::parse
-                    .parse2(quote! {
-                        #(#attrs)*
-                        yield ::core::task::Poll::Ready(
-                            #[allow(unused_parens)]
-                            #inner_expr
-                        )
-                    })
-                    .unwrap();
-            }
             Expr::Await(expr_await) => {
                 let attrs = &expr_await.attrs;
                 let mut inner_expr = expr_await.base.clone();
-                visit_expr_mut(self, &mut inner_expr);
+                self.visit_expr_mut(&mut inner_expr);
                 *i = Expr::parse
                     .parse2(quote! {
                         #(#attrs)*
@@ -113,6 +96,22 @@ impl VisitMut for AwaitYieldVisitor {
             }
             _ => visit_expr_mut(self, i),
         }
+    }
+
+    fn visit_expr_yield_mut(&mut self, i: &mut syn::ExprYield) {
+        let mut inner_expr = i
+            .expr
+            .take()
+            .unwrap_or_else(|| Box::new(Expr::parse.parse2(quote!(())).unwrap()));
+        self.visit_expr_mut(&mut inner_expr);
+        i.expr = Some(Box::new(
+            Expr::parse
+                .parse2(quote!(::core::task::Poll::Ready(
+                    #[allow(unused_parens)]
+                    #inner_expr
+                )))
+                .unwrap(),
+        ));
     }
 
     fn visit_expr_async_mut(&mut self, _i: &mut syn::ExprAsync) {}
