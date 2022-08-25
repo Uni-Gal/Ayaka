@@ -1,13 +1,13 @@
 #![feature(generators)]
 
-use progress_future::*;
 use std::{future::ready, time::Duration};
+use stream_future::*;
 use tokio::time::interval;
 use tokio_stream::StreamExt;
 
 #[tokio::test]
 async fn basic() {
-    #[progress(i32)]
+    #[stream(i32)]
     async fn foo() -> bool {
         yield 0;
         yield 1;
@@ -23,7 +23,7 @@ async fn basic() {
 
 #[tokio::test]
 async fn stream() {
-    #[progress(i32)]
+    #[stream(i32)]
     async fn foo() {
         yield 0;
         yield (ready(1).await);
@@ -37,14 +37,14 @@ async fn stream() {
 
 #[tokio::test]
 async fn future() {
-    #[progress("()")]
+    #[stream("()")]
     async fn foo() -> bool {
         ready(true).await
     }
 
     assert_eq!(foo().await, true);
 
-    #[progress]
+    #[stream]
     async fn bar() -> bool {
         ready(true).await
     }
@@ -54,7 +54,7 @@ async fn future() {
 
 #[tokio::test]
 async fn timeout() {
-    #[progress]
+    #[stream]
     async fn foo() {
         let mut timer = interval(Duration::from_micros(10));
         timer.tick().await;

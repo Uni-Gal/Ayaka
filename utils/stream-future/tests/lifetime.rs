@@ -1,10 +1,10 @@
 #![feature(generators)]
 
-use progress_future::*;
+use stream_future::*;
 
 #[tokio::test]
 async fn lifetime() {
-    #[progress("()", lifetime = "'a")]
+    #[stream("()", lifetime = "'a")]
     async fn foo<'a>(s: &'a str) {
         yield;
         println!("{}", s);

@@ -1,10 +1,10 @@
-//! A [`Future`] with progress yielded.
+//! A [`Future`] with item yielded.
 //!
 //! ```
 //! #![feature(generators)]
 //!
 //! # use anyhow::{Result, Ok};
-//! # use progress_future::progress;
+//! # use stream_future::stream;
 //! #[derive(Debug)]
 //! enum Prog {
 //!     Stage1,
@@ -12,7 +12,7 @@
 //!     End,
 //! }
 //!
-//! #[progress(Prog)]
+//! #[stream(Prog)]
 //! async fn foo() -> Result<i32> {
 //!     yield Prog::Stage1;
 //!     // some works...
@@ -41,13 +41,13 @@
 //! ```
 //! #![feature(generators)]
 //!
-//! # use progress_future::progress;
+//! # use stream_future::stream;
 //! enum Prog {
 //!     Stage1,
 //!     Stage2,
 //! }
 //!
-//! #[progress(Prog, lifetime = "'a")]
+//! #[stream(Prog, lifetime = "'a")]
 //! async fn foo<'a>(s: &'a str) {
 //!     yield Prog::Stage1;
 //!     println!("{}", s);
@@ -72,7 +72,7 @@ use core::{
 };
 use pin_project::pin_project;
 
-pub use progress_future_impl::progress;
+pub use stream_future_impl::stream;
 pub use tokio_stream::Stream;
 
 /// See [`core::future::ResumeTy`].

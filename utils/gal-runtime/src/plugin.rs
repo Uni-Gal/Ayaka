@@ -183,7 +183,7 @@ impl Runtime {
     /// The actual load folder will be `rel_to.join(dir)`.
     ///
     /// If `names` is empty, all WASM files will be loaded.
-    #[progress(LoadStatus, lifetime = "'a")]
+    #[stream(LoadStatus, lifetime = "'a")]
     pub async fn load<'a>(
         dir: impl AsRef<Path> + 'a,
         rel_to: impl AsRef<Path> + 'a,

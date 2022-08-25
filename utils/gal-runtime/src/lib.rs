@@ -24,7 +24,7 @@ pub use config::*;
 pub use context::*;
 pub use gal_script::{log, RawValue};
 pub use locale::*;
-pub use progress_future::*;
 pub use settings::*;
+pub use stream_future::*;
 pub use tokio;
 pub use tokio_stream;

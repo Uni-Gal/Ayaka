@@ -8,7 +8,7 @@ use syn::{
 };
 
 #[proc_macro_attribute]
-pub fn progress(attr: TokenStream, input: TokenStream) -> TokenStream {
+pub fn stream(attr: TokenStream, input: TokenStream) -> TokenStream {
     let attr = parse_macro_input!(attr as AttributeArgs);
     let mut p_type = Type::parse.parse2(quote!(())).unwrap();
     let mut lifetime = Lifetime::parse.parse2(quote!('static)).unwrap();
@@ -44,7 +44,7 @@ pub fn progress(attr: TokenStream, input: TokenStream) -> TokenStream {
     };
     func.sig.output = ReturnType::parse
         .parse2(quote! {
-            -> impl ::core::future::Future<Output = #future_return_type> + ::progress_future::Stream<Item = #p_type> + #lifetime
+            -> impl ::core::future::Future<Output = #future_return_type> + ::stream_future::Stream<Item = #p_type> + #lifetime
         })
         .unwrap();
     let mut old_block = func.block;
@@ -54,7 +54,7 @@ pub fn progress(attr: TokenStream, input: TokenStream) -> TokenStream {
     func.block = Box::new(
         Block::parse
             .parse2(quote! {{
-                ::progress_future::GenFuture::<#p_type, _>::new(static move |__cx: ::progress_future::ResumeTy| {
+                ::stream_future::GenFuture::<#p_type, _>::new(static move |__cx: ::stream_future::ResumeTy| {
                     #old_block
                 })
             }})

@@ -53,7 +53,7 @@ pub enum OpenStatus {
 
 impl Context {
     /// Open a config file with frontend type.
-    #[progress(OpenStatus, lifetime = "'a")]
+    #[stream(OpenStatus, lifetime = "'a")]
     pub async fn open<'a>(path: impl AsRef<Path> + 'a, frontend: FrontendType) -> Result<Self> {
         yield OpenStatus::LoadProfile;
         let file = tokio::fs::read(&path).await?;
