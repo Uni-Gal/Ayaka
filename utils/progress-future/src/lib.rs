@@ -1,3 +1,65 @@
+//! A [`Future`] with progress yielded.
+//!
+//! ```
+//! #![feature(generators)]
+//!
+//! # use anyhow::{Result, Ok};
+//! # use progress_future::progress;
+//! #[derive(Debug)]
+//! enum Prog {
+//!     Stage1,
+//!     Stage2,
+//!     End,
+//! }
+//!
+//! #[progress(Prog)]
+//! async fn foo() -> Result<i32> {
+//!     yield Prog::Stage1;
+//!     // some works...
+//!     yield Prog::Stage2;
+//!     // some other works...
+//!     yield Prog::End;
+//!     Ok(0)
+//! }
+//!
+//! # use tokio_stream::StreamExt;
+//! # #[tokio::main(flavor = "current_thread")]
+//! # async fn main() -> Result<()> {
+//! let bar = foo();
+//! tokio::pin!(bar);
+//! while let Some(prog) = bar.next().await {
+//!     println!("{:?}", prog);
+//! }
+//! let bar = bar.await?;
+//! assert_eq!(bar, 0);
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! If a lifetime is needed, specify it in the attribute:
+//!
+//! ```
+//! #![feature(generators)]
+//!
+//! # use progress_future::progress;
+//! enum Prog {
+//!     Stage1,
+//!     Stage2,
+//! }
+//!
+//! #[progress(Prog, lifetime = "'a")]
+//! async fn foo<'a>(s: &'a str) {
+//!     yield Prog::Stage1;
+//!     println!("{}", s);
+//!     yield Prog::Stage2;
+//! }
+//!
+//! # #[tokio::main(flavor = "current_thread")]
+//! # async fn main() {
+//! foo("Hello world!").await;
+//! # }
+//! ```
+
 #![no_std]
 #![feature(generators, generator_trait, negative_impls)]
 
