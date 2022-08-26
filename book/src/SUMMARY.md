@@ -11,7 +11,6 @@
     - [Script](./config/script.md)
 - [Runtime](./runtime/summary.md)
     - [Run a game](./runtime/run.md)
-    - [Progress future](./runtime/pfuture.md)
 - [Plugin](./plugin/summary.md)
     - [Script plugin](./plugin/script_plugin.md)
     - [Text plugin](./plugin/text_plugin.md)

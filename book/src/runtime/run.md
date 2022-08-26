@@ -18,7 +18,7 @@ while let Some(action) = context.next_run() {
 ```
 
 ## Get the open status
-The `context` is a [`ProgressFuture`](./pfuture.md) object.
+The `context` also implements `Stream`.
 The `OpenStatus` could be iterated before the future awaited.
 ``` rust,ignore
 use gal_runtime::*;
