@@ -7,11 +7,8 @@
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
 #![feature(absolute_path)]
-#![feature(async_closure)]
 #![feature(generators)]
-#![feature(once_cell)]
 #![feature(round_char_boundary)]
-#![feature(trait_alias)]
 
 mod config;
 mod context;
