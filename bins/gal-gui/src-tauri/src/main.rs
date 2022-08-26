@@ -355,11 +355,11 @@ fn main() -> Result<()> {
                     .start()?
             };
             app.manage(log_handle);
-            let window = app.get_window("main").unwrap();
             #[cfg(debug_assertions)]
-            window.open_devtools();
-            #[cfg(not(debug_assertions))]
-            window.center()?;
+            {
+                let window = app.get_window("main").unwrap();
+                window.open_devtools();
+            }
             let matches = app.get_cli_matches()?;
             let config = matches.args["config"]
                 .value

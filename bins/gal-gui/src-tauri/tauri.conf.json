@@ -74,9 +74,10 @@
         "label": "main",
         "fullscreen": false,
         "height": 600,
+        "width": 800,
         "resizable": true,
         "title": "",
-        "width": 800
+        "center": true
       }
     ],
     "cli": {
