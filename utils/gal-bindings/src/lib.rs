@@ -10,12 +10,14 @@ mod logger;
 use serde::{de::DeserializeOwned, Serialize};
 use std::alloc::{self, Layout};
 
+const ABI_ALIGN: usize = 8;
+
 #[no_mangle]
-unsafe extern "C" fn __abi_alloc(align: usize, new_len: usize) -> *mut u8 {
-    if new_len == 0 {
-        return align as *mut u8;
+unsafe extern "C" fn __abi_alloc(len: usize) -> *mut u8 {
+    if len == 0 {
+        return ABI_ALIGN as *mut u8;
     }
-    let layout = Layout::from_size_align_unchecked(new_len, align);
+    let layout = Layout::from_size_align_unchecked(len, ABI_ALIGN);
     let ptr = alloc::alloc(layout);
     if ptr.is_null() {
         alloc::handle_alloc_error(layout);
@@ -24,12 +26,19 @@ unsafe extern "C" fn __abi_alloc(align: usize, new_len: usize) -> *mut u8 {
 }
 
 #[no_mangle]
-unsafe extern "C" fn __abi_free(ptr: *mut u8, len: usize, align: usize) {
+unsafe extern "C" fn __abi_free(ptr: *mut u8, len: usize) {
     if len == 0 {
         return;
     }
-    let layout = Layout::from_size_align_unchecked(len, align);
+    let layout = Layout::from_size_align_unchecked(len, ABI_ALIGN);
     alloc::dealloc(ptr, layout);
+}
+
+unsafe fn __abi_alloc_from(data: &[u8]) -> (*mut u8, usize) {
+    let ptr = __abi_alloc(data.len());
+    let slice = std::slice::from_raw_parts_mut(ptr, data.len());
+    slice.copy_from_slice(data);
+    (slice.as_mut_ptr(), slice.len())
 }
 
 #[doc(hidden)]
@@ -43,16 +52,8 @@ pub unsafe fn __export<Params: DeserializeOwned, Res: Serialize>(
     let data = rmp_serde::from_slice(data).unwrap();
     let res = f.call_once(data);
     let data = rmp_serde::to_vec(&res).unwrap();
-    let data = data.into_boxed_slice();
-    let data = Box::leak(data);
-    let len = data.len();
-    let ptr = data.as_mut_ptr();
+    let (ptr, len) = __abi_alloc_from(&data);
     ((len as u64) << 32) | (ptr as u64)
-}
-
-#[no_mangle]
-unsafe extern "C" fn __export_free(len: usize, data: *mut u8) {
-    let _data = Box::from_raw(std::slice::from_raw_parts_mut(data, len));
 }
 
 pub use gal_bindings_impl::export;

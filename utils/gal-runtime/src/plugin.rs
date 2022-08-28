@@ -16,9 +16,8 @@ use wasmer_wasi::*;
 
 /// An instance of a WASM plugin module.
 pub struct Host {
-    abi_free: NativeFunc<(i32, i32, i32), ()>,
-    abi_alloc: NativeFunc<(i32, i32), i32>,
-    export_free: NativeFunc<(i32, i32), ()>,
+    abi_free: NativeFunc<(i32, i32), ()>,
+    abi_alloc: NativeFunc<i32, i32>,
     instance: Instance,
 }
 
@@ -42,11 +41,9 @@ impl Host {
         let instance = Instance::new(module, resolver)?;
         let abi_free = instance.exports.get_native_function("__abi_free")?;
         let abi_alloc = instance.exports.get_native_function("__abi_alloc")?;
-        let export_free = instance.exports.get_native_function("__export_free")?;
         Ok(Self {
             abi_free,
             abi_alloc,
-            export_free,
             instance,
         })
     }
@@ -67,13 +64,13 @@ impl Host {
 
         let data = rmp_serde::to_vec(&args)?;
 
-        let ptr = self.abi_alloc.call(8, data.len() as i32)?;
-        defer! { self.abi_free.call(ptr, data.len() as i32, 8).unwrap(); }
+        let ptr = self.abi_alloc.call(data.len() as i32)?;
+        defer! { self.abi_free.call(ptr, data.len() as i32).unwrap(); }
         unsafe { mem_slice_mut(memory, ptr, data.len() as i32) }.copy_from_slice(&data);
 
         let res = func.call(data.len() as i32, ptr)?;
         let (len, res) = ((res >> 32) as i32, (res & 0xFFFFFFFF) as i32);
-        defer! { self.export_free.call(len, res).unwrap(); }
+        defer! { self.abi_free.call(res, len).unwrap(); }
 
         let res_data = unsafe { mem_slice(memory, res, len) };
         let res_data = rmp_serde::from_slice(res_data)?;

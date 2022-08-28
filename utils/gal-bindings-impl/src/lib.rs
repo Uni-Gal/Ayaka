@@ -12,6 +12,7 @@ pub fn export(_attr: TokenStream, input: TokenStream) -> TokenStream {
     let input = proc_macro2::TokenStream::from(input);
     let export_func = quote! {
         #[doc(hidden)]
+        #[allow(unsafe_code)]
         #[export_name = #name_str]
         unsafe extern "C" fn #expname(len: usize, data: *const u8) -> u64 {
             ::gal_bindings::__export(len, data, #name)
