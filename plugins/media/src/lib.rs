@@ -27,7 +27,7 @@ fn file(
 ) -> TextProcessResult {
     assert_eq!(args.len(), 1);
     let base_dir = base_dir.as_ref();
-    log::info!(
+    log::debug!(
         "File {:?}, {:?}, {}, {:?}",
         args,
         base_dir.display(),

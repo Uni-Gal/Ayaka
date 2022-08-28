@@ -180,7 +180,7 @@ impl Context {
     /// by the paragraph tag and action index.
     pub fn visited(&self, action: &Action) -> bool {
         if let Some(max_act) = self.global_record.record.get(&action.ctx.cur_para) {
-            log::info!("Test act: {}, max act: {}", action.ctx.cur_act, max_act);
+            log::debug!("Test act: {}, max act: {}", action.ctx.cur_act, max_act);
             *max_act >= action.ctx.cur_act
         } else {
             false
@@ -438,7 +438,7 @@ impl Context {
     pub fn next_back_run(&mut self) -> Option<Action> {
         if let Some(last_action) = self.record.history.pop() {
             self.ctx = last_action.ctx;
-            log::info!(
+            log::debug!(
                 "Back to para {}, act {}",
                 self.ctx.cur_para,
                 self.ctx.cur_act

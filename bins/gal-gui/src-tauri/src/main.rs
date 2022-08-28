@@ -7,7 +7,7 @@ use flexi_logger::{FileSpec, LogSpecification, Logger};
 use gal_runtime::{
     anyhow::{self, anyhow, Result},
     load_records, load_settings,
-    log::{info, warn},
+    log::{debug, info, warn},
     save_records, save_settings, tokio,
     tokio_stream::StreamExt,
     *,
@@ -171,7 +171,7 @@ async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
 #[command]
 fn choose_locale(locales: Vec<Locale>) -> CommandResult<Option<Locale>> {
     let current = Locale::current();
-    info!("Choose {} from {:?}", current, locales);
+    debug!("Choose {} from {:?}", current, locales);
     Ok(current.choose_from(locales))
 }
 
@@ -256,11 +256,11 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
     let mut context = storage.context.lock().await;
     let action = context.as_mut().and_then(|context| context.next_run());
     if let Some(action) = action {
-        info!("Next action: {:?}", action);
+        debug!("Next action: {:?}", action);
         *storage.action.lock().await = Some(action);
         Ok(true)
     } else {
-        info!("No action left.");
+        debug!("No action left.");
         *storage.action.lock().await = None;
         Ok(false)
     }
@@ -271,11 +271,11 @@ async fn next_back_run(storage: State<'_, Storage>) -> CommandResult<bool> {
     let mut context = storage.context.lock().await;
     let action = context.as_mut().and_then(|context| context.next_back_run());
     if let Some(action) = action {
-        info!("Last action: {:?}", action);
+        debug!("Last action: {:?}", action);
         *storage.action.lock().await = Some(action);
         Ok(true)
     } else {
-        info!("No action in the history.");
+        debug!("No action in the history.");
         Ok(false)
     }
 }
@@ -302,7 +302,7 @@ async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<Action
 
 #[command]
 async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue> {
-    info!("Switch {}", i);
+    debug!("Switch {}", i);
     let mut context = storage.context.lock().await;
     let context = context
         .as_mut()
@@ -325,7 +325,7 @@ async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<Action>> {
         .map(|context| context.record.history.clone())
         .unwrap_or_default();
     hs.reverse();
-    info!("Get history {:?}", hs);
+    debug!("Get history {:?}", hs);
     Ok(hs)
 }
 
@@ -337,15 +337,14 @@ fn main() -> Result<()> {
         .plugin(tauri_plugin_localhost::Builder::new(port).build())
         .setup(|app| {
             let ident = app.config().tauri.bundle.identifier.clone();
-            let logspec = LogSpecification::parse("info,wasmer=warn")?;
             let log_handle = if cfg!(debug_assertions) {
-                Logger::with(logspec)
+                Logger::with(LogSpecification::parse("warn,gal=debug")?)
                     .log_to_stdout()
                     .set_palette("b1;3;2;4;6".to_string())
                     .use_utc()
                     .start()?
             } else {
-                Logger::with(logspec)
+                Logger::with(LogSpecification::parse("info,wasmer=warn")?)
                     .log_to_file(
                         FileSpec::default()
                             .directory(app.path_resolver().log_dir().unwrap())

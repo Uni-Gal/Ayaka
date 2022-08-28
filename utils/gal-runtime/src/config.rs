@@ -2,7 +2,6 @@ pub use fallback::Fallback;
 pub use gal_bindings_types::{Action, Switch};
 
 use crate::*;
-use gal_script::log::debug;
 use serde::Deserialize;
 use std::{collections::HashMap, path::PathBuf};
 
@@ -62,12 +61,8 @@ pub struct PluginConfig {
 impl Game {
     fn choose_from_keys<V>(&self, loc: &Locale, map: &HashMap<Locale, V>) -> Locale {
         let keys = map.keys();
-        debug!("Choose \"{}\" from {:?}", loc, keys);
-        let res = loc
-            .choose_from(keys.cloned())
-            .unwrap_or_else(|| self.base_lang.clone());
-        debug!("Chose \"{}\"", res);
-        res
+        loc.choose_from(keys.cloned())
+            .unwrap_or_else(|| self.base_lang.clone())
     }
 
     fn find_para(&self, loc: &Locale, tag: &str) -> Option<&Paragraph> {
