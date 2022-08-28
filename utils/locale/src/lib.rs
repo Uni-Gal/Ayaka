@@ -49,8 +49,8 @@ impl Locale {
     ///     locale!("zh-Hant"),
     /// ];
     /// assert_eq!(
-    ///     current.choose_from(accepts),
-    ///     Some(locale!("zh-Hans")),
+    ///     current.choose_from(&accepts),
+    ///     Some(&locale!("zh-Hans")),
     /// );
     /// ```
     pub fn choose_from<'a>(
