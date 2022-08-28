@@ -7,6 +7,7 @@ use crate::*;
 use anyhow::Result;
 use gal_bindings_types::*;
 use log::warn;
+use scopeguard::defer;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{collections::HashMap, path::Path};
 use tokio_stream::{wrappers::ReadDirStream, StreamExt};
@@ -63,15 +64,19 @@ impl Host {
             .instance
             .exports
             .get_native_function::<(i32, i32), u64>(name)?;
+
         let data = rmp_serde::to_vec(&args)?;
+
         let ptr = self.abi_alloc.call(8, data.len() as i32)?;
+        defer! { self.abi_free.call(ptr, data.len() as i32, 8).unwrap(); }
         unsafe { mem_slice_mut(memory, ptr, data.len() as i32) }.copy_from_slice(&data);
+
         let res = func.call(data.len() as i32, ptr)?;
         let (len, res) = ((res >> 32) as i32, (res & 0xFFFFFFFF) as i32);
+        defer! { self.export_free.call(len, res).unwrap(); }
+
         let res_data = unsafe { mem_slice(memory, res, len) };
         let res_data = rmp_serde::from_slice(res_data)?;
-        self.export_free.call(len, res)?;
-        self.abi_free.call(ptr, data.len() as i32, 8)?;
         Ok(res_data)
     }
 
