@@ -53,10 +53,13 @@ impl Locale {
     ///     Some(locale!("zh-Hans")),
     /// );
     /// ```
-    pub fn choose_from(&self, locales: impl IntoIterator<Item = Self>) -> Option<Self> {
+    pub fn choose_from<'a>(
+        &self,
+        locales: impl IntoIterator<Item = impl Into<&'a Locale>>,
+    ) -> Option<&'a Locale> {
         MATCHER
-            .matches(self.0.clone(), locales.into_iter().map(|loc| loc.0))
-            .map(|(lang, _)| Self(lang))
+            .matches(self.0.clone(), locales.into_iter().map(|loc| loc.into()))
+            .map(|(lang, _)| lang)
     }
 }
 
@@ -71,6 +74,12 @@ impl FromStr for Locale {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Self(s.parse()?))
+    }
+}
+
+impl AsRef<LanguageIdentifier> for Locale {
+    fn as_ref(&self) -> &LanguageIdentifier {
+        &self.0
     }
 }
 
@@ -111,12 +120,12 @@ mod test {
             locale!("zh-Hant"),
         ];
         assert_eq!(
-            locale!("zh-CN").choose_from(accepts.clone()),
-            Some(locale!("zh-Hans"))
+            locale!("zh-CN").choose_from(&accepts),
+            Some(&locale!("zh-Hans"))
         );
         assert_eq!(
-            locale!("zh-TW").choose_from(accepts.clone()),
-            Some(locale!("zh-Hant"))
+            locale!("zh-TW").choose_from(&accepts),
+            Some(&locale!("zh-Hant"))
         );
     }
 }

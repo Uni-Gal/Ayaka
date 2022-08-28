@@ -59,10 +59,9 @@ pub struct PluginConfig {
 }
 
 impl Game {
-    fn choose_from_keys<V>(&self, loc: &Locale, map: &HashMap<Locale, V>) -> Locale {
-        let keys = map.keys();
-        loc.choose_from(keys.cloned())
-            .unwrap_or_else(|| self.base_lang.clone())
+    fn choose_from_keys<'a, V>(&'a self, loc: &Locale, map: &'a HashMap<Locale, V>) -> &'a Locale {
+        loc.choose_from(map.keys())
+            .unwrap_or_else(|| &self.base_lang)
     }
 
     fn find_para(&self, loc: &Locale, tag: &str) -> Option<&Paragraph> {

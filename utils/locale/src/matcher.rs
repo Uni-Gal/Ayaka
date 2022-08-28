@@ -196,16 +196,16 @@ impl LanguageMatcher {
         data.into()
     }
 
-    pub fn matches(
+    pub fn matches<L: AsRef<LanguageIdentifier>>(
         &self,
         mut desired: LanguageIdentifier,
-        supported: impl IntoIterator<Item = LanguageIdentifier>,
-    ) -> Option<(LanguageIdentifier, u16)> {
+        supported: impl IntoIterator<Item = L>,
+    ) -> Option<(L, u16)> {
         self.expander.maximize(&mut desired);
         supported
             .into_iter()
             .map(|s| {
-                let mut max_s = s.clone();
+                let mut max_s = s.as_ref().clone();
                 self.expander.maximize(&mut max_s);
                 (s, self.distance(desired.clone(), max_s))
             })

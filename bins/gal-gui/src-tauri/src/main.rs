@@ -172,7 +172,7 @@ async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
 fn choose_locale(locales: Vec<Locale>) -> CommandResult<Option<Locale>> {
     let current = Locale::current();
     debug!("Choose {} from {:?}", current, locales);
-    Ok(current.choose_from(locales))
+    Ok(current.choose_from(&locales).cloned())
 }
 
 #[derive(Default)]
