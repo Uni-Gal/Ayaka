@@ -1,6 +1,8 @@
-.PHONY: test clean update doc serve-book
+.PHONY: test nextest clean update doc serve-book
 test: plugins
 	cd utils && $(MAKE) test
+nextest: plugins
+	cd utils && $(MAKE) nextest
 clean:
 	cd bins && $(MAKE) clean
 	cd utils && $(MAKE) clean

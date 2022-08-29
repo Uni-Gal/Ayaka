@@ -1,6 +1,8 @@
-.PHONY: test clean update
+.PHONY: test nextest clean update doc
 test:
 	cargo test
+nextest:
+	cargo nextest run
 clean:
 	cargo clean
 update:

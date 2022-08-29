@@ -207,12 +207,13 @@ impl LanguageMatcher {
             .map(|s| {
                 let mut max_s = s.as_ref().clone();
                 self.expander.maximize(&mut max_s);
-                (s, self.distance(desired.clone(), max_s))
+                (s, self.distance_impl(desired.clone(), max_s))
             })
             .min_by_key(|(_, dis)| *dis)
             .filter(|(_, dis)| *dis < 1000)
     }
 
+    #[allow(unused)]
     pub fn distance(
         &self,
         mut desired: LanguageIdentifier,
