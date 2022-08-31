@@ -46,9 +46,7 @@ export default {
                 case OpenGameStatusType.CreateRuntime:
                     return ["Creating runtime...", step * (t + 1)]
                 case OpenGameStatusType.LoadPlugin:
-                    const data = s.data as unknown as [string, number, number];
-                    const percent = data[1] / data[2];
-                    return [`Loading plugin "${data[0]}"... (${data[1] + 1}/${data[2]})`, step * (t + 1) + percent * step]
+                    return ["Loading plugins...", step * (t + 1)]
                 case OpenGameStatusType.LoadSettings:
                     return ["Loading settings...", step * (t + 1)]
                 case OpenGameStatusType.LoadGlobalRecords:

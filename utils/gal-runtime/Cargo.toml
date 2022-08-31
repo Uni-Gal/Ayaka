@@ -8,7 +8,6 @@ gal-bindings-types = { path = "../gal-bindings-types" }
 gal-script = { path = "../gal-script" }
 fallback = { path = "../fallback" }
 locale = { path = "../locale" }
-stream-future = "0.3"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 serde_json = "1.0"
@@ -19,6 +18,8 @@ wasmer-wasi = "2.3"
 unicode-width = "0.1"
 tokio = { version = "1", features = ["fs", "macros"] }
 tokio-stream = { version = "0.1", features = ["fs"] }
+stream-future = "0.3"
+futures-util = "0.3"
 dirs = "4.0"
 scopeguard = "1.1"
 

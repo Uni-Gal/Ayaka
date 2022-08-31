@@ -49,7 +49,7 @@ enum OpenGameStatus {
     LoadSettings,
     LoadProfile(String),
     CreateRuntime,
-    LoadPlugin(String, usize, usize),
+    LoadPlugin,
     LoadGlobalRecords,
     LoadRecords,
     Loaded,
@@ -76,9 +76,7 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
                 OpenStatus::CreateRuntime => {
                     emit_open_status(&handle, OpenGameStatus::CreateRuntime)?
                 }
-                OpenStatus::LoadPlugin(name, i, len) => {
-                    emit_open_status(&handle, OpenGameStatus::LoadPlugin(name, i, len))?
-                }
+                OpenStatus::LoadPlugin => emit_open_status(&handle, OpenGameStatus::LoadPlugin)?,
             }
         }
         let mut ctx = context.await?;

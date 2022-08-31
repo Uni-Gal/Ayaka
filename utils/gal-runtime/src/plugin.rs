@@ -5,8 +5,9 @@
 
 use crate::*;
 use anyhow::Result;
+use futures_util::future::try_join_all;
 use gal_bindings_types::*;
-use log::warn;
+use log::{info, warn};
 use scopeguard::defer;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{collections::HashMap, path::Path};
@@ -131,14 +132,7 @@ pub enum LoadStatus {
     /// Start creating the engine.
     CreateEngine,
     /// Loading the plugin.
-    LoadPlugin(
-        /// Plugin name.
-        String,
-        /// Plugin index.
-        usize,
-        /// Plugin total count.
-        usize,
-    ),
+    LoadPlugin,
 }
 
 #[derive(Default, Clone, WasmerEnv)]
@@ -225,13 +219,17 @@ impl Runtime {
                 }
             }
         }
-        let total_len = paths.len();
-        for (i, (name, p)) in paths.into_iter().enumerate() {
-            yield LoadStatus::LoadPlugin(name.clone(), i, total_len);
-            let buf = tokio::fs::read(&p).await?;
+        yield LoadStatus::LoadPlugin;
+        let runtimes = try_join_all(paths.into_iter().map(|(name, p)| async {
+            let buf = tokio::fs::read(p).await?;
             let module = Module::from_binary(&store, &buf)?;
             let runtime = Host::new(&module, &import_object)?;
             let plugin_type = runtime.plugin_type()?;
+            info!("Loaded plugin {}: {:?}.", name, plugin_type);
+            anyhow::Ok((name, runtime, plugin_type))
+        }))
+        .await?;
+        for (name, runtime, plugin_type) in runtimes {
             if plugin_type.contains(PluginType::ACTION) {
                 action_modules.push(name.clone());
             }

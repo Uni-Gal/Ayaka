@@ -41,14 +41,7 @@ pub enum OpenStatus {
     /// Start creating plugin runtime.
     CreateRuntime,
     /// Loading the plugin.
-    LoadPlugin(
-        /// Plugin name.
-        String,
-        /// Plugin index.
-        usize,
-        /// Plugin total count.
-        usize,
-    ),
+    LoadPlugin,
 }
 
 impl Context {
@@ -71,8 +64,8 @@ impl Context {
                     LoadStatus::CreateEngine => {
                         yield OpenStatus::CreateRuntime;
                     }
-                    LoadStatus::LoadPlugin(name, i, len) => {
-                        yield OpenStatus::LoadPlugin(name, i, len);
+                    LoadStatus::LoadPlugin => {
+                        yield OpenStatus::LoadPlugin;
                     }
                 }
             }
