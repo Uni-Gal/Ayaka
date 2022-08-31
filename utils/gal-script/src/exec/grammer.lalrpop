@@ -29,69 +29,60 @@ UnaryOp: UnaryOp = {
     "!" => UnaryOp::Not,
 }
 
+// To make sure the full expr in parens.
+FullExpr: Expr = Expr;
+
 pub Expr: Expr = {
-    <r:Ref> <o:AssignOp> <e:Expr2> => Expr::Binary(Box::new(Expr::Ref(r)), o, Box::new(e)),
-    Expr2,
-}
-
-Expr2: Expr = {
-    <le:Expr2> "||" <re:Expr3> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Or), Box::new(re)),
-    Expr3,
-}
-
-Expr3: Expr = {
-    <le:Expr3> "&&" <re:Expr4> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::And), Box::new(re)),
-    Expr4,
-}
-
-Expr4: Expr = {
-    <le:Expr4> "|" <re:Expr5> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Or), Box::new(re)),
-    Expr5,
-}
-
-Expr5: Expr = {
-    <le:Expr5> "^" <re:Expr6> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Xor), Box::new(re)),
-    Expr6,
-}
-
-Expr6: Expr = {
-    <le:Expr6> "&" <re:Expr7> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::And), Box::new(re)),
-    Expr7,
-}
-
-Expr7: Expr = {
-    <le:Expr7> "==" <re:Expr8> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Eq), Box::new(re)),
-    <le:Expr7> "!=" <re:Expr8> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Neq), Box::new(re)),
-    Expr8
-}
-
-Expr8: Expr = {
-    <le:Expr8> "<" <re:Expr9> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Lt), Box::new(re)),
-    <le:Expr8> "<=" <re:Expr9> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Le), Box::new(re)),
-    <le:Expr8> ">" <re:Expr9> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Gt), Box::new(re)),
-    <le:Expr8> ">=" <re:Expr9> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Ge), Box::new(re)),
-    Expr9
-}
-
-Expr9: Expr = {
-    <le:Expr9> "+" <re:Expr10> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Add), Box::new(re)),
-    <le:Expr9> "-" <re:Expr10> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Minus), Box::new(re)),
-    Expr10
-}
-
-Expr10: Expr = {
-    <le:Expr10> "*" <re:Expr11> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Mul), Box::new(re)),
-    <le:Expr10> "/" <re:Expr11> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Div), Box::new(re)),
-    <le:Expr10> "%" <re:Expr11> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Mod), Box::new(re)),
-    Expr11
-}
-
-Expr11: Expr = {
+    #[precedence(level="1")]
     <r:Ref> => Expr::Ref(r),
     <c:Const> => Expr::Const(c),
-    <o:UnaryOp> <e:Expr11> => Expr::Unary(o, Box::new(e)),
-    "(" <e:Expr> ")" => e,
+    "(" <e:FullExpr> ")" => e,
     <i:FuncName> "(" <a:Exprs> ")" => Expr::Call(i.0, i.1, a),
+    <o:UnaryOp> <e:Expr> => Expr::Unary(o, Box::new(e)),
+    #[precedence(level="2")]
+    #[assoc(side="left")]
+    <le:Expr> "*" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Mul), Box::new(re)),
+    #[assoc(side="left")]
+    <le:Expr> "/" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Div), Box::new(re)),
+    #[assoc(side="left")]
+    <le:Expr> "%" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Mod), Box::new(re)),
+    #[precedence(level="3")]
+    #[assoc(side="left")]
+    <le:Expr> "+" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Add), Box::new(re)),
+    #[assoc(side="left")]
+    <le:Expr> "-" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Minus), Box::new(re)),
+    #[precedence(level="4")]
+    #[assoc(side="left")]
+    <le:Expr> "<" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Lt), Box::new(re)),
+    #[assoc(side="left")]
+    <le:Expr> "<=" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Le), Box::new(re)),
+    #[assoc(side="left")]
+    <le:Expr> ">" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Gt), Box::new(re)),
+    #[assoc(side="left")]
+    <le:Expr> ">=" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Ge), Box::new(re)),
+    #[precedence(level="5")]
+    #[assoc(side="left")]
+    <le:Expr> "==" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Eq), Box::new(re)),
+    #[assoc(side="left")]
+    <le:Expr> "!=" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Neq), Box::new(re)),
+    #[precedence(level="6")]
+    #[assoc(side="left")]
+    <le:Expr> "&" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::And), Box::new(re)),
+    #[precedence(level="7")]
+    #[assoc(side="left")]
+    <le:Expr> "^" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Xor), Box::new(re)),
+    #[precedence(level="8")]
+    #[assoc(side="left")]
+    <le:Expr> "|" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Or), Box::new(re)),
+    #[precedence(level="9")]
+    #[assoc(side="left")]
+    <le:Expr> "&&" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::And), Box::new(re)),
+    #[precedence(level="10")]
+    #[assoc(side="left")]
+    <le:Expr> "||" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Or), Box::new(re)),
+    #[precedence(level="11")]
+    #[assoc(side="left")]
+    <r:Ref> <o:AssignOp> <e:Expr> => Expr::Binary(Box::new(Expr::Ref(r)), o, Box::new(e)),
 }
 
 AssignOp: BinaryOp = {
@@ -116,6 +107,7 @@ Id: String = <s:r"[A-Za-z]\w*"> => s.into();
 
 pub Const: RawValue = {
     "~" => RawValue::Unit,
+    "null" => RawValue::Unit,
     <b:Bool> => RawValue::Bool(b),
     <n:Num> => RawValue::Num(n),
     <s:Str> => RawValue::Str(s),

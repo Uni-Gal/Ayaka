@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 lalrpop_mod!(
     #[allow(missing_docs)]
+    #[allow(dead_code)]
     grammer,
     "/exec/grammer.rs"
 );
@@ -144,12 +145,43 @@ mod test {
     fn expr() {
         assert_eq!(ExprParser::new().parse("a").unwrap(), var("a"));
         assert_eq!(
+            ExprParser::new().parse("!(a && b || c)").unwrap(),
+            Expr::Unary(
+                UnaryOp::Not,
+                Box::new(Expr::Binary(
+                    Box::new(Expr::Binary(
+                        Box::new(var("a")),
+                        BinaryOp::Logic(LogicBinaryOp::And),
+                        Box::new(var("b"))
+                    )),
+                    BinaryOp::Logic(LogicBinaryOp::Or),
+                    Box::new(var("c"))
+                ))
+            )
+        );
+        assert_eq!(
             ExprParser::new().parse("foo(a)").unwrap(),
             Expr::Call(String::default(), "foo".into(), vec![var("a")])
         );
         assert_eq!(
             ExprParser::new().parse("foo.bar(a, b)").unwrap(),
             Expr::Call("foo".into(), "bar".into(), vec![var("a"), var("b")])
+        );
+        assert_eq!(
+            ExprParser::new().parse("a + (b * (c & d))").unwrap(),
+            Expr::Binary(
+                Box::new(var("a")),
+                BinaryOp::Val(ValBinaryOp::Add),
+                Box::new(Expr::Binary(
+                    Box::new(var("b")),
+                    BinaryOp::Val(ValBinaryOp::Mul),
+                    Box::new(Expr::Binary(
+                        Box::new(var("c")),
+                        BinaryOp::Val(ValBinaryOp::And),
+                        Box::new(var("d"))
+                    ))
+                ))
+            )
         );
     }
 
