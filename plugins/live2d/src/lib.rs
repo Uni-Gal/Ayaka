@@ -14,8 +14,8 @@ fn text_commands() -> &'static [&'static str] {
     &["show", "hide"]
 }
 
-const CH_DEFAULT: &'static str = "__ch_default__";
-const CH_ALL: &'static str = "__ch_all__";
+const CH_DEFAULT: &str = "__ch_default__";
+const CH_ALL: &str = "__ch_all__";
 
 fn find_model(
     ch: &str,
@@ -69,7 +69,7 @@ fn hide(args: Vec<String>, _ctx: TextProcessContext) -> TextProcessResult {
 #[export]
 fn process_action(mut ctx: ActionProcessContext) -> Action {
     let hide = ctx.action.props.remove("ch_hide");
-    if hide.as_ref().map(|s| s.as_str()) == Some(CH_ALL) {
+    if hide.as_deref() == Some(CH_ALL) {
         ctx.action.props.remove("ch_models");
     } else {
         let hide = hide

@@ -60,8 +60,7 @@ pub struct PluginConfig {
 
 impl Game {
     fn choose_from_keys<'a, V>(&'a self, loc: &Locale, map: &'a HashMap<Locale, V>) -> &'a Locale {
-        loc.choose_from(map.keys())
-            .unwrap_or_else(|| &self.base_lang)
+        loc.choose_from(map.keys()).unwrap_or(&self.base_lang)
     }
 
     fn find_para(&self, loc: &Locale, tag: &str) -> Option<&Paragraph> {
@@ -83,9 +82,9 @@ impl Game {
             if key == base_key {
                 None
             } else {
-                self.find_para(&key, tag)
+                self.find_para(key, tag)
             },
-            self.find_para(&base_key, tag),
+            self.find_para(base_key, tag),
         )
     }
 
@@ -101,9 +100,9 @@ impl Game {
             if key == base_key {
                 None
             } else {
-                self.find_res(&key)
+                self.find_res(key)
             },
-            self.find_res(&base_key),
+            self.find_res(base_key),
         )
     }
 }
