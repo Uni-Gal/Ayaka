@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr, sync::LazyLock};
 use sys_locale::get_locale;
 
-static MATCHER: LazyLock<LanguageMatcher> = LazyLock::new(|| LanguageMatcher::new());
+static MATCHER: LazyLock<LanguageMatcher> = LazyLock::new(LanguageMatcher::new);
 
 /// Representation of a language identifier     .
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]

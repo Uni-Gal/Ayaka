@@ -20,10 +20,10 @@ impl From<&'_ str> for SubTagRule {
     fn from(s: &'_ str) -> Self {
         if s == "*" {
             Self::All
-        } else if s.starts_with("$!") {
-            Self::VarExclude(s[2..].to_string())
-        } else if s.starts_with('$') {
-            Self::Var(s[1..].to_string())
+        } else if let Some(name) = s.strip_prefix("$!") {
+            Self::VarExclude(name.to_string())
+        } else if let Some(name) = s.strip_prefix('$') {
+            Self::Var(name.to_string())
         } else {
             Self::Str(s.to_string())
         }
