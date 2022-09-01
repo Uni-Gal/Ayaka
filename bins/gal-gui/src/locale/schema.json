@@ -12,6 +12,10 @@
             "description": "The NO button in dialog",
             "type": "string"
         },
+        "dialogOk": {
+            "description": "The OK button in dialog",
+            "type": "string"
+        },
         "newGame": {
             "description": "The new game button at HomeView",
             "type": "string"
@@ -42,6 +46,10 @@
         },
         "quitConfirm": {
             "description": "The confirm message in quit confirm dialog",
+            "type": "string"
+        },
+        "error": {
+            "description": "The error title of dialog",
             "type": "string"
         }
     },

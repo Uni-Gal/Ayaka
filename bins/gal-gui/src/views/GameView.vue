@@ -6,6 +6,7 @@ import IconButton from '../components/IconButton.vue'
 import { conv_src, current_run, next_run, next_back_run, switch_, merge_lines, Action, ActionLineType, ActionLine, current_visited } from '../interop'
 import { cloneDeep } from 'lodash'
 import Live2D from '../components/Live2D.vue'
+import { Modal } from 'bootstrap'
 </script>
 
 <script lang="ts">
@@ -58,19 +59,12 @@ export default {
         document.removeEventListener('keydown', this.onkeydown)
     },
     methods: {
-        async go_home(ask: boolean = false) {
-            let confirmed = true;
-            if (ask) {
-                confirmed = await this.$vbsModal.confirm({
-                    title: this.$t("goHome"),
-                    message: this.$t("goHomeConfirm"),
-                    leftBtnText: this.$t("dialogNo"),
-                    rightBtnText: this.$t("dialogYes"),
-                })
-            }
-            if (confirmed) {
-                await this.$router.replace("/home")
-            }
+        go_home() {
+            let modal = new Modal(this.$refs.homeModal as HTMLElement)
+            modal.show()
+        },
+        async go_home_direct() {
+            await this.$router.replace("/home")
         },
         // Should be called in mutex
         async fetch_current_run() {
@@ -89,7 +83,7 @@ export default {
                     (this.$refs.voice as HTMLAudioElement).load()
                 }
             } else {
-                await this.go_home()
+                await this.go_home_direct()
             }
         },
         // Should be called in mutex
@@ -288,7 +282,7 @@ export default {
             <IconButton icon="forward" :btnclass='play_state == PlayState.FastForward ? "active" : ""'
                 @click="on_fast_forward_click"></IconButton>
             <IconButton icon="gear" @click="on_settings_click"></IconButton>
-            <IconButton icon="house" @click="go_home(true)"></IconButton>
+            <IconButton icon="house" @click="go_home"></IconButton>
         </div>
     </div>
     <div class="content-full container-switches" :hidden="state != ActionState.Switching">
@@ -298,6 +292,26 @@ export default {
                     <button class="btn btn-primary switch" v-for="(s, i) in action.switches" @click="switch_run(i)"
                         :disabled="!s.enabled">
                         {{ s.text }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" ref="homeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ $t("goHome") }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">{{ $t("goHomeConfirm") }}</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+                        {{ $t("dialogNo") }}
+                    </button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="go_home_direct">
+                        {{ $t("dialogYes") }}
                     </button>
                 </div>
             </div>

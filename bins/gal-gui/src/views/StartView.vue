@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { listen, Event as TauriEvent, UnlistenFn } from '@tauri-apps/api/event';
 import { OpenGameStatus, OpenGameStatusType, open_game, choose_locale, get_settings, set_locale } from '../interop'
+import { appWindow } from '@tauri-apps/api/window'
+import { Modal } from 'bootstrap'
 </script>
 
 <script lang="ts">
@@ -9,13 +11,25 @@ export default {
     data() {
         return {
             text: "",
+            error: "",
             progress: 0,
             unlisten_fn: null as UnlistenFn | null
         }
     },
     async mounted() {
         this.unlisten_fn = await listen('gal://open_status', this.on_open_status)
-        await open_game()
+        try {
+            await open_game()
+        }
+        catch (e) {
+            if (e instanceof Error) {
+                this.error = e.message
+            } else {
+                this.error = JSON.stringify(e)
+            }
+            let modal = new Modal(this.$refs.errorModal as HTMLElement)
+            modal.show()
+        }
     },
     unmounted() {
         if (this.unlisten_fn) {
@@ -83,6 +97,22 @@ export default {
     <img class="content-logo" src="../assets/logo.png" alt="Logo" />
     <div class="progress progress-bottom">
         <div class="progress-bar" role="progressbar" :style='`width: ${progress}%`'>{{ text }}</div>
+    </div>
+
+    <div class="modal fade" ref="errorModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ $t("error") }}</h5>
+                </div>
+                <div class="modal-body">{{ error }}</div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @click="appWindow.close()">
+                        {{ $t("dialogOk") }}
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
