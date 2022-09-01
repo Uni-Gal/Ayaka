@@ -1,11 +1,9 @@
+mod writer;
+
 use clap::Parser;
-use gal_runtime::{
-    anyhow::{Ok, Result},
-    log::LevelFilter,
-    Context, FrontendType, Locale,
-};
+use gal_runtime::{anyhow::Result, log::LevelFilter, Context, FrontendType, Locale};
 use std::ffi::OsString;
-use tokio::io::AsyncWriteExt;
+use writer::LaTeXWriter;
 
 #[derive(Debug, Parser)]
 #[clap(about, version, author)]
@@ -26,51 +24,48 @@ async fn main() -> Result<()> {
     let context = Context::open(&opts.input, FrontendType::Text);
     let mut ctx = context.await?;
 
-    let mut output = tokio::fs::File::create(&opts.output).await?;
-    output.write_all(b"\\documentclass{ctexart}\n").await?;
-    output.write_all(b"\\usepackage{lua-ul}\n").await?;
+    let output = tokio::fs::File::create(&opts.output).await?;
+    let mut output = LaTeXWriter::new(output);
+    output.command("documentclass", ["ctexart"]).await?;
+    output.command("usepackage", ["lua-ul"]).await?;
+    output.command("title", [&ctx.game.title]).await?;
+    output.command("author", [&ctx.game.author]).await?;
     output
-        .write_all(format!("\\title{{{}}}\n", ctx.game.title).as_bytes())
-        .await?;
-    output
-        .write_all(format!("\\author{{{}}}\n", ctx.game.author).as_bytes())
-        .await?;
-    output.write_all(b"\\begin{document}\n").await?;
+        .environment("document", |output| async move {
+            output.command0("maketitle").await?;
+            output.command0("tableofcontents").await?;
 
-    output.write_all(b"\\maketitle\n").await?;
-    output.write_all(b"\\tableofcontents\n").await?;
-
-    ctx.init_new();
-    if let Some(loc) = opts.locale {
-        ctx.set_locale(loc);
-    }
-    while let Some(action) = ctx.next_run() {
-        if let Some(name) = &action.character {
-            output
-                .write_all(format!("\\paragraph{{{}}}", name).as_bytes())
-                .await?;
-        }
-        for s in action.line {
-            output.write_all(s.as_str().as_bytes()).await?;
-        }
-        output.write_all(b"\n").await?;
-        if !action.switches.is_empty() {
-            output.write_all(b"\\begin{itemize}\n").await?;
-            for s in action.switches.iter() {
-                output.write_all(b"\\item ").await?;
-                if s.enabled {
-                    output.write_all(s.text.as_bytes()).await?;
-                } else {
+            ctx.init_new();
+            if let Some(loc) = opts.locale {
+                ctx.set_locale(loc);
+            }
+            while let Some(action) = ctx.next_run() {
+                if let Some(name) = &action.character {
+                    output.command("paragraph", [name]).await?;
+                }
+                for s in action.line {
+                    output.write(s.as_str()).await?;
+                }
+                output.write("\n").await?;
+                if !action.switches.is_empty() {
                     output
-                        .write_all(format!("\\strikeThrough{{{}}}", s.text).as_bytes())
+                        .environment("itemize", |output| async move {
+                            for s in action.switches.iter() {
+                                output.command0("item").await?;
+                                if s.enabled {
+                                    output.write(&s.text).await?;
+                                } else {
+                                    output.command("strikeThrough", [&s.text]).await?;
+                                }
+                                output.write("\n").await?;
+                            }
+                            Ok(output)
+                        })
                         .await?;
                 }
-                output.write_all(b"\n").await?;
             }
-            output.write_all(b"\\end{itemize}\n").await?;
-        }
-    }
-
-    output.write_all(b"\\end{document}\n").await?;
+            Ok(output)
+        })
+        .await?;
     Ok(())
 }
