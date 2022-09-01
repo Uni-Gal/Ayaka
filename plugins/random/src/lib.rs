@@ -7,7 +7,7 @@ use std::sync::{LazyLock, Mutex};
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::SCRIPT
+    PluginType::default()
 }
 
 static RNG: LazyLock<Mutex<StdRng>> = LazyLock::new(|| Mutex::new(StdRng::from_entropy()));

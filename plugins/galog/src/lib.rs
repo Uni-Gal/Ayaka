@@ -2,7 +2,7 @@ use gal_bindings::*;
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::SCRIPT
+    PluginType::default()
 }
 
 fn log_impl(level: log::Level, args: Vec<RawValue>) -> RawValue {

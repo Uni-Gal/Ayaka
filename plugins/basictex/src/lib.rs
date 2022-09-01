@@ -2,12 +2,9 @@ use gal_bindings::*;
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::TEXT
-}
-
-#[export]
-fn text_commands() -> &'static [&'static str] {
-    &["par", "textrm", "textsf", "texttt", "ruby"]
+    PluginType::builder()
+        .text(["par", "textrm", "textsf", "texttt", "ruby"])
+        .build()
 }
 
 #[export]

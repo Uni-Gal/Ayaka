@@ -4,12 +4,11 @@ use gal_bindings::*;
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::ACTION | PluginType::TEXT | PluginType::GAME
-}
-
-#[export]
-fn text_commands() -> &'static [&'static str] {
-    &["bg", "bgm", "efm", "video"]
+    PluginType::builder()
+        .action()
+        .text(["bg", "bgm", "efm", "video"])
+        .game()
+        .build()
 }
 
 fn find_exists(name: &str, base_dir: impl AsRef<Path>, exs: &[&str]) -> Option<PathBuf> {

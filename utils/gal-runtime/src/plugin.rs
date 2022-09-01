@@ -5,13 +5,13 @@
 
 use crate::*;
 use anyhow::Result;
-use futures_util::future::try_join_all;
+use futures_util::{future::try_join_all, TryStreamExt};
 use gal_bindings_types::*;
 use log::{info, warn};
 use scopeguard::defer;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{collections::HashMap, path::Path};
-use tokio_stream::{wrappers::ReadDirStream, StreamExt};
+use tokio_stream::wrappers::ReadDirStream;
 use wasmer::*;
 use wasmer_wasi::*;
 
@@ -193,32 +193,41 @@ impl Runtime {
         let mut action_modules = vec![];
         let mut text_modules = HashMap::new();
         let mut game_modules = vec![];
-        let mut paths = vec![];
-        if names.is_empty() {
-            let mut dirs = ReadDirStream::new(tokio::fs::read_dir(path).await?);
-            while let Some(f) = dirs.try_next().await? {
-                let p = f.path();
-                if p.extension()
-                    .map(|s| s.to_string_lossy())
-                    .unwrap_or_default()
-                    == "wasm"
-                {
-                    let name = p
-                        .file_stem()
+        let paths = if names.is_empty() {
+            ReadDirStream::new(tokio::fs::read_dir(path).await?)
+                .try_filter_map(|f| async move {
+                    let p = f.path();
+                    if p.extension()
                         .map(|s| s.to_string_lossy())
                         .unwrap_or_default()
-                        .into_owned();
-                    paths.push((name, p));
-                }
-            }
+                        == "wasm"
+                    {
+                        let name = p
+                            .file_stem()
+                            .map(|s| s.to_string_lossy())
+                            .unwrap_or_default()
+                            .into_owned();
+                        Ok(Some((name, p)))
+                    } else {
+                        Ok(None)
+                    }
+                })
+                .try_collect::<Vec<_>>()
+                .await?
         } else {
-            for name in names {
-                let p = path.join(name.as_ref()).with_extension("wasm");
-                if p.exists() {
-                    paths.push((name.as_ref().to_string(), p));
-                }
-            }
-        }
+            names
+                .iter()
+                .filter_map(|name| {
+                    let name = name.as_ref();
+                    let p = path.join(name).with_extension("wasm");
+                    if p.exists() {
+                        Some((name.to_string(), p))
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>()
+        };
         yield LoadStatus::LoadPlugin;
         let runtimes = try_join_all(paths.into_iter().map(|(name, p)| async {
             let buf = tokio::fs::read(p).await?;
@@ -230,22 +239,19 @@ impl Runtime {
         }))
         .await?;
         for (name, runtime, plugin_type) in runtimes {
-            if plugin_type.contains(PluginType::ACTION) {
+            if plugin_type.action {
                 action_modules.push(name.clone());
             }
-            if plugin_type.contains(PluginType::TEXT) {
-                let cmds = runtime.text_commands()?;
-                for cmd in cmds.into_iter() {
-                    let res = text_modules.insert(cmd.clone(), name.clone());
-                    if let Some(old_module) = res {
-                        warn!(
-                            "Command `{}` is overrided by \"{}\" over \"{}\"",
-                            cmd, name, old_module
-                        );
-                    }
+            for cmd in plugin_type.text {
+                let res = text_modules.insert(cmd.clone(), name.clone());
+                if let Some(old_module) = res {
+                    warn!(
+                        "Command `{}` is overrided by \"{}\" over \"{}\"",
+                        cmd, name, old_module
+                    );
                 }
             }
-            if plugin_type.contains(PluginType::GAME) {
+            if plugin_type.game {
                 game_modules.push(name.clone());
             }
             modules.insert(name, runtime);

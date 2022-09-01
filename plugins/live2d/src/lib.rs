@@ -6,12 +6,11 @@ use std::{
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::ACTION | PluginType::TEXT | PluginType::GAME
-}
-
-#[export]
-fn text_commands() -> &'static [&'static str] {
-    &["show", "hide"]
+    PluginType::builder()
+        .action()
+        .text(["show", "hide"])
+        .game()
+        .build()
 }
 
 const CH_DEFAULT: &str = "__ch_default__";

@@ -61,13 +61,9 @@ impl Context {
             tokio::pin!(runtime);
             while let Some(load_status) = runtime.next().await {
                 match load_status {
-                    LoadStatus::CreateEngine => {
-                        yield OpenStatus::CreateRuntime;
-                    }
-                    LoadStatus::LoadPlugin => {
-                        yield OpenStatus::LoadPlugin;
-                    }
-                }
+                    LoadStatus::CreateEngine => yield OpenStatus::CreateRuntime,
+                    LoadStatus::LoadPlugin => yield OpenStatus::LoadPlugin,
+                };
             }
             runtime.await?
         };

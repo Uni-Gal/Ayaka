@@ -4,7 +4,7 @@ use std::{borrow::Cow, collections::HashMap};
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::ACTION
+    PluginType::builder().action().build()
 }
 
 #[export]

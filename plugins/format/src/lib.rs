@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::SCRIPT
+    PluginType::default()
 }
 
 struct ValueWrap<'a>(&'a RawValue);

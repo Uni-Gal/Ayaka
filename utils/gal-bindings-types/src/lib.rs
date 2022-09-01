@@ -37,34 +37,62 @@ impl From<&log::Record<'_>> for Record {
     }
 }
 
-bitflags::bitflags! {
-    /// The bit flags to describe plugin type.
-    ///
-    /// Every plugin should provide a function `plugin_type`,
-    /// which returns [`PluginType`].
-    ///
-    /// ```ignore
-    /// use gal_bindings::*;
-    ///
-    /// #[export]
-    /// fn plugin_type() -> PluginType {
-    ///     PluginType::SCRIPT
-    /// }
-    /// ```
-    #[derive(Serialize, Deserialize)]
-    pub struct PluginType: u32 {
-        /// The default value.
-        /// All plugins are script plugins.
-        const SCRIPT = 0b000;
-        /// The action plugin.
-        /// This plugin processes the action after they are parsed.
-        const ACTION = 0b001;
-        /// The text plugin.
-        /// The custom text commands are dealt with this type of plugin.
-        const TEXT   = 0b010;
-        /// The game plugin.
-        /// This plugin processes the game properties after it is loaded.
-        const GAME   = 0b100;
+/// The bit flags to describe plugin type.
+///
+/// Every plugin should provide a function `plugin_type`,
+/// which returns [`PluginType`].
+///
+/// ```ignore
+/// use gal_bindings::*;
+///
+/// #[export]
+/// fn plugin_type() -> PluginType {
+///     PluginType::default()
+/// }
+/// ```
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct PluginType {
+    /// The action plugin.
+    /// This plugin processes the action after they are parsed.
+    pub action: bool,
+    /// The text plugin.
+    /// The custom text commands are dealt with this type of plugin.
+    pub text: Vec<String>,
+    /// The game plugin.
+    /// This plugin processes the game properties after it is loaded.
+    pub game: bool,
+}
+
+impl PluginType {
+    pub fn builder() -> PluginTypeBuilder {
+        PluginTypeBuilder {
+            data: Self::default(),
+        }
+    }
+}
+
+pub struct PluginTypeBuilder {
+    data: PluginType,
+}
+
+impl PluginTypeBuilder {
+    pub fn action(mut self) -> Self {
+        self.data.action = true;
+        self
+    }
+
+    pub fn text(mut self, cmds: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        self.data.text = cmds.into_iter().map(|s| s.into()).collect();
+        self
+    }
+
+    pub fn game(mut self) -> Self {
+        self.data.game = true;
+        self
+    }
+
+    pub fn build(self) -> PluginType {
+        self.data
     }
 }
 
