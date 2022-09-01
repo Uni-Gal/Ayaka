@@ -22,9 +22,8 @@ The `context` also implements `Stream`.
 The `OpenStatus` could be iterated before the future awaited.
 ``` rust,ignore
 use gal_runtime::*;
-use tokio_stream::StreamExt;
 let context = Context::open("../../../examples/Fibonacci/config.yaml", FrontendType::Text);
-tokio::pin!(context);
+pin_mut!(context);
 while let Some(status) = context.next().await {
     println!("{:?}", status);
 }

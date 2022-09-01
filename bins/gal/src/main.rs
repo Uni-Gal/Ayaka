@@ -2,8 +2,7 @@ use clap::Parser;
 use gal_runtime::{
     anyhow::{bail, Result},
     log::LevelFilter,
-    tokio_stream::StreamExt,
-    Context, FrontendType, Locale, OpenStatus,
+    *,
 };
 use std::{
     ffi::OsString,
@@ -45,7 +44,7 @@ async fn main() -> Result<()> {
         .filter_module("wasmer", LevelFilter::Warn)
         .try_init()?;
     let context = Context::open(&opts.input, FrontendType::Text);
-    tokio::pin!(context);
+    pin_mut!(context);
     while let Some(status) = context.next().await {
         match status {
             OpenStatus::LoadProfile => println!("Loading profile..."),

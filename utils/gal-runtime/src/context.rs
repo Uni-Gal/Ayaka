@@ -15,7 +15,6 @@ use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
-use tokio_stream::StreamExt;
 use unicode_width::UnicodeWidthStr;
 
 /// The game running context.
@@ -58,7 +57,7 @@ impl Context {
         let root_path = std::path::absolute(root_path)?;
         let runtime = {
             let runtime = Runtime::load(&game.plugins.dir, &root_path, &game.plugins.modules);
-            tokio::pin!(runtime);
+            pin_mut!(runtime);
             while let Some(load_status) = runtime.next().await {
                 match load_status {
                     LoadStatus::CreateEngine => yield OpenStatus::CreateRuntime,

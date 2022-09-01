@@ -3,12 +3,13 @@ pub use gal_bindings_types::VarMap;
 use crate::*;
 use anyhow::{anyhow, Result};
 use dirs::{config_dir, data_local_dir};
+use futures_util::TryStreamExt;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
-use tokio_stream::{wrappers::ReadDirStream, StreamExt};
+use tokio_stream::wrappers::ReadDirStream;
 
 /// The settings of the game.
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -120,22 +121,26 @@ pub async fn save_global_record(ident: &str, game: &str, data: &GlobalRecord) ->
 /// Load all [`ActionRecord`] from the records folder.
 pub async fn load_records(ident: &str, game: &str) -> Result<Vec<ActionRecord>> {
     let ctx_path = records_path(ident, game)?;
-    let mut entries = ReadDirStream::new(tokio::fs::read_dir(ctx_path).await?);
-    let mut contexts = vec![];
-    while let Some(entry) = entries.try_next().await? {
-        let p = entry.path();
-        if p.extension()
-            .map(|s| s.to_string_lossy())
-            .unwrap_or_default()
-            == "json"
-            && p.file_stem()
+    let contexts = ReadDirStream::new(tokio::fs::read_dir(ctx_path).await?)
+        .map_err(anyhow::Error::from)
+        .try_filter_map(|entry| async move {
+            let p = entry.path();
+            if p.extension()
                 .map(|s| s.to_string_lossy())
                 .unwrap_or_default()
-                != "global"
-        {
-            contexts.push(load_file(&p).await?);
-        }
-    }
+                == "json"
+                && p.file_stem()
+                    .map(|s| s.to_string_lossy())
+                    .unwrap_or_default()
+                    != "global"
+            {
+                Ok(Some(load_file(&p).await?))
+            } else {
+                Ok(None)
+            }
+        })
+        .try_collect()
+        .await?;
     Ok(contexts)
 }
 

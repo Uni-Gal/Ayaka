@@ -6,10 +6,7 @@
 use flexi_logger::{FileSpec, LogSpecification, Logger};
 use gal_runtime::{
     anyhow::{self, anyhow, Result},
-    load_records, load_settings,
     log::{debug, info, warn},
-    save_records, save_settings, tokio,
-    tokio_stream::StreamExt,
     *,
 };
 use serde::{Deserialize, Serialize};
@@ -67,7 +64,7 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
     {
         let config = &storage.config;
         let context = Context::open(config, FrontendType::Html);
-        tokio::pin!(context);
+        pin_mut!(context);
         while let Some(status) = context.next().await {
             match status {
                 OpenStatus::LoadProfile => {
