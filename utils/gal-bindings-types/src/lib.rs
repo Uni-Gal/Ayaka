@@ -64,6 +64,7 @@ pub struct PluginType {
 }
 
 impl PluginType {
+    /// Creates a [`PluginTypeBuilder`] instance to build a [`PluginType`].
     pub fn builder() -> PluginTypeBuilder {
         PluginTypeBuilder {
             data: Self::default(),
@@ -71,26 +72,31 @@ impl PluginType {
     }
 }
 
+/// The builder of [`PluginType`].
 pub struct PluginTypeBuilder {
     data: PluginType,
 }
 
 impl PluginTypeBuilder {
+    /// An action plugin.
     pub fn action(mut self) -> Self {
         self.data.action = true;
         self
     }
 
+    /// A text plugin, which provides commands.
     pub fn text(mut self, cmds: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.data.text = cmds.into_iter().map(|s| s.into()).collect();
         self
     }
 
+    /// A game plugin.
     pub fn game(mut self) -> Self {
         self.data.game = true;
         self
     }
 
+    /// Build a [`PluginType`].
     pub fn build(self) -> PluginType {
         self.data
     }
