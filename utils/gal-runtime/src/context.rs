@@ -6,7 +6,7 @@ use crate::{
 };
 use anyhow::{anyhow, bail, Result};
 use gal_bindings_types::{
-    ActionLines, ActionProcessContextRef, GameProcessContextRef, TextProcessContextRef,
+    ActionLine, ActionLines, ActionProcessContextRef, GameProcessContextRef, TextProcessContextRef,
 };
 use gal_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
 use log::error;
@@ -212,6 +212,7 @@ impl Context {
 
     fn exact_text(&mut self, para_title: Option<String>, t: Text) -> Result<Action> {
         let mut action_line = ActionLines::default();
+        let mut action_line_params = vec![];
         let mut chkey = None;
         let mut chname = None;
         let mut switches = vec![];
@@ -234,7 +235,11 @@ impl Context {
                             Some(alter)
                         }
                     }
-                    Command::Exec(p) => action_line.push_back_chars(self.call(&p).into_str()),
+                    Command::Exec(p) => {
+                        let param = self.call(&p);
+                        action_line.push_back_chars(format!("{{{}}}", action_line_params.len()));
+                        action_line_params.push(param);
+                    }
                     Command::Switch {
                         text,
                         action,
@@ -271,6 +276,7 @@ impl Context {
         Ok(Action {
             ctx: self.ctx.clone(),
             line: action_line,
+            line_params: action_line_params,
             ch_key: chkey,
             character: chname,
             para_title,
@@ -286,6 +292,7 @@ impl Context {
 
             let ctx = actions.ctx.fallback().unwrap_or_default();
             let line = actions.line.and_any().unwrap_or_default();
+            let line_params = actions.line_params.and_any().unwrap_or_default();
             let ch_key = actions.ch_key.flatten().and_any();
             let character = actions.character.flatten().and_any();
             let para_title = actions.para_title.flatten().and_any();
@@ -315,6 +322,7 @@ impl Context {
             Some(Action {
                 ctx,
                 line,
+                line_params,
                 ch_key,
                 character,
                 para_title,
@@ -328,6 +336,19 @@ impl Context {
     }
 
     fn process_action(&mut self, mut action: Action) -> Result<Action> {
+        {
+            let params = std::mem::take(&mut action.line_params);
+            let named = HashMap::<String, RawValue>::new();
+            for line in action.line.iter_mut() {
+                match line {
+                    ActionLine::Chars(s) | ActionLine::Block(s) => {
+                        *s = rt_format::ParsedFormat::parse(s, &params, &named)
+                            .map_err(|id| anyhow!("Format error at {}", id))?
+                            .to_string();
+                    }
+                }
+            }
+        }
         let last_action = self.record.history.last();
         for action_module in &self.runtime.action_modules {
             let module = &self.runtime.modules[action_module];

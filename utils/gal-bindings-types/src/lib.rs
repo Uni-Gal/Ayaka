@@ -250,6 +250,8 @@ pub struct Action {
     pub ctx: RawContext,
     /// The full texts.
     pub line: ActionLines,
+    #[doc(hidden)]
+    pub line_params: Vec<RawValue>,
     /// The key of current character.
     pub ch_key: Option<String>,
     /// The current character.

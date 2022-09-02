@@ -5,6 +5,10 @@ edition = "2021"
 
 [dependencies]
 serde = "1.0"
+rt-format = { version = "0.3", optional = true }
 
 [dev-dependencies]
 serde_yaml = "0.9"
+
+[features]
+default = []
