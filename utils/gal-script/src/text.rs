@@ -322,7 +322,7 @@ impl<'a> TextRichLexer<'a> {
     fn parse_spec_char(&mut self, loc: Loc, c: char) -> ParseResult<RichToken<'a>> {
         match c {
             '\\' => self.parse_escape_or_command(loc),
-            '{' | '}' if self.in_param > 0 => Ok(RichToken::char(loc, c)),
+            '{' | '}' /*if self.in_param > 0*/ => Ok(RichToken::char(loc, c)),
             '/' => self.parse_character(loc),
             _ => parse_error(loc, ParseErrorType::IllegalChar(c)),
         }
