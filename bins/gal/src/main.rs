@@ -49,7 +49,9 @@ async fn main() -> Result<()> {
         match status {
             OpenStatus::LoadProfile => println!("Loading profile..."),
             OpenStatus::CreateRuntime => println!("Creating runtime..."),
-            OpenStatus::LoadPlugin => println!("Loading plugins..."),
+            OpenStatus::LoadPlugin(name, i, len) => {
+                println!("Loading plugin {} ({}/{})", name, i + 1, len)
+            }
         }
     }
     let mut ctx = context.await?;

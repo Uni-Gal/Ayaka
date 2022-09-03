@@ -40,7 +40,7 @@ pub enum OpenStatus {
     /// Start creating plugin runtime.
     CreateRuntime,
     /// Loading the plugin.
-    LoadPlugin,
+    LoadPlugin(String, usize, usize),
 }
 
 impl Context {
@@ -61,7 +61,9 @@ impl Context {
             while let Some(load_status) = runtime.next().await {
                 match load_status {
                     LoadStatus::CreateEngine => yield OpenStatus::CreateRuntime,
-                    LoadStatus::LoadPlugin => yield OpenStatus::LoadPlugin,
+                    LoadStatus::LoadPlugin(name, i, len) => {
+                        yield OpenStatus::LoadPlugin(name, i, len)
+                    }
                 };
             }
             runtime.await?

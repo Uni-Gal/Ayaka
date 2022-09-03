@@ -60,7 +60,8 @@ export default {
                 case OpenGameStatusType.CreateRuntime:
                     return ["Creating runtime...", step * (t + 1)]
                 case OpenGameStatusType.LoadPlugin:
-                    return ["Loading plugins...", step * (t + 1)]
+                    const data = s.data as unknown as [string, number, number]
+                    return [`Loading plugin ${data[0]}...`, step * (t + 1) + data[1] / data[2] * step]
                 case OpenGameStatusType.LoadSettings:
                     return ["Loading settings...", step * (t + 1)]
                 case OpenGameStatusType.LoadGlobalRecords:
