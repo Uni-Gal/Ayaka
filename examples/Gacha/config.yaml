@@ -4,7 +4,7 @@ plugins:
   dir: ../plugins/
   modules:
     - format
-    - galog
+    - ayalog
     - media
     - random
 props:
@@ -72,7 +72,7 @@ paras:
               $temp5 = 0,
               $temp5 += 1,
             );
-            galog.info(if(current5, 5, if(current4, 4, 3)), " star");
+            ayalog.info(if(current5, 5, if(current4, 4, 3)), " star");
           }
       next: |
         \exec{

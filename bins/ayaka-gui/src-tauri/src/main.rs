@@ -335,7 +335,7 @@ fn main() -> Result<()> {
         .setup(|app| {
             let ident = app.config().tauri.bundle.identifier.clone();
             let log_handle = if cfg!(debug_assertions) {
-                Logger::with(LogSpecification::parse("warn,ayaka=debug")?)
+                Logger::with(LogSpecification::parse("warn,ayaka=debug,ayalog=debug")?)
                     .log_to_stdout()
                     .set_palette("b1;3;2;4;6".to_string())
                     .use_utc()

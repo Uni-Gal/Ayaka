@@ -1,7 +1,7 @@
 cargo-features = ["per-package-target"]
 
 [package]
-name = "galog"
+name = "ayalog"
 version = "0.1.0"
 edition = "2021"
 forced-target = "wasm32-unknown-unknown"

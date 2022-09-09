@@ -43,5 +43,5 @@ There are some existing script (only) plugins:
 | Plugin   | Description              |
 | -------- | ------------------------ |
 | `format` | Format strings.          |
-| `galog`  | Log to runtime.          |
+| `ayalog` | Log to runtime.          |
 | `random` | Generate random numbers. |
