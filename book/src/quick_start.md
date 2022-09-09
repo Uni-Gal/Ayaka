@@ -22,8 +22,8 @@ Generally we don't need anything more, but you should ensure there a `make`.
 
 ## Clone from source
 ``` bash
-$ git clone https://github.com/Berrysoft/gal.git
-$ cd gal
+$ git clone https://github.com/Uni-Gal/Ayaka.git
+$ cd Ayaka
 ```
 
 ## Test the utilities

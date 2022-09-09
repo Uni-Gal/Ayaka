@@ -35,7 +35,7 @@ example-$(1): examples/$(1)/config.yaml plugins
 example-$(1)-gui: examples/$(1)/config.yaml plugins
 	cd bins && $$(MAKE) run-gui FILE=$$(realpath $$<)
 example-$(1)-release: examples/$(1)/config.yaml plugins release
-	bins/target/release/gal $$< --auto
+	bins/target/release/ayaka-check $$< --auto
 example-$(1)-gui-release: examples/$(1)/config.yaml plugins release
 	bins/target/release/ayaka-gui $$<
 examples/$(1)/config.tex: examples/$(1)/config.yaml

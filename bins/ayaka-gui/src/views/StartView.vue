@@ -17,7 +17,7 @@ export default {
         }
     },
     async mounted() {
-        this.unlisten_fn = await listen('gal://open_status', this.on_open_status)
+        this.unlisten_fn = await listen('ayaka://open_status', this.on_open_status)
         try {
             await open_game()
         }

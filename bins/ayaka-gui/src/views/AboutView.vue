@@ -33,7 +33,7 @@ export default {
         <p>Author: {{ author }}</p>
         <h2>{{ app_name }}</h2>
         <p>Version {{ app_ver }}</p>
-        <p>This is a sample GUI frontend of gal project.</p>
+        <p>This is a sample GUI frontend of Ayaka project.</p>
         <h2>Tauri</h2>
         <p>Version {{ tauri_ver }}</p>
         <p>

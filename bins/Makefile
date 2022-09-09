@@ -15,7 +15,7 @@ release-cross: dist
 
 .PHONY: run run-gui run-latex
 run:
-	RUST_LOG=info cargo run --package gal -- $(FILE) --auto
+	RUST_LOG=info cargo run --package ayaka-check -- $(FILE) --auto
 run-gui:
 	cd ayaka-gui && $(MAKE) run FILE=$(FILE)
 run-latex:

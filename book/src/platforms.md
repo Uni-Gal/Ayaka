@@ -1,5 +1,5 @@
 # Supported platforms
-`gal` is cross-platform, and the triples are supported with 3 tiers.
+Ayaka is cross-platform, and the triples are supported with 3 tiers.
 
 ## Tier 1
 Ensured to work well with these triples:

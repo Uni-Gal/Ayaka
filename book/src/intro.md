@@ -1,5 +1,5 @@
 # Introduction
-`gal` project is a project for OSPP 2022.
+Ayaka project is a project for OSPP 2022.
 It is a voice novel engine which aims at 3 goals: simple, free, concentrate.
 
 ## Simple

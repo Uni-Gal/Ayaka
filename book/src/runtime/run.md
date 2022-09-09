@@ -1,5 +1,5 @@
 # Run a game
-The CLI tool in `bins/gal` is a full example to run a game.
+The CLI tool in `bins/ayaka-check` is a full example to run a game.
 
 ## Open a config file
 ``` rust,ignore

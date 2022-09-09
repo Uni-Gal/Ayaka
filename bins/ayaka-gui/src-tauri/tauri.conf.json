@@ -41,7 +41,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.berrysoft.gal",
+      "identifier": "com.unigal.ayaka",
       "longDescription": "",
       "macOS": {
         "entitlements": null,

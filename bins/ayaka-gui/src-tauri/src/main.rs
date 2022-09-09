@@ -56,7 +56,7 @@ fn emit_open_status(
     handle: &AppHandle,
     status: OpenGameStatus,
 ) -> std::result::Result<(), tauri::Error> {
-    handle.emit_all("gal://open_status", status)
+    handle.emit_all("ayaka://open_status", status)
 }
 
 #[command]
@@ -335,7 +335,7 @@ fn main() -> Result<()> {
         .setup(|app| {
             let ident = app.config().tauri.bundle.identifier.clone();
             let log_handle = if cfg!(debug_assertions) {
-                Logger::with(LogSpecification::parse("warn,gal=debug")?)
+                Logger::with(LogSpecification::parse("warn,ayaka=debug")?)
                     .log_to_stdout()
                     .set_palette("b1;3;2;4;6".to_string())
                     .use_utc()

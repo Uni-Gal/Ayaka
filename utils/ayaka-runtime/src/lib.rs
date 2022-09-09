@@ -1,4 +1,4 @@
-//! The runtime of `gal` project.
+//! The runtime of Ayaka project.
 //!
 //! This runtime provides the game config, running context,
 //! plugin system and settings system.

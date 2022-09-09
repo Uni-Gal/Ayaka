@@ -1,7 +1,7 @@
 //! The primitive types
 //!
 //! This crate provides the primitive type [`RawValue`].
-//! It is used by scripts in `gal` project.
+//! It is used by Ayaka script.
 //! The value operation and type conversion are handled in `ayaka-runtime`.
 
 #![warn(missing_docs)]
