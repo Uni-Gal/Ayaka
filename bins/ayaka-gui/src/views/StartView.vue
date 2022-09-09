@@ -78,7 +78,7 @@ export default {
             const settings = await get_settings();
             console.log(settings)
             let loc = settings?.lang
-            if (loc === undefined || loc.length == 0) {
+            if (loc === undefined || loc.length == 0 || loc == "und") {
                 loc = await choose_locale(this.$i18n.availableLocales)
             }
             if (loc) {

@@ -22,7 +22,7 @@ impl Settings {
     /// Creates [`Settings`] object with current locale.
     pub fn new() -> Self {
         Self {
-            lang: Locale::current(),
+            lang: Locale::default(),
         }
     }
 }
