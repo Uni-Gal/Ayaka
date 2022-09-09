@@ -1,7 +1,6 @@
-# GAL
-![Logo](assets/glogo.png)
+# Ayaka
 
-[![Azure DevOps builds](https://strawberry-vs.visualstudio.com/gal/_apis/build/status/Berrysoft.gal?branch=master)](https://strawberry-vs.visualstudio.com/gal/_build)
+This is the main repository of Ayaka, a visual novel engine written by Rust.
 
 This is a project working-in-progress for OSPP 2022.
 
