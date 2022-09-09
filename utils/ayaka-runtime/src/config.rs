@@ -1,4 +1,6 @@
+#[doc(no_inline)]
 pub use ayaka_bindings_types::{Action, Switch};
+#[doc(no_inline)]
 pub use fallback::Fallback;
 
 use crate::*;

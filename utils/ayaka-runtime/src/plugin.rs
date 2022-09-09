@@ -11,6 +11,7 @@ use log::warn;
 use scopeguard::defer;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{collections::HashMap, path::Path};
+use stream_future::stream;
 use tokio_stream::wrappers::ReadDirStream;
 use wasmer::*;
 use wasmer_wasi::*;

@@ -1,3 +1,4 @@
+#[doc(no_inline)]
 pub use ayaka_bindings_types::{FrontendType, RawContext};
 
 use crate::{
@@ -15,6 +16,7 @@ use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
+use stream_future::stream;
 use unicode_width::UnicodeWidthStr;
 
 /// The game running context.

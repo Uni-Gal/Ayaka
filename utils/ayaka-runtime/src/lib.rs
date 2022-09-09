@@ -16,11 +16,14 @@ pub mod plugin;
 pub mod script;
 mod settings;
 
+#[doc(no_inline)]
 pub use anyhow;
+#[doc(no_inline)]
 pub use ayaka_script::{log, RawValue};
 pub use config::*;
 pub use context::*;
+#[doc(no_inline)]
 pub use futures_util::{pin_mut, StreamExt, TryStreamExt};
+#[doc(no_inline)]
 pub use locale::*;
 pub use settings::*;
-pub use stream_future::*;

@@ -1,8 +1,11 @@
 #![feature(fn_traits)]
 #![feature(unboxed_closures)]
 
+#[doc(no_inline)]
 pub use ayaka_bindings_types::*;
+#[doc(no_inline)]
 pub use ayaka_primitive::*;
+#[doc(no_inline)]
 pub use log;
 
 mod logger;

@@ -1,3 +1,4 @@
+#[doc(no_inline)]
 pub use ayaka_bindings_types::VarMap;
 
 use crate::*;
