@@ -1,8 +1,8 @@
 [workspace]
 members = [
-    "gal",
-    "gal-gui/src-tauri",
-    "gal-latex",
+    "ayaka-check",
+    "ayaka-gui/src-tauri",
+    "ayaka-latex",
 ]
 
 resolver = "2"

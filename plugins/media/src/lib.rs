@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use gal_bindings::*;
+use ayaka_bindings::*;
 
 #[export]
 fn plugin_type() -> PluginType {

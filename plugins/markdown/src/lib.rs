@@ -1,4 +1,4 @@
-use gal_bindings::*;
+use ayaka_bindings::*;
 use pulldown_cmark::{Event::*, *};
 use std::{borrow::Cow, collections::HashMap};
 

@@ -1,4 +1,4 @@
-use gal_bindings::*;
+use ayaka_bindings::*;
 use std::{
     collections::{HashMap, HashSet},
     path::{Path, PathBuf},

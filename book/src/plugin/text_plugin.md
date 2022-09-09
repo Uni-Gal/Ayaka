@@ -6,7 +6,7 @@ They should register the commands in `text_commands` method.
 Here we will register a command `\hello` and call it in the config file.
 You also need `plugin_type` to specify that it is a text plugin.
 ``` rust,ignore
-use gal_bindings::*;
+use ayaka_bindings::*;
 
 #[export]
 fn plugin_type() -> PluginType {

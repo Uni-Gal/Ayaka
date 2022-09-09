@@ -3,7 +3,7 @@ Game plugins adjust some properties of the game before any record starts.
 
 ## Insert a global property
 ``` rust,ignore
-use gal_bindings::*;
+use ayaka_bindings::*;
 
 #[export]
 fn plugin_type() -> PluginType {

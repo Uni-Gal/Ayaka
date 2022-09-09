@@ -1,6 +1,6 @@
 #![feature(once_cell)]
 
-use gal_bindings::*;
+use ayaka_bindings::*;
 use log::error;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use std::sync::{LazyLock, Mutex};

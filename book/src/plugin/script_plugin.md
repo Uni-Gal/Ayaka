@@ -16,7 +16,7 @@ or no method called `rnd` inside `random`, it will give a warning, and continue 
 ## Author a script plugin
 Here we're going to author a script plugin `meet` to return a string "Hello".
 ``` rust,ignore
-use gal_bindings::*;
+use ayaka_bindings::*;
 
 #[export]
 fn plugin_type() -> PluginType {

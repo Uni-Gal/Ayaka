@@ -4,10 +4,10 @@ This is the main repository of Ayaka, a visual novel engine written by Rust.
 
 This is a project working-in-progress for OSPP 2022.
 
-Gal is a voice novel engine which aims at 3 goals: simple, free, concentrate.
+Ayaka is a voice novel engine which aims at 3 goals: simple, free, concentrate.
 
 ## Docs
-See GalBook:
+See Ayaka Book:
 ``` bash
 $ make serve-book
 ```
@@ -18,4 +18,4 @@ $ make doc
 ```
 
 ## Screenshot
-![GalGui](assets/galgui.png)
+![Orga](assets/galgui.png)

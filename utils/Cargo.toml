@@ -2,9 +2,9 @@
 members = [
     "fallback",
     "locale",
-    "gal-primitive",
-    "gal-runtime",
-    "gal-script",
+    "ayaka-primitive",
+    "ayaka-runtime",
+    "ayaka-script",
 ]
 
 resolver = "2"

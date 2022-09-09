@@ -1,0 +1,13 @@
+[package]
+name = "ayaka-bindings"
+version = "0.1.0"
+authors = ["Berrysoft <Strawberry_Str@hotmail.com>"]
+edition = "2021"
+
+[dependencies]
+ayaka-primitive = { path = "../ayaka-primitive" }
+ayaka-bindings-types = { path = "../ayaka-bindings-types" }
+ayaka-bindings-impl = { path = "../ayaka-bindings-impl" }
+serde = "1.0"
+rmp-serde = "1.1"
+log = "0.4"

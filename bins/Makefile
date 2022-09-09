@@ -1,13 +1,13 @@
 .PHONY: clean update
 clean:
 	cargo clean
-	cd gal-gui && $(MAKE) clean
+	cd ayaka-gui && $(MAKE) clean
 update:
 	cargo update
 
 .PHONY: dist release release-cross
 dist:
-	cd gal-gui && $(MAKE) dist
+	cd ayaka-gui && $(MAKE) dist
 release: dist
 	STATIC_VCRUNTIME=false cargo build --release
 release-cross: dist
@@ -17,6 +17,6 @@ release-cross: dist
 run:
 	RUST_LOG=info cargo run --package gal -- $(FILE) --auto
 run-gui:
-	cd gal-gui && $(MAKE) run FILE=$(FILE)
+	cd ayaka-gui && $(MAKE) run FILE=$(FILE)
 run-latex:
-	RUST_LOG=info cargo run --package gal-latex -- $(FILE) -o $(basename $(FILE)).tex
+	RUST_LOG=info cargo run --package ayaka-latex -- $(FILE) -o $(basename $(FILE)).tex

@@ -1,0 +1,29 @@
+[package]
+name = "ayaka-runtime"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ayaka-primitive = { path = "../ayaka-primitive", features = ["rt-format"] }
+ayaka-bindings-types = { path = "../ayaka-bindings-types" }
+ayaka-script = { path = "../ayaka-script" }
+fallback = { path = "../fallback" }
+locale = { path = "../locale" }
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+serde_json = "1.0"
+rmp-serde = "1.1"
+anyhow = "1.0"
+wasmer = "2.3"
+wasmer-wasi = "2.3"
+unicode-width = "0.1"
+rt-format = "0.3"
+tokio = { version = "1", features = ["fs", "macros"] }
+tokio-stream = { version = "0.1", features = ["fs"] }
+stream-future = "0.3"
+futures-util = "0.3"
+dirs = "4.0"
+scopeguard = "1.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["parking_lot", "rt"] }

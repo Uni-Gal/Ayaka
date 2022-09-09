@@ -8,7 +8,7 @@ Action plugins could access the last action in the history, will text plugins ca
 Action plugins don't need to register anything, but only to specify in the `plugin_type`:
 
 ``` rust,ignore
-use gal_bindings::*;
+use ayaka_bindings::*;
 use pulldown_cmark::*;
 
 #[export]

@@ -3,7 +3,7 @@ authors = ["Berrysoft"]
 language = "en"
 multilingual = false
 src = "src"
-title = "GalBook"
+title = "Ayaka Book"
 
 [rust]
 edition = "2021"

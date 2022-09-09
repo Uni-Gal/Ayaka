@@ -37,7 +37,7 @@ example-$(1)-gui: examples/$(1)/config.yaml plugins
 example-$(1)-release: examples/$(1)/config.yaml plugins release
 	bins/target/release/gal $$< --auto
 example-$(1)-gui-release: examples/$(1)/config.yaml plugins release
-	bins/target/release/gal-gui $$<
+	bins/target/release/ayaka-gui $$<
 examples/$(1)/config.tex: examples/$(1)/config.yaml
 	cd bins && $$(MAKE) run-latex FILE=$$(realpath $$<)
 

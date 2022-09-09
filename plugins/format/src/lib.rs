@@ -1,4 +1,4 @@
-use gal_bindings::*;
+use ayaka_bindings::*;
 use log::warn;
 use rt_format::*;
 use std::collections::HashMap;

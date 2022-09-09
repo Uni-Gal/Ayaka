@@ -10,6 +10,6 @@ forced-target = "wasm32-unknown-unknown"
 crate-type = ["cdylib"]
 
 [dependencies]
-gal-primitive = { path = "../../utils/gal-primitive", features = ["rt-format"] }
-gal-bindings = { path = "../../utils/gal-bindings" }
+ayaka-primitive = { path = "../../utils/ayaka-primitive", features = ["rt-format"] }
+ayaka-bindings = { path = "../../utils/ayaka-bindings" }
 rt-format = "0.3"

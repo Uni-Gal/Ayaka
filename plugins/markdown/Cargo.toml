@@ -10,5 +10,5 @@ forced-target = "wasm32-unknown-unknown"
 crate-type = ["cdylib"]
 
 [dependencies]
-gal-bindings = { path = "../../utils/gal-bindings" }
+ayaka-bindings = { path = "../../utils/ayaka-bindings" }
 pulldown-cmark = "0.9"

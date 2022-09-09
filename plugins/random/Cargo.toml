@@ -10,5 +10,5 @@ forced-target = "wasm32-wasi"
 crate-type = ["cdylib"]
 
 [dependencies]
-gal-bindings = { path = "../../utils/gal-bindings" }
+ayaka-bindings = { path = "../../utils/ayaka-bindings" }
 rand = "0.8"
