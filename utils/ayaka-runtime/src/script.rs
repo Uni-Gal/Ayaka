@@ -1,7 +1,7 @@
 //! The script interpreter.
 
 use crate::{plugin::Runtime, *};
-use ayaka_script::*;
+use ayaka_script_types::*;
 use fallback::Fallback;
 use log::{error, warn};
 
@@ -271,6 +271,7 @@ impl Callable for Text {
 #[cfg(test)]
 mod test {
     use crate::{plugin::Runtime, script::*};
+    use ayaka_script::*;
     use tokio::sync::OnceCell;
 
     static RUNTIME: OnceCell<Runtime> = OnceCell::const_new();

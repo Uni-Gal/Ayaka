@@ -10,6 +10,6 @@ forced-target = "wasm32-unknown-unknown"
 crate-type = ["cdylib"]
 
 [dependencies]
-ayaka-script = { path = "../../utils/ayaka-script", features = ["rt-format"] }
+ayaka-script-types = { path = "../../utils/ayaka-script-types", features = ["rt-format"] }
 ayaka-bindings = { path = "../../utils/ayaka-bindings" }
 rt-format = "0.3"

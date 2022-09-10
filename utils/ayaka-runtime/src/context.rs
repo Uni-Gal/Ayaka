@@ -9,7 +9,8 @@ use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::{
     ActionLine, ActionLines, ActionProcessContextRef, GameProcessContextRef, TextProcessContextRef,
 };
-use ayaka_script::{Command, Line, Loc, ParseError, Program, Text, TextParser};
+use ayaka_script::{Loc, ParseError, TextParser};
+use ayaka_script_types::{Command, Line, Program, Text};
 use log::error;
 use script::*;
 use std::{

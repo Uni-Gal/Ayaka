@@ -3,7 +3,7 @@
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
 
-use ayaka_script::{Program, RawValue};
+use ayaka_script_types::{Program, RawValue};
 use fallback::{FallbackSpec, IsEmpty2};
 use serde::{Deserialize, Serialize};
 use std::{

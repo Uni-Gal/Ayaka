@@ -1,8 +1,9 @@
 [workspace]
 members = [
     "ayaka-bindings-types",
-    "ayaka-runtime",
+    "ayaka-script-types",
     "ayaka-script",
+    "ayaka-runtime",
 ]
 
 resolver = "2"

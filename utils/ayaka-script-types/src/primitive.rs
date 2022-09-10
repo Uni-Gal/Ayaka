@@ -3,7 +3,7 @@ use std::borrow::Cow;
 
 /// The basic and only type used in scripts.
 /// ```
-/// # use ayaka_script::RawValue;
+/// # use ayaka_script_types::RawValue;
 /// assert_eq!(serde_yaml::from_str::<RawValue>("~").unwrap(), RawValue::Unit);
 /// assert_eq!(serde_yaml::from_str::<RawValue>("true").unwrap(), RawValue::Bool(true));
 /// assert_eq!(serde_yaml::from_str::<RawValue>("123").unwrap(), RawValue::Num(123));
@@ -57,7 +57,7 @@ impl RawValue {
     /// * A [`RawValue::Str`] converts to `false` if and only if it's empty.
     ///
     /// ```
-    /// # use ayaka_script::RawValue;
+    /// # use ayaka_script_types::RawValue;
     /// let unit_value = RawValue::Unit;
     /// assert!(!unit_value.get_bool());
     /// let num_value = RawValue::Num(123);
@@ -82,7 +82,7 @@ impl RawValue {
     /// * A [`RawValue::Str`] converts to the length of the string.
     ///
     /// ```
-    /// # use ayaka_script::RawValue;
+    /// # use ayaka_script_types::RawValue;
     /// let unit_value = RawValue::Unit;
     /// assert_eq!(unit_value.get_num(), 0);
     /// let bool_value = RawValue::Bool(true);
@@ -107,7 +107,7 @@ impl RawValue {
     /// Be careful to use `get_str().into_owned()`, if possible, use `into_str()` instead.
     ///
     /// ```
-    /// # use ayaka_script::RawValue;
+    /// # use ayaka_script_types::RawValue;
     /// let unit_value = RawValue::Unit;
     /// assert_eq!(unit_value.get_str(), "");
     /// let bool_value = RawValue::Bool(true);

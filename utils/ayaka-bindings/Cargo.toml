@@ -5,7 +5,7 @@ authors = ["Berrysoft <Strawberry_Str@hotmail.com>"]
 edition = "2021"
 
 [dependencies]
-ayaka-script = { path = "../ayaka-script" }
+ayaka-script-types = { path = "../ayaka-script-types" }
 ayaka-bindings-types = { path = "../ayaka-bindings-types" }
 ayaka-bindings-impl = { path = "../ayaka-bindings-impl" }
 serde = "1.0"
