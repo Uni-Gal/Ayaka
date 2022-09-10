@@ -8,10 +8,12 @@
 #![deny(unsafe_code)]
 #![feature(absolute_path)]
 #![feature(generators)]
+#![feature(once_cell)]
 #![feature(round_char_boundary)]
 
 mod config;
 mod context;
+mod locale;
 pub mod plugin;
 pub mod script;
 mod settings;

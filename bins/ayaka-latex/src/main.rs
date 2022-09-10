@@ -36,9 +36,7 @@ async fn main() -> Result<()> {
             output.command0("tableofcontents").await?;
 
             ctx.init_new();
-            if let Some(loc) = opts.locale {
-                ctx.set_locale(loc);
-            }
+            ctx.set_locale(opts.locale.unwrap_or_else(Locale::current));
             while let Some(action) = ctx.next_run() {
                 if let Some(name) = &action.character {
                     output.command("paragraph", [name]).await?;

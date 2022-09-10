@@ -1,22 +1,12 @@
-//! The internal locale lib.
-//!
-//! This crate provides the [`Locale`] type.
-
-#![warn(missing_docs)]
-#![deny(unsafe_code)]
-#![feature(once_cell)]
-
-mod matcher;
-
 use icu_locid::{LanguageIdentifier, ParserError};
-use matcher::LanguageMatcher;
+use language_matcher::LanguageMatcher;
 use serde::{Deserialize, Serialize};
 use std::{fmt::Display, str::FromStr, sync::LazyLock};
 use sys_locale::get_locale;
 
 static MATCHER: LazyLock<LanguageMatcher> = LazyLock::new(LanguageMatcher::new);
 
-/// Representation of a language identifier     .
+/// Representation of a language identifier.
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[repr(transparent)]
 pub struct Locale(pub LanguageIdentifier);
@@ -26,7 +16,7 @@ impl Locale {
     /// Internally it calles [`sys_locale::get_locale`].
     ///
     /// ```
-    /// # use locale::Locale;
+    /// # use ayaka_runtime::Locale;
     /// println!("Current locale: {}", Locale::current());
     /// ```
     pub fn current() -> Self {
@@ -40,7 +30,7 @@ impl Locale {
     /// Returns [`None`] if it cannot choose a best match.
     ///
     /// ```
-    /// # use locale::locale;
+    /// # use ayaka_runtime::locale;
     /// let current = locale!("zh-CN");
     /// let accepts = [
     ///     locale!("en"),
@@ -84,13 +74,13 @@ impl AsRef<LanguageIdentifier> for Locale {
 }
 
 #[doc(hidden)]
-pub use icu_locid::langid;
+pub use icu_locid::langid as __icu_langid;
 
 /// A macro allowing for compile-time construction of valid [`Locale`].
 /// See [`icu_locid::langid!`].
 ///
 /// ```
-/// # use locale::{locale, Locale};
+/// # use ayaka_runtime::{locale, Locale};
 /// const ZH_CN: Locale = locale!("zh_CN");
 /// let zh_cn: Locale = "zh_CN".parse().unwrap();
 /// assert_eq!(ZH_CN, zh_cn);
@@ -98,7 +88,7 @@ pub use icu_locid::langid;
 #[macro_export]
 macro_rules! locale {
     ($langid:literal) => {
-        $crate::Locale($crate::langid!($langid))
+        $crate::Locale($crate::__icu_langid!($langid))
     };
 }
 

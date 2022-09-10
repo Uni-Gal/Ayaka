@@ -7,8 +7,10 @@ edition = "2021"
 ayaka-primitive = { path = "../ayaka-primitive", features = ["rt-format"] }
 ayaka-bindings-types = { path = "../ayaka-bindings-types" }
 ayaka-script = { path = "../ayaka-script" }
-fallback = { path = "../fallback" }
-locale = { path = "../locale" }
+fallback = "0.1"
+language-matcher = "0.1"
+icu_locid = { version = "1.0.0-beta1", features = ["std"] }
+sys-locale = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 serde_json = "1.0"

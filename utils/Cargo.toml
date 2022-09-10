@@ -1,7 +1,5 @@
 [workspace]
 members = [
-    "fallback",
-    "locale",
     "ayaka-primitive",
     "ayaka-runtime",
     "ayaka-script",
