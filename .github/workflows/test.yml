@@ -11,9 +11,13 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - run: sudo apt-get install -y libwebkit2gtk-4.0-dev
+      - name: Install dependencies
+        run: sudo apt-get install -y libwebkit2gtk-4.0-dev
         if: matrix.os == 'ubuntu-latest'
-      - run: |
+      - name: Install targets
+        run: |
           rustup target add wasm32-unknown-unknown
           rustup target add wasm32-wasi
-      - run: make test
+      - name: Test
+        run: make test
+        working-directory: .
