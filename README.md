@@ -22,6 +22,7 @@ See Ayaka Book:
 $ make serve-book
 ```
 If you don't have `mdbook` installed, simply read the markdown files in `book` folder.
+To start quickly, follow the instructions in [Quick start](./book/src/quick_start.md).
 
 Build API docs into `utils/target/doc`:
 ``` bash
