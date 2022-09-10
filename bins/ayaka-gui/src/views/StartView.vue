@@ -75,19 +75,16 @@ export default {
             }
         },
         async process_settings() {
-            const settings = await get_settings();
+            const settings = await get_settings()
             console.log(settings)
             let loc = settings?.lang
-            if (loc === undefined || loc.length == 0 || loc == "und") {
+            if (!loc || !this.$i18n.availableLocales.includes(loc)) {
                 loc = await choose_locale(this.$i18n.availableLocales)
             }
             if (loc) {
-                if (this.$i18n.availableLocales.includes(loc)) {
-                    this.$i18n.locale = loc
-                    await set_locale(loc)
-                } else {
-                    console.error("Wrong locale %s", loc)
-                }
+                console.log("Set locale to %s", loc)
+                this.$i18n.locale = loc
+                await set_locale(loc)
             }
         }
     }
