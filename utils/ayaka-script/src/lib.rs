@@ -6,11 +6,11 @@
 #![feature(once_cell)]
 
 mod exec;
+mod primitive;
 mod text;
 
-#[doc(no_inline)]
-pub use ayaka_primitive::{RawValue, ValueType};
 pub use exec::*;
 #[doc(no_inline)]
 pub use log;
+pub use primitive::*;
 pub use text::*;
