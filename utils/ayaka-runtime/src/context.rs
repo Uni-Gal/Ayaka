@@ -450,15 +450,19 @@ impl Context {
 
     /// Step back to the last run.
     pub fn next_back_run(&mut self) -> Option<Action> {
-        if let Some(last_action) = self.record.history.pop() {
-            self.ctx = last_action.ctx;
-            log::debug!(
-                "Back to para {}, act {}",
-                self.ctx.cur_para,
-                self.ctx.cur_act
-            );
+        if self.record.history.len() <= 1 {
+            None
+        } else {
+            if let Some(last_action) = self.record.history.pop() {
+                self.ctx = last_action.ctx;
+                log::debug!(
+                    "Back to para {}, act {}",
+                    self.ctx.cur_para,
+                    self.ctx.cur_act
+                );
+            }
+            self.record.history.last().cloned()
         }
-        self.record.history.last().cloned()
     }
 
     /// Check all paragraphs to find grammer errors.
