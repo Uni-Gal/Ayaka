@@ -20,7 +20,7 @@ use ayaka_bindings::*;
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::SCRIPT
+    PluginType::default()
 }
 
 #[export]

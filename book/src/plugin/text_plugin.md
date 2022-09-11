@@ -10,12 +10,7 @@ use ayaka_bindings::*;
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::TEXT
-}
-
-#[export]
-fn text_commands() -> &'static [&'static str] {
-    ["hello"]
+    PluginType::builder().text(["hello"]).build()
 }
 
 #[export]

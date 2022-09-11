@@ -13,7 +13,7 @@ use pulldown_cmark::*;
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::ACTION
+    PluginType::builder().action().build()
 }
 
 #[export]

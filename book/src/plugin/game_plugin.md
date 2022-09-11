@@ -7,7 +7,7 @@ use ayaka_bindings::*;
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::GAME
+    PluginType::builder().game().build()
 }
 
 #[export]
