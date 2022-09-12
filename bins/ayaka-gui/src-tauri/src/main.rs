@@ -305,11 +305,11 @@ async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue
         .as_mut()
         .ok_or_else(|| anyhow!("Context not initialized."))?;
     let action = storage.action.lock().await;
-    let action = action
+    let switch = action
         .as_ref()
-        .and_then(|action| action.switch_actions.get(i))
+        .and_then(|action| action.switches.get(i))
         .ok_or_else(|| anyhow!("Index error: {}", i))?;
-    Ok(context.call(action))
+    Ok(context.call(&switch.action))
 }
 
 #[command]

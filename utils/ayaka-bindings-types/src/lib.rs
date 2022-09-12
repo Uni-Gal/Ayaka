@@ -260,8 +260,6 @@ pub struct Action {
     pub para_title: Option<String>,
     /// The switches.
     pub switches: Vec<Switch>,
-    /// The actions of switches.
-    pub switch_actions: Vec<Program>,
     /// The other custom properties.
     pub props: HashMap<String, String>,
 }
@@ -271,6 +269,8 @@ pub struct Action {
 pub struct Switch {
     /// The switch text.
     pub text: String,
+    /// The action of this switch after chosen.
+    pub action: Program,
     /// Whether the switch is enabled.
     pub enabled: bool,
 }

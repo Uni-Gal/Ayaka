@@ -222,7 +222,6 @@ impl Context {
         let mut chname = None;
         let mut switches = vec![];
         let mut props = HashMap::new();
-        let mut switch_actions = vec![];
         for line in t.0.into_iter() {
             match line {
                 Line::Str(s) => action_line.push_back_chars(s),
@@ -252,8 +251,11 @@ impl Context {
                     } => {
                         // unwrap: when enabled is None, it means true.
                         let enabled = enabled.map(|p| self.call(&p).get_bool()).unwrap_or(true);
-                        switches.push(Switch { text, enabled });
-                        switch_actions.push(action);
+                        switches.push(Switch {
+                            text,
+                            action,
+                            enabled,
+                        });
                     }
                     Command::Other(name, args) => {
                         if let Some(m) = self.runtime.text_modules.get(&name) {
@@ -287,7 +289,6 @@ impl Context {
             para_title,
             switches,
             props,
-            switch_actions,
         })
     }
 
@@ -307,9 +308,19 @@ impl Context {
                 .map(|s| {
                     let s = s.spec();
                     let text = s.text.and_any().unwrap_or_default();
+                    let action = s
+                        .action
+                        .map(|p| p.0)
+                        .and_any()
+                        .map(Program)
+                        .unwrap_or_default();
                     let (enabled, base_enabled) = s.enabled.unzip();
                     let enabled = base_enabled.or(enabled).unwrap_or(true);
-                    Switch { text, enabled }
+                    Switch {
+                        text,
+                        action,
+                        enabled,
+                    }
                 })
                 .collect();
             let (props, base_props) = actions.props.unzip();
@@ -318,12 +329,6 @@ impl Context {
             for (key, value) in base_props.into_iter() {
                 props.entry(key).or_insert(value);
             }
-            let switch_actions = actions
-                .switch_actions
-                .into_iter()
-                .map(|act| act.map(|p| p.0).and_any().map(Program))
-                .map(|p| p.unwrap_or_default())
-                .collect();
             Some(Action {
                 ctx,
                 line,
@@ -333,7 +338,6 @@ impl Context {
                 para_title,
                 switches,
                 props,
-                switch_actions,
             })
         } else {
             None

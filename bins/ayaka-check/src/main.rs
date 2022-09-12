@@ -80,9 +80,9 @@ async fn main() -> Result<()> {
                 let s = read_line()?;
                 if let Ok(i) = s.trim().parse::<usize>() {
                     let valid =
-                        i > 0 && i <= action.switch_actions.len() && action.switches[i - 1].enabled;
+                        i > 0 && i <= action.switches.len() && action.switches[i - 1].enabled;
                     if valid {
-                        ctx.call(&action.switch_actions[i - 1]);
+                        ctx.call(&action.switches[i - 1].action);
                         break;
                     }
                 }
