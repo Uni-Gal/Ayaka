@@ -10,12 +10,15 @@ jobs:
           - name: linux-x64
             os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
+            postfix:
           - name: windows-x64
             os: windows-latest
             target: x86_64-pc-windows-msvc
+            postfix: .exe
           - name: macos-x64
             os: macos-latest
             target: x86_64-apple-darwin
+            postfix:
     runs-on: ${{ matrix.platform.os }}
     steps:
       - uses: actions/checkout@v2
@@ -25,4 +28,17 @@ jobs:
       - name: Install targets
         run: rustup target add ${{ matrix.platform.target }}
       - name: Build
-        run: make release-cross TARGET=${{ matrix.platform.target }}
+        run: make plugins release-cross TARGET=${{ matrix.platform.target }}
+      - name: Publish plugins
+        uses: actions/upload-artifact@v3
+        with:
+          name: plugins
+          path: examples/plugins/
+      - name: Publish binaries
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-${{ matrix.platform.name }}
+          path: |
+            bins/target/${{ matrix.platform.target }}/release/ayaka-check${{ matrix.platform.postfix }}
+            bins/target/${{ matrix.platform.target }}/release/ayaka-gui${{ matrix.platform.postfix }}
+            bins/target/${{ matrix.platform.target }}/release/ayaka-latex${{ matrix.platform.postfix }}
