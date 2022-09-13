@@ -10,7 +10,7 @@ use ayaka_runtime::{
 };
 use flexi_logger::{FileSpec, LogSpecification, Logger};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Display};
+use std::{collections::HashMap, fmt::Display, time::Duration};
 use tauri::{async_runtime::Mutex, command, AppHandle, Manager, State};
 
 type CommandResult<T> = std::result::Result<T, CommandError>;
@@ -61,53 +61,58 @@ fn emit_open_status(
 
 #[command]
 async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
-    {
-        let config = &storage.config;
-        let context = Context::open(config, FrontendType::Html);
-        pin_mut!(context);
-        while let Some(status) = context.next().await {
-            match status {
-                OpenStatus::LoadProfile => {
-                    emit_open_status(&handle, OpenGameStatus::LoadProfile(config.clone()))?
-                }
-                OpenStatus::CreateRuntime => {
-                    emit_open_status(&handle, OpenGameStatus::CreateRuntime)?
-                }
-                OpenStatus::LoadPlugin(name, i, len) => {
-                    emit_open_status(&handle, OpenGameStatus::LoadPlugin(name, i, len))?
-                }
+    let mut one_sec = tokio::time::interval(Duration::from_secs(1));
+    one_sec.tick().await;
+    let wait_one = one_sec.tick();
+
+    let config = &storage.config;
+    let context = Context::open(config, FrontendType::Html);
+    pin_mut!(context);
+    while let Some(status) = context.next().await {
+        match status {
+            OpenStatus::LoadProfile => {
+                emit_open_status(&handle, OpenGameStatus::LoadProfile(config.clone()))?
+            }
+            OpenStatus::CreateRuntime => emit_open_status(&handle, OpenGameStatus::CreateRuntime)?,
+            OpenStatus::LoadPlugin(name, i, len) => {
+                emit_open_status(&handle, OpenGameStatus::LoadPlugin(name, i, len))?
             }
         }
-        let mut ctx = context.await?;
-        let window = handle.get_window("main").unwrap();
-        window.set_title(&ctx.game.title)?;
-        let settings = {
-            emit_open_status(&handle, OpenGameStatus::LoadSettings)?;
-            load_settings(&storage.ident).await.unwrap_or_else(|e| {
-                warn!("Load settings failed: {}", e);
-                Settings::new()
-            })
-        };
-        ctx.set_settings(settings);
-        emit_open_status(&handle, OpenGameStatus::LoadGlobalRecords)?;
-        ctx.set_global_record(
-            load_global_record(&storage.ident, &ctx.game.title)
-                .await
-                .unwrap_or_else(|e| {
-                    warn!("Load global records failed: {}", e);
-                    Default::default()
-                }),
-        );
-        emit_open_status(&handle, OpenGameStatus::LoadRecords)?;
-        *storage.records.lock().await = load_records(&storage.ident, &ctx.game.title)
+    }
+    let mut ctx = context.await?;
+
+    let window = handle.get_window("main").unwrap();
+    window.set_title(&ctx.game.title)?;
+    let settings = {
+        emit_open_status(&handle, OpenGameStatus::LoadSettings)?;
+        load_settings(&storage.ident).await.unwrap_or_else(|e| {
+            warn!("Load settings failed: {}", e);
+            Settings::new()
+        })
+    };
+    ctx.set_settings(settings);
+
+    emit_open_status(&handle, OpenGameStatus::LoadGlobalRecords)?;
+    ctx.set_global_record(
+        load_global_record(&storage.ident, &ctx.game.title)
             .await
             .unwrap_or_else(|e| {
-                warn!("Load records failed: {}", e);
+                warn!("Load global records failed: {}", e);
                 Default::default()
-            });
-        *storage.context.lock().await = Some(ctx);
-        emit_open_status(&handle, OpenGameStatus::Loaded)?;
-    }
+            }),
+    );
+
+    emit_open_status(&handle, OpenGameStatus::LoadRecords)?;
+    *storage.records.lock().await = load_records(&storage.ident, &ctx.game.title)
+        .await
+        .unwrap_or_else(|e| {
+            warn!("Load records failed: {}", e);
+            Default::default()
+        });
+    *storage.context.lock().await = Some(ctx);
+
+    wait_one.await;
+    emit_open_status(&handle, OpenGameStatus::Loaded)?;
     Ok(())
 }
 
