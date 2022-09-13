@@ -31,3 +31,9 @@ pub use futures_util::{pin_mut, StreamExt, TryStreamExt};
 #[doc(no_inline)]
 pub use locale::*;
 pub use settings::*;
+
+/// Get the version of Ayaka runtime.
+/// This version string is exacted from `CARGO_PKG_VERSION`.
+pub fn version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}

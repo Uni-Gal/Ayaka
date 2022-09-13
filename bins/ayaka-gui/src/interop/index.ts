@@ -74,6 +74,10 @@ export interface Switch {
     enabled: boolean,
 }
 
+export function ayaka_version(): Promise<string> {
+    return invoke("ayaka_version")
+}
+
 export function open_game(): Promise<void> {
     return invoke("open_game")
 }

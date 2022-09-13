@@ -97,14 +97,17 @@ export default {
             }
         },
         rotate_degree() {
-            return this.progress / 100 * 360
+            return this.progress / 100 * 60 * 7 - 60
         }
     }
 }
 </script>
 
 <template>
-    <img ref="logo" class="content-logo" src="../assets/logo.png" alt="Logo" />
+    <div class="content-logo">
+        <img ref="logo" style="rotate: -60deg" src="../assets/logo.png" alt="Logo" />
+        <h1 class="fw-bolder" style="font-size: 300%">Just Ayaka.</h1>
+    </div>
     <div class="progress progress-bottom">
         <div class="progress-bar" role="progressbar" :style='`width: ${progress}%`'>{{ text }}</div>
     </div>

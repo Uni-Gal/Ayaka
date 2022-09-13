@@ -265,6 +265,9 @@ export default {
     <div>
         <h4><span class="badge bg-primary">{{ action.para_title }}</span></h4>
     </div>
+    <div class="logo d-flex align-items-center">
+        <span>Powered by Ayaka.</span>
+    </div>
     <div class="content-full bg-body" :hidden="state != ActionState.Video">
         <video ref="video" class="background" @ended="onvideoended" :src="conv_src(action.props.video)"
             type="video/mp4"></video>
@@ -338,6 +341,14 @@ export default {
 /* Copied from .h4 */
 .switch {
     font-size: calc(1.275rem + .3vw);
+}
+
+.logo {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    height: 2.5em;
+    transform: translateY(-100%);
 }
 
 .commands {

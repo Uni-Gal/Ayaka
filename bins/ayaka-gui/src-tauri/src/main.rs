@@ -34,6 +34,11 @@ impl Display for CommandError {
     }
 }
 
+#[command]
+fn ayaka_version() -> &'static str {
+    ayaka_runtime::version()
+}
+
 #[derive(Debug, Serialize)]
 struct FullSettings {
     settings: Settings,
@@ -374,6 +379,7 @@ fn main() -> Result<()> {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            ayaka_version,
             open_game,
             get_settings,
             set_settings,
