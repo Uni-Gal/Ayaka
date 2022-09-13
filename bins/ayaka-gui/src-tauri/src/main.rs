@@ -10,7 +10,7 @@ use ayaka_runtime::{
 };
 use flexi_logger::{FileSpec, LogSpecification, Logger};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Display, time::Duration};
+use std::{collections::HashMap, fmt::Display};
 use tauri::{async_runtime::Mutex, command, AppHandle, Manager, State};
 
 type CommandResult<T> = std::result::Result<T, CommandError>;
@@ -61,10 +61,6 @@ fn emit_open_status(
 
 #[command]
 async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
-    let mut one_sec = tokio::time::interval(Duration::from_secs(1));
-    one_sec.tick().await;
-    let wait_one = one_sec.tick();
-
     let config = &storage.config;
     let context = Context::open(config, FrontendType::Html);
     pin_mut!(context);
@@ -111,7 +107,6 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
         });
     *storage.context.lock().await = Some(ctx);
 
-    wait_one.await;
     emit_open_status(&handle, OpenGameStatus::Loaded)?;
     Ok(())
 }

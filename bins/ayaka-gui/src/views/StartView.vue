@@ -41,14 +41,23 @@ export default {
         async on_open_status(e: TauriEvent<OpenGameStatus>) {
             console.log(e.payload)
             const status = e.payload;
-            [this.text, this.progress] = this.status_to_text(status)
-            switch (OpenGameStatusType[status.t]) {
-                case OpenGameStatusType.LoadRecords:
-                    await this.process_settings()
-                    break
-                case OpenGameStatusType.Loaded:
-                    this.$router.replace("/home")
-                    break
+            [this.text, this.progress] = this.status_to_text(status);
+            const anime = (this.$refs.logo as HTMLElement).animate([
+                { rotate: `${this.rotate_degree()}deg` }
+            ], {
+                duration: 800,
+                fill: "forwards",
+                easing: "ease-out"
+            })
+            anime.onfinish = async () => {
+                switch (OpenGameStatusType[status.t]) {
+                    case OpenGameStatusType.LoadRecords:
+                        await this.process_settings()
+                        break
+                    case OpenGameStatusType.Loaded:
+                        this.$router.replace("/home")
+                        break
+                }
             }
         },
         status_to_text(s: OpenGameStatus): [string, number] {
@@ -86,13 +95,16 @@ export default {
                 this.$i18n.locale = loc
                 await set_locale(loc)
             }
+        },
+        rotate_degree() {
+            return this.progress / 100 * 360
         }
     }
 }
 </script>
 
 <template>
-    <img class="content-logo" src="../assets/logo.png" alt="Logo" />
+    <img ref="logo" class="content-logo" src="../assets/logo.png" alt="Logo" />
     <div class="progress progress-bottom">
         <div class="progress-bar" role="progressbar" :style='`width: ${progress}%`'>{{ text }}</div>
     </div>
@@ -126,9 +138,10 @@ export default {
     position: absolute;
     top: 50%;
     left: 50%;
-    transform: translate(-50%, -50%);
+    translate: -50% -50%;
     width: fit-content;
     height: fit-content;
+    scale: 70%;
     text-align: center;
 }
 </style>
