@@ -42,7 +42,7 @@ export default {
             console.log(e.payload)
             const status = e.payload;
             [this.text, this.progress] = this.status_to_text(status);
-            const anime = (this.$refs.logo as HTMLElement).animate([
+            let anime = (this.$refs.logo as HTMLElement).animate([
                 { rotate: `${this.rotate_degree()}deg` }
             ], {
                 duration: 800,
@@ -97,7 +97,7 @@ export default {
             }
         },
         rotate_degree() {
-            return this.progress / 100 * 60 * 7 - 60
+            return this.progress / 100 * 360
         }
     }
 }
@@ -105,7 +105,7 @@ export default {
 
 <template>
     <div class="content-logo">
-        <img ref="logo" style="rotate: -60deg" src="../assets/logo.png" alt="Logo" />
+        <img ref="logo" src="../assets/logo.png" alt="Logo" />
         <h1 class="fw-bolder" style="font-size: 300%">Just Ayaka.</h1>
     </div>
     <div class="progress progress-bottom">
