@@ -361,7 +361,15 @@ fn main() -> Result<()> {
                 .value
                 .as_str()
                 .map(|s| s.to_string())
-                .unwrap_or_default();
+                .unwrap_or_else(|| {
+                    std::env::current_exe()
+                        .unwrap()
+                        .parent()
+                        .unwrap()
+                        .join("config.yaml")
+                        .to_string_lossy()
+                        .into_owned()
+                });
             app.manage(Storage::new(ident, config));
             Ok(())
         })
