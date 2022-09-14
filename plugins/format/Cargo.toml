@@ -1,0 +1,15 @@
+cargo-features = ["per-package-target"]
+
+[package]
+name = "format"
+version = "0.1.0"
+edition = "2021"
+forced-target = "wasm32-unknown-unknown"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ayaka-script-types = { path = "../../utils/ayaka-script-types", features = ["rt-format"] }
+ayaka-bindings = { path = "../../utils/ayaka-bindings" }
+rt-format = "0.3"

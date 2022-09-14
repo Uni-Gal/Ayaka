@@ -1,0 +1,12 @@
+[package]
+name = "ayaka-bindings-types"
+version = "0.1.0"
+authors = ["Berrysoft <Strawberry_Str@hotmail.com>"]
+edition = "2021"
+
+[dependencies]
+ayaka-script-types = { path = "../ayaka-script-types" }
+fallback = "0.1"
+serde = { version = "1.0", features = ["derive"] }
+log = { version = "0.4", features = ["serde"] }
+bitflags = "1.3"

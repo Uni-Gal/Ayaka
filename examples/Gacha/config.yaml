@@ -1,0 +1,126 @@
+title: 原神抽卡
+author: Berrysoft
+plugins:
+  dir: ../plugins/
+  modules:
+    - format
+    - ayalog
+    - media
+    - random
+props:
+  videos: videos
+base_lang: zh-Hans
+paras:
+  zh-Hans:
+    -
+      tag: init
+      texts:
+        - \exec{$total = 0; $t3 = 0; $t4 = 0; $t5 = 0; $c4 = 0; $c5 = 0;}
+      next: start
+    -
+      tag: start
+      texts:
+        - |
+          \exec{format.fmt("你共抽了{}次，三星{}个，四星{}个，五星{}个", $total, $t3, $t4, $t5)}
+          \switch{祈愿一次}{$n = 1}
+          \switch{祈愿十次}{$n = 10}
+          \switch{退出}{$n = -1}
+      next: |
+        \exec{
+          $total5 = 0;
+          $total4 = 0;
+          $total3 = 0;
+          $temp5 = $c5;
+          $temp4 = $c4;
+          if($n > 0, "calc")
+        }
+    -
+      tag: calc
+      texts:
+        - |
+          \exec{
+            p = random.rnd(1000);
+            current5 = if($temp5 < 73,
+              p < 6,
+              if($temp5 >= 99,
+                true,
+                p < (6 + 60 * ($temp5 - 73))
+              )
+            );
+            current4 = if($temp4 < 8,
+              p < 51,
+              if($temp4 >= 9,
+                true,
+                p < 561
+              )
+            );
+            if(current5,
+              $total5 += 1,
+              if(current4,
+                $total4 += 1,
+                $total3 += 1
+              )
+            );
+            if(current5,
+              $temp4 += 1,
+              if(current4,
+                $temp4 = 0,
+                $temp4 += 1
+              )
+            );
+            if(current5,
+              $temp5 = 0,
+              $temp5 += 1,
+            );
+            ayalog.info(if(current5, 5, if(current4, 4, 3)), " star");
+          }
+      next: |
+        \exec{
+          $n -= 1;
+          if($n,
+            "calc",
+            if($total3 + $total4 + $total5 == 1,
+              if($total5,
+                "pull2",
+                if($total4,
+                  "pull1",
+                  "pull0"
+                )
+              ),
+              if($total5,
+                "pull4",
+                "pull3"
+              )
+            )
+          )
+        }
+    -
+      tag: pull0
+      texts:
+        - \video{0}\exec{$total += 1;}
+      next: end
+    -
+      tag: pull1
+      texts:
+        - \video{1}\exec{$total += 1;}
+      next: end
+    -
+      tag: pull2
+      texts:
+        - \video{2}\exec{$total += 1;}
+      next: end
+    -
+      tag: pull3
+      texts:
+        - \video{3}\exec{$total += 10;}
+      next: end
+    -
+      tag: pull4
+      texts:
+        - \video{4}\exec{$total += 10;}
+      next: end
+    -
+      tag: end
+      texts:
+        - \exec{$t5 += $total5; $t4 += $total4; $t3 += $total3; $c4 = $temp4; $c5 = $temp5;}
+      next: start

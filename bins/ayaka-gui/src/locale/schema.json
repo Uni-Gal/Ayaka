@@ -1,0 +1,57 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "LangResources",
+    "description": "A resource file of translation",
+    "type": "object",
+    "properties": {
+        "dialogYes": {
+            "description": "The YES button in dialog",
+            "type": "string"
+        },
+        "dialogNo": {
+            "description": "The NO button in dialog",
+            "type": "string"
+        },
+        "dialogOk": {
+            "description": "The OK button in dialog",
+            "type": "string"
+        },
+        "newGame": {
+            "description": "The new game button at HomeView",
+            "type": "string"
+        },
+        "loadRecords": {
+            "description": "The load records button at HomeView",
+            "type": "string"
+        },
+        "settings": {
+            "description": "The settings button at HomeView, and title at SettingsView",
+            "type": "string"
+        },
+        "about": {
+            "description": "The about button at HomeView",
+            "type": "string"
+        },
+        "goHome": {
+            "description": "The go home button at GameView",
+            "type": "string"
+        },
+        "goHomeConfirm": {
+            "description": "The confirm message in go home confirm dialog",
+            "type": "string"
+        },
+        "quit": {
+            "description": "The quit button at HomeView",
+            "type": "string"
+        },
+        "quitConfirm": {
+            "description": "The confirm message in quit confirm dialog",
+            "type": "string"
+        },
+        "error": {
+            "description": "The error title of dialog",
+            "type": "string"
+        }
+    },
+    "required": []
+}

@@ -1,0 +1,15 @@
+{
+    "$schema": "./schema.json",
+    "dialogYes": "是",
+    "dialogNo": "否",
+    "dialogOk": "确定",
+    "newGame": "新游戏",
+    "loadRecords": "加载进度",
+    "settings": "设置",
+    "about": "关于",
+    "goHome": "主页",
+    "goHomeConfirm": "返回主页？",
+    "quit": "退出",
+    "quitConfirm": "退出游戏？",
+    "error": "错误"
+}

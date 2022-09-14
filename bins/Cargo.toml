@@ -1,0 +1,12 @@
+[workspace]
+members = [
+    "ayaka-check",
+    "ayaka-gui/src-tauri",
+    "ayaka-latex",
+]
+
+resolver = "2"
+
+[profile.release]
+lto = true
+codegen-units = 1

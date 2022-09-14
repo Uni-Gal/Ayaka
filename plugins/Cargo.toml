@@ -1,0 +1,14 @@
+[workspace]
+members = [
+    "basictex",
+    "format",
+    "ayalog",
+    "live2d",
+    "markdown",
+    "media",
+    "random",
+]
+
+[profile.release]
+lto = true
+codegen-units = 1

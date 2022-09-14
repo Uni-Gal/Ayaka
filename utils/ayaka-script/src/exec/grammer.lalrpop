@@ -1,0 +1,126 @@
+use super::*;
+use log::warn;
+use std::str::FromStr;
+
+grammar;
+
+Delimiter<T, D>: Vec<T> = {
+    <mut v:(<T> D)*> <e:T?> => match e {
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
+};
+
+pub Program: Program = Delimiter<Expr, ";"> => Program(<>);
+
+Exprs: Vec<Expr> = Delimiter<Expr, ",">;
+
+FuncName: (String, String) = {
+    <i:Id> => (String::default(), i),
+    <ns:Id> "." <name:Id> => (ns, name),
+}
+
+UnaryOp: UnaryOp = {
+    "+" => UnaryOp::Positive,
+    "-" => UnaryOp::Negative,
+    "!" => UnaryOp::Not,
+}
+
+// To make sure the full expr in parens.
+FullExpr: Expr = Expr;
+
+pub Expr: Expr = {
+    #[precedence(level="1")]
+    <r:Ref> => Expr::Ref(r),
+    <c:Const> => Expr::Const(c),
+    "(" <e:FullExpr> ")" => e,
+    <i:FuncName> "(" <a:Exprs> ")" => Expr::Call(i.0, i.1, a),
+    <o:UnaryOp> <e:Expr> => Expr::Unary(o, Box::new(e)),
+    #[precedence(level="2")]
+    #[assoc(side="left")]
+    <le:Expr> "*" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Mul), Box::new(re)),
+    #[assoc(side="left")]
+    <le:Expr> "/" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Div), Box::new(re)),
+    #[assoc(side="left")]
+    <le:Expr> "%" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Mod), Box::new(re)),
+    #[precedence(level="3")]
+    #[assoc(side="left")]
+    <le:Expr> "+" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Add), Box::new(re)),
+    #[assoc(side="left")]
+    <le:Expr> "-" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Minus), Box::new(re)),
+    #[precedence(level="4")]
+    #[assoc(side="left")]
+    <le:Expr> "<" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Lt), Box::new(re)),
+    #[assoc(side="left")]
+    <le:Expr> "<=" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Le), Box::new(re)),
+    #[assoc(side="left")]
+    <le:Expr> ">" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Gt), Box::new(re)),
+    #[assoc(side="left")]
+    <le:Expr> ">=" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Ge), Box::new(re)),
+    #[precedence(level="5")]
+    #[assoc(side="left")]
+    <le:Expr> "==" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Eq), Box::new(re)),
+    #[assoc(side="left")]
+    <le:Expr> "!=" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Neq), Box::new(re)),
+    #[precedence(level="6")]
+    #[assoc(side="left")]
+    <le:Expr> "&" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::And), Box::new(re)),
+    #[precedence(level="7")]
+    #[assoc(side="left")]
+    <le:Expr> "^" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Xor), Box::new(re)),
+    #[precedence(level="8")]
+    #[assoc(side="left")]
+    <le:Expr> "|" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Val(ValBinaryOp::Or), Box::new(re)),
+    #[precedence(level="9")]
+    #[assoc(side="left")]
+    <le:Expr> "&&" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::And), Box::new(re)),
+    #[precedence(level="10")]
+    #[assoc(side="left")]
+    <le:Expr> "||" <re:Expr> => Expr::Binary(Box::new(le), BinaryOp::Logic(LogicBinaryOp::Or), Box::new(re)),
+    #[precedence(level="11")]
+    #[assoc(side="left")]
+    <r:Ref> <o:AssignOp> <e:Expr> => Expr::Binary(Box::new(Expr::Ref(r)), o, Box::new(e)),
+}
+
+AssignOp: BinaryOp = {
+    "=" => BinaryOp::Assign,
+    "+=" => BinaryOp::Inplace(ValBinaryOp::Add),
+    "-=" => BinaryOp::Inplace(ValBinaryOp::Minus),
+    "*=" => BinaryOp::Inplace(ValBinaryOp::Mul),
+    "/=" => BinaryOp::Inplace(ValBinaryOp::Div),
+    "%=" => BinaryOp::Inplace(ValBinaryOp::Mod),
+    "&=" => BinaryOp::Inplace(ValBinaryOp::And),
+    "|=" => BinaryOp::Inplace(ValBinaryOp::Or),
+    "^=" => BinaryOp::Inplace(ValBinaryOp::Xor),
+}
+
+pub Ref: Ref = {
+    <i:Id> => Ref::Var(i),
+    "$" <i:Id> => Ref::Ctx(i),
+    "#" <i:Id> => Ref::Res(i),
+}
+
+Id: String = <s:r"[A-Za-z]\w*"> => s.into();
+
+pub Const: RawValue = {
+    "~" => RawValue::Unit,
+    "null" => RawValue::Unit,
+    <b:Bool> => RawValue::Bool(b),
+    <n:Num> => RawValue::Num(n),
+    <s:Str> => RawValue::Str(s),
+}
+
+Bool: bool = {
+    "true" => true,
+    "false" => false,
+}
+
+Num: i64 = <s:r"[0-9]+"> => i64::from_str(s).unwrap_or_else(|e| {
+    warn!("{}", e);
+    0
+});
+
+Str: String = <s:r##""[^"\\]*(\\.[^"\\]*)*""##> => s[1..s.len() - 1].into();

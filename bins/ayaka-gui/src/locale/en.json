@@ -1,0 +1,15 @@
+{
+    "$schema": "./schema.json",
+    "dialogYes": "Yes",
+    "dialogNo": "No",
+    "dialogOk": "OK",
+    "newGame": "New game",
+    "loadRecords": "Load records",
+    "settings": "Settings",
+    "about": "About",
+    "goHome": "Go home",
+    "goHomeConfirm": "Back to the home page?",
+    "quit": "Quit",
+    "quitConfirm": "Quit the game?",
+    "error": "Error"
+}

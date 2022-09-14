@@ -1,0 +1,16 @@
+version: 2
+updates:
+- package-ecosystem: cargo
+  directory: "/utils"
+  schedule:
+    interval: daily
+
+- package-ecosystem: cargo
+  directory: "/plugins"
+  schedule:
+    interval: daily
+
+- package-ecosystem: cargo
+  directory: "/bins"
+  schedule:
+    interval: daily
