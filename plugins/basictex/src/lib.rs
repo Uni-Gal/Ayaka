@@ -76,7 +76,7 @@ fn ruby(args: Vec<String>, ctx: TextProcessContext) -> TextProcessResult {
         }
         FrontendType::Latex => res
             .line
-            .push_back_block(format!("\\ruby{{{}}}{{{}}}", args[0], args[1])),
+            .push_back_block(format!("\\ruby{{{{{}}}}}{{{{{}}}}}", args[0], args[1])),
     }
     res
 }
