@@ -13,18 +13,15 @@ The frontend is Ayaka. The runtime is Ayaka. The script is Ayaka. [Just Ayaka.](
 * A flexible plugin system based on [WebAssembly](https://webassembly.org/). It provides hooks of the runtime and interop functionalities with the script.
 * A decoupled framework - the frontend, backend and plugins are decoupled.
 * A CLI frontend to check grammar errors and debug quickly.
-* A GUI frontend powered by [Tauri](https://tauri.app/) and [Vue](https://vuejs.org/).
-* A proto LaTeX frontend to generate PDF from the config.
+* A GUI frontend powered by [Tauri](https://tauri.app/) and [Vue](https://vuejs.org/), with [Live2D](https://www.live2d.com) support.
+* A prototype LaTeX frontend to generate PDF from the config.
 
 ## Docs
-See Ayaka Book:
-``` bash
-$ make serve-book
-```
-If you don't have `mdbook` installed, simply read the markdown files in `book` folder.
-To start quickly, follow the instructions in [Quick start](./book/src/quick_start.md).
+For authors with little experience of programming, see [Ayaka cookbook](https://github.com/Uni-Gal/Ayaka-cookbook).
 
-Build API docs into `utils/target/doc`:
+For developers, see [Ayaka Book](https://uni-gal.github.io/Ayaka/).
+
+For API docs, build into `utils/target/doc`:
 ``` bash
 $ make doc
 ```
