@@ -1,5 +1,5 @@
 # Script
-The script we use is dynamic typed.
+Ayaka script is dynamic typed.
 The only supported types are unit `~`, boolean, integer, and string.
 ``` rust
 pub enum RawValue {

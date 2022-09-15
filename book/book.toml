@@ -7,3 +7,6 @@ title = "Ayaka Book"
 
 [rust]
 edition = "2021"
+
+[preprocessor.graphviz]
+command = "mdbook-graphviz"
