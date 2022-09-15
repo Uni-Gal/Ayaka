@@ -24,14 +24,12 @@ It is then converted to string and appended to the text.
 ## Example: Fibonacci
 With the config file, we can even calculate some math problems. For example, Fibonacci:
 ``` yaml
--
-  tag: init
+- tag: init
   texts:
     - 1
     - \exec{$n = 50; $a = 1; $b = 1; $i = 1; $b}
   next: loop
--
-  tag: loop
+- tag: loop
   texts:
     - \exec{c = $b; $b += $a; $a = c; $i += 1; $b}
   next: \exec{if($i < $n, "loop")}

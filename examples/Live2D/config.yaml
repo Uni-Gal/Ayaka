@@ -18,8 +18,7 @@ plugins:
 base_lang: ja
 paras:
   ja:
-    -
-      tag: show
+    - tag: show
       texts:
         - /Haru//おはよう\show
         - /Haru//元気ですか

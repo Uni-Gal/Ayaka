@@ -12,13 +12,11 @@ props:
 base_lang: zh-Hans
 paras:
   zh-Hans:
-    -
-      tag: init
+    - tag: init
       texts:
         - \exec{$total = 0; $t3 = 0; $t4 = 0; $t5 = 0; $c4 = 0; $c5 = 0;}
       next: start
-    -
-      tag: start
+    - tag: start
       texts:
         - |
           \exec{format.fmt("你共抽了{}次，三星{}个，四星{}个，五星{}个", $total, $t3, $t4, $t5)}
@@ -34,8 +32,7 @@ paras:
           $temp4 = $c4;
           if($n > 0, "calc")
         }
-    -
-      tag: calc
+    - tag: calc
       texts:
         - |
           \exec{
@@ -94,33 +91,27 @@ paras:
             )
           )
         }
-    -
-      tag: pull0
+    - tag: pull0
       texts:
         - \video{0}\exec{$total += 1;}
       next: end
-    -
-      tag: pull1
+    - tag: pull1
       texts:
         - \video{1}\exec{$total += 1;}
       next: end
-    -
-      tag: pull2
+    - tag: pull2
       texts:
         - \video{2}\exec{$total += 1;}
       next: end
-    -
-      tag: pull3
+    - tag: pull3
       texts:
         - \video{3}\exec{$total += 10;}
       next: end
-    -
-      tag: pull4
+    - tag: pull4
       texts:
         - \video{4}\exec{$total += 10;}
       next: end
-    -
-      tag: end
+    - tag: end
       texts:
         - \exec{$t5 += $total5; $t4 += $total4; $t3 += $total3; $c4 = $temp4; $c5 = $temp5;}
       next: start

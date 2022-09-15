@@ -8,8 +8,7 @@ plugins:
 base_lang: en
 paras:
   en:
-    -
-      tag: md
+    - tag: md
       texts:
         - Markdown examples
         - '# HEAD'
@@ -19,8 +18,7 @@ paras:
         - '`code`'
         - Mixed normal *italic* **bold** `code`.
       next: tex
-    -
-      tag: tex
+    - tag: tex
       texts:
         - LaTeX examples
         - This is the first line.\par This is the second line.

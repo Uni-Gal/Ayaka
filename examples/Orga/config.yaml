@@ -29,8 +29,7 @@ plugins:
 base_lang: ja
 paras:
   ja:
-    -
-      tag: pre_car
+    - tag: pre_car
       title: 車の用意し
       texts:
         - |
@@ -39,8 +38,7 @@ paras:
           \switch{止まるんじゃねぇぞ！}{$end = true}
           \switch{止まれ！}{}{false}
       next: \exec{if($end, "end", "walk")}
-    -
-      tag: walk
+    - tag: walk
       title: 静かだ
       texts:
         - \ch{org}おう！じゃあな。
@@ -56,8 +54,7 @@ paras:
         - /org//ああ。
         - そうだ。俺たちが今まで積み上げてきたもんは全部無駄じゃなかった。これからも俺たちが立ち止まらないかぎり道は続く。
       next: gun
-    -
-      tag: gun
+    - tag: gun
       title: 何やってんだよ
       texts:
         - /td//ぐわっ！\bg{2}
@@ -78,15 +75,13 @@ paras:
         - /mktk//謝ったら許さない。
         - /org//ああ分かってる。
       next: end
-    -
-      tag: end
+    - tag: end
       title: 止まるんじゃねぇぞ
       texts:
         - /org//俺は止まんねぇからよ、お前らが止まんねぇかぎり、その先に俺はいるぞ！\bgm{0}\bg{4}
         - /org//だからよ、止まるんじゃねぇぞ……
   zh-Hans:
-    -
-      tag: pre_car
+    - tag: pre_car
       title: 备车
       texts:
         - |
@@ -94,8 +89,7 @@ paras:
           \switch{哦！}
           \switch{不要停下来啊！}
           \switch{停下！}
-    -
-      tag: walk
+    - tag: walk
       title: 安静
       texts:
         - 哦！那么我走了。
@@ -110,8 +104,7 @@ paras:
         - /rd/加把劲骑士/那是当然的了！大家也有救了，{}又那么努力，我也\ruby{要加油了}{是加把劲骑士}！
         - 啊。
         - 没错，我们至今为止所做的一切，并不是全部徒劳的。今后也是，只要我们不停下脚步，道路就会不断延伸。
-    -
-      tag: gun
+    - tag: gun
       title: 你在干什么啊
       texts:
         - 咕哇！
@@ -131,8 +124,7 @@ paras:
         - 我们的目的地根本不重要，只要继续前进就好了，只要不停下脚步，道路就会不断延伸。
         - 道歉的话我是不会原谅你的。
         - 啊，我明白。
-    -
-      tag: end
+    - tag: end
       title: 不要停下来啊
       texts:
         - 我是不会停下来的，只要你们不停下来，那前面就一定有我！

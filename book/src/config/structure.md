@@ -37,14 +37,12 @@ title: Title
 base_lang: en
 paras:
   en:
-    -
-      tag: para1
+    - tag: para1
       texts:
         - This is the first line.
         - This is the second line.
       next: para2
-    -
-      tag: para2
+    - tag: para2
       texts:
         - The first line of the second paragraph.
 ```
