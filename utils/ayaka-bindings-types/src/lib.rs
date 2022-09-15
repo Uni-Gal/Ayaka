@@ -243,7 +243,7 @@ pub struct RawContext {
 }
 
 /// The full action information in one line of config.
-/// It provides the full texts and other properties exacted from [`ayaka_script::Text`].
+/// It provides the full texts and other properties exacted from [`ayaka_script_types::Text`].
 #[derive(Debug, Default, Clone, Serialize, Deserialize, FallbackSpec)]
 pub struct Action {
     /// The context snapshot.
