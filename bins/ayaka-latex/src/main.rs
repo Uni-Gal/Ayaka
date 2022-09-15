@@ -21,13 +21,15 @@ async fn main() -> Result<()> {
     env_logger::Builder::from_default_env()
         .filter_module("wasmer", LevelFilter::Warn)
         .try_init()?;
-    let context = Context::open(&opts.input, FrontendType::Text);
+    let context = Context::open(&opts.input, FrontendType::Latex);
     let mut ctx = context.await?;
 
     let output = tokio::fs::File::create(&opts.output).await?;
     let mut output = LaTeXWriter::new(output);
     output.command("documentclass", ["ctexart"]).await?;
     output.command("usepackage", ["lua-ul"]).await?;
+    output.command("usepackage", ["luatexja-ruby"]).await?;
+    output.command("usepackage", ["verbatim"]).await?;
     output.command("title", [&ctx.game.title]).await?;
     output.command("author", [&ctx.game.author]).await?;
     output
