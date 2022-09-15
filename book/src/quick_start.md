@@ -26,14 +26,15 @@ $ git clone https://github.com/Uni-Gal/Ayaka.git
 $ cd Ayaka
 ```
 
+## Add targets for WebAssembly
+``` bash
+$ rustup target add wasm32-wasi
+$ rustup target add wasm32-unknown-unknown
+```
+
 ## Test the utilities
 ``` bash
 $ make test
-```
-
-## Release build of frontends
-``` bash
-$ make release
 ```
 
 ## Run examples
@@ -42,4 +43,9 @@ $ # Run Fibonacci2
 $ make example-Fibonacci2
 $ # Run Orga in GUI
 $ make example-Orga-gui
+```
+
+## Release build of frontends
+``` bash
+$ make release
 ```
