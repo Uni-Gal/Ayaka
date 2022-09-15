@@ -13,7 +13,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install dependencies
-        run: sudo apt-get install -y libwebkit2gtk-4.0-dev
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev
         if: matrix.os == 'ubuntu-latest'
       - name: Install targets
         run: |
