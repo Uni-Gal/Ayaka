@@ -28,3 +28,7 @@ $ make doc
 
 ## Screenshot
 ![Orga](assets/galgui.png)
+
+## License
+
+This project is licensed under the [MIT license](LICENSE).
