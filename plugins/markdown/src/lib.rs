@@ -21,6 +21,7 @@ fn process_action(mut ctx: ActionProcessContext) -> Action {
     ctx.action.line = match ctx.frontend {
         FrontendType::Html => writer.run_html().into_lines(),
         FrontendType::Text => writer.run_text().into_lines(),
+        FrontendType::Latex => writer.run_latex().into_lines(),
     };
     ctx.action
 }
@@ -100,7 +101,7 @@ where
                     self.write_block("</code>");
                 }
                 Html(html) => {
-                    self.write_block(html.into_string());
+                    self.write_block(html);
                 }
                 SoftBreak => {
                     self.write_chars("\n");
@@ -339,6 +340,29 @@ where
                 TaskListMarker(false) => self.write_chars("[ ]"),
             }
         }
+    }
+
+    pub fn run_latex(mut self) -> Self {
+        while let Some(event) = self.iter.next() {
+            match event {
+                Text(text) => {
+                    self.write_chars(text);
+                }
+                Code(text) => {
+                    self.write_block("\\texttt{");
+                    self.write_chars(text);
+                    self.write_block("}");
+                }
+                SoftBreak => {
+                    self.write_chars("\n");
+                }
+                HardBreak | Rule => {
+                    self.write_block("\\par ");
+                }
+                _ => {}
+            }
+        }
+        self
     }
 
     pub fn into_lines(self) -> ActionLines {

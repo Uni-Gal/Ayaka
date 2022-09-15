@@ -23,3 +23,23 @@ plugins:
     - bar
 ```
 You don't need to specify the extension.
+
+## The text processing workflow
+``` dot process
+digraph {
+  ori[label="Raw text"];
+  lines[label="Structural lines"];
+  exec[label="Run scripts"];
+  cmd[label="Custom commands"];
+  texts[label="Final texts"];
+  history[label="Record history"];
+  output[label="Output"];
+
+  ori -> lines [label="TextParser"];
+  lines -> exec [label="ProgramParser"];
+  exec -> cmd [label="text plugins"];
+  cmd -> texts [label="action plugins"];
+  texts -> history;
+  history -> output;
+}
+```

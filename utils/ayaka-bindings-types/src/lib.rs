@@ -109,6 +109,8 @@ pub enum FrontendType {
     Text,
     /// The frontend renders HTML.
     Html,
+    /// The frontend renders LaTeX.
+    Latex,
 }
 
 /// The unit of one line in an action.

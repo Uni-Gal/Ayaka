@@ -11,6 +11,12 @@ jobs:
         uses: peaceiris/actions-mdbook@v1
         with:
           mdbook-version: 'latest'
+      - name: Setup Graphviz
+        uses: ts-graphviz/setup-graphviz@v1
+      - name: Setup mdbook-graphviz
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: mdbook-graphviz
       - name: Build book
         run: make book
       - name: Deploy

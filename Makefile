@@ -39,7 +39,7 @@ example-$(1)-release: examples/$(1)/config.yaml plugins release
 	bins/target/release/ayaka-check $$< --auto
 example-$(1)-gui-release: examples/$(1)/config.yaml plugins release
 	bins/target/release/ayaka-gui $$<
-examples/$(1)/config.tex: examples/$(1)/config.yaml
+examples/$(1)/config.tex: examples/$(1)/config.yaml plugins
 	cd bins && $$(MAKE) run-latex FILE=$$(realpath $$<)
 
 endef
