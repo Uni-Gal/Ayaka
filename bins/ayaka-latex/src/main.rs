@@ -39,7 +39,16 @@ async fn main() -> Result<()> {
 
             ctx.init_new();
             ctx.set_locale(opts.locale.unwrap_or_else(Locale::current));
+
+            let mut current_para = None;
+
             while let Some(action) = ctx.next_run() {
+                if action.para_title != current_para {
+                    current_para = action.para_title.clone();
+                    output
+                        .command("section", [action.para_title.unwrap_or_default()])
+                        .await?;
+                }
                 if let Some(name) = &action.character {
                     output.command("paragraph", [name]).await?;
                 }
