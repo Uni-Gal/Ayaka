@@ -162,6 +162,9 @@ fn hello(_args: Vec&lt;String&gt;, _ctx: TextProcessContext) -&gt; TextProcessRe
 </code></pre>
 <h2 id="the-process-result"><a class="header" href="#the-process-result">The process result</a></h2>
 <p>The <code>TextProcessResult</code> object is some lines and properties to be added to the current action. <code>line</code> will be appended to the current position of the command, and <code>props</code> will be set and update.</p>
+<h2 id="notes-about-rt-format"><a class="header" href="#notes-about-rt-format">Notes about <code>rt-format</code></a></h2>
+<p><code>rt-format</code> is used to deal with script calculations and runtime formatting.
+Therefore, if you want to add braces to the text, you need to double them in the text plugins.</p>
 <h2 id="existing-plugins"><a class="header" href="#existing-plugins">Existing plugins</a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Plugin</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>basictex</code></td><td>Basic TeX commands.</td></tr>
