@@ -172,17 +172,21 @@ You can also write your own fantastic game by customizing the frontend.</p>
 <pre><code class="language-bash">$ git clone https://github.com/Uni-Gal/Ayaka.git
 $ cd Ayaka
 </code></pre>
+<h2 id="add-targets-for-webassembly"><a class="header" href="#add-targets-for-webassembly">Add targets for WebAssembly</a></h2>
+<pre><code class="language-bash">$ rustup target add wasm32-wasi
+$ rustup target add wasm32-unknown-unknown
+</code></pre>
 <h2 id="test-the-utilities"><a class="header" href="#test-the-utilities">Test the utilities</a></h2>
 <pre><code class="language-bash">$ make test
-</code></pre>
-<h2 id="release-build-of-frontends"><a class="header" href="#release-build-of-frontends">Release build of frontends</a></h2>
-<pre><code class="language-bash">$ make release
 </code></pre>
 <h2 id="run-examples"><a class="header" href="#run-examples">Run examples</a></h2>
 <pre><code class="language-bash">$ # Run Fibonacci2
 $ make example-Fibonacci2
 $ # Run Orga in GUI
 $ make example-Orga-gui
+</code></pre>
+<h2 id="release-build-of-frontends"><a class="header" href="#release-build-of-frontends">Release build of frontends</a></h2>
+<pre><code class="language-bash">$ make release
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="config"><a class="header" href="#config">Config</a></h1>
 <p>Our config file is based on YAML. The structure is simple to author.</p>
