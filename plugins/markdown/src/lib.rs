@@ -349,9 +349,9 @@ where
                     self.write_chars(text);
                 }
                 Code(text) => {
-                    self.write_block("\\begin{{verbatim}}");
+                    self.write_block("\\texttt{");
                     self.write_chars(text);
-                    self.write_block("\\end{{verbatim}}");
+                    self.write_block("}");
                 }
                 SoftBreak => {
                     self.write_chars("\n");

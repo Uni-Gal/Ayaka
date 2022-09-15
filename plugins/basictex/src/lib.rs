@@ -36,8 +36,9 @@ fn text_font(
             res.line.push_back_block("</font>");
         }
         FrontendType::Latex => {
-            res.line.push_back_block(format!("\\{} ", cmd));
-            res.line.push_back_chars(&args[0])
+            res.line.push_back_block(format!("\\{}{{{{", cmd));
+            res.line.push_back_chars(&args[0]);
+            res.line.push_back_block("}}");
         }
     }
     res

@@ -76,7 +76,7 @@ async fn main() -> Result<()> {
                 for s in action.line {
                     output.write(s.as_str()).await?;
                 }
-                output.write("\n").await?;
+                output.write("\n\n").await?;
                 if !action.switches.is_empty() {
                     output
                         .environment("itemize", |output| async move {
