@@ -98,10 +98,8 @@ impl Context {
         if let Some(res_path) = &config.res {
             let res_path = root_path.join(res_path);
             for rl in std::fs::read_dir(res_path)? {
-                let rl = rl?;
-                let rl_meta = rl.metadata()?;
-                let p = rl.path();
-                if rl_meta.is_file() && p.extension().map(|ex| ex == "yaml").unwrap_or_default() {
+                let p = rl?.path();
+                if p.is_file() && p.extension().map(|ex| ex == "yaml").unwrap_or_default() {
                     let loc = p
                         .file_stem()
                         .and_then(|s| s.to_string_lossy().parse::<Locale>().ok())
@@ -119,30 +117,25 @@ impl Context {
         let mut paras = HashMap::new();
         let paras_path = root_path.join(&config.paras);
         for pl in std::fs::read_dir(paras_path)? {
-            let pl = pl?;
-            if pl.metadata()?.is_dir() {
-                let p = pl.path();
+            let p = pl?.path();
+            if p.is_dir() {
                 let loc = p
                     .file_name()
                     .and_then(|s| s.to_string_lossy().parse::<Locale>().ok())
                     .unwrap_or_default();
                 let mut paras_map = HashMap::new();
                 for p in std::fs::read_dir(p)? {
-                    let p = p?;
-                    let p_meta = p.metadata()?;
-                    if p_meta.is_file() {
-                        let p = p.path();
-                        if p.extension().map(|ex| ex == "yaml").unwrap_or_default() {
-                            let key = p
-                                .file_stem()
-                                .map(|s| s.to_string_lossy().into_owned())
-                                .unwrap_or_default();
-                            let para = LoadLock::<Vec<Paragraph>>::new(p);
-                            if loc == config.base_lang {
-                                para.force();
-                            }
-                            paras_map.insert(key, para);
+                    let p = p?.path();
+                    if p.is_file() && p.extension().map(|ex| ex == "yaml").unwrap_or_default() {
+                        let key = p
+                            .file_stem()
+                            .map(|s| s.to_string_lossy().into_owned())
+                            .unwrap_or_default();
+                        let para = LoadLock::<Vec<Paragraph>>::new(p);
+                        if loc == config.base_lang {
+                            para.force();
                         }
+                        paras_map.insert(key, para);
                     }
                 }
                 paras.insert(loc, paras_map);

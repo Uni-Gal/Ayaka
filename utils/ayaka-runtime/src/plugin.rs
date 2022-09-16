@@ -199,7 +199,7 @@ impl Runtime {
             std::fs::read_dir(path)?
                 .try_filter_map(|f| {
                     let p = f.path();
-                    if p.extension().map(|s| s == "wasm").unwrap_or_default() {
+                    if p.is_file() && p.extension().map(|s| s == "wasm").unwrap_or_default() {
                         let name = p
                             .file_stem()
                             .map(|s| s.to_string_lossy())
