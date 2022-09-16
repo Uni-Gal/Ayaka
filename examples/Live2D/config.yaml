@@ -6,11 +6,7 @@ props:
   ch_Haru_scale: 0.25
   ch_Hiyori_scale: 0.2
   ch_Mao_scale: 0.1
-res:
-  ja:
-    ch_Haru: はる
-    ch_Hiyori: ひより
-    ch_Mao: まお
+res: res
 plugins:
   dir: ../plugins/
   modules:

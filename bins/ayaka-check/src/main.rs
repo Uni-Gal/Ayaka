@@ -53,6 +53,7 @@ async fn main() -> Result<()> {
                 println!("Loading plugin {} ({}/{})", name, i + 1, len)
             }
             OpenStatus::GamePlugin => println!("Preprocessing game..."),
+            OpenStatus::LoadResource => println!("Loading resources..."),
             OpenStatus::LoadParagraph => println!("Loading paragraphs..."),
         }
     }

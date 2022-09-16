@@ -4,8 +4,8 @@ pub use ayaka_bindings_types::{Action, Switch};
 pub use fallback::Fallback;
 
 use crate::*;
-use serde::Deserialize;
-use std::{collections::HashMap, path::PathBuf};
+use serde::{de::DeserializeOwned, Deserialize};
+use std::{collections::HashMap, ops::Deref, path::PathBuf, sync::OnceLock};
 
 /// The paragraph in a paragraph config.
 #[derive(Debug, Deserialize)]
@@ -33,8 +33,8 @@ pub struct GameConfig {
     /// The author of the game.
     #[serde(default)]
     pub author: String,
-    /// The paragraphs, indexed by locale.
-    pub paras: String,
+    /// The paragraphs path.
+    pub paras: PathBuf,
     /// The start paragraph tag.
     pub start: String,
     /// The plugin config.
@@ -43,9 +43,8 @@ pub struct GameConfig {
     /// The global game properties.
     #[serde(default)]
     pub props: HashMap<String, String>,
-    /// The resources, indexed by locale.
-    #[serde(default)]
-    pub res: HashMap<Locale, VarMap>,
+    /// The resources path.
+    pub res: Option<PathBuf>,
     /// The base language.
     /// If the runtime fails to choose a best match,
     /// it fallbacks to this one.
@@ -69,7 +68,9 @@ pub struct Game {
     pub config: GameConfig,
     /// The paragraphs, indexed by locale.
     /// The inner is the paragraphs indexed by file names.
-    pub paras: HashMap<Locale, HashMap<String, Vec<Paragraph>>>,
+    pub paras: HashMap<Locale, HashMap<String, LoadLock<Vec<Paragraph>>>>,
+    /// The resources, indexed by locale.
+    pub res: HashMap<Locale, LoadLock<VarMap>>,
 }
 
 impl Game {
@@ -81,7 +82,7 @@ impl Game {
     fn find_para(&self, loc: &Locale, base_tag: &str, tag: &str) -> Option<&Paragraph> {
         if let Some(paras) = self.paras.get(loc) {
             if let Some(paras) = paras.get(base_tag) {
-                for p in paras {
+                for p in paras.iter() {
                     if p.tag == tag {
                         return Some(p);
                     }
@@ -111,13 +112,13 @@ impl Game {
     }
 
     fn find_res(&self, loc: &Locale) -> Option<&VarMap> {
-        self.config.res.get(loc)
+        self.res.get(loc).map(|map| map.deref())
     }
 
     /// Find the resource map with specified locale.
     pub fn find_res_fallback(&self, loc: &Locale) -> Fallback<&VarMap> {
-        let key = self.choose_from_keys(loc, &self.config.res);
-        let base_key = self.choose_from_keys(&self.config.base_lang, &self.config.res);
+        let key = self.choose_from_keys(loc, &self.res);
+        let base_key = self.choose_from_keys(&self.config.base_lang, &self.res);
         Fallback::new(
             if key == base_key {
                 None
@@ -126,5 +127,35 @@ impl Game {
             },
             self.find_res(base_key),
         )
+    }
+}
+
+/// A lazy loaded config or resource file.
+pub struct LoadLock<T> {
+    inner: OnceLock<T>,
+    path: PathBuf,
+}
+
+impl<T: DeserializeOwned> LoadLock<T> {
+    pub(crate) fn new(path: PathBuf) -> Self {
+        Self {
+            inner: OnceLock::new(),
+            path,
+        }
+    }
+
+    pub(crate) fn force(&self) -> &T {
+        self.inner.get_or_init(|| {
+            let data = std::fs::read(&self.path).unwrap();
+            serde_yaml::from_slice::<T>(&data).unwrap()
+        })
+    }
+}
+
+impl<T: DeserializeOwned> Deref for LoadLock<T> {
+    type Target = T;
+
+    fn deref(&self) -> &Self::Target {
+        self.force()
     }
 }

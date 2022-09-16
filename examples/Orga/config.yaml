@@ -5,22 +5,7 @@ props:
   bgs: bgs
   bgms: bgms
   voices: voices
-res:
-  ja:
-    ch_rd: ライド
-    ch_org: オルガ
-    ch_kdr: クーデリア
-    ch_tkk: タカキ
-    ch_td: チャド
-    ch_ass: 暗殺者
-    ch_mktk: 三日月
-  zh-Hans:
-    ch_rd: 莱德
-    ch_org: 奥尔加
-    ch_kdr: 古荻莉亚
-    ch_tkk: 塔卡基
-    ch_td: 查德
-    ch_ass: 刺客
+res: res
 plugins:
   dir: ../plugins/
   modules:

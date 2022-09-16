@@ -52,6 +52,7 @@ enum OpenGameStatus {
     CreateRuntime,
     LoadPlugin(String, usize, usize),
     GamePlugin,
+    LoadResource,
     LoadParagraph,
     LoadSettings,
     LoadGlobalRecords,
@@ -81,6 +82,7 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
                 emit_open_status(&handle, OpenGameStatus::LoadPlugin(name, i, len))?
             }
             OpenStatus::GamePlugin => emit_open_status(&handle, OpenGameStatus::GamePlugin)?,
+            OpenStatus::LoadResource => emit_open_status(&handle, OpenGameStatus::LoadResource)?,
             OpenStatus::LoadParagraph => emit_open_status(&handle, OpenGameStatus::LoadParagraph)?,
         }
     }

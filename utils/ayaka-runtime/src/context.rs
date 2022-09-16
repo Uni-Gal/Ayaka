@@ -46,6 +46,8 @@ pub enum OpenStatus {
     LoadPlugin(String, usize, usize),
     /// Executing game plugins.
     GamePlugin,
+    /// Loading the resources.
+    LoadResource,
     /// Loading the paragraphs.
     LoadParagraph,
 }
@@ -75,6 +77,7 @@ impl Context {
             }
             runtime.await?
         };
+
         yield OpenStatus::GamePlugin;
         for m in &runtime.game_modules {
             let module = &runtime.modules[m];
@@ -89,6 +92,30 @@ impl Context {
                 config.props.insert(key, value);
             }
         }
+
+        yield OpenStatus::LoadResource;
+        let mut res = HashMap::new();
+        if let Some(res_path) = &config.res {
+            let res_path = root_path.join(res_path);
+            for rl in std::fs::read_dir(res_path)? {
+                let rl = rl?;
+                let rl_meta = rl.metadata()?;
+                let p = rl.path();
+                if rl_meta.is_file() && p.extension().map(|ex| ex == "yaml").unwrap_or_default() {
+                    let loc = p
+                        .file_stem()
+                        .and_then(|s| s.to_string_lossy().parse::<Locale>().ok())
+                        .unwrap_or_default();
+                    let size = rl_meta.len();
+                    let r = LoadLock::<VarMap>::new(p);
+                    if size <= 1_000_000 {
+                        r.force();
+                    }
+                    res.insert(loc, r);
+                }
+            }
+        }
+
         yield OpenStatus::LoadParagraph;
         let mut paras = HashMap::new();
         let paras_path = root_path.join(&config.paras);
@@ -102,23 +129,29 @@ impl Context {
                     .unwrap_or_default();
                 let mut paras_map = HashMap::new();
                 for p in std::fs::read_dir(p)? {
-                    let p = p?.path();
-                    if p.extension().map(|ex| ex == "yaml").unwrap_or_default() {
-                        let para = std::fs::read(&p)?;
-                        let para: Vec<Paragraph> = serde_yaml::from_slice(&para)?;
-                        paras_map.insert(
-                            p.file_stem()
+                    let p = p?;
+                    let p_meta = p.metadata()?;
+                    if p_meta.is_file() {
+                        let p = p.path();
+                        if p.extension().map(|ex| ex == "yaml").unwrap_or_default() {
+                            let size = p_meta.len();
+                            let key = p
+                                .file_stem()
                                 .map(|s| s.to_string_lossy().into_owned())
-                                .unwrap_or_default(),
-                            para,
-                        );
+                                .unwrap_or_default();
+                            let para = LoadLock::<Vec<Paragraph>>::new(p);
+                            if size <= 1_000_000 {
+                                para.force();
+                            }
+                            paras_map.insert(key, para);
+                        }
                     }
                 }
                 paras.insert(loc, paras_map);
             }
         }
         Ok(Self {
-            game: Game { config, paras },
+            game: Game { config, paras, res },
             frontend,
             root_path,
             runtime,
@@ -515,7 +548,7 @@ impl Context {
         for paras in self.game.paras.values() {
             for (base_tag, paras) in paras {
                 self.ctx.cur_base_para = base_tag.clone();
-                for para in paras {
+                for para in paras.iter() {
                     self.ctx.cur_para = para.tag.clone();
                     for (index, act) in para.texts.iter().enumerate() {
                         self.ctx.cur_act = index;

@@ -61,7 +61,7 @@ export default {
             }
         },
         status_to_text(s: OpenGameStatus): [string, number] {
-            const step = 100 / 9
+            const step = 100 / 10
             const t = OpenGameStatusType[s.t]
             switch (t) {
                 case OpenGameStatusType.LoadProfile:
@@ -73,6 +73,8 @@ export default {
                     return [`Loading plugin ${data[0]}...`, step * (t + 1) + data[1] / data[2] * step]
                 case OpenGameStatusType.GamePlugin:
                     return ["Preprocessing game...", step * (t + 1)]
+                case OpenGameStatusType.LoadResource:
+                    return ["Loading resources...", step * (t + 1)]
                 case OpenGameStatusType.LoadParagraph:
                     return ["Loading paragraphs...", step * (t + 1)]
                 case OpenGameStatusType.LoadSettings:
