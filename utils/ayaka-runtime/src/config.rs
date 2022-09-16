@@ -154,16 +154,24 @@ impl<T> LoadLock<T> {
     }
 }
 
-impl<T: DeserializeOwned> LoadLock<T> {
+impl<T: DeserializeOwned + Default> LoadLock<T> {
     pub(crate) fn force(&self) -> &T {
         self.inner.get_or_init(|| {
-            let data = std::fs::read(&self.path).unwrap();
-            serde_yaml::from_slice::<T>(&data).unwrap()
+            match (|| {
+                let data = std::fs::read(&self.path)?;
+                anyhow::Ok(serde_yaml::from_slice::<T>(&data)?)
+            })() {
+                Ok(data) => data,
+                Err(err) => {
+                    log::error!("Error when loading from {}: {}", self.path.display(), err);
+                    T::default()
+                }
+            }
         })
     }
 }
 
-impl<T: DeserializeOwned> Deref for LoadLock<T> {
+impl<T: DeserializeOwned + Default> Deref for LoadLock<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
