@@ -211,6 +211,7 @@ impl Context {
     /// Set all settings.
     pub fn set_settings(&mut self, s: Settings) {
         self.settings = s;
+        self.game.force(&self.settings.lang);
     }
 
     /// Get all settings.
