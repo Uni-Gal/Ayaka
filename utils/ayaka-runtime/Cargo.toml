@@ -20,10 +20,10 @@ wasmer = "2.3"
 wasmer-wasi = "2.3"
 unicode-width = "0.1"
 rt-format = "0.3"
-tokio = { version = "1", features = ["fs", "macros"] }
-tokio-stream = { version = "0.1", features = ["fs"] }
+tokio = { version = "1", features = ["macros", "sync"] }
 stream-future = "0.3"
 futures-util = "0.3"
+tryiterator = { git = "https://github.com/Pernosco/tryiterator.git" }
 dirs = "4.0"
 scopeguard = "1.1"
 

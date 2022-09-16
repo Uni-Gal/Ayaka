@@ -18,7 +18,6 @@ use std::{
     path::{Path, PathBuf},
 };
 use stream_future::stream;
-use tokio_stream::wrappers::ReadDirStream;
 use unicode_width::UnicodeWidthStr;
 
 /// The game running context.
@@ -56,7 +55,7 @@ impl Context {
     #[stream(OpenStatus, lifetime = "'a")]
     pub async fn open<'a>(path: impl AsRef<Path> + 'a, frontend: FrontendType) -> Result<Self> {
         yield OpenStatus::LoadProfile;
-        let file = tokio::fs::read(&path).await?;
+        let file = std::fs::read(&path)?;
         let mut config: GameConfig = serde_yaml::from_slice(&file)?;
         let root_path = path
             .as_ref()
@@ -93,20 +92,19 @@ impl Context {
         yield OpenStatus::LoadParagraph;
         let mut paras = HashMap::new();
         let paras_path = root_path.join(&config.paras);
-        let mut paras_path = ReadDirStream::new(tokio::fs::read_dir(paras_path).await?);
-        while let Some(pl) = paras_path.try_next().await? {
-            if pl.metadata().await?.is_dir() {
+        for pl in std::fs::read_dir(paras_path)? {
+            let pl = pl?;
+            if pl.metadata()?.is_dir() {
                 let p = pl.path();
                 let loc = p
                     .file_name()
                     .and_then(|s| s.to_string_lossy().parse::<Locale>().ok())
                     .unwrap_or_default();
                 let mut paras_map = HashMap::new();
-                let mut p = ReadDirStream::new(tokio::fs::read_dir(p).await?);
-                while let Some(p) = p.try_next().await? {
-                    let p = p.path();
+                for p in std::fs::read_dir(p)? {
+                    let p = p?.path();
                     if p.extension().map(|ex| ex == "yaml").unwrap_or_default() {
-                        let para = tokio::fs::read(&p).await?;
+                        let para = std::fs::read(&p)?;
                         let para: Vec<Paragraph> = serde_yaml::from_slice(&para)?;
                         paras_map.insert(
                             p.file_stem()

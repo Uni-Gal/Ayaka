@@ -90,7 +90,7 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
     window.set_title(&ctx.game.config.title)?;
     let settings = {
         emit_open_status(&handle, OpenGameStatus::LoadSettings)?;
-        load_settings(&storage.ident).await.unwrap_or_else(|e| {
+        load_settings(&storage.ident).unwrap_or_else(|e| {
             warn!("Load settings failed: {}", e);
             Settings::new()
         })
@@ -99,17 +99,14 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
 
     emit_open_status(&handle, OpenGameStatus::LoadGlobalRecords)?;
     ctx.set_global_record(
-        load_global_record(&storage.ident, &ctx.game.config.title)
-            .await
-            .unwrap_or_else(|e| {
-                warn!("Load global records failed: {}", e);
-                Default::default()
-            }),
+        load_global_record(&storage.ident, &ctx.game.config.title).unwrap_or_else(|e| {
+            warn!("Load global records failed: {}", e);
+            Default::default()
+        }),
     );
 
     emit_open_status(&handle, OpenGameStatus::LoadRecords)?;
     *storage.records.lock().await = load_records(&storage.ident, &ctx.game.config.title)
-        .await
         .unwrap_or_else(|e| {
             warn!("Load records failed: {}", e);
             Default::default()
@@ -167,9 +164,9 @@ async fn save_record_to(index: usize, storage: State<'_, Storage>) -> CommandRes
 async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
     if let Some(context) = storage.context.lock().await.as_ref() {
         let game = &context.game.config.title;
-        save_settings(&storage.ident, context.settings()).await?;
-        save_global_record(&storage.ident, game, context.global_record()).await?;
-        save_records(&storage.ident, game, &storage.records.lock().await).await?;
+        save_settings(&storage.ident, context.settings())?;
+        save_global_record(&storage.ident, game, context.global_record())?;
+        save_records(&storage.ident, game, &storage.records.lock().await)?;
     }
     Ok(())
 }
