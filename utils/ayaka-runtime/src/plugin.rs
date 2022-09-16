@@ -200,11 +200,7 @@ impl Runtime {
             ReadDirStream::new(tokio::fs::read_dir(path).await?)
                 .try_filter_map(|f| async move {
                     let p = f.path();
-                    if p.extension()
-                        .map(|s| s.to_string_lossy())
-                        .unwrap_or_default()
-                        == "wasm"
-                    {
+                    if p.extension().map(|s| s == "wasm").unwrap_or_default() {
                         let name = p
                             .file_stem()
                             .map(|s| s.to_string_lossy())

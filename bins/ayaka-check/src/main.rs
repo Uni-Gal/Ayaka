@@ -52,6 +52,8 @@ async fn main() -> Result<()> {
             OpenStatus::LoadPlugin(name, i, len) => {
                 println!("Loading plugin {} ({}/{})", name, i + 1, len)
             }
+            OpenStatus::GamePlugin => println!("Preprocessing game..."),
+            OpenStatus::LoadParagraph => println!("Loading paragraphs..."),
         }
     }
     let mut ctx = context.await?;

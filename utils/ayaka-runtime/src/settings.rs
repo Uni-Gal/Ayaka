@@ -53,14 +53,8 @@ impl ActionRecord {
     /// and if the history is empty, create a new [`RawContext`] from the game.
     pub fn last_ctx_with_game(&self, game: &Game) -> RawContext {
         self.last_ctx().cloned().unwrap_or_else(|| RawContext {
-            cur_para: game
-                .paras
-                .get(&game.base_lang)
-                .and_then(|paras| paras.first().map(|p| p.tag.clone()))
-                .unwrap_or_else(|| {
-                    log::warn!("There is no paragraph in the game.");
-                    Default::default()
-                }),
+            cur_base_para: game.config.start.clone(),
+            cur_para: game.config.start.clone(),
             ..Default::default()
         })
     }

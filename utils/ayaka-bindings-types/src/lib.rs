@@ -236,6 +236,8 @@ pub type VarMap = HashMap<String, RawValue>;
 /// The serializable context.
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct RawContext {
+    /// Current base paragraph tag.
+    pub cur_base_para: String,
     /// Current paragraph tag.
     pub cur_para: String,
     /// Current text index.
