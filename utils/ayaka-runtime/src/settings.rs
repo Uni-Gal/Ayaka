@@ -120,14 +120,9 @@ pub async fn load_records(ident: &str, game: &str) -> Result<Vec<ActionRecord>> 
         .map_err(anyhow::Error::from)
         .try_filter_map(|entry| async move {
             let p = entry.path();
-            if p.extension()
-                .map(|s| s.to_string_lossy())
+            if p.file_name()
+                .map(|s| s == "global.json")
                 .unwrap_or_default()
-                == "json"
-                && p.file_stem()
-                    .map(|s| s.to_string_lossy())
-                    .unwrap_or_default()
-                    != "global"
             {
                 Ok(Some(load_file(&p).await?))
             } else {
