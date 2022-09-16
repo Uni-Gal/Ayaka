@@ -128,6 +128,15 @@ impl Game {
             self.find_res(base_key),
         )
     }
+
+    pub(crate) fn force(&self, loc: &Locale) {
+        let key = self.choose_from_keys(loc, &self.paras);
+        for para in self.paras[key].values() {
+            para.force();
+        }
+        let key = self.choose_from_keys(loc, &self.res);
+        self.res[key].force();
+    }
 }
 
 /// A lazy loaded config or resource file.
@@ -136,14 +145,16 @@ pub struct LoadLock<T> {
     path: PathBuf,
 }
 
-impl<T: DeserializeOwned> LoadLock<T> {
+impl<T> LoadLock<T> {
     pub(crate) fn new(path: PathBuf) -> Self {
         Self {
             inner: OnceLock::new(),
             path,
         }
     }
+}
 
+impl<T: DeserializeOwned> LoadLock<T> {
     pub(crate) fn force(&self) -> &T {
         self.inner.get_or_init(|| {
             let data = std::fs::read(&self.path).unwrap();

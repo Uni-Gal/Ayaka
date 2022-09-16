@@ -106,9 +106,8 @@ impl Context {
                         .file_stem()
                         .and_then(|s| s.to_string_lossy().parse::<Locale>().ok())
                         .unwrap_or_default();
-                    let size = rl_meta.len();
                     let r = LoadLock::<VarMap>::new(p);
-                    if size <= 1_000_000 {
+                    if loc == config.base_lang {
                         r.force();
                     }
                     res.insert(loc, r);
@@ -134,13 +133,12 @@ impl Context {
                     if p_meta.is_file() {
                         let p = p.path();
                         if p.extension().map(|ex| ex == "yaml").unwrap_or_default() {
-                            let size = p_meta.len();
                             let key = p
                                 .file_stem()
                                 .map(|s| s.to_string_lossy().into_owned())
                                 .unwrap_or_default();
                             let para = LoadLock::<Vec<Paragraph>>::new(p);
-                            if size <= 1_000_000 {
+                            if loc == config.base_lang {
                                 para.force();
                             }
                             paras_map.insert(key, para);
@@ -209,6 +207,7 @@ impl Context {
     /// Set the current locale.
     pub fn set_locale(&mut self, loc: impl Into<Locale>) {
         self.settings.lang = loc.into();
+        self.game.force(&self.settings.lang);
     }
 
     /// Get the current locale.
