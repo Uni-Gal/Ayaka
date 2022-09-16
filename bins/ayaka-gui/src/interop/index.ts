@@ -17,6 +17,8 @@ export enum OpenGameStatusType {
     LoadProfile,
     CreateRuntime,
     LoadPlugin,
+    GamePlugin,
+    LoadParagraph,
     LoadSettings,
     LoadGlobalRecords,
     LoadRecords,
