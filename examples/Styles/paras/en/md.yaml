@@ -1,0 +1,10 @@
+- tag: md
+  texts:
+    - Markdown examples
+    - '# HEAD'
+    - Normal
+    - '*Italic*'
+    - '**Bold**'
+    - '`code`'
+    - Mixed normal *italic* **bold** `code`.
+  next: tex

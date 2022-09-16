@@ -1,0 +1,4 @@
+- tag: init
+  texts:
+    - \exec{$n = random.rnd(50); $a = 1; $b = 1; $i = 1; format.fmt("Starting to calculate Fibonacci {}", $n)}
+  next: loop

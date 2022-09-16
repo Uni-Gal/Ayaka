@@ -1,0 +1,8 @@
+- tag: show
+  texts:
+    - /Haru//おはよう\show
+    - /Haru//元気ですか
+    - /Hiyori//~~~ヾ(＾∇＾)おはよー♪\show{Haru}{Hiyori}
+    - /Hiyori//今日もよろしく\hide{Haru}
+    - /Mao/？？？/お早う\hide
+    - /Mao//元気？\show
