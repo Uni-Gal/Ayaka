@@ -62,8 +62,13 @@ pub struct PluginConfig {
     pub modules: Vec<String>,
 }
 
+/// The full Ayaka game.
+/// It consists of global config and all paragraphs.
 pub struct Game {
+    /// The game config.
     pub config: GameConfig,
+    /// The paragraphs, indexed by locale.
+    /// The inner is the paragraphs indexed by file names.
     pub paras: HashMap<Locale, HashMap<String, Vec<Paragraph>>>,
 }
 
