@@ -74,4 +74,4 @@ pub unsafe fn __import<Params: Serialize, Res: DeserializeOwned>(
     data
 }
 
-pub use ayaka_bindings_impl::export;
+pub use ayaka_bindings_impl::{export, import};
