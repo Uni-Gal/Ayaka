@@ -1,17 +1,11 @@
+use crate::__import;
 use log::Log;
 
-#[cfg(target_arch = "wasm32")]
 #[link(wasm_import_module = "log")]
 extern "C" {
-    fn __log(len: usize, data: *const u8);
+    fn __log(len: usize, data: *const u8) -> u64;
     fn __log_flush();
 }
-
-#[cfg(not(target_arch = "wasm32"))]
-unsafe fn __log(_len: usize, _data: *const u8) {}
-
-#[cfg(not(target_arch = "wasm32"))]
-unsafe fn __log_flush() {}
 
 pub struct PluginLogger;
 
@@ -37,8 +31,7 @@ impl Log for PluginLogger {
 
     fn log(&self, record: &log::Record) {
         let record: ayaka_bindings_types::Record = record.into();
-        let data = rmp_serde::to_vec(&record).unwrap();
-        unsafe { __log(data.len(), data.as_ptr()) }
+        unsafe { __import::<_, ()>(__log, (record,)) };
     }
 
     fn flush(&self) {

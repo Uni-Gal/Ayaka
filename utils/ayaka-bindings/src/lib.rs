@@ -10,6 +10,7 @@ pub use log;
 
 mod logger;
 
+use scopeguard::defer;
 use serde::{de::DeserializeOwned, Serialize};
 use std::alloc::{self, Layout};
 
@@ -59,4 +60,18 @@ pub unsafe fn __export<Params: DeserializeOwned, Res: Serialize>(
     ((len as u64) << 32) | (ptr as u64)
 }
 
-pub use ayaka_bindings_impl::export;
+#[doc(hidden)]
+pub unsafe fn __import<Params: Serialize, Res: DeserializeOwned>(
+    f: unsafe extern "C" fn(len: usize, data: *const u8) -> u64,
+    args: Params,
+) -> Res {
+    let data = rmp_serde::to_vec(&args).unwrap();
+    let res = f(data.len(), data.as_ptr());
+    let (len, res) = ((res >> 32) as usize, (res & 0xFFFFFFFF) as *mut u8);
+    defer! { __abi_free(res, len) };
+    let data = std::slice::from_raw_parts_mut(res, len);
+    let data = rmp_serde::from_slice(data).unwrap();
+    data
+}
+
+pub use ayaka_bindings_impl::{export, import};

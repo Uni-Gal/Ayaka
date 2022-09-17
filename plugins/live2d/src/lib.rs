@@ -21,16 +21,13 @@ fn find_model(
     root_path: impl AsRef<Path>,
     game_props: &HashMap<String, String>,
 ) -> Option<PathBuf> {
-    let base_dir = root_path.as_ref().join(
-        game_props
-            .get("ch_models")
-            .map(|s| s.as_str())
-            .unwrap_or(""),
-    );
-    ["model.json", "model3.json"]
-        .iter()
-        .map(|ex| base_dir.join(ch).join(ch).with_extension(ex))
-        .find(|p| p.exists())
+    game_props.get("ch_models").and_then(|ch_models| {
+        let base_dir = root_path.as_ref().join(ch_models);
+        ["model.json", "model3.json"]
+            .iter()
+            .map(|ex| base_dir.join(ch).join(ch).with_extension(ex))
+            .find(|p| p.exists())
+    })
 }
 
 #[export]

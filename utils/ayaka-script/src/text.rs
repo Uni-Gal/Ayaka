@@ -555,7 +555,10 @@ impl<'a> TextParser<'a> {
                 Command::Character(
                     Self::concat_params(&params[0])?,
                     Self::concat_params(
-                        params.get(1).map(|slice| slice.as_slice()).unwrap_or(&[]),
+                        params
+                            .get(1)
+                            .map(|slice| slice.as_slice())
+                            .unwrap_or_default(),
                     )?,
                 )
             }
