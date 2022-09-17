@@ -99,7 +99,7 @@ impl Context {
             let res_path = root_path.join(res_path);
             for rl in std::fs::read_dir(res_path)? {
                 let p = rl?.path();
-                if p.is_file() && p.extension().map(|ex| ex == "yaml").unwrap_or_default() {
+                if p.is_file() && p.extension().unwrap_or_default() == "yaml" {
                     let loc = p
                         .file_stem()
                         .and_then(|s| s.to_string_lossy().parse::<Locale>().ok())
@@ -124,11 +124,12 @@ impl Context {
                 let mut paras_map = HashMap::new();
                 for p in std::fs::read_dir(p)? {
                     let p = p?.path();
-                    if p.is_file() && p.extension().map(|ex| ex == "yaml").unwrap_or_default() {
+                    if p.is_file() && p.extension().unwrap_or_default() == "yaml" {
                         let key = p
                             .file_stem()
-                            .map(|s| s.to_string_lossy().into_owned())
-                            .unwrap_or_default();
+                            .unwrap_or_default()
+                            .to_string_lossy()
+                            .into_owned();
                         let para = std::fs::read(p)?;
                         let para = serde_yaml::from_slice(&para)?;
                         paras_map.insert(key, para);

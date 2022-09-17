@@ -251,11 +251,11 @@ impl Runtime {
             std::fs::read_dir(path)?
                 .try_filter_map(|f| {
                     let p = f.path();
-                    if p.is_file() && p.extension().map(|s| s == "wasm").unwrap_or_default() {
+                    if p.is_file() && p.extension().unwrap_or_default() == "wasm" {
                         let name = p
                             .file_stem()
-                            .map(|s| s.to_string_lossy())
                             .unwrap_or_default()
+                            .to_string_lossy()
                             .into_owned();
                         Ok(Some((name, p)))
                     } else {
