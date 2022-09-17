@@ -135,16 +135,30 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="file-structure"><a class="header" href="#file-structure">File structure</a></h1>
+<h2 id="directory-structure"><a class="header" href="#directory-structure">Directory structure</a></h2>
+<pre><code class="language-ignore">config.yaml
+├─paras
+│ ├─ja
+│ │ ├─start.yaml
+│ │ └─end.yaml
+│ └─zh-Hans
+│   ├─start.yaml
+│   └─end.yaml
+└─res
+  ├─ja.yaml
+  └─zh-Hans.yaml
+</code></pre>
 <h2 id="properties"><a class="header" href="#properties">Properties</a></h2>
-<p>The total config file is a <code>Game</code> object.
+<p>The total config file is a <code>GameConfig</code> object.
 Here shows the properties:</p>
 <div class="table-wrapper"><table><thead><tr><th>Property</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>title</code></td><td>The title of the game.</td></tr>
 <tr><td><code>base_lang</code></td><td>The base language.</td></tr>
-<tr><td><code>paras</code></td><td>The <code>Paragraph</code> objects, indexed by locale.</td></tr>
+<tr><td><code>paras</code></td><td>The paragraph path.</td></tr>
+<tr><td><code>start</code></td><td>The start paragraph.</td></tr>
 <tr><td><code>author</code></td><td>Optional. The author of the game.</td></tr>
 <tr><td><code>plugins</code></td><td>Optional. The <code>PluginConfig</code> object.</td></tr>
-<tr><td><code>res</code></td><td>Optional. The resources, indexed by locale.</td></tr>
+<tr><td><code>res</code></td><td>Optional. The resource path.</td></tr>
 <tr><td><code>props</code></td><td>Optional. The custom properties.</td></tr>
 </tbody></table>
 </div>
@@ -162,20 +176,50 @@ Here shows the properties:</p>
 <tr><td><code>next</code></td><td>Optional. The next paragraph.</td></tr>
 </tbody></table>
 </div>
+<h2 id="the-visibility-of-paragraphs"><a class="header" href="#the-visibility-of-paragraphs">The visibility of paragraphs</a></h2>
+<p>Only the paragraph whose tag is the same as the file name(without extension) is public to all paragraphs.
+The rest paragraphs in this file could only be referenced by the paragraphs in the same file.</p>
+<p>For example, for <code>start.yaml</code></p>
+<pre><code class="language-ignore">- tag: start
+  next: foo
+- tag: foo
+  next: bar
+- tag: bar
+  next: end
+</code></pre>
+<p>and <code>end.yaml</code></p>
+<pre><code class="language-ignore">- tag: end
+  next: foo
+- tag: foo
+  next: bar
+- tag: bar
+</code></pre>
+<p>The <code>foo</code> and <code>bar</code> referenced are the ones in the same file, while <code>start</code> and <code>end</code> could be referenced from other files.</p>
 <h2 id="basic-example"><a class="header" href="#basic-example">Basic example</a></h2>
 <p>This is a config example, with 2 paragraphs.</p>
+<pre><code class="language-ignore">config.yaml
+└─paras
+  └─en
+    ├─para1.yaml
+    └─para2.yaml
+</code></pre>
+<p><code>config.yaml</code></p>
 <pre><code class="language-yaml">title: Title
 base_lang: en
-paras:
-  en:
-    - tag: para1
-      texts:
-        - This is the first line.
-        - This is the second line.
-      next: para2
-    - tag: para2
-      texts:
-        - The first line of the second paragraph.
+paras: paras
+start: para1
+</code></pre>
+<p><code>para1.yaml</code></p>
+<pre><code class="language-yaml">- tag: para1
+  texts:
+    - This is the first line.
+    - This is the second line.
+  next: para2
+</code></pre>
+<p><code>para2.yaml</code></p>
+<pre><code class="language-yaml">- tag: para2
+  texts:
+    - The first line of the second paragraph.
 </code></pre>
 <p>The output will be</p>
 <pre><code class="language-ignore">This is the first line.

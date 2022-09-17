@@ -136,26 +136,26 @@
                     <main>
                         <h1 id="resources"><a class="header" href="#resources">Resources</a></h1>
 <p>The resources are indexed by locale:</p>
-<pre><code class="language-yaml">res:
-  en:
-    foo: Foo value
-    bar: Bar value
+<pre><code class="language-ignore">config.yaml
+└─res
+  ├─en.yaml
+  ├─ja.yaml
+  └─zh.yaml
 </code></pre>
 <p>You can specify other locales, too.
 The keys not specified in other locales will fallback to <code>base_lang</code> ones.</p>
-<pre><code class="language-yaml">base_lang: en
-res:
-  en:
-    foo: Foo
-    bar: Bar
-  zh:
-    foo: 天
-    bar: 地
+<p><code>en.yaml</code></p>
+<pre><code class="language-yaml">foo: Foo
+bar: Bar
+</code></pre>
+<p><code>zh.yaml</code></p>
+<pre><code class="language-yaml">foo: 天
+bar: 地
 </code></pre>
 <h2 id="reference-resources"><a class="header" href="#reference-resources">Reference resources</a></h2>
 <p>You can reference resources in texts with <code>\res{}</code> command.</p>
-<pre><code class="language-yaml">- 'The foo value: \res{foo}'
-- 'The bar value: \res{bar}'
+<pre><code class="language-yaml">- The foo value is \res{foo}
+- The bar value is \res{bar}
 </code></pre>
 
                     </main>
