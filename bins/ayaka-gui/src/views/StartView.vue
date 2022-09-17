@@ -45,7 +45,7 @@ export default {
             let anime = (this.$refs.logo as HTMLElement).animate([
                 { rotate: `${this.rotate_degree()}deg` }
             ], {
-                duration: 800,
+                duration: 500,
                 fill: "forwards",
                 easing: "ease-out"
             })
