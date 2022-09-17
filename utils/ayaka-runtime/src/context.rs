@@ -259,9 +259,9 @@ impl Context {
 
         let para_name = self
             .current_paragraph()
-            .and_then(|p| p.title.as_ref())
-            .map(|s| s.escape_default().to_string())
-            .unwrap_or_default();
+            .and_then(|p| p.title.as_deref())
+            .unwrap_or_default()
+            .escape_default();
         let act_num = self.ctx.cur_act + 1;
         let show_code = &text[pre..post];
         let pre_code = &text[pre..loc.0];
@@ -493,6 +493,10 @@ impl Context {
                 }
                 (false, _) => {
                     if self.ctx.cur_base_para == self.ctx.cur_para {
+                        error!(
+                            "Cannot find paragraph \"{}\"",
+                            self.ctx.cur_para.escape_default()
+                        );
                         return None;
                     } else {
                         self.ctx.cur_base_para = self.ctx.cur_para.clone();
