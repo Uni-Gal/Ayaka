@@ -4,8 +4,8 @@ pub use ayaka_bindings_types::{Action, Switch};
 pub use fallback::Fallback;
 
 use crate::*;
-use serde::{de::DeserializeOwned, Deserialize};
-use std::{collections::HashMap, ops::Deref, path::PathBuf, sync::OnceLock};
+use serde::Deserialize;
+use std::{collections::HashMap, path::PathBuf};
 
 /// The paragraph in a paragraph config.
 #[derive(Debug, Deserialize)]
@@ -68,9 +68,9 @@ pub struct Game {
     pub config: GameConfig,
     /// The paragraphs, indexed by locale.
     /// The inner is the paragraphs indexed by file names.
-    pub paras: HashMap<Locale, HashMap<String, LoadLock<Vec<Paragraph>>>>,
+    pub paras: HashMap<Locale, HashMap<String, Vec<Paragraph>>>,
     /// The resources, indexed by locale.
-    pub res: HashMap<Locale, LoadLock<VarMap>>,
+    pub res: HashMap<Locale, VarMap>,
 }
 
 impl Game {
@@ -112,7 +112,7 @@ impl Game {
     }
 
     fn find_res(&self, loc: &Locale) -> Option<&VarMap> {
-        self.res.get(loc).map(|map| map.deref())
+        self.res.get(loc)
     }
 
     /// Find the resource map with specified locale.
@@ -127,54 +127,5 @@ impl Game {
             },
             self.find_res(base_key),
         )
-    }
-
-    pub(crate) fn force(&self, loc: &Locale) {
-        let key = self.choose_from_keys(loc, &self.paras);
-        for para in self.paras[key].values() {
-            para.force();
-        }
-        let key = self.choose_from_keys(loc, &self.res);
-        self.res[key].force();
-    }
-}
-
-/// A lazy loaded config or resource file.
-pub struct LoadLock<T> {
-    inner: OnceLock<T>,
-    path: PathBuf,
-}
-
-impl<T> LoadLock<T> {
-    pub(crate) fn new(path: PathBuf) -> Self {
-        Self {
-            inner: OnceLock::new(),
-            path,
-        }
-    }
-}
-
-impl<T: DeserializeOwned + Default> LoadLock<T> {
-    pub(crate) fn force(&self) -> &T {
-        self.inner.get_or_init(|| {
-            match (|| {
-                let data = std::fs::read(&self.path)?;
-                anyhow::Ok(serde_yaml::from_slice::<T>(&data)?)
-            })() {
-                Ok(data) => data,
-                Err(err) => {
-                    log::error!("Error when loading from {}: {}", self.path.display(), err);
-                    T::default()
-                }
-            }
-        })
-    }
-}
-
-impl<T: DeserializeOwned + Default> Deref for LoadLock<T> {
-    type Target = T;
-
-    fn deref(&self) -> &Self::Target {
-        self.force()
     }
 }

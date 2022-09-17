@@ -104,10 +104,8 @@ impl Context {
                         .file_stem()
                         .and_then(|s| s.to_string_lossy().parse::<Locale>().ok())
                         .unwrap_or_default();
-                    let r = LoadLock::<VarMap>::new(p);
-                    if loc == config.base_lang {
-                        r.force();
-                    }
+                    let r = std::fs::read(p)?;
+                    let r = serde_yaml::from_slice(&r)?;
                     res.insert(loc, r);
                 }
             }
@@ -131,10 +129,8 @@ impl Context {
                             .file_stem()
                             .map(|s| s.to_string_lossy().into_owned())
                             .unwrap_or_default();
-                        let para = LoadLock::<Vec<Paragraph>>::new(p);
-                        if loc == config.base_lang {
-                            para.force();
-                        }
+                        let para = std::fs::read(p)?;
+                        let para = serde_yaml::from_slice(&para)?;
                         paras_map.insert(key, para);
                     }
                 }
@@ -200,7 +196,6 @@ impl Context {
     /// Set the current locale.
     pub fn set_locale(&mut self, loc: impl Into<Locale>) {
         self.settings.lang = loc.into();
-        self.game.force(&self.settings.lang);
     }
 
     /// Get the current locale.
@@ -211,7 +206,6 @@ impl Context {
     /// Set all settings.
     pub fn set_settings(&mut self, s: Settings) {
         self.settings = s;
-        self.game.force(&self.settings.lang);
     }
 
     /// Get all settings.
