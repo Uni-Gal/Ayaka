@@ -18,9 +18,10 @@ use wasmer_wasi::*;
 
 /// An instance of a WASM plugin module.
 pub struct Host {
+    instance: Instance,
+    memory: Memory,
     abi_free: NativeFunc<(i32, i32), ()>,
     abi_alloc: NativeFunc<i32, i32>,
-    instance: Instance,
 }
 
 unsafe fn mem_slice(memory: &Memory, start: i32, len: i32) -> &[u8] {
@@ -41,12 +42,14 @@ impl Host {
     /// Loads the WASM [`Module`], with some imports.
     pub fn new(module: &Module, resolver: &(dyn Resolver + Send + Sync)) -> Result<Self> {
         let instance = Instance::new(module, resolver)?;
+        let memory = instance.exports.get_memory("memory")?.clone();
         let abi_free = instance.exports.get_native_function("__abi_free")?;
         let abi_alloc = instance.exports.get_native_function("__abi_alloc")?;
         Ok(Self {
+            instance,
+            memory,
             abi_free,
             abi_alloc,
-            instance,
         })
     }
 
@@ -58,7 +61,7 @@ impl Host {
         name: &str,
         args: Params,
     ) -> Result<Res> {
-        let memory = self.instance.exports.get_memory("memory")?;
+        let memory = &self.memory;
         let func = self
             .instance
             .exports
