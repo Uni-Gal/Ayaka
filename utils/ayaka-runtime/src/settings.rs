@@ -119,7 +119,7 @@ pub fn load_records(ident: &str, game: &str) -> Result<Vec<ActionRecord>> {
         .map_err(anyhow::Error::from)
         .try_filter_map(|entry| {
             let p = entry.path();
-            if p.is_file() && p.file_name().unwrap_or_default() == "global.json" {
+            if p.is_file() && p.file_name().unwrap_or_default() != "global.json" {
                 Ok(Some(load_file(&p)?))
             } else {
                 Ok(None)
