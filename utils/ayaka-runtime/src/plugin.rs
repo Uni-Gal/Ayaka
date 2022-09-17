@@ -7,6 +7,7 @@ use crate::*;
 use anyhow::Result;
 use ayaka_bindings_types::*;
 use log::warn;
+use rt_format::ParsedFormat;
 use scopeguard::defer;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{collections::HashMap, path::Path};
@@ -139,6 +140,27 @@ pub enum LoadStatus {
 struct RuntimeInstanceData {
     #[wasmer(export)]
     memory: LazyInit<Memory>,
+    #[wasmer(export(name = "__abi_alloc"))]
+    alloc: LazyInit<NativeFunc<i32, i32>>,
+}
+
+impl RuntimeInstanceData {
+    pub unsafe fn import<Params: DeserializeOwned, Res: Serialize>(
+        &self,
+        len: i32,
+        data: i32,
+        f: impl FnOnce<Params, Output = Res>,
+    ) -> u64 {
+        let memory = self.memory.get_unchecked();
+        let data = mem_slice(memory, data, len);
+        let data = rmp_serde::from_slice(data).unwrap();
+        let res = f.call_once(data);
+        let data = rmp_serde::to_vec(&res).unwrap();
+        let alloc = self.alloc.get_unchecked();
+        let ptr = alloc.call(data.len() as _).unwrap();
+        mem_slice_mut(memory, ptr, data.len() as _).copy_from_slice(&data);
+        ((data.len() as u64) << 32) | (ptr as u64)
+    }
 }
 
 impl Runtime {
@@ -146,27 +168,54 @@ impl Runtime {
         let log_func = Function::new_native_with_env(
             store,
             RuntimeInstanceData::default(),
-            |env_data: &RuntimeInstanceData, len: i32, data: i32| {
-                let memory = unsafe { env_data.memory.get_unchecked() };
-                let data = unsafe { mem_slice(memory, data, len) };
-                let data: Record = rmp_serde::from_slice(data).unwrap();
-                log::logger().log(
-                    &log::Record::builder()
-                        .level(data.level)
-                        .target(&data.target)
-                        .args(format_args!("{}", data.msg))
-                        .module_path(data.module_path.as_deref())
-                        .file(data.file.as_deref())
-                        .line(data.line)
-                        .build(),
-                );
+            |env_data: &RuntimeInstanceData, len: i32, data: i32| unsafe {
+                env_data.import(len, data, |data: Record| {
+                    log::logger().log(
+                        &log::Record::builder()
+                            .level(data.level)
+                            .target(&data.target)
+                            .args(format_args!("{}", data.msg))
+                            .module_path(data.module_path.as_deref())
+                            .file(data.file.as_deref())
+                            .line(data.line)
+                            .build(),
+                    );
+                })
             },
         );
         let log_flush_func = Function::new_native(store, || log::logger().flush());
+
+        let format_func = Function::new_native_with_env(
+            store,
+            RuntimeInstanceData::default(),
+            |env_data: &RuntimeInstanceData, len: i32, data: i32| unsafe {
+                env_data.import(len, data, |args: Vec<RawValue>| {
+                    if args.is_empty() {
+                        warn!("Format args is empty.");
+                        RawValue::Unit
+                    } else {
+                        ParsedFormat::parse(
+                            &args[0].get_str(),
+                            &args[1..],
+                            &HashMap::<String, RawValue>::new(),
+                        )
+                        .map(|r| RawValue::Str(r.to_string()))
+                        .unwrap_or_else(|i| {
+                            warn!("Format failed, stopped at {}.", i);
+                            Default::default()
+                        })
+                    }
+                })
+            },
+        );
+
         let import_object = imports! {
             "log" => {
                 "__log" => log_func,
                 "__log_flush" => log_flush_func,
+            },
+            "format" => {
+                "__format" => format_func,
             }
         };
         let wasi_env = WasiState::new("ayaka-runtime")

@@ -487,10 +487,12 @@ impl Context {
                 }
                 (false, _) => {
                     if self.ctx.cur_base_para == self.ctx.cur_para {
-                        error!(
-                            "Cannot find paragraph \"{}\"",
-                            self.ctx.cur_para.escape_default()
-                        );
+                        if !self.ctx.cur_para.is_empty() {
+                            error!(
+                                "Cannot find paragraph \"{}\"",
+                                self.ctx.cur_para.escape_default()
+                            );
+                        }
                         return None;
                     } else {
                         self.ctx.cur_base_para = self.ctx.cur_para.clone();
