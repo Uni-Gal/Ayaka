@@ -1,0 +1,9 @@
+- tag: tex
+  texts:
+    - LaTeX examples
+    - This is the first line.\par This is the second line.
+    - \textrm{Roman}
+    - \textsf{Sans-serif}
+    - \texttt{Monospace}
+    - Mixed \textrm{Roman} \textsf{Sans-serif} \texttt{Monospace}
+    - \ruby{Ruby}{ruby}

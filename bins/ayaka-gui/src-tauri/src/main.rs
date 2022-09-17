@@ -48,10 +48,13 @@ struct FullSettings {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "t", content = "data")]
 enum OpenGameStatus {
-    LoadSettings,
     LoadProfile(String),
     CreateRuntime,
     LoadPlugin(String, usize, usize),
+    GamePlugin,
+    LoadResource,
+    LoadParagraph,
+    LoadSettings,
     LoadGlobalRecords,
     LoadRecords,
     Loaded,
@@ -78,15 +81,18 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
             OpenStatus::LoadPlugin(name, i, len) => {
                 emit_open_status(&handle, OpenGameStatus::LoadPlugin(name, i, len))?
             }
+            OpenStatus::GamePlugin => emit_open_status(&handle, OpenGameStatus::GamePlugin)?,
+            OpenStatus::LoadResource => emit_open_status(&handle, OpenGameStatus::LoadResource)?,
+            OpenStatus::LoadParagraph => emit_open_status(&handle, OpenGameStatus::LoadParagraph)?,
         }
     }
     let mut ctx = context.await?;
 
     let window = handle.get_window("main").unwrap();
-    window.set_title(&ctx.game.title)?;
+    window.set_title(&ctx.game.config.title)?;
     let settings = {
         emit_open_status(&handle, OpenGameStatus::LoadSettings)?;
-        load_settings(&storage.ident).await.unwrap_or_else(|e| {
+        load_settings(&storage.ident).unwrap_or_else(|e| {
             warn!("Load settings failed: {}", e);
             Settings::new()
         })
@@ -95,17 +101,14 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
 
     emit_open_status(&handle, OpenGameStatus::LoadGlobalRecords)?;
     ctx.set_global_record(
-        load_global_record(&storage.ident, &ctx.game.title)
-            .await
-            .unwrap_or_else(|e| {
-                warn!("Load global records failed: {}", e);
-                Default::default()
-            }),
+        load_global_record(&storage.ident, &ctx.game.config.title).unwrap_or_else(|e| {
+            warn!("Load global records failed: {}", e);
+            Default::default()
+        }),
     );
 
     emit_open_status(&handle, OpenGameStatus::LoadRecords)?;
-    *storage.records.lock().await = load_records(&storage.ident, &ctx.game.title)
-        .await
+    *storage.records.lock().await = load_records(&storage.ident, &ctx.game.config.title)
         .unwrap_or_else(|e| {
             warn!("Load records failed: {}", e);
             Default::default()
@@ -162,10 +165,10 @@ async fn save_record_to(index: usize, storage: State<'_, Storage>) -> CommandRes
 #[command]
 async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
     if let Some(context) = storage.context.lock().await.as_ref() {
-        let game = &context.game.title;
-        save_settings(&storage.ident, context.settings()).await?;
-        save_global_record(&storage.ident, game, context.global_record()).await?;
-        save_records(&storage.ident, game, &storage.records.lock().await).await?;
+        let game = &context.game.config.title;
+        save_settings(&storage.ident, context.settings())?;
+        save_global_record(&storage.ident, game, context.global_record())?;
+        save_records(&storage.ident, game, &storage.records.lock().await)?;
     }
     Ok(())
 }
@@ -206,9 +209,9 @@ struct GameInfo {
 impl GameInfo {
     pub fn new(game: &Game) -> Self {
         Self {
-            title: game.title.clone(),
-            author: game.author.clone(),
-            props: game.props.clone(),
+            title: game.config.title.clone(),
+            author: game.config.author.clone(),
+            props: game.config.props.clone(),
         }
     }
 }

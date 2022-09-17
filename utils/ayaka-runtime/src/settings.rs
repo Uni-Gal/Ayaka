@@ -4,13 +4,12 @@ pub use ayaka_bindings_types::VarMap;
 use crate::*;
 use anyhow::{anyhow, Result};
 use dirs::{config_dir, data_local_dir};
-use futures_util::TryStreamExt;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
-use tokio_stream::wrappers::ReadDirStream;
+use tryiterator::TryIteratorExt;
 
 /// The settings of the game.
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -53,35 +52,29 @@ impl ActionRecord {
     /// and if the history is empty, create a new [`RawContext`] from the game.
     pub fn last_ctx_with_game(&self, game: &Game) -> RawContext {
         self.last_ctx().cloned().unwrap_or_else(|| RawContext {
-            cur_para: game
-                .paras
-                .get(&game.base_lang)
-                .and_then(|paras| paras.first().map(|p| p.tag.clone()))
-                .unwrap_or_else(|| {
-                    log::warn!("There is no paragraph in the game.");
-                    Default::default()
-                }),
+            cur_base_para: game.config.start.clone(),
+            cur_para: game.config.start.clone(),
             ..Default::default()
         })
     }
 }
 
-async fn load_file<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {
-    let buffer = tokio::fs::read(path).await?;
+fn load_file<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {
+    let buffer = std::fs::read(path)?;
     Ok(serde_json::from_slice(&buffer)?)
 }
 
-async fn save_file<T: Serialize>(data: &T, path: impl AsRef<Path>, pretty: bool) -> Result<()> {
+fn save_file<T: Serialize>(data: &T, path: impl AsRef<Path>, pretty: bool) -> Result<()> {
     let path = path.as_ref();
     if let Some(parent) = path.parent() {
-        tokio::fs::create_dir_all(parent).await?;
+        std::fs::create_dir_all(parent)?;
     }
     let buffer = if pretty {
         serde_json::to_vec_pretty(data)
     } else {
         serde_json::to_vec(data)
     }?;
-    tokio::fs::write(path, &buffer).await?;
+    std::fs::write(path, &buffer)?;
     Ok(())
 }
 
@@ -91,13 +84,13 @@ fn settings_path(ident: &str) -> Result<PathBuf> {
 }
 
 /// Load settings from JSON file.
-pub async fn load_settings(ident: &str) -> Result<Settings> {
-    load_file(settings_path(ident)?).await
+pub fn load_settings(ident: &str) -> Result<Settings> {
+    load_file(settings_path(ident)?)
 }
 
 /// Save settings into pretty JSON file.
-pub async fn save_settings(ident: &str, data: &Settings) -> Result<()> {
-    save_file(data, settings_path(ident)?, true).await
+pub fn save_settings(ident: &str, data: &Settings) -> Result<()> {
+    save_file(data, settings_path(ident)?, true)
 }
 
 fn records_path(ident: &str, game: &str) -> Result<PathBuf> {
@@ -110,51 +103,45 @@ fn global_record_path(ident: &str, game: &str) -> Result<PathBuf> {
 }
 
 /// Load [`GlobalRecord`] from the records folder.
-pub async fn load_global_record(ident: &str, game: &str) -> Result<GlobalRecord> {
-    load_file(global_record_path(ident, game)?).await
+pub fn load_global_record(ident: &str, game: &str) -> Result<GlobalRecord> {
+    load_file(global_record_path(ident, game)?)
 }
 
 /// Save [`GlobalRecord`] into the records folder.
-pub async fn save_global_record(ident: &str, game: &str, data: &GlobalRecord) -> Result<()> {
-    save_file(data, global_record_path(ident, game)?, false).await
+pub fn save_global_record(ident: &str, game: &str, data: &GlobalRecord) -> Result<()> {
+    save_file(data, global_record_path(ident, game)?, false)
 }
 
 /// Load all [`ActionRecord`] from the records folder.
-pub async fn load_records(ident: &str, game: &str) -> Result<Vec<ActionRecord>> {
+pub fn load_records(ident: &str, game: &str) -> Result<Vec<ActionRecord>> {
     let ctx_path = records_path(ident, game)?;
-    let contexts = ReadDirStream::new(tokio::fs::read_dir(ctx_path).await?)
+    let contexts = std::fs::read_dir(ctx_path)?
         .map_err(anyhow::Error::from)
-        .try_filter_map(|entry| async move {
+        .try_filter_map(|entry| {
             let p = entry.path();
-            if p.extension()
-                .map(|s| s.to_string_lossy())
-                .unwrap_or_default()
-                == "json"
-                && p.file_stem()
-                    .map(|s| s.to_string_lossy())
+            if p.is_file()
+                && p.file_name()
+                    .map(|s| s == "global.json")
                     .unwrap_or_default()
-                    != "global"
             {
-                Ok(Some(load_file(&p).await?))
+                Ok(Some(load_file(&p)?))
             } else {
                 Ok(None)
             }
         })
-        .try_collect()
-        .await?;
+        .try_collect()?;
     Ok(contexts)
 }
 
 /// Save all [`ActionRecord`] into the records folder.
-pub async fn save_records(ident: &str, game: &str, contexts: &[ActionRecord]) -> Result<()> {
+pub fn save_records(ident: &str, game: &str, contexts: &[ActionRecord]) -> Result<()> {
     let ctx_path = records_path(ident, game)?;
     for (i, ctx) in contexts.iter().enumerate() {
         save_file(
             ctx,
             ctx_path.join(i.to_string()).with_extension("json"),
             false,
-        )
-        .await?;
+        )?;
     }
     Ok(())
 }

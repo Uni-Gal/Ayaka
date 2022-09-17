@@ -6,13 +6,12 @@
 use crate::*;
 use anyhow::Result;
 use ayaka_bindings_types::*;
-use futures_util::TryStreamExt;
 use log::warn;
 use scopeguard::defer;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{collections::HashMap, path::Path};
 use stream_future::stream;
-use tokio_stream::wrappers::ReadDirStream;
+use tryiterator::TryIteratorExt;
 use wasmer::*;
 use wasmer_wasi::*;
 
@@ -197,14 +196,10 @@ impl Runtime {
         let mut text_modules = HashMap::new();
         let mut game_modules = vec![];
         let paths = if names.is_empty() {
-            ReadDirStream::new(tokio::fs::read_dir(path).await?)
-                .try_filter_map(|f| async move {
+            std::fs::read_dir(path)?
+                .try_filter_map(|f| {
                     let p = f.path();
-                    if p.extension()
-                        .map(|s| s.to_string_lossy())
-                        .unwrap_or_default()
-                        == "wasm"
-                    {
+                    if p.is_file() && p.extension().map(|s| s == "wasm").unwrap_or_default() {
                         let name = p
                             .file_stem()
                             .map(|s| s.to_string_lossy())
@@ -215,8 +210,7 @@ impl Runtime {
                         Ok(None)
                     }
                 })
-                .try_collect::<Vec<_>>()
-                .await?
+                .try_collect::<Vec<_>>()?
         } else {
             names
                 .iter()
@@ -234,7 +228,7 @@ impl Runtime {
         let total_len = paths.len();
         for (i, (name, p)) in paths.into_iter().enumerate() {
             yield LoadStatus::LoadPlugin(name.clone(), i, total_len);
-            let buf = tokio::fs::read(p).await?;
+            let buf = std::fs::read(p)?;
             let module = Module::from_binary(&store, &buf)?;
             let runtime = Host::new(&module, &import_object)?;
             let plugin_type = runtime.plugin_type()?;

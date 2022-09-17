@@ -44,6 +44,12 @@ pub enum OpenStatus {
     CreateRuntime,
     /// Loading the plugin.
     LoadPlugin(String, usize, usize),
+    /// Executing game plugins.
+    GamePlugin,
+    /// Loading the resources.
+    LoadResource,
+    /// Loading the paragraphs.
+    LoadParagraph,
 }
 
 impl Context {
@@ -51,15 +57,15 @@ impl Context {
     #[stream(OpenStatus, lifetime = "'a")]
     pub async fn open<'a>(path: impl AsRef<Path> + 'a, frontend: FrontendType) -> Result<Self> {
         yield OpenStatus::LoadProfile;
-        let file = tokio::fs::read(&path).await?;
-        let mut game: Game = serde_yaml::from_slice(&file)?;
+        let file = std::fs::read(&path)?;
+        let mut config: GameConfig = serde_yaml::from_slice(&file)?;
         let root_path = path
             .as_ref()
             .parent()
             .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
         let root_path = std::path::absolute(root_path)?;
         let runtime = {
-            let runtime = Runtime::load(&game.plugins.dir, &root_path, &game.plugins.modules);
+            let runtime = Runtime::load(&config.plugins.dir, &root_path, &config.plugins.modules);
             pin_mut!(runtime);
             while let Some(load_status) = runtime.next().await {
                 match load_status {
@@ -71,21 +77,68 @@ impl Context {
             }
             runtime.await?
         };
+
+        yield OpenStatus::GamePlugin;
         for m in &runtime.game_modules {
             let module = &runtime.modules[m];
             let ctx = GameProcessContextRef {
-                title: &game.title,
-                author: &game.author,
+                title: &config.title,
+                author: &config.author,
                 root_path: &root_path,
-                props: &game.props,
+                props: &config.props,
             };
             let res = module.process_game(ctx)?;
             for (key, value) in res.props {
-                game.props.insert(key, value);
+                config.props.insert(key, value);
+            }
+        }
+
+        yield OpenStatus::LoadResource;
+        let mut res = HashMap::new();
+        if let Some(res_path) = &config.res {
+            let res_path = root_path.join(res_path);
+            for rl in std::fs::read_dir(res_path)? {
+                let p = rl?.path();
+                if p.is_file() && p.extension().map(|ex| ex == "yaml").unwrap_or_default() {
+                    let loc = p
+                        .file_stem()
+                        .and_then(|s| s.to_string_lossy().parse::<Locale>().ok())
+                        .unwrap_or_default();
+                    let r = std::fs::read(p)?;
+                    let r = serde_yaml::from_slice(&r)?;
+                    res.insert(loc, r);
+                }
+            }
+        }
+
+        yield OpenStatus::LoadParagraph;
+        let mut paras = HashMap::new();
+        let paras_path = root_path.join(&config.paras);
+        for pl in std::fs::read_dir(paras_path)? {
+            let p = pl?.path();
+            if p.is_dir() {
+                let loc = p
+                    .file_name()
+                    .and_then(|s| s.to_string_lossy().parse::<Locale>().ok())
+                    .unwrap_or_default();
+                let mut paras_map = HashMap::new();
+                for p in std::fs::read_dir(p)? {
+                    let p = p?.path();
+                    if p.is_file() && p.extension().map(|ex| ex == "yaml").unwrap_or_default() {
+                        let key = p
+                            .file_stem()
+                            .map(|s| s.to_string_lossy().into_owned())
+                            .unwrap_or_default();
+                        let para = std::fs::read(p)?;
+                        let para = serde_yaml::from_slice(&para)?;
+                        paras_map.insert(key, para);
+                    }
+                }
+                paras.insert(loc, paras_map);
             }
         }
         Ok(Self {
-            game,
+            game: Game { config, paras, res },
             frontend,
             root_path,
             runtime,
@@ -104,6 +157,7 @@ impl Context {
     /// Initialize the [`ActionRecord`] with given record.
     pub fn init_context(&mut self, record: ActionRecord) {
         self.ctx = record.last_ctx_with_game(&self.game);
+        log::debug!("Context: {:?}", self.ctx);
         self.record = record;
         if !self.record.history.is_empty() {
             // If the record is not empty,
@@ -122,7 +176,7 @@ impl Context {
 
     fn current_paragraph(&self) -> Fallback<&Paragraph> {
         self.game
-            .find_para_fallback(self.locale(), &self.ctx.cur_para)
+            .find_para_fallback(self.locale(), &self.ctx.cur_base_para, &self.ctx.cur_para)
     }
 
     fn current_text(&self) -> Fallback<&String> {
@@ -199,9 +253,9 @@ impl Context {
 
         let para_name = self
             .current_paragraph()
-            .and_then(|p| p.title.as_ref())
-            .map(|s| s.escape_default().to_string())
-            .unwrap_or_default();
+            .and_then(|p| p.title.as_deref())
+            .unwrap_or_default()
+            .escape_default();
         let act_num = self.ctx.cur_act + 1;
         let show_code = &text[pre..post];
         let pre_code = &text[pre..loc.0];
@@ -261,7 +315,7 @@ impl Context {
                         if let Some(m) = self.runtime.text_modules.get(&name) {
                             let game_context = TextProcessContextRef {
                                 root_path: &self.root_path,
-                                game_props: &self.game.props,
+                                game_props: &self.game.config.props,
                                 frontend: self.frontend,
                             };
                             let mut res = self.runtime.modules.get(m).unwrap().dispatch_command(
@@ -363,7 +417,7 @@ impl Context {
             let module = &self.runtime.modules[action_module];
             let ctx = ActionProcessContextRef {
                 root_path: &self.root_path,
-                game_props: &self.game.props,
+                game_props: &self.game.config.props,
                 frontend: self.frontend,
                 last_action,
                 action: &action,
@@ -418,38 +472,48 @@ impl Context {
                 .and_modify(|act| *act = (*act).max(action.ctx.cur_act))
                 .or_insert(action.ctx.cur_act);
         }
-        let cur_para = self.current_paragraph();
-        if cur_para.is_some() {
+        let (cur_para, cur_text) = loop {
+            let cur_para = self.current_paragraph();
             let cur_text = self.current_text();
-            if cur_text.is_some() {
-                let text = cur_text.map(|act| self.parse_text_rich_error(act));
-                let para_title = cur_para.and_then(|p| p.title.as_ref()).cloned();
-                let actions = text.map(|t| {
-                    self.exact_text(para_title.clone(), t).unwrap_or_else(|e| {
-                        error!("Exact text error: {}", e);
-                        Action::default()
-                    })
-                });
-                let res = self.merge_action(actions).map(|act| {
-                    self.process_action(act).unwrap_or_else(|e| {
-                        error!("Error when processing action: {}", e);
-                        Action::default()
-                    })
-                });
-                self.ctx.cur_act += 1;
-                res
-            } else {
-                self.ctx.cur_para = cur_para
-                    .and_then(|p| p.next.as_ref())
-                    .map(|next| self.parse_text_rich_error(next))
-                    .map(|text| self.call(&text).into_str())
-                    .unwrap_or_default();
-                self.ctx.cur_act = 0;
-                self.next_run()
+            match (cur_para.is_some(), cur_text.is_some()) {
+                (true, true) => break (cur_para, cur_text),
+                (true, false) => {
+                    self.ctx.cur_para = cur_para
+                        .and_then(|p| p.next.as_ref())
+                        .map(|next| self.parse_text_rich_error(next))
+                        .map(|text| self.call(&text).into_str())
+                        .unwrap_or_default();
+                    self.ctx.cur_act = 0;
+                }
+                (false, _) => {
+                    if self.ctx.cur_base_para == self.ctx.cur_para {
+                        error!(
+                            "Cannot find paragraph \"{}\"",
+                            self.ctx.cur_para.escape_default()
+                        );
+                        return None;
+                    } else {
+                        self.ctx.cur_base_para = self.ctx.cur_para.clone();
+                    }
+                }
             }
-        } else {
-            None
-        }
+        };
+        let text = cur_text.map(|act| self.parse_text_rich_error(act));
+        let para_title = cur_para.and_then(|p| p.title.as_ref()).cloned();
+        let actions = text.map(|t| {
+            self.exact_text(para_title.clone(), t).unwrap_or_else(|e| {
+                error!("Exact text error: {}", e);
+                Action::default()
+            })
+        });
+        let res = self.merge_action(actions).map(|act| {
+            self.process_action(act).unwrap_or_else(|e| {
+                error!("Error when processing action: {}", e);
+                Action::default()
+            })
+        });
+        self.ctx.cur_act += 1;
+        res
     }
 
     /// Step back to the last run.
@@ -473,14 +537,17 @@ impl Context {
     pub fn check(&mut self) -> bool {
         let mut succeed = true;
         for paras in self.game.paras.values() {
-            for para in paras {
-                self.ctx.cur_para = para.tag.clone();
-                for (index, act) in para.texts.iter().enumerate() {
-                    self.ctx.cur_act = index;
-                    succeed &= self.check_text_rich_error(act);
-                }
-                if let Some(next) = &para.next {
-                    succeed &= self.check_text_rich_error(next);
+            for (base_tag, paras) in paras {
+                self.ctx.cur_base_para = base_tag.clone();
+                for para in paras.iter() {
+                    self.ctx.cur_para = para.tag.clone();
+                    for (index, act) in para.texts.iter().enumerate() {
+                        self.ctx.cur_act = index;
+                        succeed &= self.check_text_rich_error(act);
+                    }
+                    if let Some(next) = &para.next {
+                        succeed &= self.check_text_rich_error(next);
+                    }
                 }
             }
         }
