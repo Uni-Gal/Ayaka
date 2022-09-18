@@ -170,14 +170,17 @@ impl Context {
     fn table(&mut self) -> VarTable {
         VarTable::new(
             &self.runtime,
-            self.game.find_res_fallback(self.locale()),
+            self.game.find_res_fallback(&self.settings.lang),
             &mut self.ctx.locals,
         )
     }
 
     fn current_paragraph(&self) -> Fallback<&Paragraph> {
-        self.game
-            .find_para_fallback(self.locale(), &self.ctx.cur_base_para, &self.ctx.cur_para)
+        self.game.find_para_fallback(
+            &self.settings.lang,
+            &self.ctx.cur_base_para,
+            &self.ctx.cur_para,
+        )
     }
 
     fn current_text(&self) -> Fallback<&String> {
@@ -192,16 +195,6 @@ impl Context {
                 })
             })
             .flatten()
-    }
-
-    /// Set the current locale.
-    pub fn set_locale(&mut self, loc: impl Into<Locale>) {
-        self.settings.lang = loc.into();
-    }
-
-    /// Get the current locale.
-    pub fn locale(&self) -> &Locale {
-        &self.settings.lang
     }
 
     /// Set all settings.
@@ -270,7 +263,7 @@ impl Context {
         )
     }
 
-    fn exact_text(&mut self, para_title: Option<String>, t: Text) -> Result<Action> {
+    fn exact_text(&mut self, t: Text) -> Result<Action> {
         let mut action_line = ActionLines::default();
         let mut action_line_params = vec![];
         let mut chkey = None;
@@ -287,7 +280,7 @@ impl Context {
                         chname = if alter.is_empty() {
                             let res_key = format!("ch_{}", key);
                             self.game
-                                .find_res_fallback(self.locale())
+                                .find_res_fallback(&self.settings.lang)
                                 .and_then(|map| map.get(&res_key))
                                 .map(|v| v.get_str().into_owned())
                         } else {
@@ -341,7 +334,6 @@ impl Context {
             line_params: action_line_params,
             ch_key: chkey,
             character: chname,
-            para_title,
             switches,
             props,
         })
@@ -356,7 +348,6 @@ impl Context {
             let line_params = actions.line_params.and_any().unwrap_or_default();
             let ch_key = actions.ch_key.flatten().and_any();
             let character = actions.character.flatten().and_any();
-            let para_title = actions.para_title.flatten().and_any();
             let switches = actions
                 .switches
                 .into_iter()
@@ -390,7 +381,6 @@ impl Context {
                 line_params,
                 ch_key,
                 character,
-                para_title,
                 switches,
                 props,
             })
@@ -399,7 +389,7 @@ impl Context {
         }
     }
 
-    fn process_action(&mut self, mut action: Action) -> Result<Action> {
+    fn process_action(&self, mut action: Action) -> Result<Action> {
         {
             let params = std::mem::take(&mut action.line_params);
             let named = HashMap::<String, RawValue>::new();
@@ -439,10 +429,13 @@ impl Context {
                 break;
             }
         }
+        Ok(action)
+    }
+
+    fn push_history(&mut self, action: &Action) {
         if !action.line.is_empty() || action.character.is_some() {
             self.record.history.push(action.clone());
         }
-        Ok(action)
     }
 
     fn parse_text_rich_error(&self, text: &str) -> Text {
@@ -473,11 +466,11 @@ impl Context {
                 .and_modify(|act| *act = (*act).max(action.ctx.cur_act))
                 .or_insert(action.ctx.cur_act);
         }
-        let (cur_para, cur_text) = loop {
+        let cur_text = loop {
             let cur_para = self.current_paragraph();
             let cur_text = self.current_text();
             match (cur_para.is_some(), cur_text.is_some()) {
-                (true, true) => break (cur_para, cur_text),
+                (true, true) => break cur_text,
                 (true, false) => {
                     self.ctx.cur_para = cur_para
                         .and_then(|p| p.next.as_ref())
@@ -501,20 +494,23 @@ impl Context {
                 }
             }
         };
-        let text = cur_text.map(|act| self.parse_text_rich_error(act));
-        let para_title = cur_para.and_then(|p| p.title.as_ref()).cloned();
-        let actions = text.map(|t| {
-            self.exact_text(para_title.clone(), t).unwrap_or_else(|e| {
-                error!("Exact text error: {}", e);
-                Action::default()
-            })
-        });
+        let actions = cur_text
+            .map(|act| self.parse_text_rich_error(act))
+            .map(|t| {
+                self.exact_text(t).unwrap_or_else(|e| {
+                    error!("Exact text error: {}", e);
+                    Action::default()
+                })
+            });
         let res = self.merge_action(actions).map(|act| {
             self.process_action(act).unwrap_or_else(|e| {
                 error!("Error when processing action: {}", e);
                 Action::default()
             })
         });
+        if let Some(res) = &res {
+            self.push_history(res);
+        }
         self.ctx.cur_act += 1;
         res
     }
@@ -534,6 +530,11 @@ impl Context {
             }
             self.record.history.last().cloned()
         }
+    }
+
+    /// Get current paragraph title.
+    pub fn current_paragraph_title(&self) -> Option<&String> {
+        self.current_paragraph().and_then(|p| p.title.as_ref())
     }
 
     /// Check all paragraphs to find grammer errors.

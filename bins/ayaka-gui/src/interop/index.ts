@@ -50,7 +50,6 @@ export interface Action {
     line: ActionLine[],
     ch_key?: string,
     character?: string,
-    para_title?: string,
     switches: Switch[],
     props: {
         bg?: string,
@@ -58,7 +57,7 @@ export interface Action {
         efm?: string,
         voice?: string,
         video?: string,
-        ch_models_count?: string,
+        ch_models?: string,
     },
 }
 
@@ -111,12 +110,12 @@ export function save_all(): Promise<void> {
     return invoke("save_all")
 }
 
-export function choose_locale(locales: Locale[]): Promise<Locale | undefined> {
-    return invoke("choose_locale", { locales: locales })
+export function avaliable_locale(locales: Locale[]): Promise<Locale[]> {
+    return invoke("avaliable_locale", { locales: locales })
 }
 
-export function locale_native_name(loc: Locale): string {
-    return new Intl.DisplayNames(loc, { type: "language" }).of(loc) ?? ""
+export function choose_locale(locales: Locale[]): Promise<Locale | undefined> {
+    return invoke("choose_locale", { locales: locales })
 }
 
 export async function info(): Promise<GameInfo> {
@@ -142,6 +141,10 @@ export function next_back_run(): Promise<boolean> {
 
 export function current_run(): Promise<Action | undefined> {
     return invoke("current_run")
+}
+
+export function current_title(): Promise<string | undefined> {
+    return invoke("current_title")
 }
 
 export async function current_visited(): Promise<boolean> {

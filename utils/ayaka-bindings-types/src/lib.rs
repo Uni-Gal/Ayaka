@@ -254,14 +254,12 @@ pub struct Action {
     pub ctx: RawContext,
     /// The full texts.
     pub line: ActionLines,
-    #[doc(hidden)]
+    /// The format params of texts.
     pub line_params: Vec<RawValue>,
     /// The key of current character.
     pub ch_key: Option<String>,
     /// The current character.
     pub character: Option<String>,
-    /// The title of current paragraph.
-    pub para_title: Option<String>,
     /// The switches.
     pub switches: Vec<Switch>,
     /// The other custom properties.

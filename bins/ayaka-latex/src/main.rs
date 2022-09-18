@@ -1,6 +1,6 @@
 mod writer;
 
-use ayaka_runtime::{anyhow::Result, log::LevelFilter, Context, FrontendType, Locale};
+use ayaka_runtime::{anyhow::Result, log::LevelFilter, *};
 use clap::Parser;
 use std::ffi::OsString;
 use writer::LaTeXWriter;
@@ -39,17 +39,23 @@ async fn main() -> Result<()> {
             output.command0("tableofcontents").await?;
 
             ctx.init_new();
-            ctx.set_locale(opts.locale.unwrap_or_else(Locale::current));
+            ctx.set_settings(Settings {
+                lang: opts.locale.unwrap_or_else(Locale::current),
+            });
 
             let mut current_para = None;
             let mut current_bg = None;
 
             while let Some(action) = ctx.next_run() {
-                if action.para_title != current_para {
-                    current_para = action.para_title.clone();
+                let para_title = ctx.current_paragraph_title();
+                if para_title != current_para.as_ref() {
                     output
-                        .command("section", [action.para_title.unwrap_or_default()])
+                        .command(
+                            "section",
+                            [para_title.map(|s| s.as_str()).unwrap_or_default()],
+                        )
                         .await?;
+                    current_para = para_title.cloned();
                 }
                 let bg = action.props.get("bg");
                 if current_bg.as_ref() != bg {

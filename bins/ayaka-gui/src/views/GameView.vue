@@ -3,7 +3,7 @@ import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import ActionCard from '../components/ActionCard.vue'
 import IconButton from '../components/IconButton.vue'
-import { conv_src, current_run, next_run, next_back_run, switch_, merge_lines, Action, ActionLineType, ActionLine, current_visited } from '../interop'
+import { conv_src, current_run, current_title, next_run, next_back_run, switch_, merge_lines, Action, ActionLineType, ActionLine, current_visited } from '../interop'
 import { cloneDeep } from 'lodash'
 import Live2D from '../components/Live2D.vue'
 import { Modal } from 'bootstrap'
@@ -30,8 +30,8 @@ function wait_play(e: HTMLAudioElement): Promise<void> {
     })
 }
 
-function live2d_names(props: any): string[] {
-    return ((props.ch_models ?? "") as string).split(",").filter(s => s.length != 0)
+function live2d_names(props: { ch_models?: string }): string[] {
+    return (props.ch_models ?? "").split(",").filter(s => s.length != 0)
 }
 
 export default {
@@ -43,6 +43,7 @@ export default {
                 switches: [],
                 props: {},
             } as Action,
+            title: "",
             type_text: "",
             type_text_buffer: [] as ActionLine[],
             state: ActionState.End,
@@ -69,6 +70,7 @@ export default {
         // Should be called in mutex
         async fetch_current_run() {
             const res = await current_run()
+            this.title = await current_title() ?? ""
             console.info(res)
             if (res) {
                 const load_new_bgm = (res.props.bgm != this.action.props.bgm);
@@ -263,7 +265,7 @@ export default {
         <ActionCard :ch="action.character" :line="type_text"></ActionCard>
     </div>
     <div>
-        <h4><span class="badge bg-primary">{{ action.para_title }}</span></h4>
+        <h4><span class="badge bg-primary">{{ title }}</span></h4>
     </div>
     <div class="logo d-flex align-items-center">
         <span>Powered by Ayaka.</span>

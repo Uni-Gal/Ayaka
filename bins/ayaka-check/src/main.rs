@@ -62,7 +62,9 @@ async fn main() -> Result<()> {
         bail!("Check failed.");
     }
     ctx.init_new();
-    ctx.set_locale(opts.locale.unwrap_or_else(Locale::current));
+    ctx.set_settings(Settings {
+        lang: opts.locale.unwrap_or_else(Locale::current),
+    });
     while let Some(action) = ctx.next_run() {
         if let Some(name) = &action.character {
             print!("_{}_", name);

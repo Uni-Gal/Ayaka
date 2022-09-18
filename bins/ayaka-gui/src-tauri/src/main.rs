@@ -10,7 +10,10 @@ use ayaka_runtime::{
 };
 use flexi_logger::{FileSpec, LogSpecification, Logger};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt::Display};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Display,
+};
 use tauri::{async_runtime::Mutex, command, AppHandle, Manager, State};
 
 type CommandResult<T> = std::result::Result<T, CommandError>;
@@ -174,7 +177,24 @@ async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
 }
 
 #[command]
-fn choose_locale(locales: Vec<Locale>) -> CommandResult<Option<Locale>> {
+async fn avaliable_locale(
+    storage: State<'_, Storage>,
+    locales: HashSet<Locale>,
+) -> CommandResult<HashSet<Locale>> {
+    if let Some(context) = storage.context.lock().await.as_ref() {
+        let avaliable = context.game.paras.keys().cloned().collect();
+        Ok(locales.intersection(&avaliable).cloned().collect())
+    } else {
+        Ok(locales)
+    }
+}
+
+#[command]
+async fn choose_locale(
+    storage: State<'_, Storage>,
+    locales: HashSet<Locale>,
+) -> CommandResult<Option<Locale>> {
+    let locales = avaliable_locale(storage, locales).await?;
     let current = Locale::current();
     debug!("Choose {} from {:?}", current, locales);
     Ok(current.choose_from(&locales).cloned())
@@ -306,6 +326,16 @@ async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<Action
 }
 
 #[command]
+async fn current_title(storage: State<'_, Storage>) -> CommandResult<Option<String>> {
+    Ok(storage
+        .context
+        .lock()
+        .await
+        .as_ref()
+        .and_then(|context| context.current_paragraph_title().cloned()))
+}
+
+#[command]
 async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue> {
     debug!("Switch {}", i);
     let mut context = storage.context.lock().await;
@@ -389,6 +419,7 @@ fn main() -> Result<()> {
             get_records,
             save_record_to,
             save_all,
+            avaliable_locale,
             choose_locale,
             info,
             start_new,
@@ -396,6 +427,7 @@ fn main() -> Result<()> {
             next_run,
             next_back_run,
             current_run,
+            current_title,
             current_visited,
             switch,
             history,
