@@ -50,7 +50,6 @@ export interface Action {
     line: ActionLine[],
     ch_key?: string,
     character?: string,
-    para_title?: string,
     switches: Switch[],
     props: {
         bg?: string,
@@ -142,6 +141,10 @@ export function next_back_run(): Promise<boolean> {
 
 export function current_run(): Promise<Action | undefined> {
     return invoke("current_run")
+}
+
+export function current_title(): Promise<string | undefined> {
+    return invoke("current_title")
 }
 
 export async function current_visited(): Promise<boolean> {

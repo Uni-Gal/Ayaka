@@ -326,6 +326,16 @@ async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<Action
 }
 
 #[command]
+async fn current_title(storage: State<'_, Storage>) -> CommandResult<Option<String>> {
+    Ok(storage
+        .context
+        .lock()
+        .await
+        .as_ref()
+        .and_then(|context| context.current_paragraph_title().cloned()))
+}
+
+#[command]
 async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue> {
     debug!("Switch {}", i);
     let mut context = storage.context.lock().await;
@@ -417,6 +427,7 @@ fn main() -> Result<()> {
             next_run,
             next_back_run,
             current_run,
+            current_title,
             current_visited,
             switch,
             history,
