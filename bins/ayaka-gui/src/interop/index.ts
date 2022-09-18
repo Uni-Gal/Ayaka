@@ -57,7 +57,7 @@ export interface Action {
         efm?: string,
         voice?: string,
         video?: string,
-        ch_models_count?: string,
+        ch_models?: string,
     },
 }
 
