@@ -246,6 +246,30 @@ pub struct RawContext {
     pub locals: VarMap,
 }
 
+/// The invariant params of full action.
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct ActionParams {
+    /// The context snapshot.
+    pub ctx: RawContext,
+    /// The format params of texts.
+    pub line_params: Vec<ActionLines>,
+    /// The key of current character.
+    pub ch_key: Option<String>,
+    /// The switches.
+    pub switches: Vec<SwitchParams>,
+    /// The other custom properties.
+    pub props: HashMap<String, String>,
+}
+
+/// The invariant params of switch item.
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct SwitchParams {
+    /// The action of this switch after chosen.
+    pub action: Program,
+    /// Whether the switch is enabled.
+    pub enabled: bool,
+}
+
 /// The full action information in one line of config.
 /// It provides the full texts and other properties exacted from [`ayaka_script_types::Text`].
 #[derive(Debug, Default, Clone, Serialize, Deserialize, FallbackSpec)]
@@ -254,8 +278,6 @@ pub struct Action {
     pub ctx: RawContext,
     /// The full texts.
     pub line: ActionLines,
-    /// The format params of texts.
-    pub line_params: Vec<RawValue>,
     /// The key of current character.
     pub ch_key: Option<String>,
     /// The current character.
@@ -271,8 +293,6 @@ pub struct Action {
 pub struct Switch {
     /// The switch text.
     pub text: String,
-    /// The action of this switch after chosen.
-    pub action: Program,
     /// Whether the switch is enabled.
     pub enabled: bool,
 }
@@ -310,7 +330,7 @@ pub struct ActionProcessContextRef<'a> {
     pub root_path: &'a Path,
     pub game_props: &'a HashMap<String, String>,
     pub frontend: FrontendType,
-    pub last_action: Option<&'a Action>,
+    pub last_action: Option<&'a ActionParams>,
     pub action: &'a Action,
 }
 

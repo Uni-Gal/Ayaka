@@ -266,9 +266,8 @@ async fn start_record(
 ) -> CommandResult<()> {
     if let Some(ctx) = storage.context.lock().await.as_mut() {
         let raw_ctx = storage.records.lock().await[index].clone();
-        let last_line = raw_ctx.history.last().unwrap();
-        *storage.action.lock().await = Some(last_line.clone());
         ctx.init_context(raw_ctx);
+        *storage.action.lock().await = ctx.current_run();
         info!("Init new context with locale {}.", locale);
     } else {
         warn!("Game hasn't been loaded.")
@@ -352,12 +351,17 @@ async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue
 
 #[command]
 async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<Action>> {
-    let mut hs = storage
-        .context
-        .lock()
-        .await
+    let context = storage.context.lock().await;
+    let mut hs = context
         .as_ref()
-        .map(|context| context.record.history.clone())
+        .map(|context| {
+            context
+                .record
+                .history
+                .iter()
+                .map(|params| context.get_action(params.clone()))
+                .collect::<Vec<_>>()
+        })
         .unwrap_or_default();
     hs.reverse();
     debug!("Get history {:?}", hs);

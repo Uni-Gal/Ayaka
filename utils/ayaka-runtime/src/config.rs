@@ -79,7 +79,8 @@ impl Game {
             .unwrap_or(&self.config.base_lang)
     }
 
-    fn find_para(&self, loc: &Locale, base_tag: &str, tag: &str) -> Option<&Paragraph> {
+    /// Find a paragraph by tag, with specified locale.
+    pub fn find_para(&self, loc: &Locale, base_tag: &str, tag: &str) -> Option<&Paragraph> {
         if let Some(paras) = self.paras.get(loc) {
             if let Some(paras) = paras.get(base_tag) {
                 for p in paras.iter() {

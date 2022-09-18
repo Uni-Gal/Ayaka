@@ -3,6 +3,7 @@ pub use ayaka_bindings_types::VarMap;
 
 use crate::*;
 use anyhow::{anyhow, Result};
+use ayaka_bindings_types::ActionParams;
 use dirs::{config_dir, data_local_dir};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
@@ -39,7 +40,7 @@ pub struct GlobalRecord {
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct ActionRecord {
     /// The history actions.
-    pub history: Vec<Action>,
+    pub history: Vec<ActionParams>,
 }
 
 impl ActionRecord {

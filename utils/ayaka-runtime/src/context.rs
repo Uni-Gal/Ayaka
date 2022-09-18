@@ -7,10 +7,11 @@ use crate::{
 };
 use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::{
-    ActionLine, ActionLines, ActionProcessContextRef, GameProcessContextRef, TextProcessContextRef,
+    ActionLine, ActionLines, ActionParams, ActionProcessContextRef, GameProcessContextRef,
+    SwitchParams, TextProcessContextRef,
 };
 use ayaka_script::{Loc, ParseError, TextParser};
-use ayaka_script_types::{Command, Line, Program, Text};
+use ayaka_script_types::{Command, Line, Text};
 use log::error;
 use script::*;
 use std::{
@@ -175,7 +176,12 @@ impl Context {
         )
     }
 
-    fn current_paragraph(&self) -> Fallback<&Paragraph> {
+    fn current_paragraph(&self, loc: &Locale) -> Option<&Paragraph> {
+        self.game
+            .find_para(loc, &self.ctx.cur_base_para, &self.ctx.cur_para)
+    }
+
+    fn current_paragraph_fallback(&self) -> Fallback<&Paragraph> {
         self.game.find_para_fallback(
             &self.settings.lang,
             &self.ctx.cur_base_para,
@@ -183,18 +189,16 @@ impl Context {
         )
     }
 
-    fn current_text(&self) -> Fallback<&String> {
-        self.current_paragraph()
-            .map(|p| {
-                p.texts.get(self.ctx.cur_act).and_then(|s| {
-                    if s.is_empty() || s == "~" {
-                        None
-                    } else {
-                        Some(s)
-                    }
-                })
+    fn current_text(&self, loc: &Locale) -> Option<&String> {
+        self.current_paragraph(loc).and_then(|p| {
+            p.texts.get(self.ctx.cur_act).and_then(|s| {
+                if s.is_empty() || s == "~" {
+                    None
+                } else {
+                    Some(s)
+                }
             })
-            .flatten()
+        })
     }
 
     /// Set all settings.
@@ -246,7 +250,7 @@ impl Context {
         let post = text.ceil_char_boundary(loc.1 + (text.len() - loc.1).min(FREE_LEN));
 
         let para_name = self
-            .current_paragraph()
+            .current_paragraph(&self.game.config.base_lang)
             .and_then(|p| p.title.as_deref())
             .unwrap_or_default()
             .escape_default();
@@ -263,47 +267,34 @@ impl Context {
         )
     }
 
-    fn exact_text(&mut self, t: Text) -> Result<Action> {
-        let mut action_line = ActionLines::default();
+    fn parse_action_params(&mut self, t: Text) -> Result<ActionParams> {
         let mut action_line_params = vec![];
         let mut chkey = None;
-        let mut chname = None;
         let mut switches = vec![];
         let mut props = HashMap::new();
         for line in t.0.into_iter() {
             match line {
-                Line::Str(s) => action_line.push_back_chars(s),
+                Line::Str(_) => {}
                 Line::Cmd(cmd) => match cmd {
-                    Command::Character(key, alter) => {
-                        // TODO: reduce allocation
-                        chkey = Some(key.clone());
-                        chname = if alter.is_empty() {
-                            let res_key = format!("ch_{}", key);
-                            self.game
-                                .find_res_fallback(&self.settings.lang)
-                                .and_then(|map| map.get(&res_key))
-                                .map(|v| v.get_str().into_owned())
-                        } else {
-                            Some(alter)
-                        }
+                    Command::Character(key, _) => {
+                        chkey = Some(key);
                     }
                     Command::Exec(p) => {
                         let param = self.call(&p);
-                        action_line.push_back_chars(format!("{{{}}}", action_line_params.len()));
-                        action_line_params.push(param);
+                        action_line_params.push({
+                            let mut lines = ActionLines::default();
+                            lines.push_back_chars(param.into_str());
+                            lines
+                        });
                     }
                     Command::Switch {
-                        text,
+                        text: _,
                         action,
                         enabled,
                     } => {
                         // unwrap: when enabled is None, it means true.
                         let enabled = enabled.map(|p| self.call(&p).get_bool()).unwrap_or(true);
-                        switches.push(Switch {
-                            text,
-                            action,
-                            enabled,
-                        });
+                        switches.push(SwitchParams { action, enabled });
                     }
                     Command::Other(name, args) => {
                         if let Some(m) = self.runtime.text_modules.get(&name) {
@@ -312,12 +303,12 @@ impl Context {
                                 game_props: &self.game.config.props,
                                 frontend: self.frontend,
                             };
-                            let mut res = self.runtime.modules.get(m).unwrap().dispatch_command(
+                            let res = self.runtime.modules.get(m).unwrap().dispatch_command(
                                 &name,
                                 &args,
                                 game_context,
                             )?;
-                            action_line.append(&mut res.line);
+                            action_line_params.push(res.line);
                             for (key, value) in res.props.into_iter() {
                                 props.insert(key, value);
                             }
@@ -328,81 +319,149 @@ impl Context {
                 },
             }
         }
-        Ok(Action {
+        Ok(ActionParams {
             ctx: self.ctx.clone(),
-            line: action_line,
             line_params: action_line_params,
             ch_key: chkey,
-            character: chname,
             switches,
             props,
         })
     }
 
-    fn merge_action(&self, actions: Fallback<Action>) -> Option<Action> {
-        if actions.is_some() {
-            let actions = actions.spec();
-
-            let ctx = actions.ctx.fallback().unwrap_or_default();
-            let line = actions.line.and_any().unwrap_or_default();
-            let line_params = actions.line_params.and_any().unwrap_or_default();
-            let ch_key = actions.ch_key.flatten().and_any();
-            let character = actions.character.flatten().and_any();
-            let switches = actions
-                .switches
-                .into_iter()
-                .map(|s| {
-                    let s = s.spec();
-                    let text = s.text.and_any().unwrap_or_default();
-                    let action = s
-                        .action
-                        .map(|p| p.0)
-                        .and_any()
-                        .map(Program)
-                        .unwrap_or_default();
-                    let (enabled, base_enabled) = s.enabled.unzip();
-                    let enabled = base_enabled.or(enabled).unwrap_or(true);
-                    Switch {
-                        text,
-                        action,
-                        enabled,
+    fn parse_action(&self, t: Text) -> Result<Action> {
+        let mut action_line = ActionLines::default();
+        let mut action_line_param_index = 0;
+        let mut chname = None;
+        let mut switches = vec![];
+        for line in t.0.into_iter() {
+            match line {
+                Line::Str(s) => action_line.push_back_chars(s),
+                Line::Cmd(cmd) => match cmd {
+                    Command::Character(_, alias) => {
+                        if !alias.is_empty() && alias != "~" {
+                            chname = Some(alias);
+                        }
                     }
-                })
-                .collect();
-            let (props, base_props) = actions.props.unzip();
-            let (mut props, base_props) =
-                (props.unwrap_or_default(), base_props.unwrap_or_default());
-            for (key, value) in base_props.into_iter() {
-                props.entry(key).or_insert(value);
+                    Command::Exec(_) | Command::Other(_, _) => {
+                        action_line.push_back_chars(format!("{{{}}}", action_line_param_index));
+                        action_line_param_index += 1;
+                    }
+                    Command::Switch {
+                        text,
+                        action: _,
+                        enabled: _,
+                    } => {
+                        switches.push(Switch {
+                            text,
+                            enabled: false,
+                        });
+                    }
+                },
             }
-            Some(Action {
-                ctx,
-                line,
-                line_params,
-                ch_key,
-                character,
-                switches,
-                props,
-            })
-        } else {
-            None
         }
+        Ok(Action {
+            ctx: RawContext::default(),
+            line: action_line,
+            ch_key: None,
+            character: chname,
+            switches,
+            props: HashMap::default(),
+        })
     }
 
-    fn process_action(&self, mut action: Action) -> Result<Action> {
-        {
-            let params = std::mem::take(&mut action.line_params);
-            let named = HashMap::<String, RawValue>::new();
-            for line in action.line.iter_mut() {
-                match line {
-                    ActionLine::Chars(s) | ActionLine::Block(s) => {
-                        *s = rt_format::ParsedFormat::parse(s, &params, &named)
-                            .map_err(|id| anyhow!("Format error at {}", id))?
-                            .to_string();
-                    }
+    fn merge_action(&self, action: Fallback<Action>, mut params: ActionParams) -> Action {
+        let mut action = {
+            let action = action.spec();
+
+            let line = action.line.and_any().unwrap_or_default();
+            let switches = action.switches.and_any().unwrap_or_default();
+            Action {
+                ctx: params.ctx,
+                line,
+                ch_key: None,
+                character: None,
+                switches,
+                props: params.props,
+            }
+        };
+
+        let mut new_line = ActionLines::default();
+        for line in action.line {
+            use rustc_parse_format::*;
+
+            let parser = Parser::new(line.as_str(), None, None, false, ParseMode::Format);
+            for piece in parser {
+                match piece {
+                    Piece::String(s) => match &line {
+                        ActionLine::Block(_) => new_line.push_back_block(s),
+                        ActionLine::Chars(_) => new_line.push_back_chars(s),
+                    },
+                    Piece::NextArgument(arg) => match arg.position {
+                        Position::ArgumentImplicitlyIs(i) | Position::ArgumentIs(i) => {
+                            new_line.append(&mut params.line_params[i])
+                        }
+                        _ => unimplemented!(),
+                    },
                 }
             }
         }
+        action.line = new_line;
+
+        action.ch_key = params.ch_key;
+        if action.character.is_none() {
+            if let Some(key) = &action.ch_key {
+                let res_key = format!("ch_{}", key);
+                action.character = self
+                    .game
+                    .find_res_fallback(&self.settings.lang)
+                    .and_then(|map| map.get(&res_key))
+                    .map(|v| v.get_str().into_owned())
+            }
+        }
+
+        for (sw, swp) in action.switches.iter_mut().zip(params.switches.iter()) {
+            sw.enabled = swp.enabled;
+        }
+
+        action
+    }
+
+    pub fn get_action(&self, params: ActionParams) -> Action {
+        let cur_text = self
+            .game
+            .find_para_fallback(
+                &self.settings.lang,
+                &params.ctx.cur_base_para,
+                &params.ctx.cur_para,
+            )
+            .map(|p| {
+                p.texts.get(params.ctx.cur_act).and_then(|s| {
+                    if s.is_empty() || s == "~" {
+                        None
+                    } else {
+                        Some(s)
+                    }
+                })
+            })
+            .flatten();
+
+        let action = cur_text.map(|act| self.parse_text_rich_error(act));
+
+        let action = action.map(|t| {
+            self.parse_action(t).unwrap_or_else(|e| {
+                error!("Exact text error: {}", e);
+                Action::default()
+            })
+        });
+
+        let act = self.merge_action(action, params);
+        self.process_action(act).unwrap_or_else(|e| {
+            error!("Error when processing action: {}", e);
+            Action::default()
+        })
+    }
+
+    fn process_action(&self, mut action: Action) -> Result<Action> {
         let last_action = self.record.history.last();
         for action_module in &self.runtime.action_modules {
             let module = &self.runtime.modules[action_module];
@@ -432,10 +491,8 @@ impl Context {
         Ok(action)
     }
 
-    fn push_history(&mut self, action: &Action) {
-        if !action.line.is_empty() || action.character.is_some() {
-            self.record.history.push(action.clone());
-        }
+    fn push_history(&mut self, action: &ActionParams) {
+        self.record.history.push(action.clone());
     }
 
     fn parse_text_rich_error(&self, text: &str) -> Text {
@@ -466,9 +523,9 @@ impl Context {
                 .and_modify(|act| *act = (*act).max(action.ctx.cur_act))
                 .or_insert(action.ctx.cur_act);
         }
-        let cur_text = loop {
-            let cur_para = self.current_paragraph();
-            let cur_text = self.current_text();
+        let cur_text_base = loop {
+            let cur_para = self.current_paragraph(&self.game.config.base_lang);
+            let cur_text = self.current_text(&self.game.config.base_lang);
             match (cur_para.is_some(), cur_text.is_some()) {
                 (true, true) => break cur_text,
                 (true, false) => {
@@ -494,25 +551,29 @@ impl Context {
                 }
             }
         };
-        let actions = cur_text
-            .map(|act| self.parse_text_rich_error(act))
-            .map(|t| {
-                self.exact_text(t).unwrap_or_else(|e| {
-                    error!("Exact text error: {}", e);
-                    Action::default()
-                })
-            });
-        let res = self.merge_action(actions).map(|act| {
-            self.process_action(act).unwrap_or_else(|e| {
-                error!("Error when processing action: {}", e);
-                Action::default()
+        let action_base = cur_text_base.map(|act| self.parse_text_rich_error(act));
+
+        let params = action_base.map(|t| {
+            self.parse_action_params(t).unwrap_or_else(|e| {
+                error!("Parse action params error: {}", e);
+                ActionParams::default()
             })
         });
-        if let Some(res) = &res {
-            self.push_history(res);
-        }
+        let res = params.map(|params| {
+            self.push_history(&params);
+            self.get_action(params)
+        });
         self.ctx.cur_act += 1;
         res
+    }
+
+    /// Get (again) then current run.
+    pub fn current_run(&self) -> Option<Action> {
+        self.record
+            .history
+            .last()
+            .cloned()
+            .map(|params| self.get_action(params))
     }
 
     /// Step back to the last run.
@@ -528,13 +589,14 @@ impl Context {
                     self.ctx.cur_act
                 );
             }
-            self.record.history.last().cloned()
+            self.current_run()
         }
     }
 
     /// Get current paragraph title.
     pub fn current_paragraph_title(&self) -> Option<&String> {
-        self.current_paragraph().and_then(|p| p.title.as_ref())
+        self.current_paragraph_fallback()
+            .and_then(|p| p.title.as_ref())
     }
 
     /// Check all paragraphs to find grammer errors.
