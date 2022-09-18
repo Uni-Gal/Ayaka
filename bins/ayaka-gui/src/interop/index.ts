@@ -111,12 +111,12 @@ export function save_all(): Promise<void> {
     return invoke("save_all")
 }
 
-export function choose_locale(locales: Locale[]): Promise<Locale | undefined> {
-    return invoke("choose_locale", { locales: locales })
+export function avaliable_locale(locales: Locale[]): Promise<Locale[]> {
+    return invoke("avaliable_locale", { locales: locales })
 }
 
-export function locale_native_name(loc: Locale): string {
-    return new Intl.DisplayNames(loc, { type: "language" }).of(loc) ?? ""
+export function choose_locale(locales: Locale[]): Promise<Locale | undefined> {
+    return invoke("choose_locale", { locales: locales })
 }
 
 export async function info(): Promise<GameInfo> {
