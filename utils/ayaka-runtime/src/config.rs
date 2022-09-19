@@ -1,9 +1,6 @@
-#[doc(no_inline)]
-pub use ayaka_bindings_types::{Action, Switch};
-#[doc(no_inline)]
-pub use fallback::Fallback;
-
 use crate::*;
+use ayaka_bindings_types::VarMap;
+use fallback::Fallback;
 use serde::Deserialize;
 use std::{collections::HashMap, path::PathBuf};
 

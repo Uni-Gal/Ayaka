@@ -65,7 +65,8 @@ async fn main() -> Result<()> {
     ctx.set_settings(Settings {
         lang: opts.locale.unwrap_or_else(Locale::current),
     });
-    while let Some(action) = ctx.next_run() {
+    while let Some(params) = ctx.next_run() {
+        let action = ctx.get_action(params.clone());
         if let Some(name) = &action.character {
             print!("_{}_", name);
         }
@@ -87,7 +88,7 @@ async fn main() -> Result<()> {
                     let valid =
                         i > 0 && i <= action.switches.len() && action.switches[i - 1].enabled;
                     if valid {
-                        ctx.call(&action.switches[i - 1].action);
+                        ctx.call(&params.switches[i - 1].action);
                         break;
                     }
                 }

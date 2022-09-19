@@ -1,17 +1,12 @@
-#[doc(no_inline)]
-pub use ayaka_bindings_types::{FrontendType, RawContext};
-
 use crate::{
     plugin::{LoadStatus, Runtime},
     *,
 };
 use anyhow::{anyhow, bail, Result};
-use ayaka_bindings_types::{
-    ActionLine, ActionLines, ActionParams, ActionProcessContextRef, GameProcessContextRef,
-    SwitchParams, TextProcessContextRef,
-};
+use ayaka_bindings_types::*;
 use ayaka_script::{Loc, ParseError, TextParser};
 use ayaka_script_types::{Command, Line, Text};
+use fallback::Fallback;
 use log::error;
 use script::*;
 use std::{
@@ -223,7 +218,7 @@ impl Context {
 
     /// Determine if an [`Action`] has been visited,
     /// by the paragraph tag and action index.
-    pub fn visited(&self, action: &Action) -> bool {
+    pub fn visited(&self, action: &ActionParams) -> bool {
         if let Some(max_act) = self.global_record.record.get(&action.ctx.cur_para) {
             log::debug!("Test act: {}, max act: {}", action.ctx.cur_act, max_act);
             *max_act >= action.ctx.cur_act
@@ -515,7 +510,7 @@ impl Context {
     }
 
     /// Step to next line.
-    pub fn next_run(&mut self) -> Option<Action> {
+    pub fn next_run(&mut self) -> Option<ActionParams> {
         if let Some(action) = self.record.history.last() {
             self.global_record
                 .record
@@ -559,25 +554,20 @@ impl Context {
                 ActionParams::default()
             })
         });
-        let res = params.map(|params| {
-            self.push_history(&params);
-            self.get_action(params)
-        });
+        if let Some(action) = &params {
+            self.push_history(action);
+        }
         self.ctx.cur_act += 1;
-        res
+        params
     }
 
     /// Get (again) then current run.
-    pub fn current_run(&self) -> Option<Action> {
-        self.record
-            .history
-            .last()
-            .cloned()
-            .map(|params| self.get_action(params))
+    pub fn current_run(&self) -> Option<ActionParams> {
+        self.record.history.last().cloned()
     }
 
     /// Step back to the last run.
-    pub fn next_back_run(&mut self) -> Option<Action> {
+    pub fn next_back_run(&mut self) -> Option<ActionParams> {
         if self.record.history.len() <= 1 {
             None
         } else {

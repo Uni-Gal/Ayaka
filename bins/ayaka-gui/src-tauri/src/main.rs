@@ -206,7 +206,7 @@ struct Storage {
     config: String,
     records: Mutex<Vec<ActionRecord>>,
     context: Mutex<Option<Context>>,
-    action: Mutex<Option<Action>>,
+    action: Mutex<Option<ActionParams>>,
 }
 
 impl Storage {
@@ -321,7 +321,13 @@ async fn current_visited(storage: State<'_, Storage>) -> CommandResult<bool> {
 
 #[command]
 async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<Action>> {
-    Ok(storage.action.lock().await.as_ref().cloned())
+    let context = storage.context.lock().await;
+    let action = storage.action.lock().await;
+    Ok(context.as_ref().and_then(|context| {
+        action
+            .as_ref()
+            .map(|params| context.get_action(params.clone()))
+    }))
 }
 
 #[command]

@@ -1,6 +1,7 @@
 //! The script interpreter.
 
 use crate::{plugin::Runtime, *};
+use ayaka_bindings_types::VarMap;
 use ayaka_script_types::*;
 use fallback::Fallback;
 use log::{error, warn};

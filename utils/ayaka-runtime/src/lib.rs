@@ -26,9 +26,11 @@ mod settings;
 #[doc(no_inline)]
 pub use anyhow;
 #[doc(no_inline)]
+pub use ayaka_bindings_types::*;
+#[doc(no_inline)]
 pub use ayaka_script::log;
 #[doc(no_inline)]
-pub use ayaka_script_types::RawValue;
+pub use ayaka_script_types::*;
 pub use config::*;
 pub use context::*;
 #[doc(no_inline)]

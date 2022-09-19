@@ -1,9 +1,6 @@
-#[doc(no_inline)]
-pub use ayaka_bindings_types::VarMap;
-
 use crate::*;
 use anyhow::{anyhow, Result};
-use ayaka_bindings_types::ActionParams;
+use ayaka_bindings_types::{ActionParams, RawContext};
 use dirs::{config_dir, data_local_dir};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
