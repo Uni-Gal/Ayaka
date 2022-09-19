@@ -319,7 +319,7 @@ pub struct ActionProcessContext {
     pub frontend: FrontendType,
     /// The previous action in the history.
     /// It is used if some properties need to inherit.
-    pub last_action: Option<Action>,
+    pub last_action: Option<ActionParams>,
     /// The current action.
     pub action: Action,
 }
