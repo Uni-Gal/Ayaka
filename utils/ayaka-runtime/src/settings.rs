@@ -33,6 +33,27 @@ pub struct GlobalRecord {
     pub record: HashMap<String, usize>,
 }
 
+impl GlobalRecord {
+    /// Determine if an [`ActionParams`] has been visited,
+    /// by the paragraph tag and action index.
+    pub fn visited(&self, action: &ActionParams) -> bool {
+        if let Some(max_act) = self.record.get(&action.ctx.cur_para) {
+            log::debug!("Test act: {}, max act: {}", action.ctx.cur_act, max_act);
+            *max_act >= action.ctx.cur_act
+        } else {
+            false
+        }
+    }
+
+    /// Update the global record with the latest [`ActionParams`].
+    pub fn update(&mut self, action: &ActionParams) {
+        self.record
+            .entry(action.ctx.cur_para.clone())
+            .and_modify(|act| *act = (*act).max(action.ctx.cur_act))
+            .or_insert(action.ctx.cur_act);
+    }
+}
+
 /// The specific record.
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct ActionRecord {

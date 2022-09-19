@@ -42,12 +42,6 @@ fn ayaka_version() -> &'static str {
     ayaka_runtime::version()
 }
 
-#[derive(Debug, Serialize)]
-struct FullSettings {
-    settings: Settings,
-    contexts: Vec<RawContext>,
-}
-
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "t", content = "data")]
 enum OpenGameStatus {
@@ -89,7 +83,7 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
             OpenStatus::LoadParagraph => emit_open_status(&handle, OpenGameStatus::LoadParagraph)?,
         }
     }
-    let mut ctx = context.await?;
+    let ctx = context.await?;
 
     let window = handle.get_window("main").unwrap();
     window.set_title(&ctx.game.config.title)?;
@@ -100,15 +94,15 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
             Settings::new()
         })
     };
-    ctx.set_settings(settings);
+    *storage.settings.lock().await = Some(settings);
 
     emit_open_status(&handle, OpenGameStatus::LoadGlobalRecords)?;
-    ctx.set_global_record(
+    let global_record =
         load_global_record(&storage.ident, &ctx.game.config.title).unwrap_or_else(|e| {
             warn!("Load global records failed: {}", e);
             Default::default()
-        }),
-    );
+        });
+    *storage.global_record.lock().await = Some(global_record);
 
     emit_open_status(&handle, OpenGameStatus::LoadRecords)?;
     *storage.records.lock().await = load_records(&storage.ident, &ctx.game.config.title)
@@ -124,20 +118,12 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
 
 #[command]
 async fn get_settings(storage: State<'_, Storage>) -> CommandResult<Option<Settings>> {
-    Ok(storage
-        .context
-        .lock()
-        .await
-        .as_ref()
-        .map(|ctx| ctx.settings())
-        .cloned())
+    Ok(storage.settings.lock().await.clone())
 }
 
 #[command]
 async fn set_settings(settings: Settings, storage: State<'_, Storage>) -> CommandResult<()> {
-    if let Some(context) = storage.context.lock().await.as_mut() {
-        context.set_settings(settings);
-    }
+    *storage.settings.lock().await = Some(settings);
     Ok(())
 }
 
@@ -169,8 +155,12 @@ async fn save_record_to(index: usize, storage: State<'_, Storage>) -> CommandRes
 async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
     if let Some(context) = storage.context.lock().await.as_ref() {
         let game = &context.game.config.title;
-        save_settings(&storage.ident, context.settings())?;
-        save_global_record(&storage.ident, game, context.global_record())?;
+        if let Some(settings) = storage.settings.lock().await.as_ref() {
+            save_settings(&storage.ident, settings)?;
+        }
+        if let Some(record) = storage.global_record.lock().await.as_ref() {
+            save_global_record(&storage.ident, game, record)?;
+        }
         save_records(&storage.ident, game, &storage.records.lock().await)?;
     }
     Ok(())
@@ -206,6 +196,8 @@ struct Storage {
     config: String,
     records: Mutex<Vec<ActionRecord>>,
     context: Mutex<Option<Context>>,
+    settings: Mutex<Option<Settings>>,
+    global_record: Mutex<Option<GlobalRecord>>,
     action: Mutex<Option<ActionParams>>,
 }
 
@@ -278,7 +270,12 @@ async fn start_record(
 #[command]
 async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
     let mut context = storage.context.lock().await;
-    let action = context.as_mut().and_then(|context| context.next_run());
+    let settings = storage.settings.lock().await;
+    let lang = settings
+        .as_ref()
+        .map(|settings| settings.lang.clone())
+        .unwrap_or_else(Locale::current);
+    let action = context.as_mut().and_then(|context| context.next_run(&lang));
     if let Some(action) = action {
         debug!("Next action: {:?}", action);
         *storage.action.lock().await = Some(action);
@@ -308,10 +305,10 @@ async fn next_back_run(storage: State<'_, Storage>) -> CommandResult<bool> {
 async fn current_visited(storage: State<'_, Storage>) -> CommandResult<bool> {
     let action = storage.action.lock().await;
     let visited = if let Some(action) = action.as_ref() {
-        let context = storage.context.lock().await;
-        context
+        let record = storage.global_record.lock().await;
+        record
             .as_ref()
-            .map(|context| context.visited(action))
+            .map(|record| record.visited(action))
             .unwrap_or_default()
     } else {
         false
@@ -323,21 +320,31 @@ async fn current_visited(storage: State<'_, Storage>) -> CommandResult<bool> {
 async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<Action>> {
     let context = storage.context.lock().await;
     let action = storage.action.lock().await;
+    let settings = storage.settings.lock().await;
+    let lang = settings
+        .as_ref()
+        .map(|settings| settings.lang.clone())
+        .unwrap_or_else(Locale::current);
     Ok(context.as_ref().and_then(|context| {
         action
             .as_ref()
-            .map(|params| context.get_action(params.clone()))
+            .map(|params| context.get_action(&lang, params.clone()))
     }))
 }
 
 #[command]
 async fn current_title(storage: State<'_, Storage>) -> CommandResult<Option<String>> {
+    let settings = storage.settings.lock().await;
+    let lang = settings
+        .as_ref()
+        .map(|settings| settings.lang.clone())
+        .unwrap_or_else(Locale::current);
     Ok(storage
         .context
         .lock()
         .await
         .as_ref()
-        .and_then(|context| context.current_paragraph_title().cloned()))
+        .and_then(|context| context.current_paragraph_title(&lang).cloned()))
 }
 
 #[command]
@@ -352,12 +359,22 @@ async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue
         .as_ref()
         .and_then(|action| action.switches.get(i))
         .ok_or_else(|| anyhow!("Index error: {}", i))?;
-    Ok(context.call(&switch.action))
+    let settings = storage.settings.lock().await;
+    let lang = settings
+        .as_ref()
+        .map(|settings| settings.lang.clone())
+        .unwrap_or_else(Locale::current);
+    Ok(context.call(&lang, &switch.action))
 }
 
 #[command]
 async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<Action>> {
     let context = storage.context.lock().await;
+    let settings = storage.settings.lock().await;
+    let lang = settings
+        .as_ref()
+        .map(|settings| settings.lang.clone())
+        .unwrap_or_else(Locale::current);
     let mut hs = context
         .as_ref()
         .map(|context| {
@@ -365,7 +382,7 @@ async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<Action>> {
                 .record
                 .history
                 .iter()
-                .map(|params| context.get_action(params.clone()))
+                .map(|params| context.get_action(&lang, params.clone()))
                 .collect::<Vec<_>>()
         })
         .unwrap_or_default();

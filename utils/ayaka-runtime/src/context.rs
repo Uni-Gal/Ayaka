@@ -23,8 +23,6 @@ pub struct Context {
     frontend: FrontendType,
     root_path: PathBuf,
     runtime: Runtime,
-    settings: Settings,
-    global_record: GlobalRecord,
     /// The inner raw context.
     pub ctx: RawContext,
     /// The inner record.
@@ -139,8 +137,6 @@ impl Context {
             frontend,
             root_path,
             runtime,
-            settings: Settings::new(),
-            global_record: GlobalRecord::default(),
             ctx: RawContext::default(),
             record: ActionRecord::default(),
         })
@@ -163,10 +159,10 @@ impl Context {
         }
     }
 
-    fn table(&mut self) -> VarTable {
+    fn table(&mut self, loc: &Locale) -> VarTable {
         VarTable::new(
             &self.runtime,
-            self.game.find_res_fallback(&self.settings.lang),
+            self.game.find_res_fallback(loc),
             &mut self.ctx.locals,
         )
     }
@@ -176,12 +172,9 @@ impl Context {
             .find_para(loc, &self.ctx.cur_base_para, &self.ctx.cur_para)
     }
 
-    fn current_paragraph_fallback(&self) -> Fallback<&Paragraph> {
-        self.game.find_para_fallback(
-            &self.settings.lang,
-            &self.ctx.cur_base_para,
-            &self.ctx.cur_para,
-        )
+    fn current_paragraph_fallback(&self, loc: &Locale) -> Fallback<&Paragraph> {
+        self.game
+            .find_para_fallback(loc, &self.ctx.cur_base_para, &self.ctx.cur_para)
     }
 
     fn current_text(&self, loc: &Locale) -> Option<&String> {
@@ -196,40 +189,9 @@ impl Context {
         })
     }
 
-    /// Set all settings.
-    pub fn set_settings(&mut self, s: Settings) {
-        self.settings = s;
-    }
-
-    /// Get all settings.
-    pub fn settings(&self) -> &Settings {
-        &self.settings
-    }
-
-    /// Set global record.
-    pub fn set_global_record(&mut self, r: GlobalRecord) {
-        self.global_record = r;
-    }
-
-    /// Get global record.
-    pub fn global_record(&self) -> &GlobalRecord {
-        &self.global_record
-    }
-
-    /// Determine if an [`Action`] has been visited,
-    /// by the paragraph tag and action index.
-    pub fn visited(&self, action: &ActionParams) -> bool {
-        if let Some(max_act) = self.global_record.record.get(&action.ctx.cur_para) {
-            log::debug!("Test act: {}, max act: {}", action.ctx.cur_act, max_act);
-            *max_act >= action.ctx.cur_act
-        } else {
-            false
-        }
-    }
-
     /// Call the part of script with this context.
-    pub fn call(&mut self, expr: &impl Callable) -> RawValue {
-        self.table().call(expr)
+    pub fn call(&mut self, loc: &Locale, expr: &impl Callable) -> RawValue {
+        self.table(loc).call(expr)
     }
 
     fn rich_error(&self, text: &str, e: &ParseError) -> String {
@@ -262,7 +224,7 @@ impl Context {
         )
     }
 
-    fn parse_action_params(&mut self, t: Text) -> Result<ActionParams> {
+    fn parse_action_params(&mut self, loc: &Locale, t: Text) -> Result<ActionParams> {
         let mut action_line_params = vec![];
         let mut chkey = None;
         let mut switches = vec![];
@@ -275,7 +237,7 @@ impl Context {
                         chkey = Some(key);
                     }
                     Command::Exec(p) => {
-                        let param = self.call(&p);
+                        let param = self.call(loc, &p);
                         action_line_params.push({
                             let mut lines = ActionLines::default();
                             lines.push_back_chars(param.into_str());
@@ -288,7 +250,9 @@ impl Context {
                         enabled,
                     } => {
                         // unwrap: when enabled is None, it means true.
-                        let enabled = enabled.map(|p| self.call(&p).get_bool()).unwrap_or(true);
+                        let enabled = enabled
+                            .map(|p| self.call(loc, &p).get_bool())
+                            .unwrap_or(true);
                         switches.push(SwitchParams { action, enabled });
                     }
                     Command::Other(name, args) => {
@@ -364,7 +328,12 @@ impl Context {
         })
     }
 
-    fn merge_action(&self, action: Fallback<Action>, mut params: ActionParams) -> Action {
+    fn merge_action(
+        &self,
+        loc: &Locale,
+        action: Fallback<Action>,
+        mut params: ActionParams,
+    ) -> Action {
         let mut action = {
             let action = action.spec();
 
@@ -408,7 +377,7 @@ impl Context {
                 let res_key = format!("ch_{}", key);
                 action.character = self
                     .game
-                    .find_res_fallback(&self.settings.lang)
+                    .find_res_fallback(loc)
                     .and_then(|map| map.get(&res_key))
                     .map(|v| v.get_str().into_owned())
             }
@@ -421,14 +390,11 @@ impl Context {
         action
     }
 
-    pub fn get_action(&self, params: ActionParams) -> Action {
+    /// Get the [`Action`] from [`Locale`] and [`ActionParams`].
+    pub fn get_action(&self, loc: &Locale, params: ActionParams) -> Action {
         let cur_text = self
             .game
-            .find_para_fallback(
-                &self.settings.lang,
-                &params.ctx.cur_base_para,
-                &params.ctx.cur_para,
-            )
+            .find_para_fallback(loc, &params.ctx.cur_base_para, &params.ctx.cur_para)
             .map(|p| {
                 p.texts.get(params.ctx.cur_act).and_then(|s| {
                     if s.is_empty() || s == "~" {
@@ -449,7 +415,7 @@ impl Context {
             })
         });
 
-        let act = self.merge_action(action, params);
+        let act = self.merge_action(loc, action, params);
         self.process_action(act).unwrap_or_else(|e| {
             error!("Error when processing action: {}", e);
             Action::default()
@@ -510,14 +476,7 @@ impl Context {
     }
 
     /// Step to next line.
-    pub fn next_run(&mut self) -> Option<ActionParams> {
-        if let Some(action) = self.record.history.last() {
-            self.global_record
-                .record
-                .entry(action.ctx.cur_para.clone())
-                .and_modify(|act| *act = (*act).max(action.ctx.cur_act))
-                .or_insert(action.ctx.cur_act);
-        }
+    pub fn next_run(&mut self, loc: &Locale) -> Option<ActionParams> {
         let cur_text_base = loop {
             let cur_para = self.current_paragraph(&self.game.config.base_lang);
             let cur_text = self.current_text(&self.game.config.base_lang);
@@ -527,7 +486,7 @@ impl Context {
                     self.ctx.cur_para = cur_para
                         .and_then(|p| p.next.as_ref())
                         .map(|next| self.parse_text_rich_error(next))
-                        .map(|text| self.call(&text).into_str())
+                        .map(|text| self.call(loc, &text).into_str())
                         .unwrap_or_default();
                     self.ctx.cur_act = 0;
                 }
@@ -549,7 +508,7 @@ impl Context {
         let action_base = cur_text_base.map(|act| self.parse_text_rich_error(act));
 
         let params = action_base.map(|t| {
-            self.parse_action_params(t).unwrap_or_else(|e| {
+            self.parse_action_params(loc, t).unwrap_or_else(|e| {
                 error!("Parse action params error: {}", e);
                 ActionParams::default()
             })
@@ -584,8 +543,8 @@ impl Context {
     }
 
     /// Get current paragraph title.
-    pub fn current_paragraph_title(&self) -> Option<&String> {
-        self.current_paragraph_fallback()
+    pub fn current_paragraph_title(&self, loc: &Locale) -> Option<&String> {
+        self.current_paragraph_fallback(loc)
             .and_then(|p| p.title.as_ref())
     }
 
