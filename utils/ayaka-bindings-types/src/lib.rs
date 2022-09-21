@@ -188,11 +188,11 @@ pub struct RawContext {
 ///
 /// ```
 /// # use ayaka_bindings_types::*;
-/// let mut lines = Action::default();
-/// lines.push_back_chars("Hello ");
-/// assert_eq!(lines[0], ActionSubText::chars("Hello "));
-/// lines.push_back_chars("world!");
-/// assert_eq!(lines[0], ActionSubText::chars("Hello world!"));
+/// let mut text = ActionText::default();
+/// text.push_back_chars("Hello ");
+/// assert_eq!(text.text[0], ActionSubText::chars("Hello "));
+/// text.push_back_chars("world!");
+/// assert_eq!(text.text[0], ActionSubText::chars("Hello world!"));
 /// ```
 #[derive(Debug, Default, Clone, Serialize, Deserialize, FallbackSpec)]
 pub struct ActionText {
