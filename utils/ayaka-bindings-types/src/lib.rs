@@ -57,6 +57,7 @@ pub struct PluginType {
     /// The text plugin.
     /// The custom text commands are dealt with this type of plugin.
     pub text: Vec<String>,
+    pub line: Vec<String>,
     /// The game plugin.
     /// This plugin processes the game properties after it is loaded.
     pub game: bool,
@@ -86,6 +87,11 @@ impl PluginTypeBuilder {
     /// A text plugin, which provides commands.
     pub fn text(mut self, cmds: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.data.text = cmds.into_iter().map(|s| s.into()).collect();
+        self
+    }
+
+    pub fn line(mut self, cmds: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        self.data.line = cmds.into_iter().map(|s| s.into()).collect();
         self
     }
 
@@ -276,6 +282,11 @@ pub struct ActionProcessContextRef<'a> {
     pub action: &'a ActionText,
 }
 
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct ActionProcessResult {
+    pub action: ActionText,
+}
+
 /// The argument to text plugin.
 ///
 /// Every text plugin should implement `text_commands` and the specified function:
@@ -317,8 +328,10 @@ pub struct TextProcessContextRef<'a> {
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct TextProcessResult {
     /// The lines to append.
-    pub text: VecDeque<ActionSubText>,
+    pub text: ActionText,
 }
+
+impl TextProcessResult {}
 
 /// The argument to game plugin.
 ///
@@ -359,4 +372,28 @@ pub struct GameProcessContextRef<'a> {
 pub struct GameProcessResult {
     /// The updated properties.
     pub props: HashMap<String, String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LineProcessContext {
+    pub root_path: PathBuf,
+    pub game_props: HashMap<String, String>,
+    pub frontend: FrontendType,
+    pub ctx: RawContext,
+    pub props: HashMap<String, RawValue>,
+}
+
+#[derive(Debug, Serialize)]
+#[doc(hidden)]
+pub struct LineProcessContextRef<'a> {
+    pub root_path: &'a Path,
+    pub game_props: &'a HashMap<String, String>,
+    pub frontend: FrontendType,
+    pub ctx: RawContext,
+    pub props: &'a HashMap<String, RawValue>,
+}
+
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct LineProcessResult {
+    pub locals: VarMap,
 }

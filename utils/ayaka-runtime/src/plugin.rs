@@ -93,7 +93,7 @@ impl Host {
     }
 
     /// Processes [`Action`] in action plugin.
-    pub fn process_action(&self, ctx: ActionProcessContextRef) -> Result<ActionText> {
+    pub fn process_action(&self, ctx: ActionProcessContextRef) -> Result<ActionProcessResult> {
         self.call("process_action", (ctx,))
     }
 
@@ -102,14 +102,26 @@ impl Host {
         self.call("text_commands", ())
     }
 
+    pub fn line_commands(&self) -> Result<Vec<String>> {
+        self.call("line_commands", ())
+    }
+
     /// Calls a custom command in the text plugin.
-    pub fn dispatch_command(
+    pub fn dispatch_text(
         &self,
         name: &str,
         args: &[String],
         ctx: TextProcessContextRef,
     ) -> Result<TextProcessResult> {
         self.call(name, (args, ctx))
+    }
+
+    pub fn dispatch_line(
+        &self,
+        name: &str,
+        ctx: LineProcessContextRef,
+    ) -> Result<LineProcessResult> {
+        self.call(name, (ctx,))
     }
 
     /// Processes [`Game`] when opening the config file.
@@ -126,6 +138,8 @@ pub struct Runtime {
     pub action_modules: Vec<String>,
     /// The text plugins by command name.
     pub text_modules: HashMap<String, String>,
+    /// The line plugins by command name.
+    pub line_modules: HashMap<String, String>,
     /// The game plugins.
     pub game_modules: Vec<String>,
 }
@@ -246,6 +260,7 @@ impl Runtime {
         let mut modules = HashMap::new();
         let mut action_modules = vec![];
         let mut text_modules = HashMap::new();
+        let mut line_modules = HashMap::new();
         let mut game_modules = vec![];
         let paths = if names.is_empty() {
             std::fs::read_dir(path)?
@@ -296,6 +311,15 @@ impl Runtime {
                     );
                 }
             }
+            for cmd in plugin_type.line {
+                let res = line_modules.insert(cmd.clone(), name.clone());
+                if let Some(old_module) = res {
+                    warn!(
+                        "Command `{}` is overrided by \"{}\" over \"{}\"",
+                        cmd, name, old_module
+                    );
+                }
+            }
             if plugin_type.game {
                 game_modules.push(name.clone());
             }
@@ -305,6 +329,7 @@ impl Runtime {
             modules,
             action_modules,
             text_modules,
+            line_modules,
             game_modules,
         })
     }

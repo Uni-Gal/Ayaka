@@ -227,9 +227,9 @@ impl Context {
                                 game_props: &self.game.config.props,
                                 frontend: self.frontend,
                             };
-                            let res =
-                                self.runtime.modules[module].dispatch_command(cmd, args, ctx)?;
-                            action.text.extend(res.text);
+                            let res = self.runtime.modules[module].dispatch_text(cmd, args, ctx)?;
+                            action.text.extend(res.text.text);
+                            // TODO: change other props?
                         }
                     }
                 },
@@ -272,8 +272,28 @@ impl Context {
                 }
                 Ok(Action::Switches(res))
             }
-            Line::Custom(_) => {
-                unimplemented!()
+            Line::Custom(props) => {
+                let cmd = props.iter().next().map(|(_, value)| value);
+                if let Some(cmd) = cmd {
+                    let cmd = cmd.get_str();
+                    let module = self.runtime.line_modules.get(cmd.as_ref());
+                    if let Some(module) = module {
+                        let module = &self.runtime.modules[module];
+                        let ctx = LineProcessContextRef {
+                            root_path: &self.root_path,
+                            game_props: &self.game.config.props,
+                            frontend: self.frontend,
+                            ctx: self.ctx.clone(),
+                            props,
+                        };
+                        self.ctx
+                            .locals
+                            .extend(module.dispatch_line(&cmd, ctx)?.locals);
+                    } else {
+                        bail!("Cannot find command {}", cmd)
+                    }
+                }
+                Ok(Action::default())
             }
         }
     }
@@ -315,7 +335,7 @@ impl Context {
                 frontend: self.frontend,
                 action,
             };
-            *action = module.process_action(ctx)?;
+            *action = module.process_action(ctx)?.action;
         }
         while let Some(act) = action.text.back() {
             if act.as_str().trim().is_empty() {

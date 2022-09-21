@@ -1,6 +1,9 @@
 use ayaka_bindings::*;
 use pulldown_cmark::{Event::*, *};
-use std::{borrow::Cow, collections::HashMap};
+use std::{
+    borrow::Cow,
+    collections::{HashMap, VecDeque},
+};
 
 #[export]
 fn plugin_type() -> PluginType {
@@ -8,22 +11,22 @@ fn plugin_type() -> PluginType {
 }
 
 #[export]
-fn process_action(mut ctx: ActionProcessContext) -> Action {
+fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
     let line = ctx
         .action
-        .line
+        .text
         .into_iter()
         .map(|s| s.into_string())
         .collect::<Vec<_>>()
         .concat();
     let parser = Parser::new(&line);
     let writer = Writer::new(parser);
-    ctx.action.line = match ctx.frontend {
+    ctx.action.text = match ctx.frontend {
         FrontendType::Html => writer.run_html().into_lines(),
         FrontendType::Text => writer.run_text().into_lines(),
         FrontendType::Latex => writer.run_latex().into_lines(),
     };
-    ctx.action
+    ActionProcessResult { action: ctx.action }
 }
 
 // The below code are modified from pulldown_cmark
@@ -41,7 +44,7 @@ enum TableState {
 
 struct Writer<'a, I> {
     iter: I,
-    writer: ActionLines,
+    writer: ActionText,
     table_state: TableState,
     table_alignments: Vec<Alignment>,
     table_cell_index: usize,
@@ -55,7 +58,7 @@ where
     fn new(iter: I) -> Self {
         Self {
             iter,
-            writer: ActionLines::default(),
+            writer: ActionText::default(),
             table_state: TableState::Head,
             table_alignments: vec![],
             table_cell_index: 0,
@@ -365,7 +368,7 @@ where
         self
     }
 
-    pub fn into_lines(self) -> ActionLines {
-        self.writer
+    pub fn into_lines(self) -> VecDeque<ActionSubText> {
+        self.writer.text
     }
 }
