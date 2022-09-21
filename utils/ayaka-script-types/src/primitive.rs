@@ -9,7 +9,8 @@ use std::borrow::Cow;
 /// assert_eq!(serde_yaml::from_str::<RawValue>("123").unwrap(), RawValue::Num(123));
 /// assert_eq!(serde_yaml::from_str::<RawValue>("\"hello\"").unwrap(), RawValue::Str("hello".to_string()));
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
+#[serde(untagged)]
 pub enum RawValue {
     /// The unit type. It is empty, just like [`None`] or [`()`] in Rust.
     Unit,
@@ -134,75 +135,6 @@ impl RawValue {
             Self::Bool(b) => b.to_string(),
             Self::Num(i) => i.to_string(),
             Self::Str(s) => s,
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for RawValue {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        use serde::de::Error;
-
-        struct ValueVisitor;
-
-        impl<'de> serde::de::Visitor<'de> for ValueVisitor {
-            type Value = RawValue;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a unit, boolean, integer, string value")
-            }
-
-            fn visit_unit<E>(self) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                Ok(RawValue::Unit)
-            }
-
-            fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                Ok(RawValue::Bool(v))
-            }
-
-            fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                Ok(RawValue::Num(v))
-            }
-
-            fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                Ok(RawValue::Num(v as i64))
-            }
-
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                Ok(RawValue::Str(v.into()))
-            }
-        }
-        deserializer.deserialize_any(ValueVisitor)
-    }
-}
-
-impl Serialize for RawValue {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match self {
-            Self::Unit => serializer.serialize_unit(),
-            Self::Bool(b) => serializer.serialize_bool(*b),
-            Self::Num(n) => serializer.serialize_i64(*n),
-            Self::Str(s) => serializer.serialize_str(s),
         }
     }
 }
