@@ -189,6 +189,12 @@ impl Context {
         self.table().call(expr)
     }
 
+    pub fn switch(&mut self, i: usize) -> RawValue {
+        assert!((0..self.switches.len()).contains(&i));
+        assert!(self.switches[i].0);
+        self.call(&self.switches[i].1.clone())
+    }
+
     fn parse_text(&self, loc: &Locale, text: &Text) -> Result<ActionText> {
         let mut action = ActionText::default();
         for subtext in &text.0 {
