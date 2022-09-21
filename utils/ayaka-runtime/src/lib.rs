@@ -10,11 +10,7 @@
 #![feature(fn_traits)]
 #![feature(generators)]
 #![feature(once_cell)]
-#![feature(round_char_boundary)]
-#![feature(rustc_private)]
 #![feature(unboxed_closures)]
-
-extern crate rustc_parse_format;
 
 mod config;
 mod context;

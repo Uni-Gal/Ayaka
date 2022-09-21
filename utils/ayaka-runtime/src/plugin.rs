@@ -93,7 +93,7 @@ impl Host {
     }
 
     /// Processes [`Action`] in action plugin.
-    pub fn process_action(&self, ctx: ActionProcessContextRef) -> Result<Action> {
+    pub fn process_action(&self, ctx: ActionProcessContextRef) -> Result<ActionText> {
         self.call("process_action", (ctx,))
     }
 

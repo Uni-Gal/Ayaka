@@ -15,10 +15,10 @@ pub struct Paragraph {
     pub title: Option<String>,
     /// The texts.
     /// They will be parsed into [`ayaka_script::Text`] later.
-    pub texts: Vec<String>,
+    pub texts: Vec<Line>,
     /// The next paragraph.
     /// If [`None`], the game meets the end.
-    pub next: Option<String>,
+    pub next: Option<Text>,
 }
 
 /// The Ayaka config.

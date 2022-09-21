@@ -21,7 +21,7 @@ pub enum Line {
 #[serde(try_from = "String")]
 pub struct SwitchItem {
     pub text: String,
-    pub enabled: Program,
+    pub enabled: Option<Program>,
     pub action: Program,
 }
 
@@ -31,7 +31,15 @@ impl FromStr for SwitchItem {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let mut splits = s.split('|');
         let text = splits.next().unwrap_or_default().to_string();
-        let enabled = splits.next().unwrap_or_default().parse()?;
+        let enabled = if let Some(s) = splits.next() {
+            if s.is_empty() {
+                None
+            } else {
+                Some(s.parse()?)
+            }
+        } else {
+            None
+        };
         let action = splits.next().unwrap_or_default().parse()?;
         Ok(Self {
             text,
@@ -83,7 +91,7 @@ mod test {
                 switches: vec![
                     SwitchItem {
                         text: "a".to_string(),
-                        enabled: Program(vec![]),
+                        enabled: None,
                         action: Program(vec![Expr::Binary(
                             Box::new(Expr::Ref(Ref::Ctx("n".to_string()))),
                             BinaryOp::Assign,
@@ -92,7 +100,7 @@ mod test {
                     },
                     SwitchItem {
                         text: "b".to_string(),
-                        enabled: Program(vec![Expr::Const(RawValue::Bool(false))]),
+                        enabled: Some(Program(vec![Expr::Const(RawValue::Bool(false))])),
                         action: Program(vec![Expr::Binary(
                             Box::new(Expr::Ref(Ref::Ctx("n".to_string()))),
                             BinaryOp::Assign,
