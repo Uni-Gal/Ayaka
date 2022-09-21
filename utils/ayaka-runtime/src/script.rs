@@ -248,7 +248,7 @@ impl Callable for Text {
                     let value = match c {
                         Command::Character(_, _) => RawValue::Unit,
                         Command::Res(_) => unimplemented!(),
-                        Command::Var(n) => ctx.vars.get(n).cloned().unwrap_or_else(|| {
+                        Command::Ctx(n) => ctx.locals.get(n).cloned().unwrap_or_else(|| {
                             warn!("Cannot find variable `{}`.", n);
                             Default::default()
                         }),

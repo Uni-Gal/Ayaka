@@ -60,10 +60,12 @@ async fn main() -> Result<()> {
                 if let Some(name) = &action.character {
                     print!("_{}_", name);
                 }
-                for s in action.text {
+                for s in &action.text {
                     print!("{}", s.as_str());
                 }
-                pause(opts.auto)?;
+                if !(action.character.is_none() && action.text.is_empty()) {
+                    pause(opts.auto)?;
+                }
             }
             Action::Switches(switches) => {
                 for (i, s) in switches.iter().enumerate() {

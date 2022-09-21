@@ -31,7 +31,7 @@ pub enum Command {
     ///
     /// Controls the current character.
     Character(String, String),
-    Var(String),
+    Ctx(String),
     Res(String),
     /// Other custom commands.
     Other(String, Vec<String>),
@@ -567,7 +567,7 @@ impl<'a> TextParser<'a> {
             }
             "var" => {
                 Self::check_params_count(params_count, 1, 1, loc, name)?;
-                Command::Var(Self::concat_params(&params[0])?)
+                Command::Ctx(Self::concat_params(&params[0])?)
             }
             name => {
                 let mut args = vec![];

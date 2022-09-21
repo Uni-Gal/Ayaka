@@ -215,7 +215,7 @@ impl Context {
                             action.push_back_block(value.get_str())
                         }
                     }
-                    Command::Var(n) => {
+                    Command::Ctx(n) => {
                         if let Some(value) = self.ctx.locals.get(n) {
                             action.push_back_block(value.get_str())
                         }
