@@ -3,7 +3,7 @@
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
 
-use ayaka_script_types::{Program, RawValue};
+use ayaka_script::{Program, RawValue};
 use fallback::{FallbackSpec, IsEmpty2};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -271,7 +271,7 @@ pub struct SwitchParams {
 }
 
 /// The full action information in one line of config.
-/// It provides the full texts and other properties exacted from [`ayaka_script_types::Text`].
+/// It provides the full texts and other properties exacted from [`ayaka_script::Text`].
 #[derive(Debug, Default, Clone, Serialize, Deserialize, FallbackSpec)]
 pub struct Action {
     /// The context snapshot.

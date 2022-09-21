@@ -30,7 +30,7 @@ pub use ayaka_bindings_types::*;
 #[doc(no_inline)]
 pub use ayaka_script::log;
 #[doc(no_inline)]
-pub use ayaka_script_types::*;
+pub use ayaka_script::*;
 pub use config::*;
 pub use context::*;
 #[doc(no_inline)]

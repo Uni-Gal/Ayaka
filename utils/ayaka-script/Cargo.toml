@@ -4,10 +4,19 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ayaka-script-types = { path = "../ayaka-script-types" }
+anyhow = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+serde_with = "2.0"
+rt-format = { version = "0.3", optional = true }
 lalrpop-util = { version = "0.19", features = ["lexer"] }
 regex = "1"
 log = "0.4"
 
+[dev-dependencies]
+serde_yaml = "0.9"
+
 [build-dependencies]
 lalrpop = "0.19"
+
+[features]
+default = []

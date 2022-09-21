@@ -1,9 +1,41 @@
 //! The text parser.
 
-use crate::*;
-use ayaka_script_types::*;
 use regex::Regex;
-use std::{error::Error, fmt::Display, iter::Peekable, str::CharIndices, sync::LazyLock};
+use serde::Deserialize;
+use std::{
+    error::Error,
+    fmt::Display,
+    iter::Peekable,
+    str::{CharIndices, FromStr},
+    sync::LazyLock,
+};
+
+/// A collection of [`SubText`].
+#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
+#[serde(try_from = "String")]
+pub struct Text(pub Vec<SubText>);
+
+/// A part of a line, either some texts or a command.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SubText {
+    /// Raw texts.
+    Str(String),
+    /// A command. See [`Command`].
+    Cmd(Command),
+}
+
+/// A TeX-like command in the text.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Command {
+    /// `\ch{}{}`
+    ///
+    /// Controls the current character.
+    Character(String, String),
+    Var(String),
+    Res(String),
+    /// Other custom commands.
+    Other(String, Vec<String>),
+}
 
 static SPACE_REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(\s+)").unwrap());
 
@@ -437,7 +469,7 @@ impl<'a> TextParser<'a> {
         Ok(Text(self.try_collect()?))
     }
 
-    fn parse_next(&mut self) -> ParseResult<Option<Line>> {
+    fn parse_next(&mut self) -> ParseResult<Option<SubText>> {
         let mut str = String::new();
         while let Some(tok) = self.lexer.peek() {
             match tok {
@@ -455,7 +487,7 @@ impl<'a> TextParser<'a> {
                             let name = name.to_string();
                             let alias = alias.to_string();
                             self.lexer.next();
-                            return Ok(Some(Line::Cmd(Command::Character(name, alias))));
+                            return Ok(Some(SubText::Cmd(Command::Character(name, alias))));
                         } else {
                             break;
                         }
@@ -478,7 +510,7 @@ impl<'a> TextParser<'a> {
         }
         if !str.is_empty() {
             let trimmed_str = SPACE_REGEX.replace_all(&str, " ");
-            Ok(Some(Line::Str(trimmed_str.into_owned())))
+            Ok(Some(SubText::Str(trimmed_str.into_owned())))
         } else {
             Ok(None)
         }
@@ -495,31 +527,6 @@ impl<'a> TextParser<'a> {
             }
         }
         Ok(str)
-    }
-
-    fn parse_program(toks: &[RichToken]) -> ParseResult<Program> {
-        let program = Self::concat_params(toks)?;
-        match ProgramParser::new().parse(&program) {
-            Ok(p) => Ok(p),
-            Err(e) => {
-                use lalrpop_util::ParseError as ExecParseError;
-
-                let loc = Loc::from_locs(toks.iter().map(|tok| tok.loc));
-                let loc = match &e {
-                    ExecParseError::InvalidToken { location } => {
-                        Loc(loc.0 + location, loc.0 + location + 1)
-                    }
-                    ExecParseError::UnrecognizedEOF {
-                        location: _,
-                        expected: _,
-                    } => Loc(loc.1, loc.1 + 1),
-                    ExecParseError::UnrecognizedToken { token, expected: _ }
-                    | ExecParseError::ExtraToken { token } => Loc(loc.0 + token.0, loc.0 + token.2),
-                    ExecParseError::User { error: _ } => loc,
-                };
-                parse_error(loc, ParseErrorType::InvalidProgram(e.to_string()))
-            }
-        }
     }
 
     fn check_params_count(
@@ -539,17 +546,9 @@ impl<'a> TextParser<'a> {
         }
     }
 
-    fn parse_command(loc: Loc, name: &str, params: &[Vec<RichToken>]) -> ParseResult<Line> {
+    fn parse_command(loc: Loc, name: &str, params: &[Vec<RichToken>]) -> ParseResult<SubText> {
         let params_count = params.len();
         let cmd = match name {
-            "res" => {
-                Self::check_params_count(params_count, 1, 1, loc, name)?;
-                // Construct a simple program to get the resource.
-                // We don't expose this command to the front end.
-                Command::Exec(Program(vec![Expr::Ref(Ref::Res(Self::concat_params(
-                    &params[0],
-                )?))]))
-            }
             "ch" => {
                 Self::check_params_count(params_count, 1, 2, loc, name)?;
                 Command::Character(
@@ -562,25 +561,13 @@ impl<'a> TextParser<'a> {
                     )?,
                 )
             }
-            "exec" => {
+            "res" => {
                 Self::check_params_count(params_count, 1, 1, loc, name)?;
-                Command::Exec(Self::parse_program(&params[0])?)
+                Command::Res(Self::concat_params(&params[0])?)
             }
-            "switch" => {
-                Self::check_params_count(params_count, 1, 3, loc, name)?;
-                let enabled = match params.get(2) {
-                    Some(toks) => Some(Self::parse_program(toks)?),
-                    None => None,
-                };
-                Command::Switch {
-                    text: Self::concat_params(&params[0])?,
-                    action: if let Some(toks) = params.get(1) {
-                        Self::parse_program(toks)?
-                    } else {
-                        Program::default()
-                    },
-                    enabled,
-                }
+            "var" => {
+                Self::check_params_count(params_count, 1, 1, loc, name)?;
+                Command::Var(Self::concat_params(&params[0])?)
             }
             name => {
                 let mut args = vec![];
@@ -590,12 +577,12 @@ impl<'a> TextParser<'a> {
                 Command::Other(name.to_string(), args)
             }
         };
-        Ok(Line::Cmd(cmd))
+        Ok(SubText::Cmd(cmd))
     }
 }
 
 impl<'a> Iterator for TextParser<'a> {
-    type Item = ParseResult<Line>;
+    type Item = ParseResult<SubText>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match self.parse_next() {
@@ -603,6 +590,22 @@ impl<'a> Iterator for TextParser<'a> {
             Ok(None) => None,
             Err(e) => Some(Err(e)),
         }
+    }
+}
+
+impl FromStr for Text {
+    type Err = ParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        TextParser::new(s).parse()
+    }
+}
+
+impl TryFrom<String> for Text {
+    type Error = ParseError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        value.parse()
     }
 }
 
@@ -654,11 +657,11 @@ mod test_parser {
     fn basic() {
         assert_eq!(
             TextParser::new("\\\\").parse().unwrap(),
-            Text(vec![Line::Str("\\".to_string())])
+            Text(vec![SubText::Str("\\".to_string())])
         );
         assert_eq!(
             TextParser::new("\\{").parse().unwrap(),
-            Text(vec![Line::Str("{".to_string())])
+            Text(vec![SubText::Str("{".to_string())])
         );
     }
 
@@ -667,52 +670,11 @@ mod test_parser {
         assert_eq!(
             TextParser::new("\\cmd{123} \\cmd{123}").parse().unwrap(),
             Text(vec![
-                Line::Cmd(Command::Other("cmd".to_string(), vec!["123".to_string()])),
-                Line::Str(" ".to_string()),
-                Line::Cmd(Command::Other("cmd".to_string(), vec!["123".to_string()])),
+                SubText::Cmd(Command::Other("cmd".to_string(), vec!["123".to_string()])),
+                SubText::Str(" ".to_string()),
+                SubText::Cmd(Command::Other("cmd".to_string(), vec!["123".to_string()])),
             ])
         );
-    }
-
-    #[test]
-    fn exec() {
-        assert_eq!(
-            TextParser::new(r##"\exec{"Hello world!"}"##)
-                .parse()
-                .unwrap(),
-            Text(vec![Line::Cmd(Command::Exec(Program(vec![Expr::Const(
-                RawValue::Str("Hello world!".to_string())
-            )])))])
-        );
-        assert_eq!(
-            TextParser::new(r##"\exec{"Hello world!{}"}"##)
-                .parse()
-                .unwrap(),
-            Text(vec![Line::Cmd(Command::Exec(Program(vec![Expr::Const(
-                RawValue::Str("Hello world!{}".to_string())
-            )])))])
-        );
-        TextParser::new(r##"\exec{format.fmt("Hello {}", "world!")}"##)
-            .parse()
-            .unwrap();
-    }
-
-    #[test]
-    fn switch() {
-        assert_eq!(
-            TextParser::new(r##"\switch{hello}{"Hello world!"}"##)
-                .parse()
-                .unwrap(),
-            Text(vec![Line::Cmd(Command::Switch {
-                text: "hello".to_string(),
-                action: Program(vec![Expr::Const(RawValue::Str("Hello world!".to_string()))]),
-                enabled: None
-            })])
-        );
-
-        TextParser::new(r##"\switch{hello}{$s = 2}{a == b}"##)
-            .parse()
-            .unwrap();
     }
 
     #[test]
@@ -727,27 +689,27 @@ mod test_parser {
     fn lf() {
         assert_eq!(
             TextParser::new(" ").parse().unwrap(),
-            Text(vec![Line::Str(" ".to_string())])
+            Text(vec![SubText::Str(" ".to_string())])
         );
         assert_eq!(
             TextParser::new("  ").parse().unwrap(),
-            Text(vec![Line::Str(" ".to_string())])
+            Text(vec![SubText::Str(" ".to_string())])
         );
         assert_eq!(
             TextParser::new(" \n ").parse().unwrap(),
-            Text(vec![Line::Str(" ".to_string())])
+            Text(vec![SubText::Str(" ".to_string())])
         );
         assert_eq!(
             TextParser::new(" 123 ").parse().unwrap(),
-            Text(vec![Line::Str(" 123 ".to_string())])
+            Text(vec![SubText::Str(" 123 ".to_string())])
         );
         assert_eq!(
             TextParser::new(" \n123\t ").parse().unwrap(),
-            Text(vec![Line::Str(" 123 ".to_string())])
+            Text(vec![SubText::Str(" 123 ".to_string())])
         );
         assert_eq!(
             TextParser::new("123").parse().unwrap(),
-            Text(vec![Line::Str("123".to_string())])
+            Text(vec![SubText::Str("123".to_string())])
         );
     }
 }

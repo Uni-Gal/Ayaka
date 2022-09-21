@@ -4,8 +4,8 @@ use crate::{
 };
 use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::*;
+use ayaka_script::{Command, Line, Text};
 use ayaka_script::{Loc, ParseError, TextParser};
-use ayaka_script_types::{Command, Line, Text};
 use fallback::Fallback;
 use log::error;
 use script::*;
@@ -231,8 +231,8 @@ impl Context {
         let mut props = HashMap::new();
         for line in t.0.into_iter() {
             match line {
-                Line::Str(_) => {}
-                Line::Cmd(cmd) => match cmd {
+                SubText::Str(_) => {}
+                SubText::Cmd(cmd) => match cmd {
                     Command::Character(key, _) => {
                         chkey = Some(key);
                     }
