@@ -248,35 +248,27 @@ impl Context {
             .collect()
     }
 
-    fn parse_line(&mut self, loc: &Locale, t: &Line) -> Result<Action> {
+    fn process_line(&mut self, loc: &Locale, t: &Line) -> Result<()> {
         match t {
-            Line::Text(text) => Ok(Action::Text(self.parse_text(loc, text)?)),
+            Line::Text(text) => {}
             Line::Exec { exec } => {
                 self.call(&exec);
-                Ok(Action::default())
             }
             Line::Switch { switches } => {
                 self.switches.clear();
-                let mut res = vec![];
                 for item in switches {
                     let enabled = item
                         .enabled
                         .as_ref()
                         .map(|p| self.call(p).get_bool())
                         .unwrap_or(true);
-                    res.push(Switch {
-                        text: item.text.clone(),
-                        enabled,
-                    });
                     self.switches.push((enabled, item.action.clone()));
                 }
-                Ok(Action::Switches(res))
             }
             Line::Custom(props) => {
-                let cmd = props.iter().next().map(|(_, value)| value);
+                let cmd = props.iter().next().map(|(key, _)| key);
                 if let Some(cmd) = cmd {
-                    let cmd = cmd.get_str();
-                    let module = self.runtime.line_modules.get(cmd.as_ref());
+                    let module = self.runtime.line_modules.get(cmd);
                     if let Some(module) = module {
                         let module = &self.runtime.modules[module];
                         let ctx = LineProcessContextRef {
@@ -288,14 +280,14 @@ impl Context {
                         };
                         self.ctx
                             .locals
-                            .extend(module.dispatch_line(&cmd, ctx)?.locals);
+                            .extend(module.dispatch_line(cmd, ctx)?.locals);
                     } else {
                         bail!("Cannot find command {}", cmd)
                     }
                 }
-                Ok(Action::default())
             }
         }
+        Ok(())
     }
 
     fn merge_action(&self, action: Fallback<Action>) -> Result<Action> {
@@ -421,15 +413,21 @@ impl Context {
         };
 
         // TODO: reduce clone
-        let action = cur_text_base.cloned().map(|t| {
-            self.parse_line(loc, &t).unwrap_or_else(|e| {
-                error!("Parse action params error: {}", e);
+        let action = if let Some(t) = cur_text_base.cloned() {
+            self.process_line(loc, &t).unwrap_or_else(|e| {
+                error!("Parse line error: {}", e);
+            });
+            let action = self.get_action(loc, &self.ctx).unwrap_or_else(|e| {
+                error!("Get action error: {}", e);
                 Action::default()
-            })
-        });
-        if let Some(Action::Text(_)) = &action {
-            self.push_history(self.ctx.clone());
-        }
+            });
+            if let Action::Text(_) = &action {
+                self.push_history(self.ctx.clone());
+            }
+            Some(action)
+        } else {
+            None
+        };
         self.ctx.cur_act += 1;
         action
     }

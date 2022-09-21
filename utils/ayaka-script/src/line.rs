@@ -72,9 +72,10 @@ mod test {
   - a||$n = 1
   - b|false|$n = 0
 - video: 0
+-
         "#;
         let lines: Vec<Line> = serde_yaml::from_str(lines).unwrap();
-        assert_eq!(lines.len(), 4);
+        assert_eq!(lines.len(), 5);
         assert_eq!(
             lines[0],
             Line::Text(Text(vec![SubText::Str("abc".to_string())]))
@@ -118,5 +119,6 @@ mod test {
                 map
             })
         );
+        assert_eq!(lines[4], Line::Text(Text(vec![])));
     }
 }
