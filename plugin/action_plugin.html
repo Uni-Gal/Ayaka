@@ -75,7 +75,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="../intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../quick_start.html"><strong aria-hidden="true">2.</strong> Quick start</a></li><li class="chapter-item expanded "><a href="../config/summary.html"><strong aria-hidden="true">3.</strong> Config</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../config/structure.html"><strong aria-hidden="true">3.1.</strong> File structure</a></li><li class="chapter-item expanded "><a href="../config/character.html"><strong aria-hidden="true">3.2.</strong> Specify character</a></li><li class="chapter-item expanded "><a href="../config/resources.html"><strong aria-hidden="true">3.3.</strong> Resources</a></li><li class="chapter-item expanded "><a href="../config/i18n.html"><strong aria-hidden="true">3.4.</strong> Internationalization</a></li><li class="chapter-item expanded "><a href="../config/switches.html"><strong aria-hidden="true">3.5.</strong> Switches</a></li><li class="chapter-item expanded "><a href="../config/script.html"><strong aria-hidden="true">3.6.</strong> Script</a></li></ol></li><li class="chapter-item expanded "><a href="../runtime/summary.html"><strong aria-hidden="true">4.</strong> Runtime</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../runtime/run.html"><strong aria-hidden="true">4.1.</strong> Run a game</a></li></ol></li><li class="chapter-item expanded "><a href="../plugin/summary.html"><strong aria-hidden="true">5.</strong> Plugin</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../plugin/script_plugin.html"><strong aria-hidden="true">5.1.</strong> Script plugin</a></li><li class="chapter-item expanded "><a href="../plugin/text_plugin.html"><strong aria-hidden="true">5.2.</strong> Text plugin</a></li><li class="chapter-item expanded "><a href="../plugin/action_plugin.html" class="active"><strong aria-hidden="true">5.3.</strong> Action plugin</a></li><li class="chapter-item expanded "><a href="../plugin/game_plugin.html"><strong aria-hidden="true">5.4.</strong> Game plugin</a></li></ol></li><li class="chapter-item expanded "><a href="../gui/summary.html"><strong aria-hidden="true">6.</strong> GUI</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../gui/live2d.html"><strong aria-hidden="true">6.1.</strong> Live2D</a></li></ol></li><li class="chapter-item expanded "><a href="../platforms.html"><strong aria-hidden="true">7.</strong> Support platforms</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../quick_start.html"><strong aria-hidden="true">2.</strong> Quick start</a></li><li class="chapter-item expanded "><a href="../config/summary.html"><strong aria-hidden="true">3.</strong> Config</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../config/structure.html"><strong aria-hidden="true">3.1.</strong> File structure</a></li><li class="chapter-item expanded "><a href="../config/character.html"><strong aria-hidden="true">3.2.</strong> Specify character</a></li><li class="chapter-item expanded "><a href="../config/resources.html"><strong aria-hidden="true">3.3.</strong> Resources</a></li><li class="chapter-item expanded "><a href="../config/i18n.html"><strong aria-hidden="true">3.4.</strong> Internationalization</a></li><li class="chapter-item expanded "><a href="../config/switches.html"><strong aria-hidden="true">3.5.</strong> Switches</a></li><li class="chapter-item expanded "><a href="../config/script.html"><strong aria-hidden="true">3.6.</strong> Script</a></li></ol></li><li class="chapter-item expanded "><a href="../runtime/summary.html"><strong aria-hidden="true">4.</strong> Runtime</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../runtime/run.html"><strong aria-hidden="true">4.1.</strong> Run a game</a></li></ol></li><li class="chapter-item expanded "><a href="../plugin/summary.html"><strong aria-hidden="true">5.</strong> Plugin</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../plugin/script_plugin.html"><strong aria-hidden="true">5.1.</strong> Script plugin</a></li><li class="chapter-item expanded "><a href="../plugin/text_plugin.html"><strong aria-hidden="true">5.2.</strong> Text plugin</a></li><li class="chapter-item expanded "><a href="../plugin/line_plugin.html"><strong aria-hidden="true">5.3.</strong> Line plugin</a></li><li class="chapter-item expanded "><a href="../plugin/action_plugin.html" class="active"><strong aria-hidden="true">5.4.</strong> Action plugin</a></li><li class="chapter-item expanded "><a href="../plugin/game_plugin.html"><strong aria-hidden="true">5.5.</strong> Game plugin</a></li></ol></li><li class="chapter-item expanded "><a href="../gui/summary.html"><strong aria-hidden="true">6.</strong> GUI</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../gui/live2d.html"><strong aria-hidden="true">6.1.</strong> Live2D</a></li></ol></li><li class="chapter-item expanded "><a href="../platforms.html"><strong aria-hidden="true">7.</strong> Support platforms</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -149,7 +149,7 @@ fn plugin_type() -&gt; PluginType {
 }
 
 #[export]
-fn process_action(mut ctx: ActionProcessContext) -&gt; Action {
+fn process_action(mut ctx: ActionProcessContext) -&gt; ActionProcessResult {
     let line = ctx
         .action
         .line
@@ -160,9 +160,9 @@ fn process_action(mut ctx: ActionProcessContext) -&gt; Action {
     let parser = Parser::new(&amp;line);
     let mut html_output = String::new();
     html::push_html(&amp;mut html_output, parser);
-    ctx.action.line.clear();
-    ctx.action.line.push_back_chars(html_output);
-    ctx.action
+    ctx.action.clear();
+    ctx.action.push_back_chars(html_output);
+    ActionProcessResult { action: ctx.action }
 }
 </code></pre>
 <p>Add the plugin to the <code>modules</code> list, and all markdown text will be translated to HTML.</p>
@@ -171,14 +171,14 @@ fn process_action(mut ctx: ActionProcessContext) -&gt; Action {
 <div class="table-wrapper"><table><thead><tr><th>Plugin</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>live2d</code></td><td>Inherit models layout and deal with hiding.</td></tr>
 <tr><td><code>markdown</code></td><td>Process Markdown texts.</td></tr>
-<tr><td><code>media</code></td><td>Inherit background image and music from history.</td></tr>
+<tr><td><code>media</code></td><td>Voice of each action.</td></tr>
 </tbody></table>
 </div>
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../plugin/text_plugin.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../plugin/line_plugin.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
                             <a rel="next" href="../plugin/game_plugin.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
@@ -190,7 +190,7 @@ fn process_action(mut ctx: ActionProcessContext) -&gt; Action {
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../plugin/text_plugin.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../plugin/line_plugin.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
                     <a rel="next" href="../plugin/game_plugin.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">

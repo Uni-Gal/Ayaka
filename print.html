@@ -76,7 +76,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="quick_start.html"><strong aria-hidden="true">2.</strong> Quick start</a></li><li class="chapter-item expanded "><a href="config/summary.html"><strong aria-hidden="true">3.</strong> Config</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config/structure.html"><strong aria-hidden="true">3.1.</strong> File structure</a></li><li class="chapter-item expanded "><a href="config/character.html"><strong aria-hidden="true">3.2.</strong> Specify character</a></li><li class="chapter-item expanded "><a href="config/resources.html"><strong aria-hidden="true">3.3.</strong> Resources</a></li><li class="chapter-item expanded "><a href="config/i18n.html"><strong aria-hidden="true">3.4.</strong> Internationalization</a></li><li class="chapter-item expanded "><a href="config/switches.html"><strong aria-hidden="true">3.5.</strong> Switches</a></li><li class="chapter-item expanded "><a href="config/script.html"><strong aria-hidden="true">3.6.</strong> Script</a></li></ol></li><li class="chapter-item expanded "><a href="runtime/summary.html"><strong aria-hidden="true">4.</strong> Runtime</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="runtime/run.html"><strong aria-hidden="true">4.1.</strong> Run a game</a></li></ol></li><li class="chapter-item expanded "><a href="plugin/summary.html"><strong aria-hidden="true">5.</strong> Plugin</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="plugin/script_plugin.html"><strong aria-hidden="true">5.1.</strong> Script plugin</a></li><li class="chapter-item expanded "><a href="plugin/text_plugin.html"><strong aria-hidden="true">5.2.</strong> Text plugin</a></li><li class="chapter-item expanded "><a href="plugin/action_plugin.html"><strong aria-hidden="true">5.3.</strong> Action plugin</a></li><li class="chapter-item expanded "><a href="plugin/game_plugin.html"><strong aria-hidden="true">5.4.</strong> Game plugin</a></li></ol></li><li class="chapter-item expanded "><a href="gui/summary.html"><strong aria-hidden="true">6.</strong> GUI</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="gui/live2d.html"><strong aria-hidden="true">6.1.</strong> Live2D</a></li></ol></li><li class="chapter-item expanded "><a href="platforms.html"><strong aria-hidden="true">7.</strong> Support platforms</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="quick_start.html"><strong aria-hidden="true">2.</strong> Quick start</a></li><li class="chapter-item expanded "><a href="config/summary.html"><strong aria-hidden="true">3.</strong> Config</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config/structure.html"><strong aria-hidden="true">3.1.</strong> File structure</a></li><li class="chapter-item expanded "><a href="config/character.html"><strong aria-hidden="true">3.2.</strong> Specify character</a></li><li class="chapter-item expanded "><a href="config/resources.html"><strong aria-hidden="true">3.3.</strong> Resources</a></li><li class="chapter-item expanded "><a href="config/i18n.html"><strong aria-hidden="true">3.4.</strong> Internationalization</a></li><li class="chapter-item expanded "><a href="config/switches.html"><strong aria-hidden="true">3.5.</strong> Switches</a></li><li class="chapter-item expanded "><a href="config/script.html"><strong aria-hidden="true">3.6.</strong> Script</a></li></ol></li><li class="chapter-item expanded "><a href="runtime/summary.html"><strong aria-hidden="true">4.</strong> Runtime</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="runtime/run.html"><strong aria-hidden="true">4.1.</strong> Run a game</a></li></ol></li><li class="chapter-item expanded "><a href="plugin/summary.html"><strong aria-hidden="true">5.</strong> Plugin</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="plugin/script_plugin.html"><strong aria-hidden="true">5.1.</strong> Script plugin</a></li><li class="chapter-item expanded "><a href="plugin/text_plugin.html"><strong aria-hidden="true">5.2.</strong> Text plugin</a></li><li class="chapter-item expanded "><a href="plugin/line_plugin.html"><strong aria-hidden="true">5.3.</strong> Line plugin</a></li><li class="chapter-item expanded "><a href="plugin/action_plugin.html"><strong aria-hidden="true">5.4.</strong> Action plugin</a></li><li class="chapter-item expanded "><a href="plugin/game_plugin.html"><strong aria-hidden="true">5.5.</strong> Game plugin</a></li></ol></li><li class="chapter-item expanded "><a href="gui/summary.html"><strong aria-hidden="true">6.</strong> GUI</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="gui/live2d.html"><strong aria-hidden="true">6.1.</strong> Live2D</a></li></ol></li><li class="chapter-item expanded "><a href="platforms.html"><strong aria-hidden="true">7.</strong> Support platforms</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -297,10 +297,8 @@ We specify a character with <code>\ch{}{}</code> command.</p>
 <p>The character names should be placed in <code>res</code> at the front of the game.
 Not only because the character name is too long to type again and again, but also to make i18n easy.</p>
 <p>The key of the character name should be prefixed with <code>ch_</code>:</p>
-<pre><code class="language-yaml">res:
-  en:
-    ch_foo: A. Foo
-    ch_bar: B. Bar
+<pre><code class="language-yaml">ch_foo: A. Foo
+ch_bar: B. Bar
 </code></pre>
 <p>You can then specify the character with the command:</p>
 <pre><code class="language-yaml">- \ch{foo}This is the first line.
@@ -357,37 +355,38 @@ We use CLDR to choose the best fit locale for current system.</p>
 <h2 id="simplify-translation"><a class="header" href="#simplify-translation">Simplify translation</a></h2>
 <p>The translation of the texts is always a difficult job. You don't need to copy all commands as is.
 For example, the original text (<code>ja</code>)</p>
-<pre><code class="language-ignore">\ch{rd}団長！車の用意できました！
-\switch{おう！}{$end = false}
-\switch{止まるんじゃねぇぞ！}{$end = true}
-\switch{止まれ！}{}{false}
+<pre><code class="language-ignore">- bg: 0
+- \ch{rd}団長！車の用意できました！
+- switches:
+  - おう！||$end = false
+  - 止まるんじゃねぇぞ！||$end = true
+  - 止まれ！|false
 </code></pre>
 <p>could be translated as (<code>zh-Hans</code>)</p>
-<pre><code class="language-ignore">团长！车已经准备好了！
-\switch{哦！}
-\switch{不要停下来啊！}
-\switch{停下！}
+<pre><code class="language-ignore">-
+- 团长！车已经准备好了！
+- switches:
+  - 哦！
+  - 不要停下来啊！
+  - 停下！
 </code></pre>
 <h2 id="fallback"><a class="header" href="#fallback">Fallback</a></h2>
 <p>The resources, commands, and even paragraphs could be fell back, if a translated one is not apparent.
 However, some other ones couldn't be fell back.</p>
-<h3 id="the-res-and-exec-commands"><a class="header" href="#the-res-and-exec-commands">The <code>\res</code> and <code>\exec</code> commands</a></h3>
-<p>The <code>\res</code> and <code>\exec</code> commands couldn't be fell back.
-If there's no corresponding commands in the translated lines, they won't be referenced or executed. However, the <code>\ch</code> and <code>\switch</code> commands could be fell back.</p>
 <h3 id="fallback-with-empty-text"><a class="header" href="#fallback-with-empty-text">Fallback with empty text</a></h3>
-<p>However, if a certain translated line is empty, it will fall back to the base language one.</p>
+<p>If a certain translated line is empty, it will fall back to the base language one.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="switches"><a class="header" href="#switches">Switches</a></h1>
-<p>The switches could be specified with <code>\switch{}{}{}</code> command.
-The <code>\switch</code> command in one line of text are in the same series.</p>
+<p>The switches could be specified with <code>switches</code> command.
+The parameters in one line of text are separated by <code>|</code>.</p>
 <p>The first parameter is the display text;
-the second parameter is the action script;
 the third parameter is a boolean expression of whether the switch is enabled.
+the second parameter is the action script;
 For the second and the third parameter, see <a href="config/./script.html">Script</a>.</p>
-<pre><code class="language-yaml">- |
-  Choose a switch:
-  \switch{Switch 1}{$s = 1}
-  \switch{Switch 2}{$s = 2}
-  \switch{Not enabled}{}{false}
+<pre><code class="language-yaml">- 'Choose a switch:'
+- switches:
+  - Switch 1||$s = 1
+  - Switch 2||$s = 2
+  - Not enabled|false
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="script"><a class="header" href="#script">Script</a></h1>
 <p>Ayaka script is dynamic typed.
@@ -403,25 +402,29 @@ The only supported types are unit <code>~</code>, boolean, integer, and string.<
 <span class="boring">}
 </span></code></pre></pre>
 <h2 id="execute-scripts"><a class="header" href="#execute-scripts">Execute scripts</a></h2>
-<p>Execute a piece of script(we call it <em>program</em>) with <code>\exec{}</code> command:</p>
-<pre><code class="language-yaml">- 1 + 1 = \exec{1 + 1}
+<p>Execute a piece of script(we call it <em>program</em>) with <code>exec</code> command:</p>
+<pre><code class="language-yaml">- exec: $res = 1 + 1
+- 1 + 1 = \var{res}
 </code></pre>
 <p>The output is</p>
 <pre><code class="language-ignore">1 + 1 = 2
 </code></pre>
-<p>The script <code>1 + 1</code> is evaluated, and the result is <code>2</code>.
+<p>The script <code>$res = 1 + 1</code> is evaluated, and the result is <code>2</code>.
 It is then converted to string and appended to the text.</p>
 <h2 id="example-fibonacci"><a class="header" href="#example-fibonacci">Example: Fibonacci</a></h2>
 <p>With the config file, we can even calculate some math problems. For example, Fibonacci:</p>
 <pre><code class="language-yaml">- tag: init
   texts:
-    - 1
-    - \exec{$n = 50; $a = 1; $b = 1; $i = 1; $b}
+    - '1'
+    - exec: $n = 50; $a = 1; $b = 1; $i = 1;
+    - \var{b}
   next: loop
 - tag: loop
   texts:
-    - \exec{c = $b; $b += $a; $a = c; $i += 1; $b}
-  next: \exec{if($i &lt; $n, &quot;loop&quot;)}
+    - exec: c = $b; $b += $a; $a = c; $i += 1;
+    - \var{b}
+    - exec: $next = if($i &lt; $n, &quot;loop&quot;)
+  next: \var{next}
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="runtime"><a class="header" href="#runtime">Runtime</a></h1>
 <p>The runtime, aka &quot;backend&quot;, is the engine of a game.
@@ -481,7 +484,7 @@ If you want to specify some of them, or specify the load order, specify them in 
 <h2 id="calling-methods"><a class="header" href="#calling-methods">Calling methods</a></h2>
 <p>A plugin method is referenced with <code>&lt;module&gt;.&lt;fn&gt;(...)</code> grammar.
 If you would like to call the <code>rnd</code> function in <code>random</code> module,</p>
-<pre><code class="language-yaml">- \exec{random.rnd()}
+<pre><code class="language-yaml">- exec: $i = random.rnd()
 </code></pre>
 <p>Pass the parameters in the brace <code>()</code>.</p>
 <p>As the scripts are calculated at runtime, if there's no plugin called <code>random</code>,
@@ -501,7 +504,8 @@ fn hello(_args: Vec&lt;RawValue&gt;) -&gt; RawValue {
 }
 </code></pre>
 <p>And call the function:</p>
-<pre><code class="language-yaml">- \exec{meet.hello()} from plugin!
+<pre><code class="language-yaml">- exec: $hello = meet.hello()
+- \var{hello} from plugin!
 </code></pre>
 <p>If it builds successfully, and you set the right path to the plugins, it will output:</p>
 <pre><code class="language-ignore">Hello from plugin!
@@ -509,13 +513,11 @@ fn hello(_args: Vec&lt;RawValue&gt;) -&gt; RawValue {
 <h2 id="existing-plugins"><a class="header" href="#existing-plugins">Existing plugins</a></h2>
 <p>There are some existing script (only) plugins:</p>
 <div class="table-wrapper"><table><thead><tr><th>Plugin</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>format</code></td><td>Format strings.</td></tr>
 <tr><td><code>ayalog</code></td><td>Log to runtime.</td></tr>
 <tr><td><code>random</code></td><td>Generate random numbers.</td></tr>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="text-plugin"><a class="header" href="#text-plugin">Text plugin</a></h1>
-<p>Text plugins deal with custom TeX-like commands.
-They should register the commands in <code>text_commands</code> method.</p>
+<p>Text plugins deal with custom TeX-like commands.</p>
 <h2 id="register-commands"><a class="header" href="#register-commands">Register commands</a></h2>
 <p>Here we will register a command <code>\hello</code> and call it in the config file.
 You also need <code>plugin_type</code> to specify that it is a text plugin.</p>
@@ -539,15 +541,43 @@ fn hello(_args: Vec&lt;String&gt;, _ctx: TextProcessContext) -&gt; TextProcessRe
 <p>And it outputs:</p>
 <pre><code class="language-ignore">Hello world!
 </code></pre>
-<h2 id="the-process-result"><a class="header" href="#the-process-result">The process result</a></h2>
+<h2 id="the-process-results"><a class="header" href="#the-process-results">The process results</a></h2>
 <p>The <code>TextProcessResult</code> object is some lines and properties to be added to the current action. <code>line</code> will be appended to the current position of the command, and <code>props</code> will be set and update.</p>
-<h2 id="notes-about-rt-format"><a class="header" href="#notes-about-rt-format">Notes about <code>rt-format</code></a></h2>
-<p><code>rt-format</code> is used to deal with script calculations and runtime formatting.
-Therefore, if you want to add braces to the text, you need to double them in the text plugins.</p>
 <h2 id="existing-plugins-1"><a class="header" href="#existing-plugins-1">Existing plugins</a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Plugin</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>basictex</code></td><td>Basic TeX commands.</td></tr>
 <tr><td><code>live2d</code></td><td>Live2D commands.</td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="line-plugin"><a class="header" href="#line-plugin">Line plugin</a></h1>
+<p>Line plugins provides custom line types.</p>
+<h2 id="register-commands-1"><a class="header" href="#register-commands-1">Register commands</a></h2>
+<p>Here we will register a command <code>\hello</code> and call it in the config file.
+You also need <code>plugin_type</code> to specify that it is a line plugin.</p>
+<pre><code class="language-rust ignore">use ayaka_bindings::*;
+
+#[export]
+fn plugin_type() -&gt; PluginType {
+    PluginType::builder().line([&quot;hello&quot;]).build()
+}
+
+#[export]
+fn hello(_ctx: LineProcessContext) -&gt; LineProcessResult {
+    let mut res = LineProcessResult::default();
+    res.locals.insert(&quot;hello&quot;.to_string(), RawValue::Str(&quot;Hello&quot;.to_string()));
+    res
+}
+</code></pre>
+<p>Call the command in the config file:</p>
+<pre><code class="language-yaml">- hello:
+- \var{hello} world!
+</code></pre>
+<p>And it outputs:</p>
+<pre><code class="language-ignore">Hello world!
+</code></pre>
+<h2 id="the-process-results-1"><a class="header" href="#the-process-results-1">The process results</a></h2>
+<p>The <code>LineProcessResult</code> object contains the global variables and temp variables. The temp variables will only apply to this specific line.</p>
+<h2 id="existing-plugins-2"><a class="header" href="#existing-plugins-2">Existing plugins</a></h2>
+<div class="table-wrapper"><table><thead><tr><th>Plugin</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>media</code></td><td>Multimedia commands.</td></tr>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="action-plugin"><a class="header" href="#action-plugin">Action plugin</a></h1>
@@ -565,7 +595,7 @@ fn plugin_type() -&gt; PluginType {
 }
 
 #[export]
-fn process_action(mut ctx: ActionProcessContext) -&gt; Action {
+fn process_action(mut ctx: ActionProcessContext) -&gt; ActionProcessResult {
     let line = ctx
         .action
         .line
@@ -576,18 +606,18 @@ fn process_action(mut ctx: ActionProcessContext) -&gt; Action {
     let parser = Parser::new(&amp;line);
     let mut html_output = String::new();
     html::push_html(&amp;mut html_output, parser);
-    ctx.action.line.clear();
-    ctx.action.line.push_back_chars(html_output);
-    ctx.action
+    ctx.action.clear();
+    ctx.action.push_back_chars(html_output);
+    ActionProcessResult { action: ctx.action }
 }
 </code></pre>
 <p>Add the plugin to the <code>modules</code> list, and all markdown text will be translated to HTML.</p>
 <p>You may notice that the HTML tags are treated as <code>ActionLine::Chars</code>, which means they will be displayed one by one on GUI frontends. Our existing <code>markdown</code> plugin resolves this problem by providing a custom writer.</p>
-<h2 id="existing-plugins-2"><a class="header" href="#existing-plugins-2">Existing plugins</a></h2>
+<h2 id="existing-plugins-3"><a class="header" href="#existing-plugins-3">Existing plugins</a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Plugin</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>live2d</code></td><td>Inherit models layout and deal with hiding.</td></tr>
 <tr><td><code>markdown</code></td><td>Process Markdown texts.</td></tr>
-<tr><td><code>media</code></td><td>Inherit background image and music from history.</td></tr>
+<tr><td><code>media</code></td><td>Voice of each action.</td></tr>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="game-plugin"><a class="header" href="#game-plugin">Game plugin</a></h1>
 <p>Game plugins adjust some properties of the game before any record starts.</p>
@@ -605,7 +635,7 @@ fn process_game(mut ctx: GameProcessContext) -&gt; GameProcessResult {
     GameProcessResult { props: ctx.props }
 }
 </code></pre>
-<h2 id="existing-plugins-3"><a class="header" href="#existing-plugins-3">Existing plugins</a></h2>
+<h2 id="existing-plugins-4"><a class="header" href="#existing-plugins-4">Existing plugins</a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Plugin</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>live2d</code></td><td>Get correct path of Live2D models.</td></tr>
 <tr><td><code>media</code></td><td>Get correct path of background image at home.</td></tr>

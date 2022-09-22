@@ -75,7 +75,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="../intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../quick_start.html"><strong aria-hidden="true">2.</strong> Quick start</a></li><li class="chapter-item expanded "><a href="../config/summary.html"><strong aria-hidden="true">3.</strong> Config</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../config/structure.html"><strong aria-hidden="true">3.1.</strong> File structure</a></li><li class="chapter-item expanded "><a href="../config/character.html"><strong aria-hidden="true">3.2.</strong> Specify character</a></li><li class="chapter-item expanded "><a href="../config/resources.html"><strong aria-hidden="true">3.3.</strong> Resources</a></li><li class="chapter-item expanded "><a href="../config/i18n.html"><strong aria-hidden="true">3.4.</strong> Internationalization</a></li><li class="chapter-item expanded "><a href="../config/switches.html"><strong aria-hidden="true">3.5.</strong> Switches</a></li><li class="chapter-item expanded "><a href="../config/script.html" class="active"><strong aria-hidden="true">3.6.</strong> Script</a></li></ol></li><li class="chapter-item expanded "><a href="../runtime/summary.html"><strong aria-hidden="true">4.</strong> Runtime</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../runtime/run.html"><strong aria-hidden="true">4.1.</strong> Run a game</a></li></ol></li><li class="chapter-item expanded "><a href="../plugin/summary.html"><strong aria-hidden="true">5.</strong> Plugin</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../plugin/script_plugin.html"><strong aria-hidden="true">5.1.</strong> Script plugin</a></li><li class="chapter-item expanded "><a href="../plugin/text_plugin.html"><strong aria-hidden="true">5.2.</strong> Text plugin</a></li><li class="chapter-item expanded "><a href="../plugin/action_plugin.html"><strong aria-hidden="true">5.3.</strong> Action plugin</a></li><li class="chapter-item expanded "><a href="../plugin/game_plugin.html"><strong aria-hidden="true">5.4.</strong> Game plugin</a></li></ol></li><li class="chapter-item expanded "><a href="../gui/summary.html"><strong aria-hidden="true">6.</strong> GUI</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../gui/live2d.html"><strong aria-hidden="true">6.1.</strong> Live2D</a></li></ol></li><li class="chapter-item expanded "><a href="../platforms.html"><strong aria-hidden="true">7.</strong> Support platforms</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../intro.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../quick_start.html"><strong aria-hidden="true">2.</strong> Quick start</a></li><li class="chapter-item expanded "><a href="../config/summary.html"><strong aria-hidden="true">3.</strong> Config</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../config/structure.html"><strong aria-hidden="true">3.1.</strong> File structure</a></li><li class="chapter-item expanded "><a href="../config/character.html"><strong aria-hidden="true">3.2.</strong> Specify character</a></li><li class="chapter-item expanded "><a href="../config/resources.html"><strong aria-hidden="true">3.3.</strong> Resources</a></li><li class="chapter-item expanded "><a href="../config/i18n.html"><strong aria-hidden="true">3.4.</strong> Internationalization</a></li><li class="chapter-item expanded "><a href="../config/switches.html"><strong aria-hidden="true">3.5.</strong> Switches</a></li><li class="chapter-item expanded "><a href="../config/script.html" class="active"><strong aria-hidden="true">3.6.</strong> Script</a></li></ol></li><li class="chapter-item expanded "><a href="../runtime/summary.html"><strong aria-hidden="true">4.</strong> Runtime</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../runtime/run.html"><strong aria-hidden="true">4.1.</strong> Run a game</a></li></ol></li><li class="chapter-item expanded "><a href="../plugin/summary.html"><strong aria-hidden="true">5.</strong> Plugin</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../plugin/script_plugin.html"><strong aria-hidden="true">5.1.</strong> Script plugin</a></li><li class="chapter-item expanded "><a href="../plugin/text_plugin.html"><strong aria-hidden="true">5.2.</strong> Text plugin</a></li><li class="chapter-item expanded "><a href="../plugin/line_plugin.html"><strong aria-hidden="true">5.3.</strong> Line plugin</a></li><li class="chapter-item expanded "><a href="../plugin/action_plugin.html"><strong aria-hidden="true">5.4.</strong> Action plugin</a></li><li class="chapter-item expanded "><a href="../plugin/game_plugin.html"><strong aria-hidden="true">5.5.</strong> Game plugin</a></li></ol></li><li class="chapter-item expanded "><a href="../gui/summary.html"><strong aria-hidden="true">6.</strong> GUI</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../gui/live2d.html"><strong aria-hidden="true">6.1.</strong> Live2D</a></li></ol></li><li class="chapter-item expanded "><a href="../platforms.html"><strong aria-hidden="true">7.</strong> Support platforms</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
@@ -148,25 +148,29 @@ The only supported types are unit <code>~</code>, boolean, integer, and string.<
 <span class="boring">}
 </span></code></pre></pre>
 <h2 id="execute-scripts"><a class="header" href="#execute-scripts">Execute scripts</a></h2>
-<p>Execute a piece of script(we call it <em>program</em>) with <code>\exec{}</code> command:</p>
-<pre><code class="language-yaml">- 1 + 1 = \exec{1 + 1}
+<p>Execute a piece of script(we call it <em>program</em>) with <code>exec</code> command:</p>
+<pre><code class="language-yaml">- exec: $res = 1 + 1
+- 1 + 1 = \var{res}
 </code></pre>
 <p>The output is</p>
 <pre><code class="language-ignore">1 + 1 = 2
 </code></pre>
-<p>The script <code>1 + 1</code> is evaluated, and the result is <code>2</code>.
+<p>The script <code>$res = 1 + 1</code> is evaluated, and the result is <code>2</code>.
 It is then converted to string and appended to the text.</p>
 <h2 id="example-fibonacci"><a class="header" href="#example-fibonacci">Example: Fibonacci</a></h2>
 <p>With the config file, we can even calculate some math problems. For example, Fibonacci:</p>
 <pre><code class="language-yaml">- tag: init
   texts:
-    - 1
-    - \exec{$n = 50; $a = 1; $b = 1; $i = 1; $b}
+    - '1'
+    - exec: $n = 50; $a = 1; $b = 1; $i = 1;
+    - \var{b}
   next: loop
 - tag: loop
   texts:
-    - \exec{c = $b; $b += $a; $a = c; $i += 1; $b}
-  next: \exec{if($i &lt; $n, &quot;loop&quot;)}
+    - exec: c = $b; $b += $a; $a = c; $i += 1;
+    - \var{b}
+    - exec: $next = if($i &lt; $n, &quot;loop&quot;)
+  next: \var{next}
 </code></pre>
 
                     </main>
