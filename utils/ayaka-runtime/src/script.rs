@@ -247,12 +247,14 @@ impl Callable for Text {
                 SubText::Cmd(c) => {
                     let value = match c {
                         Command::Character(_, _) => RawValue::Unit,
-                        Command::Res(_) => unimplemented!(),
+                        Command::Res(_) | Command::Other(_, _) => {
+                            warn!("Unsupported command in text.");
+                            Default::default()
+                        }
                         Command::Ctx(n) => ctx.locals.get(n).cloned().unwrap_or_else(|| {
                             warn!("Cannot find variable `{}`.", n);
                             Default::default()
                         }),
-                        Command::Other(_, _) => unimplemented!(),
                     };
                     str.push_str(&value.get_str());
                 }

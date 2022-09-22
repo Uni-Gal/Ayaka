@@ -232,7 +232,7 @@ impl Context {
                             };
                             let res = self.runtime.modules[module].dispatch_text(cmd, args, ctx)?;
                             action.text.extend(res.text.text);
-                            // TODO: change other props?
+                            action.vars.extend(res.text.vars);
                         }
                     }
                 },
@@ -251,7 +251,7 @@ impl Context {
             .collect()
     }
 
-    fn process_line(&mut self, t: &Line) -> Result<()> {
+    fn process_line(&mut self, t: Line) -> Result<()> {
         match t {
             Line::Empty | Line::Text(_) => {}
             Line::Exec { exec } => {
@@ -265,7 +265,7 @@ impl Context {
                         .as_ref()
                         .map(|p| self.call(p).get_bool())
                         .unwrap_or(true);
-                    self.switches.push((enabled, item.action.clone()));
+                    self.switches.push((enabled, item.action));
                 }
             }
             Line::Custom(props) => {
@@ -279,8 +279,8 @@ impl Context {
                             root_path: &self.root_path,
                             game_props: &self.game.config.props,
                             frontend: self.frontend,
-                            ctx: self.ctx.clone(),
-                            props,
+                            ctx: &self.ctx,
+                            props: &props,
                         };
                         let res = module.dispatch_line(cmd, ctx)?;
                         self.ctx.locals.extend(res.locals);
@@ -318,10 +318,7 @@ impl Context {
                     }
                     Ok(Action::Switches(switches))
                 }
-                (Action::Custom(mut vars), Action::Custom(vars_base)) => {
-                    vars.extend(vars_base);
-                    Ok(Action::Custom(vars))
-                }
+                (Action::Custom(_), Action::Custom(_)) => Ok(Action::Custom(self.vars.clone())),
                 _ => bail!("Mismatching action type"),
             },
         }
@@ -334,7 +331,7 @@ impl Context {
                 root_path: &self.root_path,
                 game_props: &self.game.config.props,
                 frontend: self.frontend,
-                ctx: ctx.clone(),
+                ctx,
                 action,
             };
             *action = module.process_action(ctx)?.action;
@@ -368,7 +365,8 @@ impl Context {
             .map(|t| match t {
                 Line::Text(t) => self.parse_text(loc, t).map(Action::Text).ok(),
                 Line::Switch { switches } => Some(Action::Switches(self.parse_switches(switches))),
-                Line::Custom(_) => Some(Action::Custom(self.vars.clone())),
+                // The real vars will be filled in `merge_action`.
+                Line::Custom(_) => Some(Action::Custom(HashMap::default())),
                 _ => None,
             })
             .flatten();
@@ -432,7 +430,7 @@ impl Context {
 
         // TODO: reduce clone
         let ctx = if let Some(t) = cur_text_base.cloned() {
-            self.process_line(&t).unwrap_or_else(|e| {
+            self.process_line(t).unwrap_or_else(|e| {
                 error!("Parse line error: {}", e);
             });
             self.push_history();

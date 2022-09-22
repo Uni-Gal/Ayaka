@@ -268,14 +268,14 @@ async fn start_record(
     index: usize,
     storage: State<'_, Storage>,
 ) -> CommandResult<()> {
-    let raw_ctx = storage.records.lock().await[index].clone();
+    let record = storage.records.lock().await[index].clone();
     storage
         .context
         .lock()
         .await
         .as_mut()
         .unwrap()
-        .init_context(raw_ctx);
+        .init_context(record);
     info!("Init new context with locale {}.", locale);
     Ok(())
 }

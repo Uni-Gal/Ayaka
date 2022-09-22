@@ -287,7 +287,7 @@ pub struct ActionProcessContextRef<'a> {
     pub root_path: &'a Path,
     pub game_props: &'a HashMap<String, String>,
     pub frontend: FrontendType,
-    pub ctx: RawContext,
+    pub ctx: &'a RawContext,
     pub action: &'a ActionText,
 }
 
@@ -420,7 +420,7 @@ pub struct LineProcessContextRef<'a> {
     pub root_path: &'a Path,
     pub game_props: &'a HashMap<String, String>,
     pub frontend: FrontendType,
-    pub ctx: RawContext,
+    pub ctx: &'a RawContext,
     pub props: &'a HashMap<String, RawValue>,
 }
 
