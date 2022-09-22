@@ -276,12 +276,16 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
             let is_empty = context
                 .as_mut()
                 .map(|context| {
-                    matches!(
-                        context
-                            .get_action(&context.game.config.base_lang, &raw_ctx)
-                            .unwrap_or_default(),
-                        Action::Empty
-                    )
+                    let action = context
+                        .get_action(&context.game.config.base_lang, &raw_ctx)
+                        .unwrap_or_default();
+                    if let Action::Empty = action {
+                        true
+                    } else if let Action::Custom(vars) = action {
+                        vars.is_empty()
+                    } else {
+                        false
+                    }
                 })
                 .unwrap_or(true);
             let mut record = storage.global_record.lock().await;
