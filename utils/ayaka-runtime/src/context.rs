@@ -204,7 +204,7 @@ impl Context {
                     Command::Character(key, alias) => {
                         action.ch_key = Some(key.clone());
                         action.character = if alias.is_empty() {
-                            self.find_res(loc, key)
+                            self.find_res(loc, &format!("ch_{}", key))
                                 .map(|value| value.get_str().into_owned())
                         } else {
                             Some(alias.clone())
@@ -248,9 +248,9 @@ impl Context {
             .collect()
     }
 
-    fn process_line(&mut self, loc: &Locale, t: &Line) -> Result<()> {
+    fn process_line(&mut self, t: &Line) -> Result<()> {
         match t {
-            Line::Text(text) => {}
+            Line::Empty | Line::Text(_) => {}
             Line::Exec { exec } => {
                 self.call(&exec);
             }
@@ -292,7 +292,7 @@ impl Context {
 
     fn merge_action(&self, action: Fallback<Action>) -> Result<Action> {
         match action.unzip() {
-            (None, None) => unreachable!(),
+            (None, None) => Ok(Action::default()),
             (Some(action), None) | (None, Some(action)) => Ok(action),
             (Some(action), Some(action_base)) => match (action, action_base) {
                 (Action::Text(action), Action::Text(action_base)) => {
@@ -354,20 +354,13 @@ impl Context {
             .map(|p| p.texts.get(ctx.cur_act))
             .flatten();
 
-        let action = cur_text.map(|t| match t {
-            Line::Text(t) => self
-                .parse_text(loc, t)
-                .map(Action::Text)
-                .unwrap_or_else(|e| {
-                    error!("Exact text error: {}", e);
-                    Action::default()
-                }),
-            Line::Switch { switches } => Action::Switches(self.parse_switches(switches)),
-            _ => {
-                error!("Invalid line type");
-                Action::default()
-            }
-        });
+        let action = cur_text
+            .map(|t| match t {
+                Line::Text(t) => self.parse_text(loc, t).map(Action::Text).ok(),
+                Line::Switch { switches } => Some(Action::Switches(self.parse_switches(switches))),
+                _ => None,
+            })
+            .flatten();
 
         let mut act = self.merge_action(action)?;
         if let Action::Text(act) = &mut act {
@@ -414,7 +407,7 @@ impl Context {
 
         // TODO: reduce clone
         let action = if let Some(t) = cur_text_base.cloned() {
-            self.process_line(loc, &t).unwrap_or_else(|e| {
+            self.process_line(&t).unwrap_or_else(|e| {
                 error!("Parse line error: {}", e);
             });
             let action = self.get_action(loc, &self.ctx).unwrap_or_else(|e| {

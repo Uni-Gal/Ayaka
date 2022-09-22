@@ -56,6 +56,7 @@ async fn main() -> Result<()> {
     let loc = opts.locale.unwrap_or_else(Locale::current);
     while let Some(action) = ctx.next_run(&loc) {
         match action {
+            Action::Empty => {}
             Action::Text(action) => {
                 if let Some(name) = &action.character {
                     print!("_{}_", name);
@@ -63,9 +64,7 @@ async fn main() -> Result<()> {
                 for s in &action.text {
                     print!("{}", s.as_str());
                 }
-                if !(action.character.is_none() && action.text.is_empty()) {
-                    pause(opts.auto)?;
-                }
+                pause(opts.auto)?;
             }
             Action::Switches(switches) => {
                 for (i, s) in switches.iter().enumerate() {

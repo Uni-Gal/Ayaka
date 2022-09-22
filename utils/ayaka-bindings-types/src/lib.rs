@@ -228,16 +228,12 @@ impl ActionText {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub enum Action {
+    #[default]
+    Empty,
     Text(ActionText),
     Switches(Vec<Switch>),
-}
-
-impl Default for Action {
-    fn default() -> Self {
-        Self::Text(ActionText::default())
-    }
 }
 
 /// One switch in the switches of an [`Action`].

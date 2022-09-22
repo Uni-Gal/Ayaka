@@ -6,6 +6,7 @@ use std::{collections::HashMap, str::FromStr};
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(untagged)]
 pub enum Line {
+    Empty,
     Text(Text),
     Exec {
         exec: Program,
@@ -119,6 +120,6 @@ mod test {
                 map
             })
         );
-        assert_eq!(lines[4], Line::Text(Text(vec![])));
+        assert_eq!(lines[4], Line::Empty);
     }
 }
