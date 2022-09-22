@@ -17,7 +17,7 @@ fn plugin_type() -> PluginType {
 }
 
 #[export]
-fn process_action(mut ctx: ActionProcessContext) -> Action {
+fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
     let line = ctx
         .action
         .line
@@ -28,9 +28,9 @@ fn process_action(mut ctx: ActionProcessContext) -> Action {
     let parser = Parser::new(&line);
     let mut html_output = String::new();
     html::push_html(&mut html_output, parser);
-    ctx.action.line.clear();
-    ctx.action.line.push_back_chars(html_output);
-    ctx.action
+    ctx.action.clear();
+    ctx.action.push_back_chars(html_output);
+    ActionProcessResult { action: ctx.action }
 }
 ```
 
@@ -39,8 +39,8 @@ Add the plugin to the `modules` list, and all markdown text will be translated t
 You may notice that the HTML tags are treated as `ActionLine::Chars`, which means they will be displayed one by one on GUI frontends. Our existing `markdown` plugin resolves this problem by providing a custom writer.
 
 ## Existing plugins
-| Plugin     | Description                                      |
-| ---------- | ------------------------------------------------ |
-| `live2d`   | Inherit models layout and deal with hiding.      |
-| `markdown` | Process Markdown texts.                          |
-| `media`    | Inherit background image and music from history. |
+| Plugin     | Description                                 |
+| ---------- | ------------------------------------------- |
+| `live2d`   | Inherit models layout and deal with hiding. |
+| `markdown` | Process Markdown texts.                     |
+| `media`    | Voice of each action.                       |

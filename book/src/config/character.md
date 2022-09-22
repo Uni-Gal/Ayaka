@@ -8,10 +8,8 @@ Not only because the character name is too long to type again and again, but als
 
 The key of the character name should be prefixed with `ch_`:
 ``` yaml
-res:
-  en:
-    ch_foo: A. Foo
-    ch_bar: B. Bar
+ch_foo: A. Foo
+ch_bar: B. Bar
 ```
 You can then specify the character with the command:
 ``` yaml

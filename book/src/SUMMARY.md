@@ -14,6 +14,7 @@
 - [Plugin](./plugin/summary.md)
     - [Script plugin](./plugin/script_plugin.md)
     - [Text plugin](./plugin/text_plugin.md)
+    - [Line plugin](./plugin/line_plugin.md)
     - [Action plugin](./plugin/action_plugin.md)
     - [Game plugin](./plugin/game_plugin.md)
 - [GUI](./gui/summary.md)

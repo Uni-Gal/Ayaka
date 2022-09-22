@@ -36,9 +36,9 @@ fn text_font(
             res.text.push_back_block("</font>");
         }
         FrontendType::Latex => {
-            res.text.push_back_block(format!("\\{}{{{{", cmd));
+            res.text.push_back_block(format!("\\{}{{", cmd));
             res.text.push_back_chars(&args[0]);
-            res.text.push_back_block("}}");
+            res.text.push_back_block("}");
         }
     }
     res
@@ -77,7 +77,7 @@ fn ruby(args: Vec<String>, ctx: TextProcessContext) -> TextProcessResult {
         }
         FrontendType::Latex => res
             .text
-            .push_back_block(format!("\\ruby{{{{{}}}}}{{{{{}}}}}", args[0], args[1])),
+            .push_back_block(format!("\\ruby{{{}}}{{{}}}", args[0], args[1])),
     }
     res
 }

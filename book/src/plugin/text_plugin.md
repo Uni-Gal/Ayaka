@@ -1,6 +1,5 @@
 # Text plugin
 Text plugins deal with custom TeX-like commands.
-They should register the commands in `text_commands` method.
 
 ## Register commands
 Here we will register a command `\hello` and call it in the config file.
@@ -30,16 +29,11 @@ And it outputs:
 Hello world!
 ```
 
-## The process result
+## The process results
 The `TextProcessResult` object is some lines and properties to be added to the current action. `line` will be appended to the current position of the command, and `props` will be set and update.
 
-## Notes about `rt-format`
-`rt-format` is used to deal with script calculations and runtime formatting.
-Therefore, if you want to add braces to the text, you need to double them in the text plugins.
-
 ## Existing plugins
-| Plugin     | Description          |
-| ---------- | -------------------- |
-| `basictex` | Basic TeX commands.  |
-| `live2d`   | Live2D commands.     |
-| `media`    | Multimedia commands. |
+| Plugin     | Description         |
+| ---------- | ------------------- |
+| `basictex` | Basic TeX commands. |
+| `live2d`   | Live2D commands.    |
