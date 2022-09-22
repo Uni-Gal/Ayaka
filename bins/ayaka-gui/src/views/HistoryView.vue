@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { merge_lines, history, Action } from '../interop'
+import { merge_lines, history, ActionText } from '../interop'
 import ActionCard from '../components/ActionCard.vue'
 </script>
 
@@ -8,11 +8,12 @@ export default {
     emits: ["quit"],
     data() {
         return {
-            records: [] as Action[]
+            records: [] as ActionText[]
         }
     },
     async mounted() {
-        this.records = await history()
+        let records = await history()
+        this.records = records.filter(action => action.type == "Text").map(action => action.data as ActionText)
     }
 }
 </script>

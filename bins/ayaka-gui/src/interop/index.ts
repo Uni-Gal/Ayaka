@@ -34,8 +34,14 @@ export interface RawContext {
     cur_para: string,
     cur_act: number,
     history: Action[],
-    bg?: string,
-    bgm?: string,
+    locals: {
+        bg?: string,
+        bgm?: string,
+        efm?: string,
+        voice?: string,
+        video?: string,
+        ch_models?: string,
+    }
 }
 
 export interface GameInfo {
@@ -47,18 +53,20 @@ export interface GameInfo {
 }
 
 export interface Action {
-    line: ActionLine[],
+    type: keyof typeof ActionType,
+    data: undefined | ActionText | Switch[]
+}
+
+export enum ActionType {
+    Empty,
+    Text,
+    Switches,
+}
+
+export interface ActionText {
+    text: ActionLine[],
     ch_key?: string,
     character?: string,
-    switches: Switch[],
-    props: {
-        bg?: string,
-        bgm?: string,
-        efm?: string,
-        voice?: string,
-        video?: string,
-        ch_models?: string,
-    },
 }
 
 export interface ActionLine {
@@ -139,8 +147,12 @@ export function next_back_run(): Promise<boolean> {
     return invoke("next_back_run")
 }
 
-export function current_run(): Promise<Action | undefined> {
+export function current_run(): Promise<RawContext | undefined> {
     return invoke("current_run")
+}
+
+export function current_action(): Promise<Action | undefined> {
+    return invoke("current_action")
 }
 
 export function current_title(): Promise<string | undefined> {

@@ -5,7 +5,7 @@
 
 use ayaka_runtime::{
     anyhow::{self, anyhow, Result},
-    log::{debug, info, warn},
+    log::{debug, error, info, warn},
     *,
 };
 use flexi_logger::{FileSpec, LogSpecification, Logger};
@@ -198,7 +198,6 @@ struct Storage {
     context: Mutex<Option<Context>>,
     settings: Mutex<Option<Settings>>,
     global_record: Mutex<Option<GlobalRecord>>,
-    action: Mutex<Option<ActionParams>>,
 }
 
 impl Storage {
@@ -259,7 +258,6 @@ async fn start_record(
     if let Some(ctx) = storage.context.lock().await.as_mut() {
         let raw_ctx = storage.records.lock().await[index].clone();
         ctx.init_context(raw_ctx);
-        *storage.action.lock().await = ctx.current_run();
         info!("Init new context with locale {}.", locale);
     } else {
         warn!("Game hasn't been loaded.")
@@ -270,19 +268,12 @@ async fn start_record(
 #[command]
 async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
     let mut context = storage.context.lock().await;
-    let settings = storage.settings.lock().await;
-    let lang = settings
-        .as_ref()
-        .map(|settings| settings.lang.clone())
-        .unwrap_or_else(Locale::current);
-    let action = context.as_mut().and_then(|context| context.next_run(&lang));
-    if let Some(action) = action {
-        debug!("Next action: {:?}", action);
-        *storage.action.lock().await = Some(action);
+    let raw_ctx = context.as_mut().and_then(|context| context.next_run());
+    if let Some(raw_ctx) = raw_ctx {
+        debug!("Next action: {:?}", raw_ctx);
         Ok(true)
     } else {
         debug!("No action left.");
-        *storage.action.lock().await = None;
         Ok(false)
     }
 }
@@ -290,10 +281,9 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
 #[command]
 async fn next_back_run(storage: State<'_, Storage>) -> CommandResult<bool> {
     let mut context = storage.context.lock().await;
-    let action = context.as_mut().and_then(|context| context.next_back_run());
-    if let Some(action) = action {
-        debug!("Last action: {:?}", action);
-        *storage.action.lock().await = Some(action);
+    let raw_ctx = context.as_mut().and_then(|context| context.next_back_run());
+    if let Some(raw_ctx) = raw_ctx {
+        debug!("Last action: {:?}", raw_ctx);
         Ok(true)
     } else {
         debug!("No action in the history.");
@@ -303,12 +293,13 @@ async fn next_back_run(storage: State<'_, Storage>) -> CommandResult<bool> {
 
 #[command]
 async fn current_visited(storage: State<'_, Storage>) -> CommandResult<bool> {
-    let action = storage.action.lock().await;
-    let visited = if let Some(action) = action.as_ref() {
+    let context = storage.context.lock().await;
+    let raw_ctx = context.as_ref().and_then(|context| context.current_run());
+    let visited = if let Some(raw_ctx) = raw_ctx.as_ref() {
         let record = storage.global_record.lock().await;
         record
             .as_ref()
-            .map(|record| record.visited(action))
+            .map(|record| record.visited(raw_ctx))
             .unwrap_or_default()
     } else {
         false
@@ -317,18 +308,28 @@ async fn current_visited(storage: State<'_, Storage>) -> CommandResult<bool> {
 }
 
 #[command]
-async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<Action>> {
+async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<RawContext>> {
     let context = storage.context.lock().await;
-    let action = storage.action.lock().await;
+    let raw_ctx = context.as_ref().and_then(|context| context.current_run());
+    Ok(raw_ctx.cloned())
+}
+
+#[command]
+async fn current_action(storage: State<'_, Storage>) -> CommandResult<Option<Action>> {
+    let context = storage.context.lock().await;
+    let raw_ctx = context.as_ref().and_then(|context| context.current_run());
     let settings = storage.settings.lock().await;
     let lang = settings
         .as_ref()
         .map(|settings| settings.lang.clone())
         .unwrap_or_else(Locale::current);
     Ok(context.as_ref().and_then(|context| {
-        action
-            .as_ref()
-            .map(|params| context.get_action(&lang, params.clone()))
+        raw_ctx.as_ref().map(|raw_ctx| {
+            context.get_action(&lang, raw_ctx).unwrap_or_else(|e| {
+                error!("Cannot get action: {}", e);
+                Action::default()
+            })
+        })
     }))
 }
 
@@ -348,23 +349,14 @@ async fn current_title(storage: State<'_, Storage>) -> CommandResult<Option<Stri
 }
 
 #[command]
-async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue> {
+async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<()> {
     debug!("Switch {}", i);
     let mut context = storage.context.lock().await;
     let context = context
         .as_mut()
         .ok_or_else(|| anyhow!("Context not initialized."))?;
-    let action = storage.action.lock().await;
-    let switch = action
-        .as_ref()
-        .and_then(|action| action.switches.get(i))
-        .ok_or_else(|| anyhow!("Index error: {}", i))?;
-    let settings = storage.settings.lock().await;
-    let lang = settings
-        .as_ref()
-        .map(|settings| settings.lang.clone())
-        .unwrap_or_else(Locale::current);
-    Ok(context.call(&lang, &switch.action))
+    context.switch(i);
+    Ok(())
 }
 
 #[command]
@@ -382,7 +374,12 @@ async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<Action>> {
                 .record
                 .history
                 .iter()
-                .map(|params| context.get_action(&lang, params.clone()))
+                .map(|raw_ctx| {
+                    context.get_action(&lang, raw_ctx).unwrap_or_else(|e| {
+                        error!("Cannot get action: {}", e);
+                        Action::default()
+                    })
+                })
                 .collect::<Vec<_>>()
         })
         .unwrap_or_default();
@@ -454,6 +451,7 @@ fn main() -> Result<()> {
             next_run,
             next_back_run,
             current_run,
+            current_action,
             current_title,
             current_visited,
             switch,

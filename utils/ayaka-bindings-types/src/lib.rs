@@ -231,6 +231,7 @@ impl ActionText {
 /// The full action information in one line of config.
 /// It provides the full texts and other properties exacted from [`ayaka_script::Text`].
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "data")]
 pub enum Action {
     /// An empty action usually means an `exec` or custom action.
     #[default]
