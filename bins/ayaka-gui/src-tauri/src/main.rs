@@ -196,6 +196,7 @@ struct Storage {
     config: String,
     records: Mutex<Vec<ActionRecord>>,
     context: Mutex<Option<Context>>,
+    current: Mutex<Option<RawContext>>,
     settings: Mutex<Option<Settings>>,
     global_record: Mutex<Option<GlobalRecord>>,
 }
@@ -272,11 +273,6 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
         let raw_ctx = context.as_mut().and_then(|context| context.next_run());
         if let Some(raw_ctx) = raw_ctx {
             debug!("Next action: {:?}", raw_ctx);
-            let mut record = storage.global_record.lock().await;
-            if let Some(record) = record.as_mut() {
-                record.update(raw_ctx);
-            }
-            let raw_ctx = raw_ctx.clone();
             let is_empty = context
                 .as_mut()
                 .map(|context| {
@@ -288,6 +284,11 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
                     )
                 })
                 .unwrap_or(true);
+            let mut record = storage.global_record.lock().await;
+            if let Some(record) = record.as_mut() {
+                record.update(&raw_ctx);
+                *storage.current.lock().await = Some(raw_ctx);
+            }
             if !is_empty {
                 return Ok(true);
             }
@@ -312,8 +313,7 @@ async fn next_back_run(storage: State<'_, Storage>) -> CommandResult<bool> {
 
 #[command]
 async fn current_visited(storage: State<'_, Storage>) -> CommandResult<bool> {
-    let context = storage.context.lock().await;
-    let raw_ctx = context.as_ref().and_then(|context| context.current_run());
+    let raw_ctx = storage.current.lock().await;
     let visited = if let Some(raw_ctx) = raw_ctx.as_ref() {
         let record = storage.global_record.lock().await;
         record
@@ -328,15 +328,14 @@ async fn current_visited(storage: State<'_, Storage>) -> CommandResult<bool> {
 
 #[command]
 async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<RawContext>> {
-    let context = storage.context.lock().await;
-    let raw_ctx = context.as_ref().and_then(|context| context.current_run());
-    Ok(raw_ctx.cloned())
+    let raw_ctx = storage.current.lock().await;
+    Ok(raw_ctx.as_ref().cloned())
 }
 
 #[command]
 async fn current_action(storage: State<'_, Storage>) -> CommandResult<Option<Action>> {
     let context = storage.context.lock().await;
-    let raw_ctx = context.as_ref().and_then(|context| context.current_run());
+    let raw_ctx = storage.current.lock().await;
     let settings = storage.settings.lock().await;
     let lang = settings
         .as_ref()

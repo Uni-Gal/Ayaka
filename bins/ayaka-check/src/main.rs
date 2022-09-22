@@ -55,7 +55,6 @@ async fn main() -> Result<()> {
     ctx.init_new();
     let loc = opts.locale.unwrap_or_else(Locale::current);
     while let Some(raw_ctx) = ctx.next_run() {
-        let raw_ctx = raw_ctx.clone();
         let action = ctx.get_action(&loc, &raw_ctx)?;
         match action {
             Action::Empty => {}

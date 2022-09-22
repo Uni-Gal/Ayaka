@@ -389,7 +389,7 @@ impl Context {
     }
 
     /// Step to next line.
-    pub fn next_run(&mut self) -> Option<&RawContext> {
+    pub fn next_run(&mut self) -> Option<RawContext> {
         let cur_text_base = loop {
             let cur_para = self.current_paragraph(&self.game.config.base_lang);
             let cur_text = self.current_text(&self.game.config.base_lang);
@@ -421,26 +421,17 @@ impl Context {
         };
 
         // TODO: reduce clone
-        let has_next = if let Some(t) = cur_text_base.cloned() {
+        let ctx = if let Some(t) = cur_text_base.cloned() {
             self.process_line(&t).unwrap_or_else(|e| {
                 error!("Parse line error: {}", e);
             });
             self.push_history();
-            true
-        } else {
-            false
-        };
-        self.ctx.cur_act += 1;
-        if has_next {
-            Some(&self.ctx)
+            Some(self.ctx.clone())
         } else {
             None
-        }
-    }
-
-    /// Get (again) then current run.
-    pub fn current_run(&self) -> Option<&RawContext> {
-        self.record.history.last()
+        };
+        self.ctx.cur_act += 1;
+        ctx
     }
 
     /// Step back to the last run.
@@ -456,7 +447,7 @@ impl Context {
                     self.ctx.cur_act
                 );
             }
-            self.current_run()
+            self.record.history.last()
         }
     }
 

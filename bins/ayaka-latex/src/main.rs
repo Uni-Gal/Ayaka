@@ -45,7 +45,6 @@ async fn main() -> Result<()> {
             let mut current_bg = None;
 
             while let Some(raw_ctx) = ctx.next_run() {
-                let raw_ctx = raw_ctx.clone();
                 let action = ctx.get_action(&loc, &raw_ctx)?;
                 let para_title = ctx.current_paragraph_title(&loc);
                 if para_title != current_para.as_ref() {
