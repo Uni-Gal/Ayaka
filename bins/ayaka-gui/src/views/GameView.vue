@@ -61,11 +61,11 @@ export default {
             await this.$router.replace("/home")
         },
         // Should be called in mutex
-        async fetch_current_run() {
+        async fetch_current_run(): Promise<boolean> {
             const ctx = await current_run()
             const action = await current_action()
             this.title = await current_title() ?? ""
-            console.info(ctx)
+            console.info(action)
             if (ctx && action) {
                 const load_new_bgm = (ctx.locals.bgm != this.raw_ctx.locals.bgm);
                 this.raw_ctx = ctx
@@ -87,8 +87,6 @@ export default {
                             let e = (this.$refs.video as HTMLVideoElement);
                             e.load()
                             e.play()
-                        } else {
-                            await this.next()
                         }
                         break
                     case ActionType.Text:
