@@ -97,15 +97,6 @@ impl Host {
         self.call("process_action", (ctx,))
     }
 
-    /// Gets registered TeX commands of a text plugin.
-    pub fn text_commands(&self) -> Result<Vec<String>> {
-        self.call("text_commands", ())
-    }
-
-    pub fn line_commands(&self) -> Result<Vec<String>> {
-        self.call("line_commands", ())
-    }
-
     /// Calls a custom command in the text plugin.
     pub fn dispatch_text(
         &self,
@@ -116,6 +107,7 @@ impl Host {
         self.call(name, (args, ctx))
     }
 
+    /// Calls a custom command in the line plugin.
     pub fn dispatch_line(
         &self,
         name: &str,

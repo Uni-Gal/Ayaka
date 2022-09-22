@@ -31,7 +31,13 @@ pub enum Command {
     ///
     /// Controls the current character.
     Character(String, String),
+    /// `\var{}`
+    ///
+    /// Get the local variables.
     Ctx(String),
+    /// `\res{}`
+    ///
+    /// Get the resource consts.
     Res(String),
     /// Other custom commands.
     Other(String, Vec<String>),

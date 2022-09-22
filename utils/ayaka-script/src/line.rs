@@ -3,26 +3,39 @@ use serde::Deserialize;
 use serde_with::rust::maps_duplicate_key_is_error;
 use std::{collections::HashMap, str::FromStr};
 
+/// Represents a line in a prograph.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(untagged)]
 pub enum Line {
+    /// An empty line, usually fallbacks to the base language one.
     Empty,
+    /// A text line.
     Text(Text),
+    /// An `exec` line, to execute scripts.
     Exec {
+        /// The program to execute.
         exec: Program,
     },
+    /// Some `switches`.
     Switch {
+        /// The switch items.
         switches: Vec<SwitchItem>,
     },
+    /// Custom line types.
     #[serde(with = "maps_duplicate_key_is_error")]
     Custom(HashMap<String, RawValue>),
 }
 
+/// A switch item in the `switches`.
 #[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
 #[serde(try_from = "String")]
 pub struct SwitchItem {
+    /// The display text of the item.
     pub text: String,
+    /// Whether the item is enabled.
+    /// [`None`] is enabled.
     pub enabled: Option<Program>,
+    /// The action to execute if the item is choosen.
     pub action: Program,
 }
 

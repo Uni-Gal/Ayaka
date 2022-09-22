@@ -189,6 +189,7 @@ impl Context {
         self.table().call(expr)
     }
 
+    /// Choose a switch item by index, start by 0.
     pub fn switch(&mut self, i: usize) -> RawValue {
         assert!((0..self.switches.len()).contains(&i));
         assert!(self.switches[i].0);

@@ -57,6 +57,8 @@ pub struct PluginType {
     /// The text plugin.
     /// The custom text commands are dealt with this type of plugin.
     pub text: Vec<String>,
+    /// The line plugin.
+    /// The custom line types are dealt with this type of plugin.
     pub line: Vec<String>,
     /// The game plugin.
     /// This plugin processes the game properties after it is loaded.
@@ -90,6 +92,7 @@ impl PluginTypeBuilder {
         self
     }
 
+    /// A line plugins, which provides custom line types.
     pub fn line(mut self, cmds: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.data.line = cmds.into_iter().map(|s| s.into()).collect();
         self
@@ -176,9 +179,6 @@ pub struct RawContext {
     pub locals: VarMap,
 }
 
-/// The full action information in one line of config.
-/// It provides the full texts and other properties exacted from [`ayaka_script::Text`].
-///
 /// The `text` is a [`VecDeque<ActionSubText>`].
 /// The [`ActionSubText`] could be pushed and poped at front or back.
 ///
@@ -228,11 +228,16 @@ impl ActionText {
     }
 }
 
+/// The full action information in one line of config.
+/// It provides the full texts and other properties exacted from [`ayaka_script::Text`].
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub enum Action {
+    /// An empty action usually means an `exec` or custom action.
     #[default]
     Empty,
+    /// A text action, display some texts.
     Text(ActionText),
+    /// A switch action, display switches and let player to choose.
     Switches(Vec<Switch>),
 }
 
@@ -252,9 +257,9 @@ pub struct Switch {
 /// use ayaka_bindings::*;
 ///
 /// #[export]
-/// fn process_action(mut ctx: ActionProcessContext) -> Action {
+/// fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
 ///     // Process the action...
-///     ctx.action
+///     ActionProcessResult { action: ctx.action }
 /// }
 /// ```
 #[derive(Debug, Serialize, Deserialize)]
@@ -278,20 +283,22 @@ pub struct ActionProcessContextRef<'a> {
     pub action: &'a ActionText,
 }
 
+/// The result of action plugins.
+/// See examples at [`ActionProcessContext`].
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct ActionProcessResult {
+    /// The processed action text.
     pub action: ActionText,
 }
 
 /// The argument to text plugin.
 ///
-/// Every text plugin should implement `text_commands` and the specified function:
 /// ```ignore
 /// use ayaka_bindings::*;
 ///
 /// #[export]
-/// fn text_commands() -> &'static [&'static str] {
-///     &["hello"]
+/// fn plugin_type() -> PluginType {
+///     PluginType::builder().text(&["hello"]).build()
 /// }
 ///
 /// #[export]
@@ -326,8 +333,6 @@ pub struct TextProcessResult {
     /// The lines to append.
     pub text: ActionText,
 }
-
-impl TextProcessResult {}
 
 /// The argument to game plugin.
 ///
@@ -370,12 +375,34 @@ pub struct GameProcessResult {
     pub props: HashMap<String, String>,
 }
 
+/// The argument to line plugin.
+///
+/// ```ignore
+/// use ayaka_bindings::*;
+///
+/// #[export]
+/// fn plugin_type() -> PluginType {
+///     PluginType::builder().line(&["hello"]).build()
+/// }
+///
+/// #[export]
+/// fn hello(_ctx: LineProcessContext) -> LineProcessResult {
+///     let mut res = LineProcessResult::default();
+///     res.locals.insert("hello".to_string(), RawValue::Str("world".to_string()));
+///     res
+/// }
+/// ```
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LineProcessContext {
+    /// The root path of the game profile.
     pub root_path: PathBuf,
+    /// The global properties of the game profile.
     pub game_props: HashMap<String, String>,
+    /// The frontend type.
     pub frontend: FrontendType,
+    /// The current context.
     pub ctx: RawContext,
+    /// The full properties of the custom command.
     pub props: HashMap<String, RawValue>,
 }
 
@@ -389,7 +416,10 @@ pub struct LineProcessContextRef<'a> {
     pub props: &'a HashMap<String, RawValue>,
 }
 
+/// The result of commands in line plugins.
+/// See examples at [`LineProcessContext`].
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct LineProcessResult {
+    /// The updated variables.
     pub locals: VarMap,
 }
