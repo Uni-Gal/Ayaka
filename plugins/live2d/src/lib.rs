@@ -32,10 +32,13 @@ fn show(ctx: LineProcessContext) -> LineProcessResult {
         .get("ch_models")
         .map(|value| value.get_str())
         .unwrap_or_default();
-    let models = models
+    let models = exist_models
         .split(',')
-        .filter(|name| ctx.game_props.contains_key(&format!("ch_{}_model", name)))
-        .chain(exist_models.split(','))
+        .chain(
+            models
+                .split(',')
+                .filter(|name| ctx.game_props.contains_key(&format!("ch_{}_model", name))),
+        )
         .collect::<Vec<_>>();
     let mut res = LineProcessResult::default();
     res.locals
@@ -46,7 +49,6 @@ fn show(ctx: LineProcessContext) -> LineProcessResult {
 #[export]
 fn hide(ctx: LineProcessContext) -> LineProcessResult {
     let hide = ctx.props["hide"].get_str();
-    let hide = hide.split(',').collect::<HashSet<_>>();
 
     let models = ctx
         .ctx
@@ -57,6 +59,7 @@ fn hide(ctx: LineProcessContext) -> LineProcessResult {
     let models = if hide.is_empty() {
         vec![]
     } else {
+        let hide = hide.split(',').collect::<HashSet<_>>();
         models
             .split(',')
             .filter(|ch| !hide.contains(ch))
