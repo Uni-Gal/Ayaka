@@ -213,8 +213,15 @@ export default {
             this.play_state = PlayState.Manual
         },
         async onkeydown(e: KeyboardEvent) {
-            if (e.key == "Enter" || e.key == " " || e.key == "ArrowDown") {
-                await this.next()
+            switch (e.key) {
+                case "Enter":
+                case " ":
+                case "ArrowDown":
+                    await this.next()
+                    break
+                case "ArrowUp":
+                    await this.next_back()
+                    break
             }
         },
         async onvideoended() {

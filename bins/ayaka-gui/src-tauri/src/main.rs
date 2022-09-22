@@ -285,8 +285,7 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
     loop {
         let mut context = storage.context.lock().await;
         let context = context.as_mut().unwrap();
-        let raw_ctx = context.next_run();
-        if let Some(raw_ctx) = raw_ctx {
+        if let Some(raw_ctx) = context.next_run() {
             debug!("Next action: {:?}", raw_ctx);
             let is_empty = {
                 let action = context
@@ -321,9 +320,10 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
 #[command]
 async fn next_back_run(storage: State<'_, Storage>) -> CommandResult<bool> {
     let mut context = storage.context.lock().await;
-    let raw_ctx = context.as_mut().and_then(|context| context.next_back_run());
-    if let Some(raw_ctx) = raw_ctx {
+    let context = context.as_mut().unwrap();
+    if let Some(raw_ctx) = context.next_back_run() {
         debug!("Last action: {:?}", raw_ctx);
+        *storage.current.lock().await = Some(raw_ctx.clone());
         Ok(true)
     } else {
         debug!("No action in the history.");
