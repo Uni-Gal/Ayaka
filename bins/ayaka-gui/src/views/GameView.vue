@@ -68,11 +68,7 @@ export default {
             this.title = await current_title() ?? ""
             console.info(action)
             if (ctx && action) {
-                const load_new_bgm = (ctx.locals.bgm != this.raw_ctx.locals.bgm);
                 this.raw_ctx = ctx
-                if (load_new_bgm) {
-                    (this.$refs.bgm as HTMLAudioElement).load()
-                }
                 switch (ActionType[action.type]) {
                     case ActionType.Empty:
                         this.action = { text: [], vars: {} } as ActionText
@@ -83,9 +79,6 @@ export default {
                         this.action = action.data as ActionText
                         this.switches = []
                         this.vars = {}
-                        if (this.action.vars.voice) {
-                            (this.$refs.voice as HTMLAudioElement).load()
-                        }
                         this.start_type_anime(true)
                         break
                     case ActionType.Switches:
