@@ -79,7 +79,7 @@ async fn main() -> Result<()> {
                     }
                 }
                 match action {
-                    Action::Empty => {}
+                    Action::Empty | Action::Custom(_) => {}
                     Action::Text(action) => {
                         if let Some(name) = &action.character {
                             output.command("paragraph", [name]).await?;

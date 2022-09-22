@@ -37,9 +37,7 @@ export interface RawContext {
     locals: {
         bg?: string,
         bgm?: string,
-        efm?: string,
         voice?: string,
-        video?: string,
         ch_models?: string,
     }
 }
@@ -54,19 +52,24 @@ export interface GameInfo {
 
 export interface Action {
     type: keyof typeof ActionType,
-    data: undefined | ActionText | Switch[]
+    data: undefined | ActionText | Switch[] | CustomVars
 }
 
 export enum ActionType {
     Empty,
     Text,
     Switches,
+    Custom,
 }
 
 export interface ActionText {
     text: ActionLine[],
     ch_key?: string,
     character?: string,
+}
+
+export interface CustomVars {
+    video?: string,
 }
 
 export interface ActionLine {

@@ -240,6 +240,8 @@ pub enum Action {
     Text(ActionText),
     /// A switch action, display switches and let player to choose.
     Switches(Vec<Switch>),
+    /// A custom action.
+    Custom(VarMap),
 }
 
 /// One switch in the switches of an [`Action`].
@@ -423,4 +425,6 @@ pub struct LineProcessContextRef<'a> {
 pub struct LineProcessResult {
     /// The updated variables.
     pub locals: VarMap,
+    /// The temp variables.
+    pub vars: VarMap,
 }

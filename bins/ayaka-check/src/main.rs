@@ -57,7 +57,7 @@ async fn main() -> Result<()> {
     while let Some(raw_ctx) = ctx.next_run() {
         let action = ctx.get_action(&loc, &raw_ctx)?;
         match action {
-            Action::Empty => {}
+            Action::Empty | Action::Custom(_) => {}
             Action::Text(action) => {
                 if let Some(name) = &action.character {
                     print!("_{}_", name);

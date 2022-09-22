@@ -26,6 +26,7 @@ pub struct Context {
     /// The inner record.
     pub record: ActionRecord,
     switches: Vec<(bool, Program)>,
+    vars: VarMap,
 }
 
 /// The open status when creating [`Context`].
@@ -139,6 +140,7 @@ impl Context {
             ctx: RawContext::default(),
             record: ActionRecord::default(),
             switches: vec![],
+            vars: VarMap::default(),
         })
     }
 
@@ -267,6 +269,7 @@ impl Context {
                 }
             }
             Line::Custom(props) => {
+                self.vars.clear();
                 let cmd = props.iter().next().map(|(key, _)| key);
                 if let Some(cmd) = cmd {
                     let module = self.runtime.line_modules.get(cmd);
@@ -279,9 +282,9 @@ impl Context {
                             ctx: self.ctx.clone(),
                             props,
                         };
-                        self.ctx
-                            .locals
-                            .extend(module.dispatch_line(cmd, ctx)?.locals);
+                        let res = module.dispatch_line(cmd, ctx)?;
+                        self.ctx.locals.extend(res.locals);
+                        self.vars.extend(res.vars);
                     } else {
                         bail!("Cannot find command {}", cmd)
                     }
@@ -313,6 +316,10 @@ impl Context {
                         item.enabled = item_base.enabled;
                     }
                     Ok(Action::Switches(switches))
+                }
+                (Action::Custom(mut vars), Action::Custom(vars_base)) => {
+                    vars.extend(vars_base);
+                    Ok(Action::Custom(vars))
                 }
                 _ => bail!("Mismatching action type"),
             },
@@ -359,6 +366,7 @@ impl Context {
             .map(|t| match t {
                 Line::Text(t) => self.parse_text(loc, t).map(Action::Text).ok(),
                 Line::Switch { switches } => Some(Action::Switches(self.parse_switches(switches))),
+                Line::Custom(_) => Some(Action::Custom(self.vars.clone())),
                 _ => None,
             })
             .flatten();

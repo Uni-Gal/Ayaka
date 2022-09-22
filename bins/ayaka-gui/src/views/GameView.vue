@@ -3,7 +3,7 @@ import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import ActionCard from '../components/ActionCard.vue'
 import IconButton from '../components/IconButton.vue'
-import { conv_src, current_run, current_action, current_title, next_run, next_back_run, switch_, merge_lines, RawContext, ActionType, ActionText, Switch, ActionLineType, ActionLine, current_visited } from '../interop'
+import { conv_src, current_run, current_action, current_title, next_run, next_back_run, switch_, merge_lines, RawContext, ActionType, ActionText, CustomVars, Switch, ActionLineType, ActionLine, current_visited } from '../interop'
 import { cloneDeep } from 'lodash'
 import Live2D from '../components/Live2D.vue'
 import { Modal } from 'bootstrap'
@@ -37,6 +37,7 @@ export default {
                 text: []
             } as ActionText,
             switches: [] as Switch[],
+            vars: {} as CustomVars,
             title: "",
             type_text: "",
             type_text_buffer: [] as ActionLine[],
@@ -61,7 +62,7 @@ export default {
             await this.$router.replace("/home")
         },
         // Should be called in mutex
-        async fetch_current_run(): Promise<boolean> {
+        async fetch_current_run() {
             const ctx = await current_run()
             const action = await current_action()
             this.title = await current_title() ?? ""
@@ -72,9 +73,6 @@ export default {
                 if (load_new_bgm) {
                     (this.$refs.bgm as HTMLAudioElement).load()
                 }
-                if (ctx.locals.efm) {
-                    (this.$refs.efm as HTMLAudioElement).load()
-                }
                 if (ctx.locals.voice) {
                     (this.$refs.voice as HTMLAudioElement).load()
                 }
@@ -82,21 +80,27 @@ export default {
                     case ActionType.Empty:
                         this.action = { text: [] } as ActionText
                         this.switches = []
-                        if (ctx.locals.video) {
-                            this.play_state = PlayState.Manual
-                            let e = (this.$refs.video as HTMLVideoElement);
-                            e.load()
-                            e.play()
-                        }
+                        this.vars = {}
                         break
                     case ActionType.Text:
                         this.action = action.data as ActionText
                         this.switches = []
+                        this.vars = {}
                         this.start_type_anime(true)
                         break
                     case ActionType.Switches:
                         this.play_state = PlayState.Manual
                         this.switches = action.data as Switch[]
+                        this.vars = {}
+                        break
+                    case ActionType.Custom:
+                        this.action = { text: [] } as ActionText
+                        this.switches = []
+                        let data = action.data as CustomVars
+                        this.vars = data
+                        if (data.video) {
+                            this.play_state = PlayState.Manual
+                        }
                         break
                 }
             }
@@ -125,11 +129,6 @@ export default {
         // Shouldn't be called in mutex
         async start_type_anime(timeout: boolean = false) {
             let values = timeout ? [setTimeout(3000)] : []
-            if (this.raw_ctx.locals.efm) {
-                let efm = this.$refs.efm as HTMLAudioElement
-                values.push(wait_play(efm))
-                efm.play()
-            }
             if (this.raw_ctx.locals.voice) {
                 let voice = this.$refs.voice as HTMLAudioElement
                 values.push(wait_play(voice))
@@ -217,7 +216,6 @@ export default {
 
 <template>
     <audio ref="bgm" :src="conv_src(raw_ctx.locals.bgm)" type="audio/mpeg" autoplay hidden loop></audio>
-    <audio ref="efm" :src="conv_src(raw_ctx.locals.efm)" type="audio/mpeg" hidden></audio>
     <audio ref="voice" :src="conv_src(raw_ctx.locals.voice)" type="audio/mpeg" hidden></audio>
     <img class="background" :src="conv_src(raw_ctx.locals.bg)">
     <Live2D :names="live2d_names(raw_ctx.locals)"></Live2D>
@@ -230,9 +228,9 @@ export default {
     <div class="logo d-flex align-items-center">
         <span>Powered by Ayaka.</span>
     </div>
-    <div class="content-full bg-body" :hidden="!raw_ctx.locals.video">
-        <video ref="video" class="background" @ended="onvideoended" :src="conv_src(raw_ctx.locals.video)"
-            type="video/mp4"></video>
+    <div class="content-full bg-body" :hidden="!vars.video">
+        <video ref="video" class="background" @ended="onvideoended" :src="conv_src(vars.video)" type="video/mp4"
+            autoplay></video>
     </div>
     <div class="backboard" @click="next"></div>
     <div class="commands">
