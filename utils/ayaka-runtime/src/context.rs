@@ -318,7 +318,10 @@ impl Context {
                     }
                     Ok(Action::Switches(switches))
                 }
-                (Action::Custom(_), Action::Custom(_)) => Ok(Action::Custom(self.vars.clone())),
+                (Action::Custom(mut vars), Action::Custom(vars_base)) => {
+                    vars.extend(vars_base);
+                    Ok(Action::Custom(vars))
+                }
                 _ => bail!("Mismatching action type"),
             },
         }
@@ -366,7 +369,7 @@ impl Context {
                 Line::Text(t) => self.parse_text(loc, t).map(Action::Text).ok(),
                 Line::Switch { switches } => Some(Action::Switches(self.parse_switches(switches))),
                 // The real vars will be filled in `merge_action`.
-                Line::Custom(_) => Some(Action::Custom(HashMap::default())),
+                Line::Custom(_) => Some(Action::Custom(self.vars.clone())),
                 _ => None,
             })
             .flatten();
