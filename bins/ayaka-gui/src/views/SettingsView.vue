@@ -14,19 +14,23 @@ export default {
     data() {
         return {
             locales: [] as Locale[],
-            sub_locale: undefined as Locale | undefined
+            sub_locale: "none"
         }
     },
     async created() {
         this.locales = await avaliable_locale(this.$i18n.availableLocales)
-        this.sub_locale = (await get_settings())?.sub_lang
+        let sub_locale = (await get_settings())?.sub_lang
+        if (sub_locale) {
+            this.sub_locale = sub_locale
+        }
     },
     methods: {
         async on_locale_select(e: Event) {
             await set_locale((e.target as HTMLInputElement).value)
         },
         async on_sub_locale_select(e: Event) {
-            await set_sub_locale((e.target as HTMLInputElement).value)
+            let loc = (e.target as HTMLInputElement).value
+            await set_sub_locale(loc == "none" ? undefined : loc)
         }
     }
 }
@@ -42,7 +46,7 @@ export default {
                 </option>
             </select>
             <select class="form-select" v-model="sub_locale" @change="on_sub_locale_select">
-                <option :value="undefined">None</option>
+                <option value="none">None</option>
                 <option v-for="locale in locales" :value="locale">
                     {{ locale_native_name(locale) }}
                 </option>

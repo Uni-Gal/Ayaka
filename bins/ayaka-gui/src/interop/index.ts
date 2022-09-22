@@ -28,7 +28,7 @@ export enum OpenGameStatusType {
 
 export interface Settings {
     lang: Locale,
-    sub_lang: Locale,
+    sub_lang?: Locale,
 }
 
 export interface RawContext {
@@ -114,14 +114,15 @@ export function save_record_to(index: number): Promise<void> {
 }
 
 export async function set_locale(loc: Locale): Promise<void> {
-    let settings = await get_settings() ?? { lang: "", sub_lang: "" };
+    let settings = await get_settings() ?? { lang: "" };
     settings.lang = loc
     await set_settings(settings)
 }
 
-export async function set_sub_locale(loc: Locale): Promise<void> {
-    let settings = await get_settings() ?? { lang: "", sub_lang: "" };
+export async function set_sub_locale(loc?: Locale): Promise<void> {
+    let settings = await get_settings() ?? { lang: "" };
     settings.sub_lang = loc
+    console.log(loc)
     await set_settings(settings)
 }
 
