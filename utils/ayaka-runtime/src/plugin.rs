@@ -7,7 +7,6 @@ use crate::*;
 use anyhow::Result;
 use ayaka_bindings_types::*;
 use log::warn;
-use rt_format::ParsedFormat;
 use scopeguard::defer;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{collections::HashMap, path::Path};
@@ -194,37 +193,10 @@ impl Runtime {
         );
         let log_flush_func = Function::new_native(store, || log::logger().flush());
 
-        let format_func = Function::new_native_with_env(
-            store,
-            RuntimeInstanceData::default(),
-            |env_data: &RuntimeInstanceData, len: i32, data: i32| unsafe {
-                env_data.import(len, data, |args: Vec<RawValue>| {
-                    if args.is_empty() {
-                        warn!("Format args is empty.");
-                        RawValue::Unit
-                    } else {
-                        ParsedFormat::parse(
-                            &args[0].get_str(),
-                            &args[1..],
-                            &HashMap::<String, RawValue>::new(),
-                        )
-                        .map(|r| RawValue::Str(r.to_string()))
-                        .unwrap_or_else(|i| {
-                            warn!("Format failed, stopped at {}.", i);
-                            Default::default()
-                        })
-                    }
-                })
-            },
-        );
-
         let import_object = imports! {
             "log" => {
                 "__log" => log_func,
                 "__log_flush" => log_flush_func,
-            },
-            "format" => {
-                "__format" => format_func,
             }
         };
         let wasi_env = WasiState::new("ayaka-runtime")

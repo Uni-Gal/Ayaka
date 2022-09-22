@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 ayaka-bindings-types = { path = "../ayaka-bindings-types" }
-ayaka-script = { path = "../ayaka-script", features = ["rt-format"] }
+ayaka-script = { path = "../ayaka-script" }
 fallback = "0.1"
 language-matcher = "0.1"
 icu_locid = { version = "1.0.0-beta1", features = ["std"] }
