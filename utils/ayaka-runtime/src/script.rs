@@ -275,7 +275,7 @@ mod test {
                 let runtime = Runtime::load(
                     "../../examples/plugins",
                     env!("CARGO_MANIFEST_DIR"),
-                    &["format"],
+                    &["random"],
                 );
                 runtime.await.unwrap()
             })
@@ -363,20 +363,19 @@ mod test {
     }
 
     #[tokio::test]
-    async fn format() {
+    async fn random() {
         with_ctx(|ctx| {
-            assert_eq!(
-                ProgramParser::new()
+            assert!((0..10).contains(
+                &ProgramParser::new()
                     .parse(
                         r##"
-                            format.fmt("Hello {}!", 114514)
+                            random.rnd(10)
                         "##
                     )
                     .ok()
                     .call(ctx)
-                    .get_str(),
-                "Hello 114514!"
-            )
+                    .get_num()
+            ))
         })
         .await;
     }
