@@ -36,11 +36,14 @@ export default {
             action: {
                 text: [], vars: {}
             } as ActionText,
+            sub_action_text: [] as ActionLine[],
             switches: [] as Switch[],
             vars: {} as CustomVars,
             title: "",
             type_text: "",
             type_text_buffer: [] as ActionLine[],
+            type_sub_text: "",
+            type_sub_text_buffer: [] as ActionLine[],
             play_state: PlayState.Manual,
             mutex: new Mutex(),
         }
@@ -64,19 +67,22 @@ export default {
         // Should be called in mutex
         async fetch_current_run() {
             const ctx = await current_run()
-            const action = await current_action()
+            const actions = await current_action()
             this.title = await current_title() ?? ""
-            console.info(action)
-            if (ctx && action) {
+            console.info(actions)
+            if (ctx && actions) {
                 this.raw_ctx = ctx
+                let [action, sub_action] = actions
                 switch (ActionType[action.type]) {
                     case ActionType.Empty:
                         this.action = { text: [], vars: {} } as ActionText
+                        this.sub_action_text = []
                         this.switches = []
                         this.vars = {}
                         break
                     case ActionType.Text:
                         this.action = action.data as ActionText
+                        this.sub_action_text = (sub_action?.data as ActionText | undefined)?.text ?? []
                         this.switches = []
                         this.vars = {}
                         this.start_type_anime(true)
@@ -88,6 +94,7 @@ export default {
                         break
                     case ActionType.Custom:
                         this.action = { text: [], vars: {} } as ActionText
+                        this.sub_action_text = []
                         this.switches = []
                         let data = action.data as CustomVars
                         this.vars = data
@@ -119,14 +126,7 @@ export default {
             await switch_(i)
             await this.mutex.runExclusive(this.fetch_next_run)
         },
-        // Shouldn't be called in mutex
-        async start_type_anime(timeout: boolean = false) {
-            let values = timeout ? [setTimeout(3000)] : []
-            if (this.action.vars.voice) {
-                let voice = this.$refs.voice as HTMLAudioElement
-                values.push(wait_play(voice))
-                voice.play()
-            }
+        async type_anime_impl() {
             this.type_text = ""
             this.type_text_buffer = cloneDeep(this.action.text)
             while (this.type_text_buffer.length != 0) {
@@ -146,6 +146,38 @@ export default {
                         break
                 }
             }
+        },
+        async sub_type_anime_impl() {
+            this.type_sub_text = ""
+            this.type_sub_text_buffer = cloneDeep(this.sub_action_text)
+            console.log(this.type_sub_text_buffer)
+            while (this.type_sub_text_buffer.length != 0) {
+                if (this.type_sub_text_buffer[0].data.length == 0) {
+                    this.type_sub_text_buffer.shift()
+                    continue
+                }
+                switch (ActionLineType[this.type_sub_text_buffer[0].type]) {
+                    case ActionLineType.Chars:
+                        this.type_sub_text += this.type_sub_text_buffer[0].data[0]
+                        this.type_sub_text_buffer[0].data = this.type_sub_text_buffer[0].data.substring(1)
+                        await setTimeout(10)
+                        break
+                    case ActionLineType.Block:
+                        this.type_sub_text += this.type_sub_text_buffer[0].data
+                        this.type_sub_text_buffer[0].data = ""
+                        break
+                }
+            }
+        },
+        // Shouldn't be called in mutex
+        async start_type_anime(timeout: boolean = false) {
+            let values = timeout ? [setTimeout(3000)] : []
+            if (this.action.vars.voice) {
+                let voice = this.$refs.voice as HTMLAudioElement
+                values.push(wait_play(voice))
+                voice.play()
+            }
+            values.push(this.type_anime_impl(), this.sub_type_anime_impl())
             await Promise.all(values)
         },
         async next() {
@@ -213,7 +245,7 @@ export default {
     <img class="background" :src="conv_src(raw_ctx.locals.bg)">
     <Live2D :names="live2d_names(raw_ctx.locals)"></Live2D>
     <div class="card-lines">
-        <ActionCard :ch="action.character" :line="type_text"></ActionCard>
+        <ActionCard :ch="action.character" :line="type_text" :sub_line="type_sub_text"></ActionCard>
     </div>
     <div>
         <h4><span class="badge bg-primary">{{ title }}</span></h4>

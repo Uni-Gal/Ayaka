@@ -14,6 +14,8 @@ use tryiterator::TryIteratorExt;
 pub struct Settings {
     /// The display language.
     pub lang: Locale,
+    /// The secondary display language.
+    pub sub_lang: Option<Locale>,
 }
 
 impl Settings {
@@ -21,6 +23,7 @@ impl Settings {
     pub fn new() -> Self {
         Self {
             lang: Locale::default(),
+            sub_lang: None,
         }
     }
 }

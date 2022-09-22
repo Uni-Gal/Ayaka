@@ -28,12 +28,12 @@ export enum OpenGameStatusType {
 
 export interface Settings {
     lang: Locale,
+    sub_lang: Locale,
 }
 
 export interface RawContext {
     cur_para: string,
     cur_act: number,
-    history: Action[],
     locals: {
         bg?: string,
         bgm?: string,
@@ -105,7 +105,7 @@ export function set_settings(settings: Settings): Promise<void> {
     return invoke("set_settings", { settings: settings })
 }
 
-export function get_records(): Promise<RawContext[]> {
+export function get_records(): Promise<ActionText[]> {
     return invoke("get_records")
 }
 
@@ -114,8 +114,14 @@ export function save_record_to(index: number): Promise<void> {
 }
 
 export async function set_locale(loc: Locale): Promise<void> {
-    let settings = await get_settings() ?? { lang: "" };
+    let settings = await get_settings() ?? { lang: "", sub_lang: "" };
     settings.lang = loc
+    await set_settings(settings)
+}
+
+export async function set_sub_locale(loc: Locale): Promise<void> {
+    let settings = await get_settings() ?? { lang: "", sub_lang: "" };
+    settings.sub_lang = loc
     await set_settings(settings)
 }
 
@@ -156,7 +162,7 @@ export function current_run(): Promise<RawContext | undefined> {
     return invoke("current_run")
 }
 
-export function current_action(): Promise<Action | undefined> {
+export function current_action(): Promise<[Action, Action | undefined] | undefined> {
     return invoke("current_action")
 }
 
@@ -172,7 +178,7 @@ export function switch_(i: number): Promise<void> {
     return invoke("switch", { i: i })
 }
 
-export function history(): Promise<Action[]> {
+export function history(): Promise<[Action, Action | undefined][]> {
     return invoke("history")
 }
 

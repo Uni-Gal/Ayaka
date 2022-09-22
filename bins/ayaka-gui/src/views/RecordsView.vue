@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { RawContext, get_records, start_record, save_record_to, merge_lines, ActionText } from '../interop'
+import { get_records, start_record, save_record_to, merge_lines, ActionText } from '../interop'
 import IconButton from '../components/IconButton.vue';
 </script>
 
@@ -9,7 +9,7 @@ export default {
     data() {
         return {
             op: this.$route.params.op,
-            records: [] as RawContext[],
+            records: [] as ActionText[],
         }
     },
     async created() {
@@ -36,7 +36,7 @@ export default {
         <ul class="list-group list-group-flush">
             <li class="list-group-item list-group-item-action record-item" v-for="(rec, i) in records"
                 @click="on_record_click(i)">
-                <span v-html="merge_lines((rec.history[rec.history.length - 1].data as ActionText).text)"></span>
+                <span v-html="merge_lines((rec.text))"></span>
             </li>
             <li class="list-group-item list-group-item-action record-item" @click="on_record_click(records.length)"
                 :hidden='op != "save"'>

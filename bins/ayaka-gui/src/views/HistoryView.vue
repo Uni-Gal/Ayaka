@@ -13,7 +13,7 @@ export default {
     },
     async mounted() {
         let records = await history()
-        this.records = records.filter(action => action.type == "Text").map(action => action.data as ActionText)
+        this.records = records.filter(action => action[0].type == "Text").map(action => action[0].data as ActionText)
     }
 }
 </script>
@@ -22,7 +22,7 @@ export default {
     <div class="content-full container-history" @click="$router.back">
         <ul class="list-group">
             <li class="list-group-item" v-for="h in records">
-                <ActionCard :ch="h.character" :line="merge_lines(h.line)"></ActionCard>
+                <ActionCard :ch="h.character" :line="merge_lines(h.text)"></ActionCard>
             </li>
         </ul>
     </div>
