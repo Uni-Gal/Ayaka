@@ -1,9 +1,6 @@
-#[doc(no_inline)]
-pub use ayaka_bindings_types::{Action, Switch};
-#[doc(no_inline)]
-pub use fallback::Fallback;
-
 use crate::*;
+use ayaka_bindings_types::VarMap;
+use fallback::Fallback;
 use serde::Deserialize;
 use std::{collections::HashMap, path::PathBuf};
 
@@ -17,11 +14,11 @@ pub struct Paragraph {
     /// It can be [`None`], but better with a human-readable one.
     pub title: Option<String>,
     /// The texts.
-    /// They will be parsed into [`ayaka_script_types::Text`] later.
-    pub texts: Vec<String>,
+    /// They will be parsed into [`ayaka_script::Text`] later.
+    pub texts: Vec<Line>,
     /// The next paragraph.
     /// If [`None`], the game meets the end.
-    pub next: Option<String>,
+    pub next: Option<Text>,
 }
 
 /// The Ayaka config.
@@ -79,7 +76,8 @@ impl Game {
             .unwrap_or(&self.config.base_lang)
     }
 
-    fn find_para(&self, loc: &Locale, base_tag: &str, tag: &str) -> Option<&Paragraph> {
+    /// Find a paragraph by tag, with specified locale.
+    pub fn find_para(&self, loc: &Locale, base_tag: &str, tag: &str) -> Option<&Paragraph> {
         if let Some(paras) = self.paras.get(loc) {
             if let Some(paras) = paras.get(base_tag) {
                 for p in paras.iter() {

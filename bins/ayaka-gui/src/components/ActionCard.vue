@@ -1,6 +1,6 @@
 <script lang="ts">
 export default {
-    props: { ch: String, line: String }
+    props: { ch: String, line: String, sub_line: String }
 }
 </script>
 
@@ -12,6 +12,9 @@ export default {
         <div class="card-body lines">
             <p class="h4 card-text">
                 <span v-html="line"></span>
+            </p>
+            <p class="h4 card-text">
+                <span v-html="sub_line"></span>
             </p>
         </div>
     </div>

@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 ayaka-bindings-types = { path = "../ayaka-bindings-types" }
-ayaka-script-types = { path = "../ayaka-script-types", features = ["rt-format"] }
 ayaka-script = { path = "../ayaka-script" }
 fallback = "0.1"
 language-matcher = "0.1"
@@ -18,8 +17,6 @@ rmp-serde = "1.1"
 anyhow = "1.0"
 wasmer = "2.3"
 wasmer-wasi = "2.3"
-unicode-width = "0.1"
-rt-format = "0.3"
 tokio = { version = "1", features = ["macros", "sync"] }
 stream-future = "0.3"
 futures-util = "0.3"

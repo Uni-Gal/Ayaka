@@ -3,13 +3,14 @@ use std::borrow::Cow;
 
 /// The basic and only type used in scripts.
 /// ```
-/// # use ayaka_script_types::RawValue;
+/// # use ayaka_script::RawValue;
 /// assert_eq!(serde_yaml::from_str::<RawValue>("~").unwrap(), RawValue::Unit);
 /// assert_eq!(serde_yaml::from_str::<RawValue>("true").unwrap(), RawValue::Bool(true));
 /// assert_eq!(serde_yaml::from_str::<RawValue>("123").unwrap(), RawValue::Num(123));
 /// assert_eq!(serde_yaml::from_str::<RawValue>("\"hello\"").unwrap(), RawValue::Str("hello".to_string()));
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
+#[serde(untagged)]
 pub enum RawValue {
     /// The unit type. It is empty, just like [`None`] or [`()`] in Rust.
     Unit,
@@ -57,7 +58,7 @@ impl RawValue {
     /// * A [`RawValue::Str`] converts to `false` if and only if it's empty.
     ///
     /// ```
-    /// # use ayaka_script_types::RawValue;
+    /// # use ayaka_script::RawValue;
     /// let unit_value = RawValue::Unit;
     /// assert!(!unit_value.get_bool());
     /// let num_value = RawValue::Num(123);
@@ -82,7 +83,7 @@ impl RawValue {
     /// * A [`RawValue::Str`] converts to the length of the string.
     ///
     /// ```
-    /// # use ayaka_script_types::RawValue;
+    /// # use ayaka_script::RawValue;
     /// let unit_value = RawValue::Unit;
     /// assert_eq!(unit_value.get_num(), 0);
     /// let bool_value = RawValue::Bool(true);
@@ -107,7 +108,7 @@ impl RawValue {
     /// Be careful to use `get_str().into_owned()`, if possible, use `into_str()` instead.
     ///
     /// ```
-    /// # use ayaka_script_types::RawValue;
+    /// # use ayaka_script::RawValue;
     /// let unit_value = RawValue::Unit;
     /// assert_eq!(unit_value.get_str(), "");
     /// let bool_value = RawValue::Bool(true);
@@ -134,147 +135,6 @@ impl RawValue {
             Self::Bool(b) => b.to_string(),
             Self::Num(i) => i.to_string(),
             Self::Str(s) => s,
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for RawValue {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        use serde::de::Error;
-
-        struct ValueVisitor;
-
-        impl<'de> serde::de::Visitor<'de> for ValueVisitor {
-            type Value = RawValue;
-
-            fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
-                formatter.write_str("a unit, boolean, integer, string value")
-            }
-
-            fn visit_unit<E>(self) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                Ok(RawValue::Unit)
-            }
-
-            fn visit_bool<E>(self, v: bool) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                Ok(RawValue::Bool(v))
-            }
-
-            fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                Ok(RawValue::Num(v))
-            }
-
-            fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                Ok(RawValue::Num(v as i64))
-            }
-
-            fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-            where
-                E: Error,
-            {
-                Ok(RawValue::Str(v.into()))
-            }
-        }
-        deserializer.deserialize_any(ValueVisitor)
-    }
-}
-
-impl Serialize for RawValue {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        match self {
-            Self::Unit => serializer.serialize_unit(),
-            Self::Bool(b) => serializer.serialize_bool(*b),
-            Self::Num(n) => serializer.serialize_i64(*n),
-            Self::Str(s) => serializer.serialize_str(s),
-        }
-    }
-}
-
-#[cfg(feature = "rt-format")]
-use rt_format::{Format, FormatArgument, Specifier};
-
-#[cfg(feature = "rt-format")]
-impl FormatArgument for RawValue {
-    fn supports_format(&self, specifier: &Specifier) -> bool {
-        match self {
-            RawValue::Unit | RawValue::Bool(_) | RawValue::Str(_) => {
-                matches!(specifier.format, Format::Debug | Format::Display)
-            }
-            RawValue::Num(_) => true,
-        }
-    }
-
-    fn fmt_display(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use std::fmt::Display;
-        match self {
-            RawValue::Unit => Ok(()),
-            RawValue::Bool(b) => b.fmt(f),
-            RawValue::Num(n) => n.fmt(f),
-            RawValue::Str(s) => s.fmt(f),
-        }
-    }
-
-    fn fmt_debug(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        use std::fmt::Debug;
-        self.fmt(f)
-    }
-
-    fn fmt_octal(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            RawValue::Num(n) => std::fmt::Octal::fmt(n, f),
-            _ => Err(std::fmt::Error),
-        }
-    }
-
-    fn fmt_lower_hex(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            RawValue::Num(n) => std::fmt::LowerHex::fmt(n, f),
-            _ => Err(std::fmt::Error),
-        }
-    }
-
-    fn fmt_upper_hex(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            RawValue::Num(n) => std::fmt::UpperHex::fmt(n, f),
-            _ => Err(std::fmt::Error),
-        }
-    }
-
-    fn fmt_binary(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            RawValue::Num(n) => std::fmt::Binary::fmt(n, f),
-            _ => Err(std::fmt::Error),
-        }
-    }
-
-    fn fmt_lower_exp(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            RawValue::Num(n) => std::fmt::LowerExp::fmt(n, f),
-            _ => Err(std::fmt::Error),
-        }
-    }
-
-    fn fmt_upper_exp(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match self {
-            RawValue::Num(n) => std::fmt::UpperExp::fmt(n, f),
-            _ => Err(std::fmt::Error),
         }
     }
 }

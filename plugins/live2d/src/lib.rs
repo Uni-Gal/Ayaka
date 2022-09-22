@@ -6,15 +6,8 @@ use std::{
 
 #[export]
 fn plugin_type() -> PluginType {
-    PluginType::builder()
-        .action()
-        .text(["show", "hide"])
-        .game()
-        .build()
+    PluginType::builder().line(["show", "hide"]).game().build()
 }
-
-const CH_DEFAULT: &str = "__ch_default__";
-const CH_ALL: &str = "__ch_all__";
 
 fn find_model(
     ch: &str,
@@ -31,71 +24,52 @@ fn find_model(
 }
 
 #[export]
-fn show(args: Vec<String>, ctx: TextProcessContext) -> TextProcessResult {
-    let models = args
-        .into_iter()
-        .filter(|name| ctx.game_props.contains_key(&format!("ch_{}_model", name)))
+fn show(ctx: LineProcessContext) -> LineProcessResult {
+    let models = ctx.props["show"].get_str();
+    let exist_models = ctx
+        .ctx
+        .locals
+        .get("ch_models")
+        .map(|value| value.get_str())
+        .unwrap_or_default();
+    let models = exist_models
+        .split(',')
+        .chain(
+            models
+                .split(',')
+                .filter(|name| ctx.game_props.contains_key(&format!("ch_{}_model", name))),
+        )
         .collect::<Vec<_>>();
-    let mut res = TextProcessResult::default();
-    res.props.insert(
-        "ch_models".to_string(),
-        if models.is_empty() {
-            CH_DEFAULT.to_string()
-        } else {
-            models.join(",")
-        },
-    );
+    let mut res = LineProcessResult::default();
+    res.locals
+        .insert("ch_models".to_string(), RawValue::Str(models.join(",")));
     res
 }
 
 #[export]
-fn hide(args: Vec<String>, _ctx: TextProcessContext) -> TextProcessResult {
-    let mut res = TextProcessResult::default();
-    res.props.insert(
-        "ch_hide".to_string(),
-        if args.is_empty() {
-            CH_ALL.to_string()
-        } else {
-            args.join(",")
-        },
-    );
-    res
-}
+fn hide(ctx: LineProcessContext) -> LineProcessResult {
+    let hide = ctx.props["hide"].get_str();
 
-#[export]
-fn process_action(mut ctx: ActionProcessContext) -> Action {
-    let hide = ctx.action.props.remove("ch_hide");
-    if hide.as_deref() == Some(CH_ALL) {
-        ctx.action.props.remove("ch_models");
+    let models = ctx
+        .ctx
+        .locals
+        .get("ch_models")
+        .map(|value| value.get_str())
+        .unwrap_or_default();
+    let models = if hide.is_empty() {
+        vec![]
     } else {
-        let hide = hide
-            .as_ref()
-            .map(|hide| hide.split(',').collect::<HashSet<_>>())
-            .unwrap_or_default();
-
-        let models = ctx
-            .action
-            .props
-            .entry("ch_models".to_string())
-            .or_insert_with_key(|key| {
-                ctx.last_action
-                    .and_then(|act| act.props.get(key).cloned())
-                    .unwrap_or_default()
-            });
-
-        if models == CH_DEFAULT {
-            if let Some(ch) = &ctx.action.ch_key {
-                *models = ch.clone()
-            }
-        }
-
-        *models = models
+        let hide = hide.split(',').collect::<HashSet<_>>();
+        models
             .split(',')
-            .filter(|name| !hide.contains(name))
+            .filter(|ch| !hide.contains(ch))
             .collect::<Vec<_>>()
-            .join(",");
-    }
-    ctx.action
+    };
+
+    let mut res = LineProcessResult::default();
+    res.locals
+        .insert("ch_models".to_string(), RawValue::Str(models.join(",")));
+    res
 }
 
 #[export]

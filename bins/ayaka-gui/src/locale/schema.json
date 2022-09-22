@@ -28,6 +28,18 @@
             "description": "The settings button at HomeView, and title at SettingsView",
             "type": "string"
         },
+        "language": {
+            "description": "The language caption in the SettingsView",
+            "type": "string"
+        },
+        "subLanguage": {
+            "description": "The secondary language caption in the SettingsView",
+            "type": "string"
+        },
+        "none": {
+            "description": "The choice none",
+            "type": "string"
+        },
         "about": {
             "description": "The about button at HomeView",
             "type": "string"

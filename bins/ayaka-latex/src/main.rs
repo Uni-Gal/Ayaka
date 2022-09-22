@@ -39,15 +39,14 @@ async fn main() -> Result<()> {
             output.command0("tableofcontents").await?;
 
             ctx.init_new();
-            ctx.set_settings(Settings {
-                lang: opts.locale.unwrap_or_else(Locale::current),
-            });
+            let loc = opts.locale.unwrap_or_else(Locale::current);
 
             let mut current_para = None;
             let mut current_bg = None;
 
-            while let Some(action) = ctx.next_run() {
-                let para_title = ctx.current_paragraph_title();
+            while let Some(raw_ctx) = ctx.next_run() {
+                let action = ctx.get_action(&loc, &raw_ctx)?;
+                let para_title = ctx.current_paragraph_title(&loc);
                 if para_title != current_para.as_ref() {
                     output
                         .command(
@@ -57,9 +56,12 @@ async fn main() -> Result<()> {
                         .await?;
                     current_para = para_title.cloned();
                 }
-                let bg = action.props.get("bg");
-                if current_bg.as_ref() != bg {
-                    current_bg = bg.cloned();
+                let bg = raw_ctx
+                    .locals
+                    .get("bg")
+                    .map(|value| value.get_str().into_owned());
+                if current_bg != bg {
+                    current_bg = bg;
                     if let Some(bg) = &current_bg {
                         output
                             .environment_attr("figure", "!htbp", |output| async move {
@@ -76,28 +78,33 @@ async fn main() -> Result<()> {
                             .await?;
                     }
                 }
-                if let Some(name) = &action.character {
-                    output.command("paragraph", [name]).await?;
-                }
-                for s in action.line {
-                    output.write(s.as_str()).await?;
-                }
-                output.write("\n\n").await?;
-                if !action.switches.is_empty() {
-                    output
-                        .environment("itemize", |output| async move {
-                            for s in action.switches.iter() {
-                                output.command0("item").await?;
-                                if s.enabled {
-                                    output.write(&s.text).await?;
-                                } else {
-                                    output.command("strikeThrough", [&s.text]).await?;
+                match action {
+                    Action::Empty | Action::Custom(_) => {}
+                    Action::Text(action) => {
+                        if let Some(name) = &action.character {
+                            output.command("paragraph", [name]).await?;
+                        }
+                        for s in action.text {
+                            output.write(s.as_str()).await?;
+                        }
+                        output.write("\n\n").await?;
+                    }
+                    Action::Switches(switches) => {
+                        output
+                            .environment("itemize", |output| async move {
+                                for s in switches.iter() {
+                                    output.command0("item").await?;
+                                    if s.enabled {
+                                        output.write(&s.text).await?;
+                                    } else {
+                                        output.command("strikeThrough", [&s.text]).await?;
+                                    }
+                                    output.write("\n").await?;
                                 }
-                                output.write("\n").await?;
-                            }
-                            Ok(output)
-                        })
-                        .await?;
+                                Ok(output)
+                            })
+                            .await?;
+                    }
                 }
             }
             Ok(output)

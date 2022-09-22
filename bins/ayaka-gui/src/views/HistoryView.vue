@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { merge_lines, history, Action } from '../interop'
+import { merge_lines, history, ActionText } from '../interop'
 import ActionCard from '../components/ActionCard.vue'
 </script>
 
@@ -8,11 +8,12 @@ export default {
     emits: ["quit"],
     data() {
         return {
-            records: [] as Action[]
+            records: [] as ActionText[]
         }
     },
     async mounted() {
-        this.records = await history()
+        let records = await history()
+        this.records = records.filter(action => action[0].type == "Text").map(action => action[0].data as ActionText)
     }
 }
 </script>
@@ -21,7 +22,7 @@ export default {
     <div class="content-full container-history" @click="$router.back">
         <ul class="list-group">
             <li class="list-group-item" v-for="h in records">
-                <ActionCard :ch="h.character" :line="merge_lines(h.line)"></ActionCard>
+                <ActionCard :ch="h.character" :line="merge_lines(h.text)"></ActionCard>
             </li>
         </ul>
     </div>

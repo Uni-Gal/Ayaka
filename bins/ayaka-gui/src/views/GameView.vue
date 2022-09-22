@@ -3,21 +3,13 @@ import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import ActionCard from '../components/ActionCard.vue'
 import IconButton from '../components/IconButton.vue'
-import { conv_src, current_run, current_title, next_run, next_back_run, switch_, merge_lines, Action, ActionLineType, ActionLine, current_visited } from '../interop'
+import { conv_src, current_run, current_action, current_title, next_run, next_back_run, switch_, merge_lines, RawContext, ActionType, ActionText, CustomVars, Switch, ActionLineType, ActionLine, current_visited } from '../interop'
 import { cloneDeep } from 'lodash'
 import Live2D from '../components/Live2D.vue'
 import { Modal } from 'bootstrap'
 </script>
 
 <script lang="ts">
-enum ActionState {
-    Typing,
-    Typed,
-    Switching,
-    Video,
-    End,
-}
-
 enum PlayState {
     Manual,
     Auto,
@@ -30,23 +22,28 @@ function wait_play(e: HTMLAudioElement): Promise<void> {
     })
 }
 
-function live2d_names(props: { ch_models?: string }): string[] {
-    return (props.ch_models ?? "").split(",").filter(s => s.length != 0)
+function live2d_names(locals: { ch_models?: string }): string[] {
+    return (locals.ch_models ?? "").split(",").filter(s => s.length != 0)
 }
 
 export default {
     emits: ["quit"],
     data() {
         return {
+            raw_ctx: {
+                cur_para: "", cur_act: 0, history: [], locals: {}
+            } as RawContext,
             action: {
-                line: [],
-                switches: [],
-                props: {},
-            } as Action,
+                text: [], vars: {}
+            } as ActionText,
+            sub_action_text: [] as ActionLine[],
+            switches: [] as Switch[],
+            vars: {} as CustomVars,
             title: "",
             type_text: "",
             type_text_buffer: [] as ActionLine[],
-            state: ActionState.End,
+            type_sub_text: "",
+            type_sub_text_buffer: [] as ActionLine[],
             play_state: PlayState.Manual,
             mutex: new Mutex(),
         }
@@ -69,80 +66,69 @@ export default {
         },
         // Should be called in mutex
         async fetch_current_run() {
-            const res = await current_run()
+            const ctx = await current_run()
+            const actions = await current_action()
             this.title = await current_title() ?? ""
-            console.info(res)
-            if (res) {
-                const load_new_bgm = (res.props.bgm != this.action.props.bgm);
-                this.action = res
-                if (load_new_bgm) {
-                    (this.$refs.bgm as HTMLAudioElement).load()
+            console.info(actions)
+            if (ctx && actions) {
+                this.raw_ctx = ctx
+                let [action, sub_action] = actions
+                switch (ActionType[action.type]) {
+                    case ActionType.Empty:
+                        this.action = { text: [], vars: {} } as ActionText
+                        this.sub_action_text = []
+                        this.switches = []
+                        this.vars = {}
+                        break
+                    case ActionType.Text:
+                        this.action = action.data as ActionText
+                        this.sub_action_text = (sub_action?.data as ActionText | undefined)?.text ?? []
+                        this.switches = []
+                        this.vars = {}
+                        this.start_type_anime(true)
+                        break
+                    case ActionType.Switches:
+                        this.play_state = PlayState.Manual
+                        this.switches = action.data as Switch[]
+                        this.vars = {}
+                        break
+                    case ActionType.Custom:
+                        this.action = { text: [], vars: {} } as ActionText
+                        this.sub_action_text = []
+                        this.switches = []
+                        let data = action.data as CustomVars
+                        this.vars = data
+                        if (data.video) {
+                            this.play_state = PlayState.Manual
+                        }
+                        break
                 }
-                if (res.props.efm) {
-                    (this.$refs.efm as HTMLAudioElement).load()
-                }
-                if (res.props.voice) {
-                    (this.$refs.voice as HTMLAudioElement).load()
-                }
-            } else {
-                await this.go_home_direct()
             }
         },
         // Should be called in mutex
-        async fetch_next_run(): Promise<boolean> {
+        async fetch_next_run() {
             const has_next = await next_run()
+            if (!has_next) {
+                this.play_state = PlayState.Manual
+                await this.go_home_direct()
+            }
             await this.fetch_current_run()
-            return has_next
         },
-        async fetch_next_back_run(): Promise<boolean> {
-            const has_back = await next_back_run()
+        async fetch_next_back_run() {
+            await next_back_run()
             await this.fetch_current_run()
-            return has_back
         },
-        end_typing(): boolean {
-            this.type_text = merge_lines(this.action.line)
+        end_typing() {
+            this.type_text = merge_lines(this.action.text)
             this.type_text_buffer = []
-            if (this.action.switches.length != 0) {
-                this.state = ActionState.Switching
-                return false
-            } else {
-                return this.end_switching()
-            }
-        },
-        end_switching(): boolean {
-            if (this.action.props.video) {
-                this.state = ActionState.Video;
-                let element = this.$refs.video as HTMLVideoElement
-                element.load()
-                element.play()
-                return false
-            } else {
-                return true
-            }
         },
         async switch_run(i: number) {
             await switch_(i)
-            if (this.end_switching()) {
-                await this.mutex.runExclusive(this.fetch_next_run)
-                this.start_type_anime()
-            }
+            await this.mutex.runExclusive(this.fetch_next_run)
         },
-        // Shouldn't be called in mutex
-        async start_type_anime(timeout: boolean = false) {
-            this.state = ActionState.Typing
-            let values = timeout ? [setTimeout(3000)] : []
-            if (this.action.props.efm) {
-                let efm = this.$refs.efm as HTMLAudioElement
-                values.push(wait_play(efm))
-                efm.play()
-            }
-            if (this.action.props.voice) {
-                let voice = this.$refs.voice as HTMLAudioElement
-                values.push(wait_play(voice))
-                voice.play()
-            }
+        async type_anime_impl() {
             this.type_text = ""
-            this.type_text_buffer = cloneDeep(this.action.line)
+            this.type_text_buffer = cloneDeep(this.action.text)
             while (this.type_text_buffer.length != 0) {
                 if (this.type_text_buffer[0].data.length == 0) {
                     this.type_text_buffer.shift()
@@ -160,48 +146,51 @@ export default {
                         break
                 }
             }
-            await Promise.all(values)
-            this.state = ActionState.Typed
-            if (this.type_text.length == 0) {
-                await this.next()
-            }
         },
-        async next() {
-            if (this.state != ActionState.Switching) {
-                const new_text = await tryAcquire(this.mutex).runExclusive(async () => {
-                    switch (this.state) {
-                        case ActionState.Typing:
-                        case ActionState.Typed:
-                            return this.end_typing()
-                        case ActionState.Video:
-                            let element = this.$refs.video as HTMLVideoElement
-                            element.pause()
-                            this.state = ActionState.End
-                        case ActionState.End:
-                            return true
-                    }
-                    return false
-                }).catch(_ => { })
-                if (new_text) {
-                    await this.mutex.runExclusive(this.fetch_next_run)
-                    this.start_type_anime()
+        async sub_type_anime_impl() {
+            this.type_sub_text = ""
+            this.type_sub_text_buffer = cloneDeep(this.sub_action_text)
+            while (this.type_sub_text_buffer.length != 0) {
+                if (this.type_sub_text_buffer[0].data.length == 0) {
+                    this.type_sub_text_buffer.shift()
+                    continue
+                }
+                switch (ActionLineType[this.type_sub_text_buffer[0].type]) {
+                    case ActionLineType.Chars:
+                        this.type_sub_text += this.type_sub_text_buffer[0].data[0]
+                        this.type_sub_text_buffer[0].data = this.type_sub_text_buffer[0].data.substring(1)
+                        await setTimeout(10)
+                        break
+                    case ActionLineType.Block:
+                        this.type_sub_text += this.type_sub_text_buffer[0].data
+                        this.type_sub_text_buffer[0].data = ""
+                        break
                 }
             }
+        },
+        // Shouldn't be called in mutex
+        async start_type_anime(timeout: boolean = false) {
+            let values = timeout ? [setTimeout(3000)] : []
+            if (this.action.vars.voice) {
+                let voice = this.$refs.voice as HTMLAudioElement
+                values.push(wait_play(voice))
+            }
+            values.push(this.type_anime_impl(), this.sub_type_anime_impl())
+            await Promise.all(values)
+        },
+        async next() {
+            await tryAcquire(this.mutex).runExclusive(this.fetch_next_run).catch(_ => { });
         },
         async on_auto_play_click() {
             if (this.play_state != PlayState.Auto) {
                 this.play_state = PlayState.Auto
                 this.end_typing()
-                while (this.play_state == PlayState.Auto && (this.state != ActionState.Switching && this.state != ActionState.Video)) {
-                    const has_next = await tryAcquire(this.mutex).runExclusive(async () => {
-                        const has_next = await this.fetch_next_run()
+                while (this.play_state == PlayState.Auto) {
+                    await tryAcquire(this.mutex).runExclusive(async () => {
+                        await this.fetch_next_run()
                         await this.start_type_anime(true)
                         this.end_typing()
-                        return has_next
                     }).catch(_ => { })
-                    if (!has_next) {
-                        break
-                    }
                 }
             }
             this.play_state = PlayState.Manual
@@ -210,17 +199,13 @@ export default {
             if (this.play_state != PlayState.FastForward) {
                 this.play_state = PlayState.FastForward
                 this.end_typing()
-                while (this.play_state == PlayState.FastForward && (this.state != ActionState.Switching && this.state != ActionState.Video)) {
+                while (this.play_state == PlayState.FastForward) {
                     await setTimeout(20)
-                    const has_next = await tryAcquire(this.mutex).runExclusive(async () => {
-                        const has_next = await this.fetch_next_run()
+                    await tryAcquire(this.mutex).runExclusive(async () => {
+                        await this.fetch_next_run()
                         this.end_typing()
-                        return has_next
                     }).catch(_ => { })
                     if (!await current_visited()) {
-                        break
-                    }
-                    if (!has_next) {
                         break
                     }
                 }
@@ -228,19 +213,23 @@ export default {
             this.play_state = PlayState.Manual
         },
         async onkeydown(e: KeyboardEvent) {
-            if (e.key == "Enter" || e.key == " " || e.key == "ArrowDown") {
-                await this.next()
+            switch (e.key) {
+                case "Enter":
+                case " ":
+                case "ArrowDown":
+                    await this.next()
+                    break
+                case "ArrowUp":
+                    await this.next_back()
+                    break
             }
         },
         async onvideoended() {
-            this.state = ActionState.End
             await this.next()
         },
         async next_back() {
-            if (this.state != ActionState.Switching) {
-                await this.mutex.runExclusive(this.fetch_next_back_run)
-                this.start_type_anime()
-            }
+            await this.mutex.runExclusive(this.fetch_next_back_run)
+            this.start_type_anime()
         },
         async on_history_click() {
             await this.$router.push("/history")
@@ -256,13 +245,12 @@ export default {
 </script>
 
 <template>
-    <audio ref="bgm" :src="conv_src(action.props.bgm)" type="audio/mpeg" autoplay hidden loop></audio>
-    <audio ref="efm" :src="conv_src(action.props.efm)" type="audio/mpeg" hidden></audio>
-    <audio ref="voice" :src="conv_src(action.props.voice)" type="audio/mpeg" hidden></audio>
-    <img class="background" :src="conv_src(action.props.bg)">
-    <Live2D :names="live2d_names(action.props)"></Live2D>
+    <audio ref="bgm" :src="conv_src(raw_ctx.locals.bgm)" type="audio/mpeg" autoplay hidden loop></audio>
+    <audio ref="voice" :src="conv_src(action.vars.voice)" type="audio/mpeg" autoplay hidden></audio>
+    <img class="background" :src="conv_src(raw_ctx.locals.bg)">
+    <Live2D :names="live2d_names(raw_ctx.locals)"></Live2D>
     <div class="card-lines">
-        <ActionCard :ch="action.character" :line="type_text"></ActionCard>
+        <ActionCard :ch="action.character" :line="type_text" :sub_line="type_sub_text"></ActionCard>
     </div>
     <div>
         <h4><span class="badge bg-primary">{{ title }}</span></h4>
@@ -270,13 +258,13 @@ export default {
     <div class="logo d-flex align-items-center">
         <span>Powered by Ayaka.</span>
     </div>
-    <div class="content-full bg-body" :hidden="state != ActionState.Video">
-        <video ref="video" class="background" @ended="onvideoended" :src="conv_src(action.props.video)"
-            type="video/mp4"></video>
+    <div class="content-full bg-body" :hidden="!vars.video">
+        <video ref="video" class="background" @ended="onvideoended" :src="conv_src(vars.video)" type="video/mp4"
+            autoplay></video>
     </div>
     <div class="backboard" @click="next"></div>
     <div class="commands">
-        <div class="btn-group" role="group" :hidden="state == ActionState.Video">
+        <div class="btn-group" role="group">
             <IconButton icon="file-arrow-down" @click='on_records_click("save")'></IconButton>
             <IconButton icon="file-arrow-up" @click='on_records_click("load")'></IconButton>
             <IconButton icon="list" @click="on_history_click"></IconButton>
@@ -290,11 +278,11 @@ export default {
             <IconButton icon="house" @click="go_home"></IconButton>
         </div>
     </div>
-    <div class="content-full container-switches" :hidden="state != ActionState.Switching">
+    <div class="content-full container-switches" :hidden="switches.length == 0">
         <div class="switches">
             <div class="switches-center">
                 <div class="d-grid gap-5 col-8 mx-auto">
-                    <button class="btn btn-primary switch" v-for="(s, i) in action.switches" @click="switch_run(i)"
+                    <button class="btn btn-primary switch" v-for="(s, i) in switches" @click="switch_run(i)"
                         :disabled="!s.enabled">
                         {{ s.text }}
                     </button>

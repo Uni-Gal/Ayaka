@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "basictex",
-    "format",
     "ayalog",
     "live2d",
     "markdown",

@@ -1,8 +1,4 @@
-use ayaka_runtime::{
-    anyhow::{bail, Result},
-    log::LevelFilter,
-    *,
-};
+use ayaka_runtime::{anyhow::Result, log::LevelFilter, *};
 use clap::Parser;
 use std::{
     ffi::OsString,
@@ -13,8 +9,6 @@ use std::{
 #[clap(about, version, author)]
 pub struct Options {
     input: OsString,
-    #[clap(long)]
-    check: bool,
     #[clap(long)]
     auto: bool,
     #[clap(short, long)]
@@ -58,43 +52,42 @@ async fn main() -> Result<()> {
         }
     }
     let mut ctx = context.await?;
-    if opts.check && !ctx.check() {
-        bail!("Check failed.");
-    }
     ctx.init_new();
-    ctx.set_settings(Settings {
-        lang: opts.locale.unwrap_or_else(Locale::current),
-    });
-    while let Some(action) = ctx.next_run() {
-        if let Some(name) = &action.character {
-            print!("_{}_", name);
-        }
-        for s in action.line {
-            print!("{}", s.as_str());
-        }
-        if !action.switches.is_empty() {
-            for (i, s) in action.switches.iter().enumerate() {
-                if s.enabled {
-                    print!("\n-{}- {}", i + 1, s.text);
-                } else {
-                    print!("\n-x- {}", s.text);
+    let loc = opts.locale.unwrap_or_else(Locale::current);
+    while let Some(raw_ctx) = ctx.next_run() {
+        let action = ctx.get_action(&loc, &raw_ctx)?;
+        match action {
+            Action::Empty | Action::Custom(_) => {}
+            Action::Text(action) => {
+                if let Some(name) = &action.character {
+                    print!("_{}_", name);
                 }
+                for s in &action.text {
+                    print!("{}", s.as_str());
+                }
+                pause(opts.auto)?;
             }
-            println!();
-            loop {
-                let s = read_line()?;
-                if let Ok(i) = s.trim().parse::<usize>() {
-                    let valid =
-                        i > 0 && i <= action.switches.len() && action.switches[i - 1].enabled;
-                    if valid {
-                        ctx.call(&action.switches[i - 1].action);
-                        break;
+            Action::Switches(switches) => {
+                for (i, s) in switches.iter().enumerate() {
+                    if s.enabled {
+                        print!("\n-{}- {}", i + 1, s.text);
+                    } else {
+                        print!("\n-x- {}", s.text);
                     }
                 }
-                println!("Invalid switch, enter again!");
+                println!();
+                loop {
+                    let s = read_line()?;
+                    if let Ok(i) = s.trim().parse::<usize>() {
+                        let valid = i > 0 && i <= switches.len() && switches[i - 1].enabled;
+                        if valid {
+                            ctx.switch(i - 1);
+                            break;
+                        }
+                    }
+                    println!("Invalid switch, enter again!");
+                }
             }
-        } else {
-            pause(opts.auto)?;
         }
     }
     Ok(())

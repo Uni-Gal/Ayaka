@@ -6,7 +6,7 @@ All plugins are script plugins.
 A plugin method is referenced with `<module>.<fn>(...)` grammar.
 If you would like to call the `rnd` function in `random` module,
 ``` yaml
-- \exec{random.rnd()}
+- exec: $i = random.rnd()
 ```
 Pass the parameters in the brace `()`.
 
@@ -30,7 +30,8 @@ fn hello(_args: Vec<RawValue>) -> RawValue {
 ```
 And call the function:
 ``` yaml
-- \exec{meet.hello()} from plugin!
+- exec: $hello = meet.hello()
+- \var{hello} from plugin!
 ```
 If it builds successfully, and you set the right path to the plugins, it will output:
 ``` ignore
@@ -42,6 +43,5 @@ There are some existing script (only) plugins:
 
 | Plugin   | Description              |
 | -------- | ------------------------ |
-| `format` | Format strings.          |
 | `ayalog` | Log to runtime.          |
 | `random` | Generate random numbers. |

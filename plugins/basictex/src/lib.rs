@@ -12,9 +12,9 @@ fn par(args: Vec<String>, ctx: TextProcessContext) -> TextProcessResult {
     assert!(args.is_empty());
     let mut res = TextProcessResult::default();
     match ctx.frontend {
-        FrontendType::Text => res.line.push_back_chars("\n"),
-        FrontendType::Html => res.line.push_back_block("<br />"),
-        FrontendType::Latex => res.line.push_back_block("\\par "),
+        FrontendType::Text => res.text.push_back_chars("\n"),
+        FrontendType::Html => res.text.push_back_block("<br />"),
+        FrontendType::Latex => res.text.push_back_block("\\par "),
     }
     res
 }
@@ -28,17 +28,17 @@ fn text_font(
     assert_eq!(args.len(), 1);
     let mut res = TextProcessResult::default();
     match ctx.frontend {
-        FrontendType::Text => res.line.push_back_chars(&args[0]),
+        FrontendType::Text => res.text.push_back_chars(&args[0]),
         FrontendType::Html => {
-            res.line
+            res.text
                 .push_back_block(format!("<font face=\"{}\">", fonts));
-            res.line.push_back_chars(&args[0]);
-            res.line.push_back_block("</font>");
+            res.text.push_back_chars(&args[0]);
+            res.text.push_back_block("</font>");
         }
         FrontendType::Latex => {
-            res.line.push_back_block(format!("\\{}{{{{", cmd));
-            res.line.push_back_chars(&args[0]);
-            res.line.push_back_block("}}");
+            res.text.push_back_block(format!("\\{}{{", cmd));
+            res.text.push_back_chars(&args[0]);
+            res.text.push_back_block("}");
         }
     }
     res
@@ -65,19 +65,19 @@ fn ruby(args: Vec<String>, ctx: TextProcessContext) -> TextProcessResult {
     let mut res = TextProcessResult::default();
     match ctx.frontend {
         FrontendType::Text => res
-            .line
+            .text
             .push_back_chars(format!("{}（{}）", args[0], args[1])),
         FrontendType::Html => {
-            res.line.push_back_block("<ruby>");
-            res.line.push_back_chars(&args[0]);
-            res.line.push_back_block("<rp>（</rp><rt>");
-            res.line.push_back_chars(&args[1]);
-            res.line.push_back_block("</rt><rp>）</rp>");
-            res.line.push_back_block("</ruby>");
+            res.text.push_back_block("<ruby>");
+            res.text.push_back_chars(&args[0]);
+            res.text.push_back_block("<rp>（</rp><rt>");
+            res.text.push_back_chars(&args[1]);
+            res.text.push_back_block("</rt><rp>）</rp>");
+            res.text.push_back_block("</ruby>");
         }
         FrontendType::Latex => res
-            .line
-            .push_back_block(format!("\\ruby{{{{{}}}}}{{{{{}}}}}", args[0], args[1])),
+            .text
+            .push_back_block(format!("\\ruby{{{}}}{{{}}}", args[0], args[1])),
     }
     res
 }

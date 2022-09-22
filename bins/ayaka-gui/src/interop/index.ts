@@ -28,14 +28,17 @@ export enum OpenGameStatusType {
 
 export interface Settings {
     lang: Locale,
+    sub_lang?: Locale,
 }
 
 export interface RawContext {
     cur_para: string,
     cur_act: number,
-    history: Action[],
-    bg?: string,
-    bgm?: string,
+    locals: {
+        bg?: string,
+        bgm?: string,
+        ch_models?: string,
+    }
 }
 
 export interface GameInfo {
@@ -47,18 +50,28 @@ export interface GameInfo {
 }
 
 export interface Action {
-    line: ActionLine[],
+    type: keyof typeof ActionType,
+    data: undefined | ActionText | Switch[] | CustomVars
+}
+
+export enum ActionType {
+    Empty,
+    Text,
+    Switches,
+    Custom,
+}
+
+export interface ActionText {
+    text: ActionLine[],
     ch_key?: string,
     character?: string,
-    switches: Switch[],
-    props: {
-        bg?: string,
-        bgm?: string,
-        efm?: string,
-        voice?: string,
-        video?: string,
-        ch_models?: string,
-    },
+    vars: {
+        voice?: string
+    }
+}
+
+export interface CustomVars {
+    video?: string,
 }
 
 export interface ActionLine {
@@ -92,7 +105,7 @@ export function set_settings(settings: Settings): Promise<void> {
     return invoke("set_settings", { settings: settings })
 }
 
-export function get_records(): Promise<RawContext[]> {
+export function get_records(): Promise<ActionText[]> {
     return invoke("get_records")
 }
 
@@ -103,6 +116,12 @@ export function save_record_to(index: number): Promise<void> {
 export async function set_locale(loc: Locale): Promise<void> {
     let settings = await get_settings() ?? { lang: "" };
     settings.lang = loc
+    await set_settings(settings)
+}
+
+export async function set_sub_locale(loc?: Locale): Promise<void> {
+    let settings = await get_settings() ?? { lang: "" };
+    settings.sub_lang = loc
     await set_settings(settings)
 }
 
@@ -139,8 +158,12 @@ export function next_back_run(): Promise<boolean> {
     return invoke("next_back_run")
 }
 
-export function current_run(): Promise<Action | undefined> {
+export function current_run(): Promise<RawContext | undefined> {
     return invoke("current_run")
+}
+
+export function current_action(): Promise<[Action, Action | undefined] | undefined> {
+    return invoke("current_action")
 }
 
 export function current_title(): Promise<string | undefined> {
@@ -155,7 +178,7 @@ export function switch_(i: number): Promise<void> {
     return invoke("switch", { i: i })
 }
 
-export function history(): Promise<Action[]> {
+export function history(): Promise<[Action, Action | undefined][]> {
     return invoke("history")
 }
 

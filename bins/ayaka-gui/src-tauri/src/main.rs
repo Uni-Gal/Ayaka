@@ -5,7 +5,7 @@
 
 use ayaka_runtime::{
     anyhow::{self, anyhow, Result},
-    log::{debug, info, warn},
+    log::{debug, error, info, warn},
     *,
 };
 use flexi_logger::{FileSpec, LogSpecification, Logger};
@@ -42,12 +42,6 @@ fn ayaka_version() -> &'static str {
     ayaka_runtime::version()
 }
 
-#[derive(Debug, Serialize)]
-struct FullSettings {
-    settings: Settings,
-    contexts: Vec<RawContext>,
-}
-
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "t", content = "data")]
 enum OpenGameStatus {
@@ -63,141 +57,10 @@ enum OpenGameStatus {
     Loaded,
 }
 
-fn emit_open_status(
-    handle: &AppHandle,
-    status: OpenGameStatus,
-) -> std::result::Result<(), tauri::Error> {
-    handle.emit_all("ayaka://open_status", status)
-}
-
-#[command]
-async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
-    let config = &storage.config;
-    let context = Context::open(config, FrontendType::Html);
-    pin_mut!(context);
-    while let Some(status) = context.next().await {
-        match status {
-            OpenStatus::LoadProfile => {
-                emit_open_status(&handle, OpenGameStatus::LoadProfile(config.clone()))?
-            }
-            OpenStatus::CreateRuntime => emit_open_status(&handle, OpenGameStatus::CreateRuntime)?,
-            OpenStatus::LoadPlugin(name, i, len) => {
-                emit_open_status(&handle, OpenGameStatus::LoadPlugin(name, i, len))?
-            }
-            OpenStatus::GamePlugin => emit_open_status(&handle, OpenGameStatus::GamePlugin)?,
-            OpenStatus::LoadResource => emit_open_status(&handle, OpenGameStatus::LoadResource)?,
-            OpenStatus::LoadParagraph => emit_open_status(&handle, OpenGameStatus::LoadParagraph)?,
-        }
+impl OpenGameStatus {
+    pub fn emit(self, handle: &AppHandle) -> std::result::Result<(), tauri::Error> {
+        handle.emit_all("ayaka://open_status", self)
     }
-    let mut ctx = context.await?;
-
-    let window = handle.get_window("main").unwrap();
-    window.set_title(&ctx.game.config.title)?;
-    let settings = {
-        emit_open_status(&handle, OpenGameStatus::LoadSettings)?;
-        load_settings(&storage.ident).unwrap_or_else(|e| {
-            warn!("Load settings failed: {}", e);
-            Settings::new()
-        })
-    };
-    ctx.set_settings(settings);
-
-    emit_open_status(&handle, OpenGameStatus::LoadGlobalRecords)?;
-    ctx.set_global_record(
-        load_global_record(&storage.ident, &ctx.game.config.title).unwrap_or_else(|e| {
-            warn!("Load global records failed: {}", e);
-            Default::default()
-        }),
-    );
-
-    emit_open_status(&handle, OpenGameStatus::LoadRecords)?;
-    *storage.records.lock().await = load_records(&storage.ident, &ctx.game.config.title)
-        .unwrap_or_else(|e| {
-            warn!("Load records failed: {}", e);
-            Default::default()
-        });
-    *storage.context.lock().await = Some(ctx);
-
-    emit_open_status(&handle, OpenGameStatus::Loaded)?;
-    Ok(())
-}
-
-#[command]
-async fn get_settings(storage: State<'_, Storage>) -> CommandResult<Option<Settings>> {
-    Ok(storage
-        .context
-        .lock()
-        .await
-        .as_ref()
-        .map(|ctx| ctx.settings())
-        .cloned())
-}
-
-#[command]
-async fn set_settings(settings: Settings, storage: State<'_, Storage>) -> CommandResult<()> {
-    if let Some(context) = storage.context.lock().await.as_mut() {
-        context.set_settings(settings);
-    }
-    Ok(())
-}
-
-#[command]
-async fn get_records(storage: State<'_, Storage>) -> CommandResult<Vec<ActionRecord>> {
-    Ok(storage.records.lock().await.clone())
-}
-
-#[command]
-async fn save_record_to(index: usize, storage: State<'_, Storage>) -> CommandResult<()> {
-    let mut records = storage.records.lock().await;
-    if let Some(record) = storage
-        .context
-        .lock()
-        .await
-        .as_ref()
-        .map(|ctx| ctx.record.clone())
-    {
-        if index >= records.len() {
-            records.push(record);
-        } else {
-            records[index] = record;
-        }
-    }
-    Ok(())
-}
-
-#[command]
-async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
-    if let Some(context) = storage.context.lock().await.as_ref() {
-        let game = &context.game.config.title;
-        save_settings(&storage.ident, context.settings())?;
-        save_global_record(&storage.ident, game, context.global_record())?;
-        save_records(&storage.ident, game, &storage.records.lock().await)?;
-    }
-    Ok(())
-}
-
-#[command]
-async fn avaliable_locale(
-    storage: State<'_, Storage>,
-    locales: HashSet<Locale>,
-) -> CommandResult<HashSet<Locale>> {
-    if let Some(context) = storage.context.lock().await.as_ref() {
-        let avaliable = context.game.paras.keys().cloned().collect();
-        Ok(locales.intersection(&avaliable).cloned().collect())
-    } else {
-        Ok(locales)
-    }
-}
-
-#[command]
-async fn choose_locale(
-    storage: State<'_, Storage>,
-    locales: HashSet<Locale>,
-) -> CommandResult<Option<Locale>> {
-    let locales = avaliable_locale(storage, locales).await?;
-    let current = Locale::current();
-    debug!("Choose {} from {:?}", current, locales);
-    Ok(current.choose_from(&locales).cloned())
 }
 
 #[derive(Default)]
@@ -206,7 +69,9 @@ struct Storage {
     config: String,
     records: Mutex<Vec<ActionRecord>>,
     context: Mutex<Option<Context>>,
-    action: Mutex<Option<Action>>,
+    current: Mutex<Option<RawContext>>,
+    settings: Mutex<Option<Settings>>,
+    global_record: Mutex<Option<GlobalRecord>>,
 }
 
 impl Storage {
@@ -237,24 +102,163 @@ impl GameInfo {
 }
 
 #[command]
+async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
+    let config = &storage.config;
+    let context = Context::open(config, FrontendType::Html);
+    pin_mut!(context);
+    while let Some(status) = context.next().await {
+        match status {
+            OpenStatus::LoadProfile => {
+                OpenGameStatus::LoadProfile(config.clone()).emit(&handle)?;
+            }
+            OpenStatus::CreateRuntime => OpenGameStatus::CreateRuntime.emit(&handle)?,
+            OpenStatus::LoadPlugin(name, i, len) => {
+                OpenGameStatus::LoadPlugin(name, i, len).emit(&handle)?
+            }
+            OpenStatus::GamePlugin => OpenGameStatus::GamePlugin.emit(&handle)?,
+            OpenStatus::LoadResource => OpenGameStatus::LoadResource.emit(&handle)?,
+            OpenStatus::LoadParagraph => OpenGameStatus::LoadParagraph.emit(&handle)?,
+        }
+    }
+    let ctx = context.await?;
+
+    let window = handle.get_window("main").unwrap();
+    window.set_title(&ctx.game.config.title)?;
+    let settings = {
+        OpenGameStatus::LoadSettings.emit(&handle)?;
+        load_settings(&storage.ident).unwrap_or_else(|e| {
+            warn!("Load settings failed: {}", e);
+            Settings::new()
+        })
+    };
+    *storage.settings.lock().await = Some(settings);
+
+    OpenGameStatus::LoadGlobalRecords.emit(&handle)?;
+    let global_record =
+        load_global_record(&storage.ident, &ctx.game.config.title).unwrap_or_else(|e| {
+            warn!("Load global records failed: {}", e);
+            Default::default()
+        });
+    *storage.global_record.lock().await = Some(global_record);
+
+    OpenGameStatus::LoadRecords.emit(&handle)?;
+    *storage.records.lock().await = load_records(&storage.ident, &ctx.game.config.title)
+        .unwrap_or_else(|e| {
+            warn!("Load records failed: {}", e);
+            Default::default()
+        });
+    *storage.context.lock().await = Some(ctx);
+
+    OpenGameStatus::Loaded.emit(&handle)?;
+    Ok(())
+}
+
+#[command]
+async fn get_settings(storage: State<'_, Storage>) -> CommandResult<Option<Settings>> {
+    Ok(storage.settings.lock().await.clone())
+}
+
+#[command]
+async fn set_settings(settings: Settings, storage: State<'_, Storage>) -> CommandResult<()> {
+    *storage.settings.lock().await = Some(settings);
+    Ok(())
+}
+
+#[command]
+async fn get_records(storage: State<'_, Storage>) -> CommandResult<Vec<ActionText>> {
+    let context = storage.context.lock().await;
+    let context = context.as_ref().unwrap();
+    let settings = storage.settings.lock().await;
+    let settings = settings.as_ref().unwrap();
+    let mut res = vec![];
+    for record in storage.records.lock().await.iter() {
+        let raw_ctx = record.history.last().unwrap();
+        let action = context.get_action(&settings.lang, raw_ctx)?;
+        if let Action::Text(action) = action {
+            res.push(action);
+        } else {
+            unreachable!()
+        }
+    }
+    Ok(res)
+}
+
+#[command]
+async fn save_record_to(index: usize, storage: State<'_, Storage>) -> CommandResult<()> {
+    let mut records = storage.records.lock().await;
+    let record = storage
+        .context
+        .lock()
+        .await
+        .as_ref()
+        .unwrap()
+        .record
+        .clone();
+    if index >= records.len() {
+        records.push(record);
+    } else {
+        records[index] = record;
+    }
+    Ok(())
+}
+
+#[command]
+async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
+    let context = storage.context.lock().await;
+    let game = &context.as_ref().unwrap().game.config.title;
+    save_settings(
+        &storage.ident,
+        storage.settings.lock().await.as_ref().unwrap(),
+    )?;
+    save_global_record(
+        &storage.ident,
+        game,
+        storage.global_record.lock().await.as_ref().unwrap(),
+    )?;
+    save_records(&storage.ident, game, &storage.records.lock().await)?;
+    Ok(())
+}
+
+#[command]
+async fn avaliable_locale(
+    storage: State<'_, Storage>,
+    locales: HashSet<Locale>,
+) -> CommandResult<HashSet<Locale>> {
+    let avaliable = storage
+        .context
+        .lock()
+        .await
+        .as_ref()
+        .unwrap()
+        .game
+        .paras
+        .keys()
+        .cloned()
+        .collect();
+    Ok(locales.intersection(&avaliable).cloned().collect())
+}
+
+#[command]
+async fn choose_locale(
+    storage: State<'_, Storage>,
+    locales: HashSet<Locale>,
+) -> CommandResult<Option<Locale>> {
+    let locales = avaliable_locale(storage, locales).await?;
+    let current = Locale::current();
+    debug!("Choose {} from {:?}", current, locales);
+    Ok(current.choose_from(&locales).cloned())
+}
+
+#[command]
 async fn info(storage: State<'_, Storage>) -> CommandResult<Option<GameInfo>> {
     let ctx = storage.context.lock().await;
-    if let Some(ctx) = ctx.as_ref() {
-        Ok(Some(GameInfo::new(&ctx.game)))
-    } else {
-        warn!("Game hasn't been loaded.");
-        Ok(None)
-    }
+    Ok(Some(GameInfo::new(&ctx.as_ref().unwrap().game)))
 }
 
 #[command]
 async fn start_new(locale: Locale, storage: State<'_, Storage>) -> CommandResult<()> {
-    if let Some(ctx) = storage.context.lock().await.as_mut() {
-        ctx.init_new();
-        info!("Init new context with locale {}.", locale);
-    } else {
-        warn!("Game hasn't been loaded.")
-    }
+    storage.context.lock().await.as_mut().unwrap().init_new();
+    info!("Init new context with locale {}.", locale);
     Ok(())
 }
 
@@ -264,40 +268,62 @@ async fn start_record(
     index: usize,
     storage: State<'_, Storage>,
 ) -> CommandResult<()> {
-    if let Some(ctx) = storage.context.lock().await.as_mut() {
-        let raw_ctx = storage.records.lock().await[index].clone();
-        let last_line = raw_ctx.history.last().unwrap();
-        *storage.action.lock().await = Some(last_line.clone());
-        ctx.init_context(raw_ctx);
-        info!("Init new context with locale {}.", locale);
-    } else {
-        warn!("Game hasn't been loaded.")
-    }
+    let record = storage.records.lock().await[index].clone();
+    storage
+        .context
+        .lock()
+        .await
+        .as_mut()
+        .unwrap()
+        .init_context(record);
+    info!("Init new context with locale {}.", locale);
     Ok(())
 }
 
 #[command]
 async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
-    let mut context = storage.context.lock().await;
-    let action = context.as_mut().and_then(|context| context.next_run());
-    if let Some(action) = action {
-        debug!("Next action: {:?}", action);
-        *storage.action.lock().await = Some(action);
-        Ok(true)
-    } else {
-        debug!("No action left.");
-        *storage.action.lock().await = None;
-        Ok(false)
+    loop {
+        let mut context = storage.context.lock().await;
+        let context = context.as_mut().unwrap();
+        if let Some(raw_ctx) = context.next_run() {
+            debug!("Next action: {:?}", raw_ctx);
+            let is_empty = {
+                let action = context
+                    .get_action(&context.game.config.base_lang, &raw_ctx)
+                    .unwrap_or_default();
+                if let Action::Empty = action {
+                    true
+                } else if let Action::Custom(vars) = action {
+                    vars.is_empty()
+                } else {
+                    false
+                }
+            };
+            storage
+                .global_record
+                .lock()
+                .await
+                .as_mut()
+                .unwrap()
+                .update(&raw_ctx);
+            *storage.current.lock().await = Some(raw_ctx);
+            if !is_empty {
+                return Ok(true);
+            }
+        } else {
+            *storage.current.lock().await = None;
+            return Ok(false);
+        }
     }
 }
 
 #[command]
 async fn next_back_run(storage: State<'_, Storage>) -> CommandResult<bool> {
     let mut context = storage.context.lock().await;
-    let action = context.as_mut().and_then(|context| context.next_back_run());
-    if let Some(action) = action {
-        debug!("Last action: {:?}", action);
-        *storage.action.lock().await = Some(action);
+    let context = context.as_mut().unwrap();
+    if let Some(raw_ctx) = context.next_back_run() {
+        debug!("Last action: {:?}", raw_ctx);
+        *storage.current.lock().await = Some(raw_ctx.clone());
         Ok(true)
     } else {
         debug!("No action in the history.");
@@ -307,12 +333,12 @@ async fn next_back_run(storage: State<'_, Storage>) -> CommandResult<bool> {
 
 #[command]
 async fn current_visited(storage: State<'_, Storage>) -> CommandResult<bool> {
-    let action = storage.action.lock().await;
-    let visited = if let Some(action) = action.as_ref() {
-        let context = storage.context.lock().await;
-        context
+    let raw_ctx = storage.current.lock().await;
+    let visited = if let Some(raw_ctx) = raw_ctx.as_ref() {
+        let record = storage.global_record.lock().await;
+        record
             .as_ref()
-            .map(|context| context.visited(action))
+            .map(|record| record.visited(raw_ctx))
             .unwrap_or_default()
     } else {
         false
@@ -321,44 +347,81 @@ async fn current_visited(storage: State<'_, Storage>) -> CommandResult<bool> {
 }
 
 #[command]
-async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<Action>> {
-    Ok(storage.action.lock().await.as_ref().cloned())
+async fn current_run(storage: State<'_, Storage>) -> CommandResult<Option<RawContext>> {
+    let raw_ctx = storage.current.lock().await;
+    Ok(raw_ctx.as_ref().cloned())
+}
+
+fn get_actions(
+    context: &Context,
+    settings: &Settings,
+    raw_ctx: &RawContext,
+) -> (Action, Option<Action>) {
+    let action = context
+        .get_action(&settings.lang, raw_ctx)
+        .unwrap_or_else(|e| {
+            error!("Cannot get action: {}", e);
+            Action::default()
+        });
+    let base_action = settings.sub_lang.as_ref().and_then(|sub_lang| {
+        match context.get_action(sub_lang, raw_ctx) {
+            Ok(action) => Some(action),
+            Err(e) => {
+                error!("Cannot get sub action: {}", e);
+                None
+            }
+        }
+    });
+    (action, base_action)
+}
+
+#[command]
+async fn current_action(
+    storage: State<'_, Storage>,
+) -> CommandResult<Option<(Action, Option<Action>)>> {
+    let context = storage.context.lock().await;
+    let context = context.as_ref().unwrap();
+    let raw_ctx = storage.current.lock().await;
+    let settings = storage.settings.lock().await;
+    let settings = settings.as_ref().unwrap();
+    Ok(raw_ctx
+        .as_ref()
+        .map(|raw_ctx| get_actions(context, settings, raw_ctx)))
 }
 
 #[command]
 async fn current_title(storage: State<'_, Storage>) -> CommandResult<Option<String>> {
+    let settings = storage.settings.lock().await;
+    let settings = settings.as_ref().unwrap();
     Ok(storage
         .context
         .lock()
         .await
         .as_ref()
-        .and_then(|context| context.current_paragraph_title().cloned()))
+        .unwrap()
+        .current_paragraph_title(&settings.lang)
+        .cloned())
 }
 
 #[command]
-async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<RawValue> {
+async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<()> {
     debug!("Switch {}", i);
-    let mut context = storage.context.lock().await;
-    let context = context
-        .as_mut()
-        .ok_or_else(|| anyhow!("Context not initialized."))?;
-    let action = storage.action.lock().await;
-    let switch = action
-        .as_ref()
-        .and_then(|action| action.switches.get(i))
-        .ok_or_else(|| anyhow!("Index error: {}", i))?;
-    Ok(context.call(&switch.action))
+    storage.context.lock().await.as_mut().unwrap().switch(i);
+    Ok(())
 }
 
 #[command]
-async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<Action>> {
-    let mut hs = storage
-        .context
-        .lock()
-        .await
-        .as_ref()
-        .map(|context| context.record.history.clone())
-        .unwrap_or_default();
+async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<(Action, Option<Action>)>> {
+    let context = storage.context.lock().await;
+    let context = context.as_ref().unwrap();
+    let settings = storage.settings.lock().await;
+    let settings = settings.as_ref().unwrap();
+    let mut hs = context
+        .record
+        .history
+        .iter()
+        .map(|raw_ctx| get_actions(context, settings, raw_ctx))
+        .collect::<Vec<_>>();
     hs.reverse();
     debug!("Get history {:?}", hs);
     Ok(hs)
@@ -373,11 +436,13 @@ fn main() -> Result<()> {
         .setup(|app| {
             let ident = app.config().tauri.bundle.identifier.clone();
             let log_handle = if cfg!(debug_assertions) {
-                Logger::with(LogSpecification::parse("warn,ayaka=debug,ayalog=debug")?)
-                    .log_to_stdout()
-                    .set_palette("b1;3;2;4;6".to_string())
-                    .use_utc()
-                    .start()?
+                Logger::with(LogSpecification::parse(
+                    "debug,wasmer=warn,regalloc=info,cranelift=info",
+                )?)
+                .log_to_stdout()
+                .set_palette("b1;3;2;4;6".to_string())
+                .use_utc()
+                .start()?
             } else {
                 Logger::with(LogSpecification::parse("info,wasmer=warn")?)
                     .log_to_file(
@@ -427,6 +492,7 @@ fn main() -> Result<()> {
             next_run,
             next_back_run,
             current_run,
+            current_action,
             current_title,
             current_visited,
             switch,

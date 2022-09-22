@@ -1,7 +1,6 @@
 [workspace]
 members = [
     "ayaka-bindings-types",
-    "ayaka-script-types",
     "ayaka-script",
     "ayaka-runtime",
 ]

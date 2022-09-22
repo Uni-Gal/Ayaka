@@ -3,13 +3,12 @@
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
 
-use ayaka_script_types::{Program, RawValue};
-use fallback::{FallbackSpec, IsEmpty2};
+use ayaka_script::RawValue;
+use fallback::FallbackSpec;
 use serde::{Deserialize, Serialize};
 use std::{
     borrow::Cow,
     collections::{HashMap, VecDeque},
-    ops::{Deref, DerefMut},
     path::{Path, PathBuf},
 };
 
@@ -58,6 +57,9 @@ pub struct PluginType {
     /// The text plugin.
     /// The custom text commands are dealt with this type of plugin.
     pub text: Vec<String>,
+    /// The line plugin.
+    /// The custom line types are dealt with this type of plugin.
+    pub line: Vec<String>,
     /// The game plugin.
     /// This plugin processes the game properties after it is loaded.
     pub game: bool,
@@ -87,6 +89,12 @@ impl PluginTypeBuilder {
     /// A text plugin, which provides commands.
     pub fn text(mut self, cmds: impl IntoIterator<Item = impl Into<String>>) -> Self {
         self.data.text = cmds.into_iter().map(|s| s.into()).collect();
+        self
+    }
+
+    /// A line plugins, which provides custom line types.
+    pub fn line(mut self, cmds: impl IntoIterator<Item = impl Into<String>>) -> Self {
+        self.data.line = cmds.into_iter().map(|s| s.into()).collect();
         self
     }
 
@@ -120,7 +128,7 @@ pub enum FrontendType {
 /// while the characters in [`ActionLine::Block`] should be printed together.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data")]
-pub enum ActionLine {
+pub enum ActionSubText {
     /// Characters printed one by one.
     /// Usually they are meaningful texts.
     Chars(String),
@@ -129,7 +137,7 @@ pub enum ActionLine {
     Block(String),
 }
 
-impl ActionLine {
+impl ActionSubText {
     /// Creates [`ActionLine::Chars`].
     pub fn chars(s: impl Into<String>) -> Self {
         Self::Chars(s.into())
@@ -155,81 +163,6 @@ impl ActionLine {
     }
 }
 
-/// A collection of [`ActionLine`].
-///
-/// Internally it is a [`VecDeque<ActionLine>`].
-/// The [`ActionLine`] could be pushed and poped at front or back.
-///
-/// Generally, you should avoid using `push_back` directly.
-/// To reduce allocations in serialization, you should use
-/// `push_back_chars` and `push_back_block`.
-///
-/// ```
-/// # use ayaka_bindings_types::*;
-/// let mut lines = ActionLines::default();
-/// lines.push_back_chars("Hello ");
-/// assert_eq!(lines[0], ActionLine::chars("Hello "));
-/// lines.push_back_chars("world!");
-/// assert_eq!(lines[0], ActionLine::chars("Hello world!"));
-/// ```
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct ActionLines(VecDeque<ActionLine>);
-
-impl Deref for ActionLines {
-    type Target = VecDeque<ActionLine>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for ActionLines {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl IntoIterator for ActionLines {
-    type Item = ActionLine;
-
-    type IntoIter = <VecDeque<ActionLine> as IntoIterator>::IntoIter;
-
-    fn into_iter(self) -> Self::IntoIter {
-        self.0.into_iter()
-    }
-}
-
-impl ActionLines {
-    /// Push the string as [`ActionLine::Chars`] to the back.
-    /// If the back element is also [`ActionLine::Chars`], the string is appended.
-    pub fn push_back_chars<'a>(&mut self, s: impl Into<Cow<'a, str>>) {
-        let s = s.into();
-        if let Some(ActionLine::Chars(text)) = self.back_mut() {
-            text.push_str(&s);
-        } else {
-            self.push_back(ActionLine::chars(s));
-        }
-    }
-
-    /// Push the string as [`ActionLine::Block`] to the back.
-    /// If the back element is also [`ActionLine::Block`], the string is appended.
-    pub fn push_back_block<'a>(&mut self, s: impl Into<Cow<'a, str>>) {
-        let s = s.into();
-        if let Some(ActionLine::Block(text)) = self.back_mut() {
-            text.push_str(&s);
-        } else {
-            self.push_back(ActionLine::block(s));
-        }
-    }
-}
-
-impl IsEmpty2 for ActionLines {
-    fn is_empty2(&self) -> bool {
-        self.0.is_empty()
-    }
-}
-
 /// A map from variable name to [`RawValue`].
 pub type VarMap = HashMap<String, RawValue>;
 
@@ -246,24 +179,71 @@ pub struct RawContext {
     pub locals: VarMap,
 }
 
-/// The full action information in one line of config.
-/// It provides the full texts and other properties exacted from [`ayaka_script_types::Text`].
+/// The `text` is a [`VecDeque<ActionSubText>`].
+/// The [`ActionSubText`] could be pushed and poped at front or back.
+///
+/// Generally, you should avoid using `push_back` directly.
+/// To reduce allocations in serialization, you should use
+/// `push_back_chars` and `push_back_block`.
+///
+/// ```
+/// # use ayaka_bindings_types::*;
+/// let mut text = ActionText::default();
+/// text.push_back_chars("Hello ");
+/// assert_eq!(text.text[0], ActionSubText::chars("Hello "));
+/// text.push_back_chars("world!");
+/// assert_eq!(text.text[0], ActionSubText::chars("Hello world!"));
+/// ```
 #[derive(Debug, Default, Clone, Serialize, Deserialize, FallbackSpec)]
-pub struct Action {
-    /// The context snapshot.
-    pub ctx: RawContext,
+pub struct ActionText {
     /// The full texts.
-    pub line: ActionLines,
-    /// The format params of texts.
-    pub line_params: Vec<RawValue>,
+    pub text: VecDeque<ActionSubText>,
     /// The key of current character.
     pub ch_key: Option<String>,
     /// The current character.
     pub character: Option<String>,
-    /// The switches.
-    pub switches: Vec<Switch>,
-    /// The other custom properties.
-    pub props: HashMap<String, String>,
+    /// The temp variables.
+    pub vars: VarMap,
+}
+
+impl ActionText {
+    /// Push the string as [`ActionLine::Chars`] to the back.
+    /// If the back element is also [`ActionLine::Chars`], the string is appended.
+    pub fn push_back_chars<'a>(&mut self, s: impl Into<Cow<'a, str>>) {
+        let s = s.into();
+        if let Some(ActionSubText::Chars(text)) = self.text.back_mut() {
+            text.push_str(&s);
+        } else {
+            self.text.push_back(ActionSubText::chars(s));
+        }
+    }
+
+    /// Push the string as [`ActionLine::Block`] to the back.
+    /// If the back element is also [`ActionLine::Block`], the string is appended.
+    pub fn push_back_block<'a>(&mut self, s: impl Into<Cow<'a, str>>) {
+        let s = s.into();
+        if let Some(ActionSubText::Block(text)) = self.text.back_mut() {
+            text.push_str(&s);
+        } else {
+            self.text.push_back(ActionSubText::block(s));
+        }
+    }
+}
+
+/// The full action information in one line of config.
+/// It provides the full texts and other properties exacted from [`ayaka_script::Text`].
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[serde(tag = "type", content = "data")]
+pub enum Action {
+    /// An empty action usually means an `exec` or custom action.
+    #[default]
+    Empty,
+    /// A text action, display some texts.
+    Text(ActionText),
+    /// A switch action, display switches and let player to choose.
+    Switches(Vec<Switch>),
+    /// A custom action.
+    Custom(VarMap),
 }
 
 /// One switch in the switches of an [`Action`].
@@ -271,8 +251,6 @@ pub struct Action {
 pub struct Switch {
     /// The switch text.
     pub text: String,
-    /// The action of this switch after chosen.
-    pub action: Program,
     /// Whether the switch is enabled.
     pub enabled: bool,
 }
@@ -284,9 +262,9 @@ pub struct Switch {
 /// use ayaka_bindings::*;
 ///
 /// #[export]
-/// fn process_action(mut ctx: ActionProcessContext) -> Action {
+/// fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
 ///     // Process the action...
-///     ctx.action
+///     ActionProcessResult { action: ctx.action }
 /// }
 /// ```
 #[derive(Debug, Serialize, Deserialize)]
@@ -297,11 +275,10 @@ pub struct ActionProcessContext {
     pub game_props: HashMap<String, String>,
     /// The frontend type.
     pub frontend: FrontendType,
-    /// The previous action in the history.
-    /// It is used if some properties need to inherit.
-    pub last_action: Option<Action>,
+    /// The current context.
+    pub ctx: RawContext,
     /// The current action.
-    pub action: Action,
+    pub action: ActionText,
 }
 
 #[derive(Debug, Serialize)]
@@ -310,19 +287,26 @@ pub struct ActionProcessContextRef<'a> {
     pub root_path: &'a Path,
     pub game_props: &'a HashMap<String, String>,
     pub frontend: FrontendType,
-    pub last_action: Option<&'a Action>,
-    pub action: &'a Action,
+    pub ctx: &'a RawContext,
+    pub action: &'a ActionText,
+}
+
+/// The result of action plugins.
+/// See examples at [`ActionProcessContext`].
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct ActionProcessResult {
+    /// The processed action text.
+    pub action: ActionText,
 }
 
 /// The argument to text plugin.
 ///
-/// Every text plugin should implement `text_commands` and the specified function:
 /// ```ignore
 /// use ayaka_bindings::*;
 ///
 /// #[export]
-/// fn text_commands() -> &'static [&'static str] {
-///     &["hello"]
+/// fn plugin_type() -> PluginType {
+///     PluginType::builder().text(&["hello"]).build()
 /// }
 ///
 /// #[export]
@@ -355,9 +339,7 @@ pub struct TextProcessContextRef<'a> {
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct TextProcessResult {
     /// The lines to append.
-    pub line: ActionLines,
-    /// The custom properties to update.
-    pub props: HashMap<String, String>,
+    pub text: ActionText,
 }
 
 /// The argument to game plugin.
@@ -399,4 +381,55 @@ pub struct GameProcessContextRef<'a> {
 pub struct GameProcessResult {
     /// The updated properties.
     pub props: HashMap<String, String>,
+}
+
+/// The argument to line plugin.
+///
+/// ```ignore
+/// use ayaka_bindings::*;
+///
+/// #[export]
+/// fn plugin_type() -> PluginType {
+///     PluginType::builder().line(&["hello"]).build()
+/// }
+///
+/// #[export]
+/// fn hello(_ctx: LineProcessContext) -> LineProcessResult {
+///     let mut res = LineProcessResult::default();
+///     res.locals.insert("hello".to_string(), RawValue::Str("world".to_string()));
+///     res
+/// }
+/// ```
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LineProcessContext {
+    /// The root path of the game profile.
+    pub root_path: PathBuf,
+    /// The global properties of the game profile.
+    pub game_props: HashMap<String, String>,
+    /// The frontend type.
+    pub frontend: FrontendType,
+    /// The current context.
+    pub ctx: RawContext,
+    /// The full properties of the custom command.
+    pub props: HashMap<String, RawValue>,
+}
+
+#[derive(Debug, Serialize)]
+#[doc(hidden)]
+pub struct LineProcessContextRef<'a> {
+    pub root_path: &'a Path,
+    pub game_props: &'a HashMap<String, String>,
+    pub frontend: FrontendType,
+    pub ctx: &'a RawContext,
+    pub props: &'a HashMap<String, RawValue>,
+}
+
+/// The result of commands in line plugins.
+/// See examples at [`LineProcessContext`].
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct LineProcessResult {
+    /// The updated variables.
+    pub locals: VarMap,
+    /// The temp variables.
+    pub vars: VarMap,
 }

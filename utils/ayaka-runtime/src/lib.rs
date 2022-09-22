@@ -10,7 +10,6 @@
 #![feature(fn_traits)]
 #![feature(generators)]
 #![feature(once_cell)]
-#![feature(round_char_boundary)]
 #![feature(unboxed_closures)]
 
 mod config;
@@ -23,9 +22,11 @@ mod settings;
 #[doc(no_inline)]
 pub use anyhow;
 #[doc(no_inline)]
+pub use ayaka_bindings_types::*;
+#[doc(no_inline)]
 pub use ayaka_script::log;
 #[doc(no_inline)]
-pub use ayaka_script_types::RawValue;
+pub use ayaka_script::*;
 pub use config::*;
 pub use context::*;
 #[doc(no_inline)]

@@ -4,7 +4,6 @@ plugins:
   dir: ../plugins/
   modules:
     - random
-    - format
 base_lang: en
 paras: paras
 start: init

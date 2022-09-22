@@ -7,7 +7,6 @@ use crate::*;
 use anyhow::Result;
 use ayaka_bindings_types::*;
 use log::warn;
-use rt_format::ParsedFormat;
 use scopeguard::defer;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{collections::HashMap, path::Path};
@@ -93,23 +92,27 @@ impl Host {
     }
 
     /// Processes [`Action`] in action plugin.
-    pub fn process_action(&self, ctx: ActionProcessContextRef) -> Result<Action> {
+    pub fn process_action(&self, ctx: ActionProcessContextRef) -> Result<ActionProcessResult> {
         self.call("process_action", (ctx,))
     }
 
-    /// Gets registered TeX commands of a text plugin.
-    pub fn text_commands(&self) -> Result<Vec<String>> {
-        self.call("text_commands", ())
-    }
-
     /// Calls a custom command in the text plugin.
-    pub fn dispatch_command(
+    pub fn dispatch_text(
         &self,
         name: &str,
         args: &[String],
         ctx: TextProcessContextRef,
     ) -> Result<TextProcessResult> {
         self.call(name, (args, ctx))
+    }
+
+    /// Calls a custom command in the line plugin.
+    pub fn dispatch_line(
+        &self,
+        name: &str,
+        ctx: LineProcessContextRef,
+    ) -> Result<LineProcessResult> {
+        self.call(name, (ctx,))
     }
 
     /// Processes [`Game`] when opening the config file.
@@ -126,6 +129,8 @@ pub struct Runtime {
     pub action_modules: Vec<String>,
     /// The text plugins by command name.
     pub text_modules: HashMap<String, String>,
+    /// The line plugins by command name.
+    pub line_modules: HashMap<String, String>,
     /// The game plugins.
     pub game_modules: Vec<String>,
 }
@@ -188,37 +193,10 @@ impl Runtime {
         );
         let log_flush_func = Function::new_native(store, || log::logger().flush());
 
-        let format_func = Function::new_native_with_env(
-            store,
-            RuntimeInstanceData::default(),
-            |env_data: &RuntimeInstanceData, len: i32, data: i32| unsafe {
-                env_data.import(len, data, |args: Vec<RawValue>| {
-                    if args.is_empty() {
-                        warn!("Format args is empty.");
-                        RawValue::Unit
-                    } else {
-                        ParsedFormat::parse(
-                            &args[0].get_str(),
-                            &args[1..],
-                            &HashMap::<String, RawValue>::new(),
-                        )
-                        .map(|r| RawValue::Str(r.to_string()))
-                        .unwrap_or_else(|i| {
-                            warn!("Format failed, stopped at {}.", i);
-                            Default::default()
-                        })
-                    }
-                })
-            },
-        );
-
         let import_object = imports! {
             "log" => {
                 "__log" => log_func,
                 "__log_flush" => log_flush_func,
-            },
-            "format" => {
-                "__format" => format_func,
             }
         };
         let wasi_env = WasiState::new("ayaka-runtime")
@@ -246,6 +224,7 @@ impl Runtime {
         let mut modules = HashMap::new();
         let mut action_modules = vec![];
         let mut text_modules = HashMap::new();
+        let mut line_modules = HashMap::new();
         let mut game_modules = vec![];
         let paths = if names.is_empty() {
             std::fs::read_dir(path)?
@@ -296,6 +275,15 @@ impl Runtime {
                     );
                 }
             }
+            for cmd in plugin_type.line {
+                let res = line_modules.insert(cmd.clone(), name.clone());
+                if let Some(old_module) = res {
+                    warn!(
+                        "Command `{}` is overrided by \"{}\" over \"{}\"",
+                        cmd, name, old_module
+                    );
+                }
+            }
             if plugin_type.game {
                 game_modules.push(name.clone());
             }
@@ -305,6 +293,7 @@ impl Runtime {
             modules,
             action_modules,
             text_modules,
+            line_modules,
             game_modules,
         })
     }

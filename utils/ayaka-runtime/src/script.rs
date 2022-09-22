@@ -1,16 +1,14 @@
 //! The script interpreter.
 
-use crate::{plugin::Runtime, *};
-use ayaka_script_types::*;
-use fallback::Fallback;
+use crate::plugin::Runtime;
+use ayaka_bindings_types::VarMap;
+use ayaka_script::*;
 use log::{error, warn};
 
 /// The variable table in scripts.
 pub struct VarTable<'a> {
     /// The plugin runtime.
     pub runtime: &'a Runtime,
-    /// The resource map.
-    pub res: Fallback<&'a VarMap>,
     /// The context variables.
     pub locals: &'a mut VarMap,
     /// The locale variables.
@@ -19,10 +17,9 @@ pub struct VarTable<'a> {
 
 impl<'a> VarTable<'a> {
     /// Creates a new [`VarTable`].
-    pub fn new(runtime: &'a Runtime, res: Fallback<&'a VarMap>, locals: &'a mut VarMap) -> Self {
+    pub fn new(runtime: &'a Runtime, locals: &'a mut VarMap) -> Self {
         Self {
             runtime,
-            res,
             locals,
             vars: VarMap::default(),
         }
@@ -192,7 +189,6 @@ fn assign(ctx: &mut VarTable, e: &Expr, val: RawValue) -> RawValue {
         Expr::Ref(r) => match r {
             Ref::Var(n) => ctx.vars.insert(n.into(), val),
             Ref::Ctx(n) => ctx.locals.insert(n.into(), val),
-            Ref::Res(_) => unimplemented!("Resources"),
         },
         _ => unreachable!(),
     };
@@ -238,15 +234,6 @@ impl Callable for Ref {
                 warn!("Cannot find context variable `{}`.", n);
                 Default::default()
             }),
-            Self::Res(n) => ctx
-                .res
-                .as_ref()
-                .and_then(|map| map.get(n))
-                .cloned()
-                .unwrap_or_else(|| {
-                    warn!("Cannot find resource `{}`.", n);
-                    Default::default()
-                }),
         }
     }
 }
@@ -256,11 +243,20 @@ impl Callable for Text {
         let mut str = String::new();
         for line in &self.0 {
             match line {
-                Line::Str(s) => str.push_str(s),
-                Line::Cmd(c) => {
-                    if let Command::Exec(p) = c {
-                        str.push_str(&p.call(ctx).get_str())
-                    }
+                SubText::Str(s) => str.push_str(s),
+                SubText::Cmd(c) => {
+                    let value = match c {
+                        Command::Character(_, _) => RawValue::Unit,
+                        Command::Res(_) | Command::Other(_, _) => {
+                            warn!("Unsupported command in text.");
+                            Default::default()
+                        }
+                        Command::Ctx(n) => ctx.locals.get(n).cloned().unwrap_or_else(|| {
+                            warn!("Cannot find variable `{}`.", n);
+                            Default::default()
+                        }),
+                    };
+                    str.push_str(&value.get_str());
                 }
             }
         }
@@ -271,7 +267,6 @@ impl Callable for Text {
 #[cfg(test)]
 mod test {
     use crate::{plugin::Runtime, script::*};
-    use ayaka_script::*;
     use tokio::sync::OnceCell;
 
     static RUNTIME: OnceCell<Runtime> = OnceCell::const_new();
@@ -282,13 +277,13 @@ mod test {
                 let runtime = Runtime::load(
                     "../../examples/plugins",
                     env!("CARGO_MANIFEST_DIR"),
-                    &["format"],
+                    &["random"],
                 );
                 runtime.await.unwrap()
             })
             .await;
         let mut locals = VarMap::default();
-        let mut ctx = VarTable::new(runtime, Fallback::new(None, None), &mut locals);
+        let mut ctx = VarTable::new(runtime, &mut locals);
         f(&mut ctx);
     }
 
@@ -370,20 +365,19 @@ mod test {
     }
 
     #[tokio::test]
-    async fn format() {
+    async fn random() {
         with_ctx(|ctx| {
-            assert_eq!(
-                ProgramParser::new()
+            assert!((0..10).contains(
+                &ProgramParser::new()
                     .parse(
                         r##"
-                            format.fmt("Hello {}!", 114514)
+                            random.rnd(10)
                         "##
                     )
                     .ok()
                     .call(ctx)
-                    .get_str(),
-                "Hello 114514!"
-            )
+                    .get_num()
+            ))
         })
         .await;
     }

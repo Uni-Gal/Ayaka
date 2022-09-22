@@ -100,7 +100,6 @@ AssignOp: BinaryOp = {
 pub Ref: Ref = {
     <i:Id> => Ref::Var(i),
     "$" <i:Id> => Ref::Ctx(i),
-    "#" <i:Id> => Ref::Res(i),
 }
 
 Id: String = <s:r"[A-Za-z]\w*"> => s.into();
