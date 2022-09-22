@@ -5,7 +5,7 @@ use ayaka_bindings::*;
 #[export]
 fn plugin_type() -> PluginType {
     PluginType::builder()
-        // .action()
+        .action()
         .line(["bg", "bgm", "video"])
         .game()
         .build()
@@ -27,7 +27,8 @@ fn file(
     temp: bool,
 ) -> LineProcessResult {
     log::debug!(
-        "File {:?}, {}, {:?}",
+        "File {}, {:?}, {}, {:?}",
+        arg,
         base_dir.map(|p| p.display()),
         prop,
         exs
@@ -76,23 +77,22 @@ fn video(ctx: LineProcessContext) -> LineProcessResult {
     file_ctx(ctx, "videos", "video", &["mp4"], true)
 }
 
-// #[export]
-// fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
-//     let voice_id = ctx.action.ctx.cur_act.to_string();
-//     let res = file(
-//         vec![voice_id],
-//         ctx.game_props
-//             .get("voices")
-//             .map(|p| ctx.root_path.join(p).join(&ctx.action.ctx.cur_para))
-//             .as_deref(),
-//         "voice",
-//         &["mp3"],
-//     );
-//     for (key, value) in res.props.into_iter() {
-//         ctx.action.props.insert(key, value);
-//     }
-//     ctx.action
-// }
+#[export]
+fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
+    let voice_id = ctx.ctx.cur_act.to_string();
+    let res = file(
+        &voice_id,
+        ctx.game_props
+            .get("voices")
+            .map(|p| ctx.root_path.join(p).join(&ctx.ctx.cur_para))
+            .as_deref(),
+        "voice",
+        &["mp3"],
+        true,
+    );
+    ctx.action.vars.extend(res.vars);
+    ActionProcessResult { action: ctx.action }
+}
 
 #[export]
 fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {

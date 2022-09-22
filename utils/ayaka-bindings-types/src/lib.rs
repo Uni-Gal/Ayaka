@@ -202,6 +202,8 @@ pub struct ActionText {
     pub ch_key: Option<String>,
     /// The current character.
     pub character: Option<String>,
+    /// The temp variables.
+    pub vars: VarMap,
 }
 
 impl ActionText {
@@ -273,6 +275,8 @@ pub struct ActionProcessContext {
     pub game_props: HashMap<String, String>,
     /// The frontend type.
     pub frontend: FrontendType,
+    /// The current context.
+    pub ctx: RawContext,
     /// The current action.
     pub action: ActionText,
 }
@@ -283,6 +287,7 @@ pub struct ActionProcessContextRef<'a> {
     pub root_path: &'a Path,
     pub game_props: &'a HashMap<String, String>,
     pub frontend: FrontendType,
+    pub ctx: RawContext,
     pub action: &'a ActionText,
 }
 

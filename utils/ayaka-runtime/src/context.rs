@@ -309,6 +309,7 @@ impl Context {
                             .unwrap_or_default(),
                         ch_key: action.ch_key.flatten().fallback(),
                         character: action.character.flatten().fallback(),
+                        vars: action.vars.and_any().unwrap_or_default(),
                     }))
                 }
                 (Action::Switches(mut switches), Action::Switches(switches_base)) => {
@@ -326,13 +327,14 @@ impl Context {
         }
     }
 
-    fn process_action_text(&self, action: &mut ActionText) -> Result<()> {
+    fn process_action_text(&self, ctx: &RawContext, action: &mut ActionText) -> Result<()> {
         for action_module in &self.runtime.action_modules {
             let module = &self.runtime.modules[action_module];
             let ctx = ActionProcessContextRef {
                 root_path: &self.root_path,
                 game_props: &self.game.config.props,
                 frontend: self.frontend,
+                ctx: ctx.clone(),
                 action,
             };
             *action = module.process_action(ctx)?.action;
@@ -373,7 +375,7 @@ impl Context {
 
         let mut act = self.merge_action(action)?;
         if let Action::Text(act) = &mut act {
-            self.process_action_text(act)?;
+            self.process_action_text(ctx, act)?;
         }
         Ok(act)
     }

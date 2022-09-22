@@ -37,7 +37,6 @@ export interface RawContext {
     locals: {
         bg?: string,
         bgm?: string,
-        voice?: string,
         ch_models?: string,
     }
 }
@@ -66,6 +65,9 @@ export interface ActionText {
     text: ActionLine[],
     ch_key?: string,
     character?: string,
+    vars: {
+        voice?: string
+    }
 }
 
 export interface CustomVars {

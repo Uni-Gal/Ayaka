@@ -34,7 +34,7 @@ export default {
                 cur_para: "", cur_act: 0, history: [], locals: {}
             } as RawContext,
             action: {
-                text: []
+                text: [], vars: {}
             } as ActionText,
             switches: [] as Switch[],
             vars: {} as CustomVars,
@@ -73,12 +73,9 @@ export default {
                 if (load_new_bgm) {
                     (this.$refs.bgm as HTMLAudioElement).load()
                 }
-                if (ctx.locals.voice) {
-                    (this.$refs.voice as HTMLAudioElement).load()
-                }
                 switch (ActionType[action.type]) {
                     case ActionType.Empty:
-                        this.action = { text: [] } as ActionText
+                        this.action = { text: [], vars: {} } as ActionText
                         this.switches = []
                         this.vars = {}
                         break
@@ -86,6 +83,9 @@ export default {
                         this.action = action.data as ActionText
                         this.switches = []
                         this.vars = {}
+                        if (this.action.vars.voice) {
+                            (this.$refs.voice as HTMLAudioElement).load()
+                        }
                         this.start_type_anime(true)
                         break
                     case ActionType.Switches:
@@ -94,7 +94,7 @@ export default {
                         this.vars = {}
                         break
                     case ActionType.Custom:
-                        this.action = { text: [] } as ActionText
+                        this.action = { text: [], vars: {} } as ActionText
                         this.switches = []
                         let data = action.data as CustomVars
                         this.vars = data
@@ -129,7 +129,7 @@ export default {
         // Shouldn't be called in mutex
         async start_type_anime(timeout: boolean = false) {
             let values = timeout ? [setTimeout(3000)] : []
-            if (this.raw_ctx.locals.voice) {
+            if (this.action.vars.voice) {
                 let voice = this.$refs.voice as HTMLAudioElement
                 values.push(wait_play(voice))
                 voice.play()
@@ -216,7 +216,7 @@ export default {
 
 <template>
     <audio ref="bgm" :src="conv_src(raw_ctx.locals.bgm)" type="audio/mpeg" autoplay hidden loop></audio>
-    <audio ref="voice" :src="conv_src(raw_ctx.locals.voice)" type="audio/mpeg" hidden></audio>
+    <audio ref="voice" :src="conv_src(action.vars.voice)" type="audio/mpeg" hidden></audio>
     <img class="background" :src="conv_src(raw_ctx.locals.bg)">
     <Live2D :names="live2d_names(raw_ctx.locals)"></Live2D>
     <div class="card-lines">
