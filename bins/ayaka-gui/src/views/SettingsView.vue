@@ -20,16 +20,23 @@ export default {
     async created() {
         this.locales = await avaliable_locale(this.$i18n.availableLocales)
         let sub_locale = (await get_settings())?.sub_lang
-        if (sub_locale) {
+        if (sub_locale && this.$i18n.locale != sub_locale) {
             this.sub_locale = sub_locale
         }
     },
     methods: {
         async on_locale_select(e: Event) {
+            let loc = (e.target as HTMLInputElement).value
+            if (loc == this.sub_locale) {
+                this.sub_locale = "none"
+            }
             await set_locale((e.target as HTMLInputElement).value)
         },
         async on_sub_locale_select(e: Event) {
             let loc = (e.target as HTMLInputElement).value
+            if (loc == this.$i18n.locale) {
+                this.sub_locale = loc = "none"
+            }
             await set_sub_locale(loc == "none" ? undefined : loc)
         }
     }
