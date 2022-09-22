@@ -370,12 +370,26 @@ impl Context {
         Ok(act)
     }
 
-    fn push_history(&mut self, ctx: RawContext) {
-        self.record.history.push(ctx);
+    fn push_history(&mut self) {
+        let ctx = &self.ctx;
+        let cur_text = self
+            .game
+            .find_para(
+                &self.game.config.base_lang,
+                &ctx.cur_base_para,
+                &ctx.cur_para,
+            )
+            .and_then(|p| p.texts.get(ctx.cur_act));
+        let is_text = cur_text
+            .map(|line| matches!(line, Line::Text(_)))
+            .unwrap_or_default();
+        if is_text {
+            self.record.history.push(ctx.clone());
+        }
     }
 
     /// Step to next line.
-    pub fn next_run(&mut self, loc: &Locale) -> Option<Action> {
+    pub fn next_run(&mut self) -> Option<&RawContext> {
         let cur_text_base = loop {
             let cur_para = self.current_paragraph(&self.game.config.base_lang);
             let cur_text = self.current_text(&self.game.config.base_lang);
@@ -407,32 +421,30 @@ impl Context {
         };
 
         // TODO: reduce clone
-        let action = if let Some(t) = cur_text_base.cloned() {
+        let has_next = if let Some(t) = cur_text_base.cloned() {
             self.process_line(&t).unwrap_or_else(|e| {
                 error!("Parse line error: {}", e);
             });
-            let action = self.get_action(loc, &self.ctx).unwrap_or_else(|e| {
-                error!("Get action error: {}", e);
-                Action::default()
-            });
-            if let Action::Text(_) = &action {
-                self.push_history(self.ctx.clone());
-            }
-            Some(action)
+            self.push_history();
+            true
         } else {
-            None
+            false
         };
         self.ctx.cur_act += 1;
-        action
+        if has_next {
+            Some(&self.ctx)
+        } else {
+            None
+        }
     }
 
     /// Get (again) then current run.
-    pub fn current_run(&self) -> Option<RawContext> {
-        self.record.history.last().cloned()
+    pub fn current_run(&self) -> Option<&RawContext> {
+        self.record.history.last()
     }
 
     /// Step back to the last run.
-    pub fn next_back_run(&mut self) -> Option<RawContext> {
+    pub fn next_back_run(&mut self) -> Option<&RawContext> {
         if self.record.history.len() <= 1 {
             None
         } else {
