@@ -271,6 +271,10 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
     let raw_ctx = context.as_mut().and_then(|context| context.next_run());
     if let Some(raw_ctx) = raw_ctx {
         debug!("Next action: {:?}", raw_ctx);
+        let mut record = storage.global_record.lock().await;
+        if let Some(record) = record.as_mut() {
+            record.update(raw_ctx);
+        }
         Ok(true)
     } else {
         debug!("No action left.");

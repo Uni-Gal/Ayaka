@@ -68,6 +68,7 @@ export default {
             console.info(ctx)
             if (ctx && action) {
                 const load_new_bgm = (ctx.locals.bgm != this.raw_ctx.locals.bgm);
+                this.raw_ctx = ctx
                 if (load_new_bgm) {
                     (this.$refs.bgm as HTMLAudioElement).load()
                 }
@@ -106,6 +107,7 @@ export default {
         async fetch_next_run() {
             const has_next = await next_run()
             if (!has_next) {
+                this.play_state = PlayState.Manual
                 await this.go_home_direct()
             }
             await this.fetch_current_run()
@@ -164,11 +166,10 @@ export default {
                 this.play_state = PlayState.Auto
                 this.end_typing()
                 while (this.play_state == PlayState.Auto) {
-                    const has_next = await tryAcquire(this.mutex).runExclusive(async () => {
-                        const has_next = await this.fetch_next_run()
+                    await tryAcquire(this.mutex).runExclusive(async () => {
+                        await this.fetch_next_run()
                         await this.start_type_anime(true)
                         this.end_typing()
-                        return has_next
                     }).catch(_ => { })
                 }
             }
@@ -181,9 +182,8 @@ export default {
                 while (this.play_state == PlayState.FastForward) {
                     await setTimeout(20)
                     await tryAcquire(this.mutex).runExclusive(async () => {
-                        const has_next = await this.fetch_next_run()
+                        await this.fetch_next_run()
                         this.end_typing()
-                        return has_next
                     }).catch(_ => { })
                     if (!await current_visited()) {
                         break
