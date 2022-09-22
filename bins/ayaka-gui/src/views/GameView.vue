@@ -150,7 +150,6 @@ export default {
         async sub_type_anime_impl() {
             this.type_sub_text = ""
             this.type_sub_text_buffer = cloneDeep(this.sub_action_text)
-            console.log(this.type_sub_text_buffer)
             while (this.type_sub_text_buffer.length != 0) {
                 if (this.type_sub_text_buffer[0].data.length == 0) {
                     this.type_sub_text_buffer.shift()
@@ -175,7 +174,6 @@ export default {
             if (this.action.vars.voice) {
                 let voice = this.$refs.voice as HTMLAudioElement
                 values.push(wait_play(voice))
-                voice.play()
             }
             values.push(this.type_anime_impl(), this.sub_type_anime_impl())
             await Promise.all(values)
@@ -241,7 +239,7 @@ export default {
 
 <template>
     <audio ref="bgm" :src="conv_src(raw_ctx.locals.bgm)" type="audio/mpeg" autoplay hidden loop></audio>
-    <audio ref="voice" :src="conv_src(action.vars.voice)" type="audio/mpeg" hidden></audio>
+    <audio ref="voice" :src="conv_src(action.vars.voice)" type="audio/mpeg" autoplay hidden></audio>
     <img class="background" :src="conv_src(raw_ctx.locals.bg)">
     <Live2D :names="live2d_names(raw_ctx.locals)"></Live2D>
     <div class="card-lines">

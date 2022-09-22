@@ -364,7 +364,7 @@ fn get_actions(
             Action::default()
         });
     let base_action = settings.sub_lang.as_ref().and_then(|sub_lang| {
-        match context.get_action(&sub_lang, raw_ctx) {
+        match context.get_action(sub_lang, raw_ctx) {
             Ok(action) => Some(action),
             Err(e) => {
                 error!("Cannot get sub action: {}", e);
