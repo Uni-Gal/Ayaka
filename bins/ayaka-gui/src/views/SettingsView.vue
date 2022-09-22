@@ -40,13 +40,15 @@ export default {
     <div class="content">
         <div class="d-grid gap-4 col-4 mx-auto">
             <h1>{{ $t("settings") }}</h1>
+            <h2>{{ $t("language") }}</h2>
             <select class="form-select" v-model="$i18n.locale" @change="on_locale_select">
                 <option v-for="locale in locales" :value="locale">
                     {{ locale_native_name(locale) }}
                 </option>
             </select>
+            <h2>{{ $t("subLanguage") }}</h2>
             <select class="form-select" v-model="sub_locale" @change="on_sub_locale_select">
-                <option value="none">None</option>
+                <option value="none">{{ $t("none") }}</option>
                 <option v-for="locale in locales" :value="locale">
                     {{ locale_native_name(locale) }}
                 </option>
