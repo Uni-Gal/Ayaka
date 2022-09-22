@@ -1,4 +1,5 @@
-use std::{future::Future, io::Result};
+use ayaka_runtime::anyhow::Result;
+use std::future::Future;
 use tokio::{fs::File, io::AsyncWriteExt};
 
 pub struct LaTeXWriter {
