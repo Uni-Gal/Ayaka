@@ -1,7 +1,6 @@
 #![feature(once_cell)]
 
 use ayaka_bindings::*;
-use log::error;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use std::sync::{LazyLock, Mutex};
 
@@ -22,7 +21,7 @@ fn rnd(args: Vec<RawValue>) -> RawValue {
         };
         RawValue::Num(res)
     } else {
-        error!("Cannot get random engine.");
+        log::error!("Cannot get random engine.");
         RawValue::Unit
     }
 }
