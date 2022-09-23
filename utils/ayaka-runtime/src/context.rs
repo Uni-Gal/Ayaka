@@ -303,10 +303,7 @@ impl Context {
                     let action = Fallback::new(Some(action), Some(action_base));
                     let action = action.spec();
                     Ok(Action::Text(ActionText {
-                        text: action
-                            .text
-                            .and_then(|s| if s.is_empty() { None } else { Some(s) })
-                            .unwrap_or_default(),
+                        text: action.text.and_any().unwrap_or_default(),
                         ch_key: action.ch_key.flatten().fallback(),
                         character: action.character.flatten().fallback(),
                         vars: action.vars.and_any().unwrap_or_default(),
