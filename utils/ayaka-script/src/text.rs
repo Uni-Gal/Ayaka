@@ -1,5 +1,6 @@
 //! The text parser.
 
+use crate::*;
 use regex::Regex;
 use serde::Deserialize;
 use std::{
@@ -12,7 +13,7 @@ use std::{
 
 /// A collection of [`SubText`].
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
-#[serde(try_from = "String")]
+#[serde(try_from = "RawValue")]
 pub struct Text(pub Vec<SubText>);
 
 /// A part of a line, either some texts or a command.
@@ -178,7 +179,11 @@ fn parse_error<T>(loc: Loc, err: ParseErrorType) -> ParseResult<T> {
 
 impl Display for ParseError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.err.fmt(f)
+        write!(
+            f,
+            "Error between {}:{}: {}",
+            self.loc.0, self.loc.1, self.err
+        )
     }
 }
 
@@ -612,6 +617,14 @@ impl TryFrom<String> for Text {
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         value.parse()
+    }
+}
+
+impl TryFrom<RawValue> for Text {
+    type Error = ParseError;
+
+    fn try_from(value: RawValue) -> Result<Self, Self::Error> {
+        value.get_str().parse()
     }
 }
 
