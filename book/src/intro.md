@@ -3,7 +3,7 @@ Ayaka project is a project for OSPP 2022.
 It is a voice novel engine which aims at 3 goals: simple, free, concentrate.
 
 ## Simple
-A voice novel should be easy to author.
+A visual novel should be easy to author.
 The author need little knowledge of programming.
 We provide a config file format based on YAML and TeX-like commands.
 It is easy to learn and author your own voice novel.
