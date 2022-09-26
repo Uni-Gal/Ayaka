@@ -214,9 +214,9 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
             .map(|runtime| {
                 runtime
                     .dispatch_method(name, &args)
-                    .unwrap_or_default_log(&format!("Calling `{}.{}` error", ns, name))
+                    .unwrap_or_default_log_with(|| format!("Calling `{}.{}` error", ns, name))
             })
-            .unwrap_or_default_log(&format!("Cannot find namespace `{}`", ns))
+            .unwrap_or_default_log_with(|| format!("Cannot find namespace `{}`", ns))
     }
 }
 
