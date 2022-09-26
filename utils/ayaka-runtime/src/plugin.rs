@@ -158,16 +158,16 @@ impl RuntimeInstanceData {
         len: i32,
         data: i32,
         f: impl FnOnce<Params, Output = Res>,
-    ) -> u64 {
+    ) -> std::result::Result<u64, RuntimeError> {
         let memory = self.memory.get_unchecked();
         let data = mem_slice(memory, data, len);
-        let data = rmp_serde::from_slice(data).unwrap();
+        let data = rmp_serde::from_slice(data).map_err(|e| RuntimeError::new(e.to_string()))?;
         let res = f.call_once(data);
-        let data = rmp_serde::to_vec(&res).unwrap();
+        let data = rmp_serde::to_vec(&res).map_err(|e| RuntimeError::new(e.to_string()))?;
         let alloc = self.alloc.get_unchecked();
-        let ptr = alloc.call(data.len() as _).unwrap();
+        let ptr = alloc.call(data.len() as _)?;
         mem_slice_mut(memory, ptr, data.len() as _).copy_from_slice(&data);
-        ((data.len() as u64) << 32) | (ptr as u64)
+        Ok(((data.len() as u64) << 32) | (ptr as u64))
     }
 }
 
