@@ -346,10 +346,10 @@ fn get_actions(
     let action = context
         .get_action(&settings.lang, raw_ctx)
         .unwrap_or_default_log("Cannot get action");
-    let base_action = settings.sub_lang.as_ref().and_then(|sub_lang| {
+    let base_action = settings.sub_lang.as_ref().map(|sub_lang| {
         context
             .get_action(sub_lang, raw_ctx)
-            .ok_or_log("Cannot get sub action")
+            .unwrap_or_default_log("Cannot get sub action")
     });
     (action, base_action)
 }

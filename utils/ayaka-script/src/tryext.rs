@@ -6,8 +6,6 @@ use std::{
 
 #[doc(hidden)]
 pub trait TryExt: Try {
-    fn ok_or_log(self, msg: &str) -> Option<Self::Output>;
-
     fn unwrap_or_default_log(self, msg: &str) -> Self::Output;
 }
 
@@ -16,16 +14,6 @@ where
     T::Output: Default,
     T::Residual: Debug,
 {
-    fn ok_or_log(self, msg: &str) -> Option<Self::Output> {
-        match self.branch() {
-            ControlFlow::Continue(v) => Some(v),
-            ControlFlow::Break(e) => {
-                warn!("{msg}: {e:?}");
-                None
-            }
-        }
-    }
-
     fn unwrap_or_default_log(self, msg: &str) -> Self::Output {
         match self.branch() {
             ControlFlow::Continue(v) => v,
