@@ -430,15 +430,12 @@ impl Context {
             }
         };
 
-        // TODO: reduce clone
-        let ctx = if let Some(t) = cur_text_base.cloned() {
+        let ctx = cur_text_base.cloned().map(|t| {
             self.process_line(t)
                 .unwrap_or_default_log("Parse line error");
             self.push_history();
-            Some(self.ctx.clone())
-        } else {
-            None
-        };
+            self.ctx.clone()
+        });
         self.ctx.cur_act += 1;
         ctx
     }

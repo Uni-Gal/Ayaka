@@ -3,7 +3,7 @@
 use crate::plugin::Runtime;
 use ayaka_bindings_types::VarMap;
 use ayaka_script::*;
-use log::{error, warn};
+use log::warn;
 
 /// The variable table in scripts.
 pub struct VarTable<'a> {
@@ -208,18 +208,15 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
         }
     } else {
         let args = args.iter().map(|e| e.call(ctx)).collect::<Vec<_>>();
-        if let Some(runtime) = ctx.runtime.modules.get(ns) {
-            match runtime.dispatch_method(name, &args) {
-                Ok(res) => res,
-                Err(e) => {
-                    error!("Calling `{}.{}` error: {}", ns, name, e);
-                    RawValue::Unit
-                }
-            }
-        } else {
-            error!("Cannot find namespace `{}`.", ns);
-            RawValue::Unit
-        }
+        ctx.runtime
+            .modules
+            .get(ns)
+            .map(|runtime| {
+                runtime
+                    .dispatch_method(name, &args)
+                    .unwrap_or_default_log(&format!("Calling `{}.{}` error", ns, name))
+            })
+            .unwrap_or_default_log(&format!("Cannot find namespace `{}`", ns))
     }
 }
 

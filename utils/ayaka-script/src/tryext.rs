@@ -4,6 +4,7 @@ use std::{
     ops::{ControlFlow, Try},
 };
 
+#[doc(hidden)]
 pub trait TryExt: Try {
     fn ok_or_inspect(self, f: impl FnOnce(&Self::Residual)) -> Option<Self::Output>;
 
