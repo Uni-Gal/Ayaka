@@ -18,16 +18,6 @@ pub struct Settings {
     pub sub_lang: Option<Locale>,
 }
 
-impl Settings {
-    /// Creates [`Settings`] object with current locale.
-    pub fn new() -> Self {
-        Self {
-            lang: Locale::default(),
-            sub_lang: None,
-        }
-    }
-}
-
 /// The global record.
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
 pub struct GlobalRecord {

@@ -1,5 +1,4 @@
 use super::*;
-use log::warn;
 use std::str::FromStr;
 
 grammar;
@@ -117,9 +116,6 @@ Bool: bool = {
     "false" => false,
 }
 
-Num: i64 = <s:r"[0-9]+"> => i64::from_str(s).unwrap_or_else(|e| {
-    warn!("{}", e);
-    0
-});
+Num: i64 = <s:r"[0-9]+"> => i64::from_str(s).unwrap_or_default_log("Parse num error");
 
 Str: String = <s:r##""[^"\\]*(\\.[^"\\]*)*""##> => s[1..s.len() - 1].into();

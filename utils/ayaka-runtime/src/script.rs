@@ -226,14 +226,16 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
 impl Callable for Ref {
     fn call(&self, ctx: &mut VarTable) -> RawValue {
         match self {
-            Self::Var(n) => ctx.vars.get(n).cloned().unwrap_or_else(|| {
-                warn!("Cannot find variable `{}`.", n);
-                Default::default()
-            }),
-            Self::Ctx(n) => ctx.locals.get(n).cloned().unwrap_or_else(|| {
-                warn!("Cannot find context variable `{}`.", n);
-                Default::default()
-            }),
+            Self::Var(n) => ctx
+                .vars
+                .get(n)
+                .cloned()
+                .unwrap_or_default_log("Cannot find variable"),
+            Self::Ctx(n) => ctx
+                .locals
+                .get(n)
+                .cloned()
+                .unwrap_or_default_log("Cannot find context variable"),
         }
     }
 }
@@ -249,12 +251,13 @@ impl Callable for Text {
                         Command::Character(_, _) => RawValue::Unit,
                         Command::Res(_) | Command::Other(_, _) => {
                             warn!("Unsupported command in text.");
-                            Default::default()
+                            RawValue::Unit
                         }
-                        Command::Ctx(n) => ctx.locals.get(n).cloned().unwrap_or_else(|| {
-                            warn!("Cannot find variable `{}`.", n);
-                            Default::default()
-                        }),
+                        Command::Ctx(n) => ctx
+                            .locals
+                            .get(n)
+                            .cloned()
+                            .unwrap_or_default_log("Cannot find variable"),
                     };
                     str.push_str(&value.get_str());
                 }

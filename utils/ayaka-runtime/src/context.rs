@@ -94,13 +94,14 @@ impl Context {
             for rl in std::fs::read_dir(res_path)? {
                 let p = rl?.path();
                 if p.is_file() && p.extension().unwrap_or_default() == "yaml" {
-                    let loc = p
+                    if let Some(loc) = p
                         .file_stem()
                         .and_then(|s| s.to_string_lossy().parse::<Locale>().ok())
-                        .unwrap_or_default();
-                    let r = std::fs::read(p)?;
-                    let r = serde_yaml::from_slice(&r)?;
-                    res.insert(loc, r);
+                    {
+                        let r = std::fs::read(p)?;
+                        let r = serde_yaml::from_slice(&r)?;
+                        res.insert(loc, r);
+                    }
                 }
             }
         }
@@ -111,25 +112,26 @@ impl Context {
         for pl in std::fs::read_dir(paras_path)? {
             let p = pl?.path();
             if p.is_dir() {
-                let loc = p
+                if let Some(loc) = p
                     .file_name()
                     .and_then(|s| s.to_string_lossy().parse::<Locale>().ok())
-                    .unwrap_or_default();
-                let mut paras_map = HashMap::new();
-                for p in std::fs::read_dir(p)? {
-                    let p = p?.path();
-                    if p.is_file() && p.extension().unwrap_or_default() == "yaml" {
-                        let key = p
-                            .file_stem()
-                            .unwrap_or_default()
-                            .to_string_lossy()
-                            .into_owned();
-                        let para = std::fs::read(p)?;
-                        let para = serde_yaml::from_slice(&para)?;
-                        paras_map.insert(key, para);
+                {
+                    let mut paras_map = HashMap::new();
+                    for p in std::fs::read_dir(p)? {
+                        let p = p?.path();
+                        if p.is_file() && p.extension().unwrap_or_default() == "yaml" {
+                            let key = p
+                                .file_stem()
+                                .unwrap_or_default()
+                                .to_string_lossy()
+                                .into_owned();
+                            let para = std::fs::read(p)?;
+                            let para = serde_yaml::from_slice(&para)?;
+                            paras_map.insert(key, para);
+                        }
                     }
+                    paras.insert(loc, paras_map);
                 }
-                paras.insert(loc, paras_map);
             }
         }
         Ok(Self {
@@ -430,9 +432,8 @@ impl Context {
 
         // TODO: reduce clone
         let ctx = if let Some(t) = cur_text_base.cloned() {
-            self.process_line(t).unwrap_or_else(|e| {
-                error!("Parse line error: {}", e);
-            });
+            self.process_line(t)
+                .unwrap_or_default_log("Parse line error");
             self.push_history();
             Some(self.ctx.clone())
         } else {
