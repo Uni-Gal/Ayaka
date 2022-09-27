@@ -3,7 +3,8 @@
 use crate::plugin::Runtime;
 use ayaka_bindings_types::VarMap;
 use ayaka_script::*;
-use log::{error, warn};
+use log::warn;
+use trylog::TryLog;
 
 /// The variable table in scripts.
 pub struct VarTable<'a> {
@@ -208,32 +209,31 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
         }
     } else {
         let args = args.iter().map(|e| e.call(ctx)).collect::<Vec<_>>();
-        if let Some(runtime) = ctx.runtime.modules.get(ns) {
-            match runtime.dispatch_method(name, &args) {
-                Ok(res) => res,
-                Err(e) => {
-                    error!("Calling `{}.{}` error: {}", ns, name, e);
-                    RawValue::Unit
-                }
-            }
-        } else {
-            error!("Cannot find namespace `{}`.", ns);
-            RawValue::Unit
-        }
+        ctx.runtime
+            .modules
+            .get(ns)
+            .map(|runtime| {
+                runtime
+                    .dispatch_method(name, &args)
+                    .unwrap_or_default_log_with(|| format!("Calling `{}.{}` error", ns, name))
+            })
+            .unwrap_or_default_log_with(|| format!("Cannot find namespace `{}`", ns))
     }
 }
 
 impl Callable for Ref {
     fn call(&self, ctx: &mut VarTable) -> RawValue {
         match self {
-            Self::Var(n) => ctx.vars.get(n).cloned().unwrap_or_else(|| {
-                warn!("Cannot find variable `{}`.", n);
-                Default::default()
-            }),
-            Self::Ctx(n) => ctx.locals.get(n).cloned().unwrap_or_else(|| {
-                warn!("Cannot find context variable `{}`.", n);
-                Default::default()
-            }),
+            Self::Var(n) => ctx
+                .vars
+                .get(n)
+                .cloned()
+                .unwrap_or_default_log("Cannot find variable"),
+            Self::Ctx(n) => ctx
+                .locals
+                .get(n)
+                .cloned()
+                .unwrap_or_default_log("Cannot find context variable"),
         }
     }
 }
@@ -249,12 +249,13 @@ impl Callable for Text {
                         Command::Character(_, _) => RawValue::Unit,
                         Command::Res(_) | Command::Other(_, _) => {
                             warn!("Unsupported command in text.");
-                            Default::default()
+                            RawValue::Unit
                         }
-                        Command::Ctx(n) => ctx.locals.get(n).cloned().unwrap_or_else(|| {
-                            warn!("Cannot find variable `{}`.", n);
-                            Default::default()
-                        }),
+                        Command::Ctx(n) => ctx
+                            .locals
+                            .get(n)
+                            .cloned()
+                            .unwrap_or_default_log("Cannot find variable"),
                     };
                     str.push_str(&value.get_str());
                 }

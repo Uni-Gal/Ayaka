@@ -5,7 +5,7 @@
 
 use ayaka_runtime::{
     anyhow::{self, anyhow, Result},
-    log::{debug, error, info, warn},
+    log::{debug, info},
     *,
 };
 use flexi_logger::{FileSpec, LogSpecification, Logger};
@@ -15,6 +15,7 @@ use std::{
     fmt::Display,
 };
 use tauri::{async_runtime::Mutex, command, AppHandle, Manager, State};
+use trylog::TryLog;
 
 type CommandResult<T> = std::result::Result<T, CommandError>;
 
@@ -126,27 +127,18 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
     window.set_title(&ctx.game.config.title)?;
     let settings = {
         OpenGameStatus::LoadSettings.emit(&handle)?;
-        load_settings(&storage.ident).unwrap_or_else(|e| {
-            warn!("Load settings failed: {}", e);
-            Settings::new()
-        })
+        load_settings(&storage.ident).unwrap_or_default_log("Load settings failed")
     };
     *storage.settings.lock().await = Some(settings);
 
     OpenGameStatus::LoadGlobalRecords.emit(&handle)?;
-    let global_record =
-        load_global_record(&storage.ident, &ctx.game.config.title).unwrap_or_else(|e| {
-            warn!("Load global records failed: {}", e);
-            Default::default()
-        });
+    let global_record = load_global_record(&storage.ident, &ctx.game.config.title)
+        .unwrap_or_default_log("Load global records failed");
     *storage.global_record.lock().await = Some(global_record);
 
     OpenGameStatus::LoadRecords.emit(&handle)?;
     *storage.records.lock().await = load_records(&storage.ident, &ctx.game.config.title)
-        .unwrap_or_else(|e| {
-            warn!("Load records failed: {}", e);
-            Default::default()
-        });
+        .unwrap_or_default_log("Load records failed");
     *storage.context.lock().await = Some(ctx);
 
     OpenGameStatus::Loaded.emit(&handle)?;
@@ -288,9 +280,7 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
         if let Some(raw_ctx) = context.next_run() {
             debug!("Next action: {:?}", raw_ctx);
             let is_empty = {
-                let action = context
-                    .get_action(&context.game.config.base_lang, &raw_ctx)
-                    .unwrap_or_default();
+                let action = context.get_action(&context.game.config.base_lang, &raw_ctx)?;
                 if let Action::Empty = action {
                     true
                 } else if let Action::Custom(vars) = action {
@@ -336,10 +326,7 @@ async fn current_visited(storage: State<'_, Storage>) -> CommandResult<bool> {
     let raw_ctx = storage.current.lock().await;
     let visited = if let Some(raw_ctx) = raw_ctx.as_ref() {
         let record = storage.global_record.lock().await;
-        record
-            .as_ref()
-            .map(|record| record.visited(raw_ctx))
-            .unwrap_or_default()
+        record.as_ref().unwrap().visited(raw_ctx)
     } else {
         false
     };
@@ -359,18 +346,11 @@ fn get_actions(
 ) -> (Action, Option<Action>) {
     let action = context
         .get_action(&settings.lang, raw_ctx)
-        .unwrap_or_else(|e| {
-            error!("Cannot get action: {}", e);
-            Action::default()
-        });
-    let base_action = settings.sub_lang.as_ref().and_then(|sub_lang| {
-        match context.get_action(sub_lang, raw_ctx) {
-            Ok(action) => Some(action),
-            Err(e) => {
-                error!("Cannot get sub action: {}", e);
-                None
-            }
-        }
+        .unwrap_or_default_log("Cannot get action");
+    let base_action = settings.sub_lang.as_ref().map(|sub_lang| {
+        context
+            .get_action(sub_lang, raw_ctx)
+            .unwrap_or_default_log("Cannot get sub action")
     });
     (action, base_action)
 }

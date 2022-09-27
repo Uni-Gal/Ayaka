@@ -23,6 +23,7 @@ futures-util = "0.3"
 tryiterator = { git = "https://github.com/Pernosco/tryiterator.git" }
 dirs = "4.0"
 scopeguard = "1.1"
+trylog = "0.1"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["parking_lot", "rt"] }
