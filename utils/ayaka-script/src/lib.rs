@@ -4,7 +4,6 @@
 #![deny(unsafe_code)]
 #![feature(iterator_try_collect)]
 #![feature(once_cell)]
-#![feature(try_trait_v2)]
 
 mod exec;
 mod line;
