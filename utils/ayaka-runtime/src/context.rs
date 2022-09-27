@@ -13,6 +13,7 @@ use std::{
     path::{Path, PathBuf},
 };
 use stream_future::stream;
+use trylog::TryLog;
 
 /// The game running context.
 pub struct Context {

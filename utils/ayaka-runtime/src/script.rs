@@ -4,6 +4,7 @@ use crate::plugin::Runtime;
 use ayaka_bindings_types::VarMap;
 use ayaka_script::*;
 use log::warn;
+use trylog::TryLog;
 
 /// The variable table in scripts.
 pub struct VarTable<'a> {

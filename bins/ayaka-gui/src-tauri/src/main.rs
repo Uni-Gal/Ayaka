@@ -15,6 +15,7 @@ use std::{
     fmt::Display,
 };
 use tauri::{async_runtime::Mutex, command, AppHandle, Manager, State};
+use trylog::TryLog;
 
 type CommandResult<T> = std::result::Result<T, CommandError>;
 

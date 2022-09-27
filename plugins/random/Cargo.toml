@@ -12,3 +12,4 @@ crate-type = ["cdylib"]
 [dependencies]
 ayaka-bindings = { path = "../../utils/ayaka-bindings" }
 rand = "0.8"
+trylog = "0.1"

@@ -3,6 +3,7 @@
 use ayaka_bindings::*;
 use rand::{rngs::StdRng, Rng, SeedableRng};
 use std::sync::{LazyLock, Mutex};
+use trylog::TryLog;
 
 #[export]
 fn plugin_type() -> PluginType {
