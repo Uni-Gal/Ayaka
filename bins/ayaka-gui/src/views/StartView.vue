@@ -111,8 +111,8 @@ export default {
 
 <template>
     <div class="content-logo">
-        <img ref="logo" src="../assets/logo.png" alt="Logo" />
-        <h1 class="fw-bolder" style="font-size: 300%">Just Ayaka.</h1>
+        <img ref="logo" width="300" height="300" src="../assets/logo.png" alt="Logo" />
+        <p class="fw-bolder" style="font-size: 300%">Just Ayaka.</p>
     </div>
     <div class="progress progress-bottom">
         <div class="progress-bar" role="progressbar" :style='`width: ${progress}%`'>{{ text }}</div>
@@ -148,9 +148,6 @@ export default {
     top: 50%;
     left: 50%;
     translate: -50% -50%;
-    width: fit-content;
-    height: fit-content;
-    scale: 70%;
     text-align: center;
 }
 </style>
