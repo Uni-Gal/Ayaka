@@ -1,7 +1,11 @@
 name: Release
 on:
   push:
-    branches: ["master"]
+    paths:
+      - 'utils/**'
+      - 'bins/**'
+      - 'examples/**'
+      - 'plugins/**'
 jobs:
   Build:
     strategy:
