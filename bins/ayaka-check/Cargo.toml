@@ -6,5 +6,5 @@ edition = "2021"
 [dependencies]
 ayaka-runtime = { path = "../../utils/ayaka-runtime" }
 tokio = { version = "1", features = ["macros", "rt"] }
-clap = { version = "3.1", features = ["derive"] }
+clap = { version = "4.0", features = ["derive"] }
 env_logger = "0.9"
