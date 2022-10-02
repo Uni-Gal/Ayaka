@@ -8,7 +8,7 @@ ayaka-bindings-types = { path = "../ayaka-bindings-types" }
 ayaka-script = { path = "../ayaka-script" }
 fallback = "0.1"
 language-matcher = "0.1"
-icu_locid = { version = "1.0.0-beta1", features = ["std"] }
+icu_locid = { version = "1.0.0", features = ["std"] }
 sys-locale = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
