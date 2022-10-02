@@ -1,7 +1,11 @@
 name: Test
 on:
   push:
-    branches: ["master"]
+    paths:
+      - 'utils/**'
+      - 'bins/**'
+      - 'examples/**'
+      - 'plugins/**'
   pull_request:
     branches: ["master"]
 jobs:
