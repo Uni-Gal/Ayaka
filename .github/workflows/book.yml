@@ -1,7 +1,12 @@
 name: Book
 on:
   push:
-    branches: ["master"]
+    paths:
+      - 'assets/**'
+      - 'book/**'
+      - 'books/**'
+      - 'docs/**'
+      - '.github/**'
 jobs:
   Book:
     runs-on: ubuntu-latest
