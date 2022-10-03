@@ -1,7 +1,7 @@
 //! The script interpreter.
 
 use crate::plugin::Runtime;
-use ayaka_bindings_types::VarMap;
+use ayaka_bindings_types::{PluginModule, VarMap};
 use ayaka_script::*;
 use log::warn;
 use trylog::TryLog;
@@ -210,8 +210,7 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
     } else {
         let args = args.iter().map(|e| e.call(ctx)).collect::<Vec<_>>();
         ctx.runtime
-            .modules
-            .get(ns)
+            .get_module(ns)
             .map(|runtime| {
                 runtime
                     .dispatch_method(name, &args)

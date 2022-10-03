@@ -6,10 +6,9 @@
 use crate::*;
 use anyhow::Result;
 use ayaka_bindings_types::*;
-use log::warn;
 use scopeguard::defer;
 use serde::{de::DeserializeOwned, Serialize};
-use std::{collections::HashMap, path::Path};
+use std::{ops::Deref, path::Path};
 use stream_future::stream;
 use tryiterator::TryIteratorExt;
 use wasmer::*;
@@ -51,15 +50,10 @@ impl Host {
             abi_alloc,
         })
     }
+}
 
-    /// Calls a method by name.
-    ///
-    /// The args and returns are passed by MessagePack with [`rmp_serde`].
-    pub fn call<Params: Serialize, Res: DeserializeOwned>(
-        &self,
-        name: &str,
-        args: Params,
-    ) -> Result<Res> {
+impl PluginModule for Host {
+    fn call<P: Serialize, R: DeserializeOwned>(&self, name: &str, args: P) -> Result<R> {
         let memory = &self.memory;
         let func = self
             .instance
@@ -80,68 +74,6 @@ impl Host {
         let res_data = rmp_serde::from_slice(res_data)?;
         Ok(res_data)
     }
-
-    /// Calls a script plugin method by name.
-    pub fn dispatch_method(&self, name: &str, args: &[RawValue]) -> Result<RawValue> {
-        self.call(name, (args,))
-    }
-
-    /// Gets the [`PluginType`].
-    pub fn plugin_type(&self) -> Result<PluginType> {
-        self.call("plugin_type", ())
-    }
-
-    /// Processes [`Action`] in action plugin.
-    pub fn process_action(&self, ctx: ActionProcessContextRef) -> Result<ActionProcessResult> {
-        self.call("process_action", (ctx,))
-    }
-
-    /// Calls a custom command in the text plugin.
-    pub fn dispatch_text(
-        &self,
-        name: &str,
-        args: &[String],
-        ctx: TextProcessContextRef,
-    ) -> Result<TextProcessResult> {
-        self.call(name, (args, ctx))
-    }
-
-    /// Calls a custom command in the line plugin.
-    pub fn dispatch_line(
-        &self,
-        name: &str,
-        ctx: LineProcessContextRef,
-    ) -> Result<LineProcessResult> {
-        self.call(name, (ctx,))
-    }
-
-    /// Processes [`Game`] when opening the config file.
-    pub fn process_game(&self, ctx: GameProcessContextRef) -> Result<GameProcessResult> {
-        self.call("process_game", (ctx,))
-    }
-}
-
-/// The plugin runtime.
-pub struct Runtime {
-    /// The plugins map by name.
-    pub modules: HashMap<String, Host>,
-    /// The action plugins.
-    pub action_modules: Vec<String>,
-    /// The text plugins by command name.
-    pub text_modules: HashMap<String, String>,
-    /// The line plugins by command name.
-    pub line_modules: HashMap<String, String>,
-    /// The game plugins.
-    pub game_modules: Vec<String>,
-}
-
-/// The load status of [`Runtime`].
-#[derive(Debug, Clone)]
-pub enum LoadStatus {
-    /// Start creating the engine.
-    CreateEngine,
-    /// Loading the plugin.
-    LoadPlugin(String, usize, usize),
 }
 
 #[derive(Default, Clone, WasmerEnv)]
@@ -171,7 +103,19 @@ impl RuntimeInstanceData {
     }
 }
 
-impl Runtime {
+/// The store of the WASM runtime.
+pub struct HostStore {
+    store: Store,
+    imports: Box<dyn NamedResolver + Send + Sync>,
+}
+
+impl HostStore {
+    fn new() -> Result<Self> {
+        let store = Store::default();
+        let imports = Self::imports(&store)?;
+        Ok(Self { store, imports })
+    }
+
     fn imports(store: &Store) -> Result<Box<dyn NamedResolver + Send + Sync>> {
         let log_func = Function::new_native_with_env(
             store,
@@ -205,7 +149,31 @@ impl Runtime {
         let wasi_import = generate_import_object_from_env(store, wasi_env, WasiVersion::Latest);
         Ok(Box::new(import_object.chain_front(wasi_import)))
     }
+}
 
+impl PluginModuleStore for HostStore {
+    type Module = Host;
+
+    fn from_binary(&self, binary: &[u8]) -> Result<Self::Module> {
+        let module = Module::from_binary(&self.store, binary)?;
+        let host = Host::new(&module, &self.imports)?;
+        Ok(host)
+    }
+}
+
+/// The plugin runtime.
+pub struct Runtime(PluginRuntime<Host, HostStore>);
+
+/// The load status of [`Runtime`].
+#[derive(Debug, Clone)]
+pub enum LoadStatus {
+    /// Start creating the engine.
+    CreateEngine,
+    /// Loading the plugin.
+    LoadPlugin(String, usize, usize),
+}
+
+impl Runtime {
     /// Load plugins from specific directory and plugin names.
     ///
     /// The actual load folder will be `rel_to.join(dir)`.
@@ -219,13 +187,8 @@ impl Runtime {
     ) -> Result<Self> {
         let path = rel_to.as_ref().join(dir);
         yield LoadStatus::CreateEngine;
-        let store = Store::default();
-        let import_object = Self::imports(&store)?;
-        let mut modules = HashMap::new();
-        let mut action_modules = vec![];
-        let mut text_modules = HashMap::new();
-        let mut line_modules = HashMap::new();
-        let mut game_modules = vec![];
+        let store = HostStore::new()?;
+        let mut inner = PluginRuntime::new(store);
         let paths = if names.is_empty() {
             std::fs::read_dir(path)?
                 .try_filter_map(|f| {
@@ -260,41 +223,16 @@ impl Runtime {
         for (i, (name, p)) in paths.into_iter().enumerate() {
             yield LoadStatus::LoadPlugin(name.clone(), i, total_len);
             let buf = std::fs::read(p)?;
-            let module = Module::from_binary(&store, &buf)?;
-            let runtime = Host::new(&module, &import_object)?;
-            let plugin_type = runtime.plugin_type()?;
-            if plugin_type.action {
-                action_modules.push(name.clone());
-            }
-            for cmd in plugin_type.text {
-                let res = text_modules.insert(cmd.clone(), name.clone());
-                if let Some(old_module) = res {
-                    warn!(
-                        "Command `{}` is overrided by \"{}\" over \"{}\"",
-                        cmd, name, old_module
-                    );
-                }
-            }
-            for cmd in plugin_type.line {
-                let res = line_modules.insert(cmd.clone(), name.clone());
-                if let Some(old_module) = res {
-                    warn!(
-                        "Command `{}` is overrided by \"{}\" over \"{}\"",
-                        cmd, name, old_module
-                    );
-                }
-            }
-            if plugin_type.game {
-                game_modules.push(name.clone());
-            }
-            modules.insert(name, runtime);
+            inner.insert_binary(name, &buf)?;
         }
-        Ok(Self {
-            modules,
-            action_modules,
-            text_modules,
-            line_modules,
-            game_modules,
-        })
+        Ok(Self(inner))
+    }
+}
+
+impl Deref for Runtime {
+    type Target = PluginRuntime<Host, HostStore>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
