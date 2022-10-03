@@ -1,5 +1,4 @@
 use crate::*;
-use ayaka_script::RawValue;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -247,7 +246,7 @@ pub struct LineProcessContext {
     /// The current context.
     pub ctx: RawContext,
     /// The full properties of the custom command.
-    pub props: HashMap<String, RawValue>,
+    pub props: VarMap,
 }
 
 #[derive(Debug, Serialize)]
@@ -257,7 +256,7 @@ pub struct LineProcessContextRef<'a> {
     pub game_props: &'a HashMap<String, String>,
     pub frontend: FrontendType,
     pub ctx: &'a RawContext,
-    pub props: &'a HashMap<String, RawValue>,
+    pub props: &'a VarMap,
 }
 
 /// The result of commands in line plugins.
