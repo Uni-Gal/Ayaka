@@ -2,7 +2,6 @@
 
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
-#![feature(generic_associated_types)]
 #![feature(type_alias_impl_trait)]
 
 mod logger;

@@ -9,7 +9,6 @@
 #![feature(absolute_path)]
 #![feature(fn_traits)]
 #![feature(generators)]
-#![feature(generic_associated_types)]
 #![feature(once_cell)]
 #![feature(unboxed_closures)]
 

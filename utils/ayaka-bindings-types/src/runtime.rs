@@ -5,6 +5,7 @@ use anyhow::Result;
 use ayaka_script::RawValue;
 use serde::{de::DeserializeOwned, Serialize};
 
+/// Represents a plugin module.
 pub trait PluginModule {
     /// Calls a method by name.
     ///
@@ -47,12 +48,18 @@ pub trait PluginModule {
     }
 }
 
+/// Represents some global data to load a plugin module.
 pub trait PluginModuleStore {
+    /// The plugin host type.
     type Module: PluginModule;
 
+    /// Load a plugin from binary.
+    /// For host, the binary is the content of WASM file;
+    /// for plugins, the binary is the module name.
     fn from_binary(&self, binary: &[u8]) -> Result<Self::Module>;
 }
 
+/// A basic runtime for plugins.
 pub struct PluginRuntime<M: PluginModule, S: PluginModuleStore<Module = M>> {
     store: S,
     modules: HashMap<String, M>,
@@ -63,6 +70,7 @@ pub struct PluginRuntime<M: PluginModule, S: PluginModuleStore<Module = M>> {
 }
 
 impl<M: PluginModule, S: PluginModuleStore<Module = M>> PluginRuntime<M, S> {
+    /// Create the runtime from a store.
     pub fn new(store: S) -> Self {
         Self {
             store,
@@ -74,6 +82,7 @@ impl<M: PluginModule, S: PluginModuleStore<Module = M>> PluginRuntime<M, S> {
         }
     }
 
+    /// Insert a plugin with binary.
     pub fn insert_binary(&mut self, name: String, binary: &[u8]) -> Result<()> {
         let module = self.store.from_binary(binary)?;
         let plugin_type = module.plugin_type()?;
@@ -110,25 +119,34 @@ impl<M: PluginModule, S: PluginModuleStore<Module = M>> PluginRuntime<M, S> {
     }
 }
 
+/// Represents a plugin runtime context.
 pub trait PluginContext {
+    /// The plugin host type.
     type Module: PluginModule;
 
+    /// Get a module from name.
     fn get_module(&self, name: &str) -> Option<&Self::Module>;
 
+    /// Find a text plugin by command.
     fn find_text_module(&self, cmd: &str) -> Option<&Self::Module>;
 
+    /// Find a line plugin by command.
     fn find_line_module(&self, cmd: &str) -> Option<&Self::Module>;
 
+    #[doc(hidden)]
     type ActionMIter<'a>: Iterator<Item = &'a Self::Module>
     where
         Self: 'a;
 
+    /// Iterate all action plugins.
     fn action_modules<'a>(&'a self) -> Self::ActionMIter<'a>;
 
+    #[doc(hidden)]
     type GameMIter<'a>: Iterator<Item = &'a Self::Module>
     where
         Self: 'a;
 
+    /// Iterate all game plugins.
     fn game_modules<'a>(&'a self) -> Self::GameMIter<'a>;
 }
 
