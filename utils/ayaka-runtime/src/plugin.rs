@@ -148,12 +148,8 @@ impl HostStore {
         let wasi_import = generate_import_object_from_env(store, wasi_env, WasiVersion::Latest);
         Ok(Box::new(import_object.chain_front(wasi_import)))
     }
-}
 
-impl PluginModuleStore for HostStore {
-    type Module = Host;
-
-    fn from_binary(&self, binary: &[u8]) -> Result<Self::Module> {
+    fn from_binary(&self, binary: &[u8]) -> Result<Host> {
         let module = Module::from_binary(&self.store, binary)?;
         let host = Host::new(&module, &self.imports)?;
         Ok(host)
@@ -164,7 +160,7 @@ impl PluginModuleStore for HostStore {
 pub type HostVarTable<'a> = VarTable<'a, Runtime>;
 
 /// The plugin runtime.
-pub struct Runtime(PluginRuntime<Host, HostStore>);
+pub struct Runtime(PluginRuntime<Host>);
 
 /// The load status of [`Runtime`].
 #[derive(Debug, Clone)]
@@ -190,7 +186,7 @@ impl Runtime {
         let path = rel_to.as_ref().join(dir);
         yield LoadStatus::CreateEngine;
         let store = HostStore::new()?;
-        let mut inner = PluginRuntime::new(store);
+        let mut inner = PluginRuntime::new();
         let paths = if names.is_empty() {
             std::fs::read_dir(path)?
                 .try_filter_map(|f| {
@@ -225,7 +221,8 @@ impl Runtime {
         for (i, (name, p)) in paths.into_iter().enumerate() {
             yield LoadStatus::LoadPlugin(name.clone(), i, total_len);
             let buf = std::fs::read(p)?;
-            inner.insert_binary(name, &buf)?;
+            let module = store.from_binary(&buf)?;
+            inner.insert_module(name, module)?;
         }
         Ok(Self(inner))
     }
@@ -246,13 +243,13 @@ impl PluginContext for Runtime {
         self.0.find_line_module(cmd)
     }
 
-    type ActionMIter<'a> = <PluginRuntime<Host, HostStore> as PluginContext>::ActionMIter<'a>;
+    type ActionMIter<'a> = <PluginRuntime<Host> as PluginContext>::ActionMIter<'a>;
 
     fn action_modules(&self) -> Self::ActionMIter<'_> {
         self.0.action_modules()
     }
 
-    type GameMIter<'a> = <PluginRuntime<Host, HostStore> as PluginContext>::GameMIter<'a>;
+    type GameMIter<'a> = <PluginRuntime<Host> as PluginContext>::GameMIter<'a>;
 
     fn game_modules(&self) -> Self::GameMIter<'_> {
         self.0.game_modules()

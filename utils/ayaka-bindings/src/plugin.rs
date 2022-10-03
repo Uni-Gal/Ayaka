@@ -14,10 +14,8 @@ pub struct Proxy {
 }
 
 impl Proxy {
-    fn new(name: &[u8]) -> Self {
-        Self {
-            name: String::from_utf8_lossy(name).into_owned(),
-        }
+    fn new(name: String) -> Self {
+        Self { name }
     }
 }
 
@@ -29,23 +27,13 @@ impl PluginModule for Proxy {
     }
 }
 
-pub struct ProxyStore;
-
-impl PluginModuleStore for ProxyStore {
-    type Module = Proxy;
-
-    fn from_binary(&self, binary: &[u8]) -> Result<Self::Module> {
-        Ok(Proxy::new(binary))
-    }
-}
-
-pub struct Runtime(PluginRuntime<Proxy, ProxyStore>);
+pub struct Runtime(PluginRuntime<Proxy>);
 
 impl Runtime {
     pub fn load() -> Result<Self> {
-        let mut inner = PluginRuntime::new(ProxyStore);
+        let mut inner = PluginRuntime::<Proxy>::new();
         for name in __modules() {
-            inner.insert_binary(name.clone(), name.as_bytes())?;
+            inner.insert_module(name.clone(), Proxy::new(name))?;
         }
         Ok(Self(inner))
     }

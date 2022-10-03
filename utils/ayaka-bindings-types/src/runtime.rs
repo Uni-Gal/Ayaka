@@ -48,20 +48,9 @@ pub trait PluginModule {
     }
 }
 
-/// Represents some global data to load a plugin module.
-pub trait PluginModuleStore {
-    /// The plugin host type.
-    type Module: PluginModule;
-
-    /// Load a plugin from binary.
-    /// For host, the binary is the content of WASM file;
-    /// for plugins, the binary is the module name.
-    fn from_binary(&self, binary: &[u8]) -> Result<Self::Module>;
-}
-
 /// A basic runtime for plugins.
-pub struct PluginRuntime<M: PluginModule, S: PluginModuleStore<Module = M>> {
-    store: S,
+#[derive(Debug)]
+pub struct PluginRuntime<M: PluginModule> {
     modules: HashMap<String, M>,
     action_modules: Vec<String>,
     text_modules: HashMap<String, String>,
@@ -69,11 +58,10 @@ pub struct PluginRuntime<M: PluginModule, S: PluginModuleStore<Module = M>> {
     game_modules: Vec<String>,
 }
 
-impl<M: PluginModule, S: PluginModuleStore<Module = M>> PluginRuntime<M, S> {
+impl<M: PluginModule> PluginRuntime<M> {
     /// Create the runtime from a store.
-    pub fn new(store: S) -> Self {
+    pub fn new() -> Self {
         Self {
-            store,
             modules: HashMap::default(),
             action_modules: vec![],
             text_modules: HashMap::default(),
@@ -83,8 +71,7 @@ impl<M: PluginModule, S: PluginModuleStore<Module = M>> PluginRuntime<M, S> {
     }
 
     /// Insert a plugin with binary.
-    pub fn insert_binary(&mut self, name: String, binary: &[u8]) -> Result<()> {
-        let module = self.store.from_binary(binary)?;
+    pub fn insert_module(&mut self, name: String, module: M) -> Result<()> {
         let plugin_type = module.plugin_type()?;
         if plugin_type.action {
             self.action_modules.push(name.clone());
@@ -150,7 +137,7 @@ pub trait PluginContext {
     fn game_modules<'a>(&'a self) -> Self::GameMIter<'a>;
 }
 
-impl<M: PluginModule, S: PluginModuleStore<Module = M>> PluginContext for PluginRuntime<M, S> {
+impl<M: PluginModule> PluginContext for PluginRuntime<M> {
     type Module = M;
 
     fn get_module(&self, name: &str) -> Option<&M> {
