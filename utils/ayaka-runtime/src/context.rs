@@ -1,5 +1,5 @@
 use crate::{
-    plugin::{LoadStatus, Runtime},
+    plugin::{HostVarTable, LoadStatus, Runtime},
     *,
 };
 use anyhow::{anyhow, bail, Result};
@@ -7,7 +7,6 @@ use ayaka_bindings_types::*;
 use ayaka_script::{Command, Line, Text};
 use fallback::Fallback;
 use log::error;
-use script::*;
 use std::{
     collections::HashMap,
     path::{Path, PathBuf},
@@ -163,7 +162,7 @@ impl Context {
         }
     }
 
-    fn table(&mut self) -> VarTable {
+    fn table(&mut self) -> HostVarTable {
         VarTable::new(&self.runtime, &mut self.ctx.locals)
     }
 

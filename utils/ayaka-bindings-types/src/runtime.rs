@@ -108,24 +108,58 @@ impl<M: PluginModule, S: PluginModuleStore<Module = M>> PluginRuntime<M, S> {
         self.modules.insert(name, module);
         Ok(())
     }
+}
 
-    pub fn get_module(&self, name: &str) -> Option<&M> {
+pub trait PluginContext {
+    type Module: PluginModule;
+
+    fn get_module(&self, name: &str) -> Option<&Self::Module>;
+
+    fn find_text_module(&self, cmd: &str) -> Option<&Self::Module>;
+
+    fn find_line_module(&self, cmd: &str) -> Option<&Self::Module>;
+
+    type ActionMIter<'a>: Iterator<Item = &'a Self::Module>
+    where
+        Self: 'a;
+
+    fn action_modules<'a>(&'a self) -> Self::ActionMIter<'a>;
+
+    type GameMIter<'a>: Iterator<Item = &'a Self::Module>
+    where
+        Self: 'a;
+
+    fn game_modules<'a>(&'a self) -> Self::GameMIter<'a>;
+}
+
+impl<M: PluginModule, S: PluginModuleStore<Module = M>> PluginContext for PluginRuntime<M, S> {
+    type Module = M;
+
+    fn get_module(&self, name: &str) -> Option<&M> {
         self.modules.get(name)
     }
 
-    pub fn find_text_module(&self, cmd: &str) -> Option<&M> {
+    fn find_text_module(&self, cmd: &str) -> Option<&M> {
         self.text_modules.get(cmd).map(|name| &self.modules[name])
     }
 
-    pub fn find_line_module(&self, cmd: &str) -> Option<&M> {
+    fn find_line_module(&self, cmd: &str) -> Option<&M> {
         self.line_modules.get(cmd).map(|name| &self.modules[name])
     }
 
-    pub fn action_modules(&self) -> impl Iterator<Item = &M> {
+    type ActionMIter<'a> = impl Iterator<Item = &'a M>
+    where
+        Self:'a;
+
+    fn action_modules<'a>(&'a self) -> Self::ActionMIter<'a> {
         self.action_modules.iter().map(|name| &self.modules[name])
     }
 
-    pub fn game_modules(&self) -> impl Iterator<Item = &M> {
+    type GameMIter<'a> = impl Iterator<Item = &'a M>
+    where
+        Self:'a;
+
+    fn game_modules<'a>(&'a self) -> Self::GameMIter<'a> {
         self.game_modules.iter().map(|name| &self.modules[name])
     }
 }

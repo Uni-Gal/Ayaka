@@ -9,6 +9,7 @@
 #![feature(absolute_path)]
 #![feature(fn_traits)]
 #![feature(generators)]
+#![feature(generic_associated_types)]
 #![feature(once_cell)]
 #![feature(unboxed_closures)]
 
@@ -16,7 +17,6 @@ mod config;
 mod context;
 mod locale;
 pub mod plugin;
-pub mod script;
 mod settings;
 
 #[doc(no_inline)]

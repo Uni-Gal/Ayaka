@@ -8,7 +8,7 @@ use anyhow::Result;
 use ayaka_bindings_types::*;
 use scopeguard::defer;
 use serde::{de::DeserializeOwned, Serialize};
-use std::{ops::Deref, path::Path};
+use std::path::Path;
 use stream_future::stream;
 use tryiterator::TryIteratorExt;
 use wasmer::*;
@@ -161,6 +161,9 @@ impl PluginModuleStore for HostStore {
     }
 }
 
+/// The specific variable table.
+pub type HostVarTable<'a> = VarTable<'a, Runtime>;
+
 /// The plugin runtime.
 pub struct Runtime(PluginRuntime<Host, HostStore>);
 
@@ -229,10 +232,149 @@ impl Runtime {
     }
 }
 
-impl Deref for Runtime {
-    type Target = PluginRuntime<Host, HostStore>;
+impl PluginContext for Runtime {
+    type Module = Host;
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    fn get_module(&self, name: &str) -> Option<&Self::Module> {
+        self.0.get_module(name)
+    }
+
+    fn find_text_module(&self, cmd: &str) -> Option<&Self::Module> {
+        self.0.find_text_module(cmd)
+    }
+
+    fn find_line_module(&self, cmd: &str) -> Option<&Self::Module> {
+        self.0.find_line_module(cmd)
+    }
+
+    type ActionMIter<'a> = <PluginRuntime<Host, HostStore> as PluginContext>::ActionMIter<'a>;
+
+    fn action_modules(&self) -> Self::ActionMIter<'_> {
+        self.0.action_modules()
+    }
+
+    type GameMIter<'a> = <PluginRuntime<Host, HostStore> as PluginContext>::GameMIter<'a>;
+
+    fn game_modules(&self) -> Self::GameMIter<'_> {
+        self.0.game_modules()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::plugin::*;
+    use tokio::sync::OnceCell;
+
+    static RUNTIME: OnceCell<Runtime> = OnceCell::const_new();
+
+    async fn with_ctx(f: impl FnOnce(&mut HostVarTable)) {
+        let runtime = RUNTIME
+            .get_or_init(|| async {
+                let runtime = Runtime::load(
+                    "../../examples/plugins",
+                    env!("CARGO_MANIFEST_DIR"),
+                    &["random"],
+                );
+                runtime.await.unwrap()
+            })
+            .await;
+        let mut locals = VarMap::default();
+        let mut ctx = VarTable::new(runtime, &mut locals);
+        f(&mut ctx);
+    }
+
+    #[tokio::test]
+    async fn vars() {
+        with_ctx(|ctx| {
+            assert_eq!(
+                ProgramParser::new()
+                    .parse(
+                        "
+                            a = 0;
+                            a += 1;
+                            a += a;
+                            a
+                        "
+                    )
+                    .ok()
+                    .call(ctx),
+                RawValue::Num(2)
+            );
+
+            assert_eq!(
+                ProgramParser::new().parse("a").ok().call(ctx),
+                RawValue::Unit
+            );
+
+            assert_eq!(
+                ProgramParser::new()
+                    .parse(
+                        "
+                            $a = 0;
+                            $a += 1;
+                            $a += a;
+                            $a
+                        "
+                    )
+                    .ok()
+                    .call(ctx),
+                RawValue::Num(1)
+            );
+
+            assert_eq!(
+                ProgramParser::new().parse("$a").ok().call(ctx),
+                RawValue::Num(1)
+            );
+        })
+        .await;
+    }
+
+    #[tokio::test]
+    async fn if_test() {
+        with_ctx(|ctx| {
+            assert_eq!(
+                ProgramParser::new()
+                    .parse(
+                        r##"
+                            if(1 + 1 + 4 + 5 + 1 + 4 == 16, "sodayo", ~)
+                        "##
+                    )
+                    .ok()
+                    .call(ctx)
+                    .get_num(),
+                6
+            );
+            assert_eq!(
+                ProgramParser::new()
+                    .parse(
+                        r##"
+                            if(true, "sodayo")
+                        "##
+                    )
+                    .ok()
+                    .call(ctx)
+                    .get_str(),
+                "sodayo"
+            );
+        })
+        .await;
+    }
+
+    #[tokio::test]
+    async fn random() {
+        with_ctx(|ctx| {
+            assert!((0..10).contains(
+                &ProgramParser::new()
+                    .parse(
+                        r##"
+                            random.rnd(10)
+                        "##
+                    )
+                    .ok()
+                    .call(ctx)
+                    .get_num()
+            ))
+        })
+        .await;
     }
 }
