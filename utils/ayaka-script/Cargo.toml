@@ -10,7 +10,7 @@ serde_with = "2.0"
 lalrpop-util = { version = "0.19", features = ["lexer"] }
 regex = "1"
 log = "0.4"
-trylog = "0.1"
+trylog = "0.2"
 
 [dev-dependencies]
 serde_yaml = "0.9"
