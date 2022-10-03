@@ -37,8 +37,7 @@ unsafe fn mem_slice_mut(memory: &Memory, start: i32, len: i32) -> &mut [u8] {
 }
 
 impl Host {
-    /// Loads the WASM [`Module`], with some imports.
-    pub fn new(module: &Module, resolver: &(dyn Resolver + Send + Sync)) -> Result<Self> {
+    fn new(module: &Module, resolver: &(dyn Resolver + Send + Sync)) -> Result<Self> {
         let instance = Instance::new(module, resolver)?;
         let memory = instance.exports.get_memory("memory")?.clone();
         let abi_free = instance.exports.get_native_function("__abi_free")?;

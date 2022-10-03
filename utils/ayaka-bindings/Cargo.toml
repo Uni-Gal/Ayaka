@@ -8,6 +8,7 @@ edition = "2021"
 ayaka-script = { path = "../ayaka-script" }
 ayaka-bindings-types = { path = "../ayaka-bindings-types" }
 ayaka-bindings-impl = { path = "../ayaka-bindings-impl" }
+anyhow = "1.0"
 serde = "1.0"
 rmp-serde = "1.1"
 log = "0.4"

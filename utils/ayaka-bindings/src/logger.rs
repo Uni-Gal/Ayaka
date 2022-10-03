@@ -1,10 +1,14 @@
-use crate::__import;
+use ayaka_bindings_impl::import;
 use log::Log;
 
 #[link(wasm_import_module = "log")]
 extern "C" {
-    fn __log(len: usize, data: *const u8) -> u64;
     fn __log_flush();
+}
+
+#[import("log")]
+extern "C" {
+    fn __log(record: ayaka_bindings_types::Record);
 }
 
 pub struct PluginLogger;
@@ -30,8 +34,7 @@ impl Log for PluginLogger {
     }
 
     fn log(&self, record: &log::Record) {
-        let record: ayaka_bindings_types::Record = record.into();
-        unsafe { __import::<_, ()>(__log, (record,)) };
+        __log(record.into());
     }
 
     fn flush(&self) {

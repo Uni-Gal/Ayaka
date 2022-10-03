@@ -9,6 +9,7 @@ pub use ayaka_script::{RawValue, ValueType};
 pub use log;
 
 mod logger;
+pub mod plugin;
 
 use scopeguard::defer;
 use serde::{de::DeserializeOwned, Serialize};
