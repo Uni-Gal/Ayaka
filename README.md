@@ -1,3 +1,5 @@
+<img width=100 src="assets/logo.png"/>
+
 # Ayaka
 
 Ayaka is currently a project for [OSPP 2022](https://summer-ospp.ac.cn/).
