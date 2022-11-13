@@ -427,7 +427,7 @@ fn main() -> Result<()> {
                 Logger::with(LogSpecification::parse("info,wasmer=warn")?)
                     .log_to_file(
                         FileSpec::default()
-                            .directory(app.path_resolver().log_dir().unwrap())
+                            .directory(app.path_resolver().app_log_dir().unwrap())
                             .basename("ayaka-gui"),
                     )
                     .use_utc()

@@ -1,4 +1,5 @@
 #![feature(fn_traits)]
+#![feature(tuple_trait)]
 #![feature(unboxed_closures)]
 
 #[doc(no_inline)]
@@ -12,7 +13,10 @@ mod logger;
 
 use scopeguard::defer;
 use serde::{de::DeserializeOwned, Serialize};
-use std::alloc::{self, Layout};
+use std::{
+    alloc::{self, Layout},
+    marker::Tuple,
+};
 
 const ABI_ALIGN: usize = 8;
 
@@ -46,7 +50,7 @@ unsafe fn __abi_alloc_from(data: &[u8]) -> (*mut u8, usize) {
 }
 
 #[doc(hidden)]
-pub unsafe fn __export<Params: DeserializeOwned, Res: Serialize>(
+pub unsafe fn __export<Params: DeserializeOwned + Tuple, Res: Serialize>(
     len: usize,
     data: *const u8,
     f: impl FnOnce<Params, Output = Res>,

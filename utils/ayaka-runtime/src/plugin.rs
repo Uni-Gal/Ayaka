@@ -9,7 +9,7 @@ use ayaka_bindings_types::*;
 use log::warn;
 use scopeguard::defer;
 use serde::{de::DeserializeOwned, Serialize};
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, marker::Tuple, path::Path};
 use stream_future::stream;
 use tryiterator::TryIteratorExt;
 use wasmer::*;
@@ -153,7 +153,7 @@ struct RuntimeInstanceData {
 }
 
 impl RuntimeInstanceData {
-    pub unsafe fn import<Params: DeserializeOwned, Res: Serialize>(
+    pub unsafe fn import<Params: DeserializeOwned + Tuple, Res: Serialize>(
         &self,
         len: i32,
         data: i32,
