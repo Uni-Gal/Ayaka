@@ -111,6 +111,7 @@ pub enum Ref {
 lalrpop_mod!(
     #[allow(missing_docs)]
     #[allow(dead_code)]
+    #[allow(clippy::all)]
     grammer,
     "/exec/grammer.rs"
 );

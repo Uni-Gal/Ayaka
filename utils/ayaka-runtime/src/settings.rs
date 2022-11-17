@@ -86,7 +86,7 @@ fn save_file<T: Serialize>(data: &T, path: impl AsRef<Path>, pretty: bool) -> Re
     } else {
         serde_json::to_vec(data)
     }?;
-    std::fs::write(path, &buffer)?;
+    std::fs::write(path, buffer)?;
     Ok(())
 }
 
