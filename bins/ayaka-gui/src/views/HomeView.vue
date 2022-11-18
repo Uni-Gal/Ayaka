@@ -14,7 +14,7 @@ export default {
     async created() {
         const res = await info()
         this.title = res.title
-        this.bg = res.props.bg
+        this.bg = await conv_src(res.props.bg)
     },
     methods: {
         async new_game() {
@@ -28,7 +28,7 @@ export default {
 </script>
 
 <template>
-    <img class="background" :src="conv_src(bg)">
+    <img class="background" :src="bg">
     <div class="content-full bg-body backboard-bg"></div>
     <div class="content">
         <div class="d-grid gap-4 col-4 mx-auto">

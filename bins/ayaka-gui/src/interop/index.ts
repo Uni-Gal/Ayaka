@@ -1,9 +1,9 @@
 import { convertFileSrc, invoke } from "@tauri-apps/api/tauri"
 import { Locale } from 'vue-i18n'
 
-export function conv_src(path?: string): string | undefined {
+export async function conv_src(path?: string): Promise<string | undefined> {
     if (path) {
-        return decodeURIComponent(convertFileSrc(path))
+        return decodeURIComponent(convertFileSrc(await invoke("absolute_path", { path: path })))
     }
     return undefined
 }

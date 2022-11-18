@@ -76,7 +76,7 @@ fn hide(ctx: LineProcessContext) -> LineProcessResult {
 fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {
     if let Some(names) = ctx.props.remove("ch_names") {
         for name in names.split(',') {
-            if let Some(path) = find_model(name, &ctx.root_path, &ctx.props) {
+            if let Some(path) = find_model(name, "/", &ctx.props) {
                 ctx.props.insert(
                     format!("ch_{}_model", name),
                     path.to_string_lossy().into_owned(),

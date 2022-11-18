@@ -8,10 +8,7 @@ use ayaka_script::{Command, Line, Text};
 use fallback::Fallback;
 use log::error;
 use script::*;
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::{collections::HashMap, path::Path};
 use stream_future::stream;
 use trylog::TryLog;
 
@@ -20,7 +17,6 @@ pub struct Context {
     /// The inner [`Game`] object.
     pub game: Game,
     frontend: FrontendType,
-    root_path: PathBuf,
     runtime: Runtime,
     /// The inner raw context.
     pub ctx: RawContext,
@@ -58,9 +54,8 @@ impl Context {
             .as_ref()
             .parent()
             .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
-        let root_path = std::path::absolute(root_path)?;
         let runtime = {
-            let runtime = Runtime::load(&config.plugins.dir, &root_path, &config.plugins.modules);
+            let runtime = Runtime::load(&config.plugins.dir, root_path, &config.plugins.modules);
             pin_mut!(runtime);
             while let Some(load_status) = runtime.next().await {
                 match load_status {
@@ -78,7 +73,6 @@ impl Context {
             let ctx = GameProcessContextRef {
                 title: &config.title,
                 author: &config.author,
-                root_path: &root_path,
                 props: &config.props,
             };
             let res = module.process_game(ctx)?;
@@ -137,7 +131,6 @@ impl Context {
         Ok(Self {
             game: Game { config, paras, res },
             frontend,
-            root_path,
             runtime,
             ctx: RawContext::default(),
             record: ActionRecord::default(),
@@ -228,7 +221,6 @@ impl Context {
                     Command::Other(cmd, args) => {
                         if let Some(module) = self.runtime.text_module(cmd) {
                             let ctx = TextProcessContextRef {
-                                root_path: &self.root_path,
                                 game_props: &self.game.config.props,
                                 frontend: self.frontend,
                             };
@@ -276,7 +268,6 @@ impl Context {
                 if let Some(cmd) = cmd {
                     if let Some(module) = self.runtime.line_module(cmd) {
                         let ctx = LineProcessContextRef {
-                            root_path: &self.root_path,
                             game_props: &self.game.config.props,
                             frontend: self.frontend,
                             ctx: &self.ctx,
@@ -327,7 +318,6 @@ impl Context {
     fn process_action_text(&self, ctx: &RawContext, action: &mut ActionText) -> Result<()> {
         for module in self.runtime.action_modules() {
             let ctx = ActionProcessContextRef {
-                root_path: &self.root_path,
                 game_props: &self.game.config.props,
                 frontend: self.frontend,
                 ctx,

@@ -44,6 +44,10 @@ export default {
             type_text_buffer: [] as ActionLine[],
             type_sub_text: "",
             type_sub_text_buffer: [] as ActionLine[],
+            bg: undefined as string | undefined,
+            bgm: undefined as string | undefined,
+            voice: undefined as string | undefined,
+            video: undefined as string | undefined,
             play_state: PlayState.Manual,
             mutex: new Mutex(),
         }
@@ -67,6 +71,8 @@ export default {
         // Should be called in mutex
         async fetch_current_run() {
             const ctx = await current_run()
+            this.bg = await conv_src(ctx?.locals.bg)
+            this.bgm = await conv_src(ctx?.locals.bgm)
             const actions = await current_action()
             this.title = await current_title() ?? ""
             console.info(actions)
@@ -103,6 +109,8 @@ export default {
                         }
                         break
                 }
+                this.voice = await conv_src(this.action.vars.voice)
+                this.video = await conv_src(this.vars.video)
             }
         },
         // Should be called in mutex
@@ -245,9 +253,9 @@ export default {
 </script>
 
 <template>
-    <audio ref="bgm" :src="conv_src(raw_ctx.locals.bgm)" type="audio/mpeg" autoplay hidden loop></audio>
-    <audio ref="voice" :src="conv_src(action.vars.voice)" type="audio/mpeg" autoplay hidden></audio>
-    <img class="background" :src="conv_src(raw_ctx.locals.bg)">
+    <audio ref="bgm" :src="bgm" type="audio/mpeg" autoplay hidden loop></audio>
+    <audio ref="voice" :src="voice" type="audio/mpeg" autoplay hidden></audio>
+    <img class="background" :src="bg">
     <Live2D :names="live2d_names(raw_ctx.locals)"></Live2D>
     <div class="card-lines">
         <ActionCard :ch="action.character" :line="type_text" :sub_line="type_sub_text"></ActionCard>
@@ -259,8 +267,7 @@ export default {
         <span>Powered by Ayaka.</span>
     </div>
     <div class="content-full bg-body" :hidden="!vars.video">
-        <video ref="video" class="background" @ended="onvideoended" :src="conv_src(vars.video)" type="video/mp4"
-            autoplay></video>
+        <video ref="video" class="background" @ended="onvideoended" :src="video" type="video/mp4" autoplay></video>
     </div>
     <div class="backboard" @click="next"></div>
     <div class="commands">

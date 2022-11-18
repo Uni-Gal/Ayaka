@@ -1,9 +1,6 @@
 use crate::*;
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    path::{Path, PathBuf},
-};
+use std::collections::HashMap;
 
 /// The bit flags to describe plugin type.
 ///
@@ -104,8 +101,6 @@ pub enum FrontendType {
 /// ```
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ActionProcessContext {
-    /// The root path of the game profile.
-    pub root_path: PathBuf,
     /// The global properties of the game profile.
     pub game_props: HashMap<String, String>,
     /// The frontend type.
@@ -119,7 +114,6 @@ pub struct ActionProcessContext {
 #[derive(Debug, Serialize)]
 #[doc(hidden)]
 pub struct ActionProcessContextRef<'a> {
-    pub root_path: &'a Path,
     pub game_props: &'a HashMap<String, String>,
     pub frontend: FrontendType,
     pub ctx: &'a RawContext,
@@ -153,8 +147,6 @@ pub struct ActionProcessResult {
 /// ```
 #[derive(Debug, Serialize, Deserialize)]
 pub struct TextProcessContext {
-    /// The root path of the game profile.
-    pub root_path: PathBuf,
     /// The global properties of the game profile.
     pub game_props: HashMap<String, String>,
     /// The frontend type.
@@ -164,7 +156,6 @@ pub struct TextProcessContext {
 #[derive(Debug, Serialize)]
 #[doc(hidden)]
 pub struct TextProcessContextRef<'a> {
-    pub root_path: &'a Path,
     pub game_props: &'a HashMap<String, String>,
     pub frontend: FrontendType,
 }
@@ -195,8 +186,6 @@ pub struct GameProcessContext {
     pub title: String,
     /// The author of the game.
     pub author: String,
-    /// The root path of the game profile.
-    pub root_path: PathBuf,
     /// The global properties of the game.
     pub props: HashMap<String, String>,
 }
@@ -206,7 +195,6 @@ pub struct GameProcessContext {
 pub struct GameProcessContextRef<'a> {
     pub title: &'a str,
     pub author: &'a str,
-    pub root_path: &'a Path,
     pub props: &'a HashMap<String, String>,
 }
 
@@ -237,8 +225,6 @@ pub struct GameProcessResult {
 /// ```
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LineProcessContext {
-    /// The root path of the game profile.
-    pub root_path: PathBuf,
     /// The global properties of the game profile.
     pub game_props: HashMap<String, String>,
     /// The frontend type.
@@ -252,7 +238,6 @@ pub struct LineProcessContext {
 #[derive(Debug, Serialize)]
 #[doc(hidden)]
 pub struct LineProcessContextRef<'a> {
-    pub root_path: &'a Path,
     pub game_props: &'a HashMap<String, String>,
     pub frontend: FrontendType,
     pub ctx: &'a RawContext,
