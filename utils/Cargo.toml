@@ -3,6 +3,7 @@ members = [
     "ayaka-bindings-types",
     "ayaka-script",
     "ayaka-plugin",
+    "ayaka-plugin-nop",
     "ayaka-plugin-wasmer",
     "ayaka-plugin-wasmtime",
     "ayaka-runtime",

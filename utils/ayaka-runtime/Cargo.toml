@@ -21,9 +21,16 @@ futures-util = "0.3"
 tryiterator = { git = "https://github.com/Pernosco/tryiterator.git" }
 dirs = "4.0"
 trylog = "0.2"
+cfg-if = "1.0"
 
-#ayaka-plugin-wasmer = { path = "../ayaka-plugin-wasmer" }
-ayaka-plugin-wasmtime = { path = "../ayaka-plugin-wasmtime" }
+ayaka-plugin-nop = { path = "../ayaka-plugin-nop" }
+ayaka-plugin-wasmtime = { path = "../ayaka-plugin-wasmtime", optional = true }
+ayaka-plugin-wasmer = { path = "../ayaka-plugin-wasmer", optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["parking_lot", "rt"] }
+
+[features]
+default = ["wasmtime"]
+wasmtime = ["ayaka-plugin-wasmtime"]
+wasmer = ["ayaka-plugin-wasmer"]
