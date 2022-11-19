@@ -93,11 +93,11 @@ pub trait StoreLinker<M: RawModule>: Sized {
     /// and mapped to `/`.
     fn new(root_path: impl AsRef<Path>) -> Result<Self>;
 
-    /// Import functions by namespace and names.
-    fn import(&mut self, ns: impl Into<String>, funcs: HashMap<String, M::Func>) -> Result<()>;
-
     /// Create a raw module from binary.
     fn create(&self, binary: &[u8]) -> Result<M>;
+
+    /// Import functions by namespace and names.
+    fn import(&mut self, ns: impl Into<String>, funcs: HashMap<String, M::Func>) -> Result<()>;
 
     /// Wrap a simple function.
     fn wrap(&self, f: impl Fn() + Send + Sync + 'static) -> M::Func;

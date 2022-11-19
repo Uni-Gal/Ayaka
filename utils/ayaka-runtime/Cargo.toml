@@ -22,7 +22,8 @@ tryiterator = { git = "https://github.com/Pernosco/tryiterator.git" }
 dirs = "4.0"
 trylog = "0.2"
 
-ayaka-plugin-wasmer = { path = "../ayaka-plugin-wasmer" }
+#ayaka-plugin-wasmer = { path = "../ayaka-plugin-wasmer" }
+ayaka-plugin-wasmtime = { path = "../ayaka-plugin-wasmtime" }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["parking_lot", "rt"] }

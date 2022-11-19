@@ -114,4 +114,4 @@ impl<M: RawModule> Deref for HostRuntime<M> {
 }
 
 /// The plugin runtime used in public.
-pub type Runtime = HostRuntime<ayaka_plugin_wasmer::WasmerModule>;
+pub type Runtime = HostRuntime<ayaka_plugin_wasmtime::WasmtimeModule>;

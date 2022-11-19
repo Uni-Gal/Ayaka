@@ -1,0 +1,235 @@
+use ayaka_plugin::*;
+use scopeguard::defer;
+use std::{
+    path::Path,
+    sync::{Arc, Mutex},
+};
+use wasmtime::*;
+use wasmtime_wasi::*;
+
+unsafe fn mem_slice<'a, T: 'a>(
+    store: impl Into<StoreContext<'a, T>>,
+    memory: &Memory,
+    start: i32,
+    len: i32,
+) -> &'a [u8] {
+    memory
+        .data(store)
+        .get_unchecked(start as usize..)
+        .get_unchecked(..len as usize)
+}
+
+unsafe fn mem_slice_mut<'a, T: 'a>(
+    store: impl Into<StoreContextMut<'a, T>>,
+    memory: &Memory,
+    start: i32,
+    len: i32,
+) -> &'a mut [u8] {
+    memory
+        .data_mut(store)
+        .get_unchecked_mut(start as usize..)
+        .get_unchecked_mut(..len as usize)
+}
+
+type HostStore = Arc<Mutex<Store<WasiCtx>>>;
+
+struct HostInstance {
+    store: HostStore,
+    instance: Instance,
+}
+
+impl HostInstance {
+    pub fn new(store: HostStore, instance: Instance) -> Self {
+        Self { store, instance }
+    }
+
+    pub fn get_memory(&self) -> Option<HostMemory> {
+        self.instance
+            .get_memory(self.store.lock().unwrap().as_context_mut(), "memory")
+            .map(|mem| HostMemory::new(self.store.clone(), mem))
+    }
+
+    pub fn get_typed_func<Params: WasmParams, Results: WasmResults>(
+        &self,
+        name: &str,
+    ) -> Result<HostTypedFunc<Params, Results>> {
+        self.instance
+            .get_typed_func(self.store.lock().unwrap().as_context_mut(), name)
+            .map(|func| HostTypedFunc::new(self.store.clone(), func))
+    }
+}
+
+struct HostMemory {
+    store: HostStore,
+    memory: Memory,
+}
+
+impl HostMemory {
+    pub fn new(store: HostStore, memory: Memory) -> Self {
+        Self { store, memory }
+    }
+
+    pub unsafe fn slice<R>(&self, start: i32, len: i32, f: impl FnOnce(&[u8]) -> R) -> R {
+        let store = self.store.lock().unwrap();
+        let data = mem_slice(store.as_context(), &self.memory, start, len);
+        f(data)
+    }
+
+    pub unsafe fn slice_mut<R>(&self, start: i32, len: i32, f: impl FnOnce(&mut [u8]) -> R) -> R {
+        let mut store = self.store.lock().unwrap();
+        let data = mem_slice_mut(store.as_context_mut(), &self.memory, start, len);
+        f(data)
+    }
+}
+
+struct HostTypedFunc<Params, Results> {
+    store: HostStore,
+    func: TypedFunc<Params, Results>,
+}
+
+impl<Params: WasmParams, Results: WasmResults> HostTypedFunc<Params, Results> {
+    pub fn new(store: HostStore, func: TypedFunc<Params, Results>) -> Self {
+        Self { store, func }
+    }
+
+    pub fn call(&self, params: Params) -> Result<Results, Trap> {
+        self.func
+            .call(self.store.lock().unwrap().as_context_mut(), params)
+    }
+}
+
+pub struct WasmtimeModule {
+    instance: HostInstance,
+    memory: HostMemory,
+    abi_free: HostTypedFunc<(i32, i32), ()>,
+    abi_alloc: HostTypedFunc<i32, i32>,
+}
+
+impl WasmtimeModule {
+    pub(crate) fn new(store: HostStore, module: &Module, linker: &Linker<WasiCtx>) -> Result<Self> {
+        let instance = {
+            let mut store = store.lock().unwrap();
+            linker.instantiate(store.as_context_mut(), module)?
+        };
+        let instance = HostInstance::new(store, instance);
+        let memory = instance.get_memory().unwrap();
+        let abi_free = instance.get_typed_func("__abi_free")?;
+        let abi_alloc = instance.get_typed_func("__abi_alloc")?;
+        Ok(Self {
+            instance,
+            memory,
+            abi_free,
+            abi_alloc,
+        })
+    }
+}
+
+impl RawModule for WasmtimeModule {
+    type Linker = WasmtimeStoreLinker;
+
+    type Func = WasmtimeFunc;
+
+    fn call<T>(&self, name: &str, data: &[u8], f: impl FnOnce(&[u8]) -> Result<T>) -> Result<T> {
+        let memory = &self.memory;
+        let func = self.instance.get_typed_func::<(i32, i32), u64>(name)?;
+
+        let ptr = self.abi_alloc.call(data.len() as i32)?;
+        defer! { self.abi_free.call((ptr, data.len() as i32)).unwrap(); }
+        unsafe { memory.slice_mut(ptr, data.len() as i32, |s| s.copy_from_slice(data)) };
+
+        let res = func.call((data.len() as i32, ptr))?;
+        let (len, res) = ((res >> 32) as i32, (res & 0xFFFFFFFF) as i32);
+        defer! { self.abi_free.call((res, len)).unwrap(); }
+
+        let res_data = unsafe { memory.slice(res, len, |s| f(s)) }?;
+        Ok(res_data)
+    }
+}
+
+pub struct WasmtimeStoreLinker {
+    store: HostStore,
+    linker: Linker<WasiCtx>,
+}
+
+impl WasmtimeStoreLinker {
+    fn preopen_root(root_path: impl AsRef<Path>) -> Result<Dir> {
+        let mut options = std::fs::OpenOptions::new();
+        options.read(true);
+        #[cfg(windows)]
+        {
+            use std::os::windows::fs::OpenOptionsExt;
+            options.share_mode(3); // remove FILE_SHARE_DELETE
+            options.custom_flags(0x02000000); // open dir with FILE_FLAG_BACKUP_SEMANTICS
+        }
+        let root = options.open(root_path)?;
+        Ok(Dir::from_std_file(root))
+    }
+}
+
+impl StoreLinker<WasmtimeModule> for WasmtimeStoreLinker {
+    fn new(root_path: impl AsRef<Path>) -> Result<Self> {
+        let engine = Engine::default();
+        let wasi = WasiCtxBuilder::new()
+            .inherit_stdio()
+            .preopened_dir(Self::preopen_root(root_path)?, "/")?
+            .build();
+        let store = Store::new(&engine, wasi);
+        let mut linker = Linker::new(&engine);
+        add_to_linker(&mut linker, |ctx| ctx)?;
+        Ok(Self {
+            store: Arc::new(Mutex::new(store)),
+            linker,
+        })
+    }
+
+    fn create(&self, binary: &[u8]) -> Result<WasmtimeModule> {
+        let module = Module::new(self.store.lock().unwrap().engine(), binary)?;
+        let host = WasmtimeModule::new(self.store.clone(), &module, &self.linker)?;
+        Ok(host)
+    }
+
+    fn import(
+        &mut self,
+        ns: impl Into<String>,
+        funcs: std::collections::HashMap<String, WasmtimeFunc>,
+    ) -> Result<()> {
+        let ns = ns.into();
+        for (name, func) in funcs {
+            self.linker.define(&ns, &name, func.into_raw())?;
+        }
+        Ok(())
+    }
+
+    fn wrap(&self, f: impl Fn() + Send + Sync + 'static) -> WasmtimeFunc {
+        WasmtimeFunc::new(Func::wrap(self.store.lock().unwrap().as_context_mut(), f))
+    }
+
+    fn wrap_with_args_raw(
+        &self,
+        f: impl (Fn(*const [u8]) -> Result<()>) + Send + Sync + 'static,
+    ) -> WasmtimeFunc {
+        WasmtimeFunc::new(Func::wrap(
+            self.store.lock().unwrap().as_context_mut(),
+            move |mut store: Caller<WasiCtx>, len: i32, data: i32| unsafe {
+                let memory = store.get_export("memory").unwrap().into_memory().unwrap();
+                let data = mem_slice(store.as_context(), &memory, data, len);
+                f(data).map_err(|e| Trap::new(e.to_string()))?;
+                Ok(())
+            },
+        ))
+    }
+}
+
+pub struct WasmtimeFunc {
+    func: Func,
+}
+
+impl WasmtimeFunc {
+    pub(crate) fn new(func: Func) -> Self {
+        Self { func }
+    }
+
+    pub fn into_raw(self) -> Func {
+        self.func
+    }
+}

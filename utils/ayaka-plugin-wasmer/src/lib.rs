@@ -33,7 +33,7 @@ pub struct WasmerModule {
 
 impl WasmerModule {
     /// Loads the WASM [`Module`], with some imports.
-    pub fn new(module: &Module, resolver: &(dyn Resolver + Send + Sync)) -> Result<Self> {
+    pub(crate) fn new(module: &Module, resolver: &(dyn Resolver + Send + Sync)) -> Result<Self> {
         let instance = Instance::new(module, resolver)?;
         let memory = instance.exports.get_memory("memory")?.clone();
         let abi_free = instance.exports.get_native_function("__abi_free")?;
@@ -76,8 +76,6 @@ impl RawModule for WasmerModule {
 struct RuntimeInstanceData {
     #[wasmer(export)]
     memory: LazyInit<Memory>,
-    #[wasmer(export(name = "__abi_alloc"))]
-    alloc: LazyInit<NativeFunc<i32, i32>>,
 }
 
 impl RuntimeInstanceData {
@@ -151,7 +149,7 @@ impl StoreLinker<WasmerModule> for WasmerStoreLinker {
         let mut import_object = ImportObject::new();
         let mut namespace = Exports::new();
         for (name, func) in funcs {
-            namespace.insert(name, func.into_function());
+            namespace.insert(name, func.into_raw());
         }
         import_object.register(ns, namespace);
         self.imports.push(import_object);
@@ -185,7 +183,7 @@ impl WasmerFunc {
         Self { func }
     }
 
-    pub fn into_function(self) -> Function {
+    pub fn into_raw(self) -> Function {
         self.func
     }
 }
