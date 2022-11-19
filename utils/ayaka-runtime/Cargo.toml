@@ -32,7 +32,7 @@ ayaka-plugin-wasmer = { path = "../ayaka-plugin-wasmer", optional = true }
 tokio = { version = "1", features = ["parking_lot", "rt"] }
 
 [features]
-default = ["wasmtime"]
+default = ["wasmi"]
 wasmi = ["ayaka-plugin-wasmi"]
 wasmtime = ["ayaka-plugin-wasmtime"]
 wasmer = ["ayaka-plugin-wasmer"]

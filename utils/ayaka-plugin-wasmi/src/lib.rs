@@ -105,14 +105,14 @@ impl<Params: WasmParams, Results: WasmResults> HostTypedFunc<Params, Results> {
     }
 }
 
-pub struct WasmtimeModule {
+pub struct WasmiModule {
     instance: HostInstance,
     memory: HostMemory,
     abi_free: HostTypedFunc<(i32, i32), ()>,
     abi_alloc: HostTypedFunc<i32, i32>,
 }
 
-impl WasmtimeModule {
+impl WasmiModule {
     pub(crate) fn new(store: HostStore, module: &Module, linker: &Linker<WasiCtx>) -> Result<Self> {
         let instance = {
             let mut store = store.lock().unwrap();
@@ -133,10 +133,10 @@ impl WasmtimeModule {
     }
 }
 
-impl RawModule for WasmtimeModule {
-    type Linker = WasmtimeStoreLinker;
+impl RawModule for WasmiModule {
+    type Linker = WasmiStoreLinker;
 
-    type Func = WasmtimeFunc;
+    type Func = WasmiFunc;
 
     fn call<T>(&self, name: &str, data: &[u8], f: impl FnOnce(&[u8]) -> Result<T>) -> Result<T> {
         let memory = &self.memory;
@@ -155,12 +155,12 @@ impl RawModule for WasmtimeModule {
     }
 }
 
-pub struct WasmtimeStoreLinker {
+pub struct WasmiStoreLinker {
     store: HostStore,
     linker: Linker<WasiCtx>,
 }
 
-impl WasmtimeStoreLinker {
+impl WasmiStoreLinker {
     fn preopen_root(root_path: impl AsRef<Path>) -> Result<cap_std::fs::Dir> {
         let mut options = std::fs::OpenOptions::new();
         options.read(true);
@@ -175,7 +175,7 @@ impl WasmtimeStoreLinker {
     }
 }
 
-impl StoreLinker<WasmtimeModule> for WasmtimeStoreLinker {
+impl StoreLinker<WasmiModule> for WasmiStoreLinker {
     fn new(root_path: impl AsRef<Path>) -> Result<Self> {
         let engine = Engine::default();
         let wasi = WasiCtxBuilder::new()
@@ -191,16 +191,16 @@ impl StoreLinker<WasmtimeModule> for WasmtimeStoreLinker {
         })
     }
 
-    fn create(&self, binary: &[u8]) -> Result<WasmtimeModule> {
+    fn create(&self, binary: &[u8]) -> Result<WasmiModule> {
         let module = Module::new(self.store.lock().unwrap().engine(), binary)?;
-        let host = WasmtimeModule::new(self.store.clone(), &module, &self.linker)?;
+        let host = WasmiModule::new(self.store.clone(), &module, &self.linker)?;
         Ok(host)
     }
 
     fn import(
         &mut self,
         ns: impl Into<String>,
-        funcs: std::collections::HashMap<String, WasmtimeFunc>,
+        funcs: std::collections::HashMap<String, WasmiFunc>,
     ) -> Result<()> {
         let ns = ns.into();
         for (name, func) in funcs {
@@ -209,15 +209,15 @@ impl StoreLinker<WasmtimeModule> for WasmtimeStoreLinker {
         Ok(())
     }
 
-    fn wrap(&self, f: impl Fn() + Send + Sync + 'static) -> WasmtimeFunc {
-        WasmtimeFunc::new(Func::wrap(self.store.lock().unwrap().as_context_mut(), f))
+    fn wrap(&self, f: impl Fn() + Send + Sync + 'static) -> WasmiFunc {
+        WasmiFunc::new(Func::wrap(self.store.lock().unwrap().as_context_mut(), f))
     }
 
     fn wrap_with_args_raw(
         &self,
         f: impl (Fn(*const [u8]) -> Result<()>) + Send + Sync + 'static,
-    ) -> WasmtimeFunc {
-        WasmtimeFunc::new(Func::wrap(
+    ) -> WasmiFunc {
+        WasmiFunc::new(Func::wrap(
             self.store.lock().unwrap().as_context_mut(),
             move |store: Caller<WasiCtx>, len: i32, data: i32| unsafe {
                 let memory = store.get_export("memory").unwrap().into_memory().unwrap();
@@ -229,11 +229,11 @@ impl StoreLinker<WasmtimeModule> for WasmtimeStoreLinker {
     }
 }
 
-pub struct WasmtimeFunc {
+pub struct WasmiFunc {
     func: Func,
 }
 
-impl WasmtimeFunc {
+impl WasmiFunc {
     pub(crate) fn new(func: Func) -> Self {
         Self { func }
     }
