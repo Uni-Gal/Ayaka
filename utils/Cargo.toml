@@ -6,6 +6,7 @@ members = [
     "ayaka-plugin-nop",
     "ayaka-plugin-wasmer",
     "ayaka-plugin-wasmtime",
+    "ayaka-plugin-wasmi",
     "ayaka-runtime",
 ]
 

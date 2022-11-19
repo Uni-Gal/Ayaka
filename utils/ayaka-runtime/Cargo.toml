@@ -24,6 +24,7 @@ trylog = "0.2"
 cfg-if = "1.0"
 
 ayaka-plugin-nop = { path = "../ayaka-plugin-nop" }
+ayaka-plugin-wasmi = { path = "../ayaka-plugin-wasmi", optional = true }
 ayaka-plugin-wasmtime = { path = "../ayaka-plugin-wasmtime", optional = true }
 ayaka-plugin-wasmer = { path = "../ayaka-plugin-wasmer", optional = true }
 
@@ -32,5 +33,6 @@ tokio = { version = "1", features = ["parking_lot", "rt"] }
 
 [features]
 default = ["wasmtime"]
+wasmi = ["ayaka-plugin-wasmi"]
 wasmtime = ["ayaka-plugin-wasmtime"]
 wasmer = ["ayaka-plugin-wasmer"]

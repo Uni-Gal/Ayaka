@@ -119,7 +119,9 @@ pub type Runtime = HostRuntime<backend::BackendModule>;
 #[doc(hidden)]
 mod backend {
     cfg_if::cfg_if! {
-        if #[cfg(feature = "wasmtime")] {
+        if #[cfg(feature = "wasmi")] {
+            pub use ayaka_plugin_wasmi::WasmiModule as BackendModule;
+        } else if #[cfg(feature = "wasmtime")] {
             pub use ayaka_plugin_wasmtime::WasmtimeModule as BackendModule;
         } else if #[cfg(feature = "wasmer")] {
             pub use ayaka_plugin_wasmer::WasmerModule as BackendModule;
