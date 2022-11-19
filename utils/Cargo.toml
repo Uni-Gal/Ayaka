@@ -2,6 +2,8 @@
 members = [
     "ayaka-bindings-types",
     "ayaka-script",
+    "ayaka-plugin",
+    "ayaka-plugin-wasmer",
     "ayaka-runtime",
 ]
 

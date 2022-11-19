@@ -210,8 +210,7 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
     } else {
         let args = args.iter().map(|e| e.call(ctx)).collect::<Vec<_>>();
         ctx.runtime
-            .modules
-            .get(ns)
+            .module(ns)
             .map(|runtime| {
                 runtime
                     .dispatch_method(name, &args)

@@ -74,8 +74,7 @@ impl Context {
         };
 
         yield OpenStatus::GamePlugin;
-        for m in &runtime.game_modules {
-            let module = &runtime.modules[m];
+        for module in runtime.game_modules() {
             let ctx = GameProcessContextRef {
                 title: &config.title,
                 author: &config.author,
@@ -227,13 +226,13 @@ impl Context {
                         }
                     }
                     Command::Other(cmd, args) => {
-                        if let Some(module) = self.runtime.text_modules.get(cmd) {
+                        if let Some(module) = self.runtime.text_module(cmd) {
                             let ctx = TextProcessContextRef {
                                 root_path: &self.root_path,
                                 game_props: &self.game.config.props,
                                 frontend: self.frontend,
                             };
-                            let res = self.runtime.modules[module].dispatch_text(cmd, args, ctx)?;
+                            let res = module.dispatch_text(cmd, args, ctx)?;
                             action.text.extend(res.text.text);
                             action.vars.extend(res.text.vars);
                         }
@@ -275,9 +274,7 @@ impl Context {
                 self.vars.clear();
                 let cmd = props.iter().next().map(|(key, _)| key);
                 if let Some(cmd) = cmd {
-                    let module = self.runtime.line_modules.get(cmd);
-                    if let Some(module) = module {
-                        let module = &self.runtime.modules[module];
+                    if let Some(module) = self.runtime.line_module(cmd) {
                         let ctx = LineProcessContextRef {
                             root_path: &self.root_path,
                             game_props: &self.game.config.props,
@@ -328,8 +325,7 @@ impl Context {
     }
 
     fn process_action_text(&self, ctx: &RawContext, action: &mut ActionText) -> Result<()> {
-        for action_module in &self.runtime.action_modules {
-            let module = &self.runtime.modules[action_module];
+        for module in self.runtime.action_modules() {
             let ctx = ActionProcessContextRef {
                 root_path: &self.root_path,
                 game_props: &self.game.config.props,
