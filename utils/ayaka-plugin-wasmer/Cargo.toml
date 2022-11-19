@@ -8,9 +8,3 @@ ayaka-plugin = { path = "../ayaka-plugin" }
 wasmer = "2.3"
 wasmer-wasi = "2.3"
 scopeguard = "1.1"
-
-# TODO: remove them
-ayaka-bindings-types = { path = "../ayaka-bindings-types" }
-ayaka-script = { path = "../ayaka-script" }
-serde = { version = "1.0", features = ["derive"] }
-rmp-serde = "1.1"

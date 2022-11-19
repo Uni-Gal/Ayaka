@@ -1,5 +1,8 @@
 //! Base crate for plugin runtimes.
 
+#![feature(fn_traits)]
+#![feature(tuple_trait)]
+#![feature(unboxed_closures)]
 #![warn(missing_docs)]
 
 pub use anyhow::Result;
@@ -7,12 +10,15 @@ pub use anyhow::Result;
 use ayaka_bindings_types::*;
 use ayaka_script::{log, RawValue};
 use serde::{de::DeserializeOwned, Serialize};
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, marker::Tuple, path::Path};
 
 /// Represents a raw plugin module.
 pub trait RawModule: Sized {
     /// The linker type that can create raw module.
     type Linker: StoreLinker<Self>;
+
+    /// The import function type.
+    type Func;
 
     /// Calls a method by name.
     ///
@@ -87,8 +93,32 @@ pub trait StoreLinker<M: RawModule>: Sized {
     /// and mapped to `/`.
     fn new(root_path: impl AsRef<Path>) -> Result<Self>;
 
+    /// Import functions by namespace and names.
+    fn import(&mut self, ns: impl Into<String>, funcs: HashMap<String, M::Func>) -> Result<()>;
+
     /// Create a raw module from binary.
-    fn from_binary(&self, binary: &[u8]) -> Result<M>;
+    fn create(&self, binary: &[u8]) -> Result<M>;
+
+    /// Wrap a simple function.
+    fn wrap(&self, f: impl Fn() + Send + Sync + 'static) -> M::Func;
+
+    /// Wrap a function with args in bytes.
+    fn wrap_with_args_raw(
+        &self,
+        f: impl (Fn(*const [u8]) -> Result<()>) + Send + Sync + 'static,
+    ) -> M::Func;
+
+    /// Wrap a function with args.
+    fn wrap_with_args<Params: DeserializeOwned + Tuple>(
+        &self,
+        f: impl Fn<Params, Output = ()> + Send + Sync + 'static,
+    ) -> M::Func {
+        self.wrap_with_args_raw(move |data| {
+            let data = rmp_serde::from_slice(unsafe { &*data })?;
+            f.call(data);
+            Ok(())
+        })
+    }
 }
 
 /// The plugin runtime.
@@ -98,6 +128,12 @@ pub struct PluginRuntime<M: RawModule> {
     text_modules: HashMap<String, String>,
     line_modules: HashMap<String, String>,
     game_modules: Vec<String>,
+}
+
+impl<M: RawModule> Default for PluginRuntime<M> {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl<M: RawModule> PluginRuntime<M> {

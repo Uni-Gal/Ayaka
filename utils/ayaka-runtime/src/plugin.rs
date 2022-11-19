@@ -1,16 +1,13 @@
 //! The plugin utilities.
 
 #![allow(unsafe_code)]
-#![allow(clippy::mut_from_ref)]
 
 use crate::*;
 use anyhow::Result;
 use ayaka_plugin::*;
-use std::{ops::Deref, path::Path};
+use std::{collections::HashMap, ops::Deref, path::Path};
 use stream_future::stream;
 use tryiterator::TryIteratorExt;
-
-use ayaka_plugin_wasmer::*;
 
 /// The plugin runtime.
 pub struct HostRuntime<M: RawModule> {
@@ -27,6 +24,30 @@ pub enum LoadStatus {
 }
 
 impl<M: RawModule> HostRuntime<M> {
+    fn new_linker(root_path: impl AsRef<Path>) -> Result<M::Linker> {
+        let mut store = M::Linker::new(root_path)?;
+        let log_func = store.wrap_with_args(|data: Record| {
+            log::logger().log(
+                &log::Record::builder()
+                    .level(data.level)
+                    .target(&data.target)
+                    .args(format_args!("{}", data.msg))
+                    .module_path(data.module_path.as_deref())
+                    .file(data.file.as_deref())
+                    .line(data.line)
+                    .build(),
+            )
+        });
+        let log_flush_func = store.wrap(|| log::logger().flush());
+        store.import("log", {
+            let mut map = HashMap::new();
+            map.insert("__log".to_string(), log_func);
+            map.insert("__log_flush".to_string(), log_flush_func);
+            map
+        })?;
+        Ok(store)
+    }
+
     /// Load plugins from specific directory and plugin names.
     ///
     /// The actual load folder will be `rel_to.join(dir)`.
@@ -41,7 +62,7 @@ impl<M: RawModule> HostRuntime<M> {
         let root_path = rel_to.as_ref();
         let path = root_path.join(dir);
         yield LoadStatus::CreateEngine;
-        let store = M::Linker::new(root_path)?;
+        let store = Self::new_linker(root_path)?;
         let mut runtime = PluginRuntime::new();
         let paths = if names.is_empty() {
             std::fs::read_dir(path)?
@@ -77,7 +98,7 @@ impl<M: RawModule> HostRuntime<M> {
         for (i, (name, p)) in paths.into_iter().enumerate() {
             yield LoadStatus::LoadPlugin(name.clone(), i, total_len);
             let buf = std::fs::read(p)?;
-            let module = PluginModule::new(store.from_binary(&buf)?);
+            let module = PluginModule::new(store.create(&buf)?);
             runtime.insert_module(name, module)?;
         }
         Ok(Self { runtime })
@@ -93,4 +114,4 @@ impl<M: RawModule> Deref for HostRuntime<M> {
 }
 
 /// The plugin runtime used in public.
-pub type Runtime = HostRuntime<WasmerModule>;
+pub type Runtime = HostRuntime<ayaka_plugin_wasmer::WasmerModule>;
