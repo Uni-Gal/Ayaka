@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 ayaka-plugin = { path = "../ayaka-plugin" }
-wasmi = { git = "https://github.com/paritytech/wasmi.git" }
-wasmi_wasi = { git = "https://github.com/paritytech/wasmi.git" }
-cap-std = "0.25"
+wasmi = { git = "https://github.com/Berrysoft/wasmi.git", branch = "patch/wasi" }
+wasmi_wasi = { git = "https://github.com/Berrysoft/wasmi.git", branch = "patch/wasi" }
+cap-std = "0.26"
 scopeguard = "1.1"
