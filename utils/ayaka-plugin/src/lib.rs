@@ -2,6 +2,7 @@
 
 #![feature(fn_traits)]
 #![feature(tuple_trait)]
+#![feature(type_alias_impl_trait)]
 #![feature(unboxed_closures)]
 #![warn(missing_docs)]
 
@@ -182,31 +183,69 @@ impl<M: RawModule> PluginRuntime<M> {
         self.modules.insert(name, module);
         Ok(())
     }
+}
+
+/// Represents a plugin resolver.
+pub trait PluginResolver {
+    /// The type of raw plugin module.
+    type Module: RawModule;
 
     /// Gets module from name.
-    pub fn module(&self, key: &str) -> Option<&PluginModule<M>> {
+    fn module(&self, key: &str) -> Option<&PluginModule<Self::Module>>;
+
+    #[doc(hidden)]
+    type ActionMIter<'a>: Iterator<Item = &'a PluginModule<Self::Module>>
+    where
+        Self: 'a;
+
+    /// Iterates action modules.
+    fn action_modules<'a>(&'a self) -> Self::ActionMIter<'a>;
+
+    /// Gets text module from command.
+    fn text_module(&self, cmd: &str) -> Option<&PluginModule<Self::Module>>;
+
+    /// Gets line module from command.
+    fn line_module(&self, cmd: &str) -> Option<&PluginModule<Self::Module>>;
+
+    #[doc(hidden)]
+    type GameMIter<'a>: Iterator<Item = &'a PluginModule<Self::Module>>
+    where
+        Self: 'a;
+
+    /// Iterates game modules.
+    fn game_modules<'a>(&'a self) -> Self::GameMIter<'a>;
+}
+
+impl<M: RawModule> PluginResolver for PluginRuntime<M> {
+    type Module = M;
+
+    fn module(&self, key: &str) -> Option<&PluginModule<M>> {
         self.modules.get(key)
     }
 
-    /// Iterates action modules.
-    pub fn action_modules(&self) -> impl Iterator<Item = &PluginModule<M>> {
+    type ActionMIter<'a> = impl Iterator<Item = &'a PluginModule<M>>
+    where
+        M: 'a;
+
+    fn action_modules<'a>(&'a self) -> Self::ActionMIter<'a> {
         self.action_modules
             .iter()
             .map(|key| self.module(key).unwrap())
     }
 
-    /// Gets text module from command.
-    pub fn text_module(&self, cmd: &str) -> Option<&PluginModule<M>> {
+    fn text_module(&self, cmd: &str) -> Option<&PluginModule<M>> {
         self.text_modules.get(cmd).and_then(|key| self.module(key))
     }
 
-    /// Gets line module from command.
-    pub fn line_module(&self, cmd: &str) -> Option<&PluginModule<M>> {
+    fn line_module(&self, cmd: &str) -> Option<&PluginModule<M>> {
         self.line_modules.get(cmd).and_then(|key| self.module(key))
     }
 
-    /// Iterates game modules.
-    pub fn game_modules(&self) -> impl Iterator<Item = &PluginModule<M>> {
+    type GameMIter<'a> = impl Iterator<Item = &'a PluginModule<M>>
+    where
+        M: 'a;
+
+    fn game_modules<'a>(&'a self) -> Self::GameMIter<'a> {
         self.game_modules
             .iter()
             .map(|key| self.module(key).unwrap())

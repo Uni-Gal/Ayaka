@@ -5,7 +5,7 @@
 use crate::*;
 use anyhow::Result;
 use ayaka_plugin::*;
-use std::{collections::HashMap, ops::Deref, path::Path};
+use std::{collections::HashMap, path::Path};
 use stream_future::stream;
 use tryiterator::TryIteratorExt;
 
@@ -105,11 +105,35 @@ impl<M: RawModule> HostRuntime<M> {
     }
 }
 
-impl<M: RawModule> Deref for HostRuntime<M> {
-    type Target = PluginRuntime<M>;
+impl<M: RawModule> PluginResolver for HostRuntime<M> {
+    type Module = M;
 
-    fn deref(&self) -> &Self::Target {
-        &self.runtime
+    fn module(&self, key: &str) -> Option<&PluginModule<Self::Module>> {
+        self.runtime.module(key)
+    }
+
+    type ActionMIter<'a> = <PluginRuntime<M> as PluginResolver>::ActionMIter<'a>
+    where
+        M: 'a;
+
+    fn action_modules<'a>(&'a self) -> Self::ActionMIter<'a> {
+        self.runtime.action_modules()
+    }
+
+    fn text_module(&self, cmd: &str) -> Option<&PluginModule<Self::Module>> {
+        self.runtime.text_module(cmd)
+    }
+
+    fn line_module(&self, cmd: &str) -> Option<&PluginModule<Self::Module>> {
+        self.runtime.line_module(cmd)
+    }
+
+    type GameMIter<'a> = <PluginRuntime<M> as PluginResolver>::GameMIter<'a>
+    where
+        M: 'a;
+
+    fn game_modules<'a>(&'a self) -> Self::GameMIter<'a> {
+        self.runtime.game_modules()
     }
 }
 

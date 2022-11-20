@@ -1,8 +1,8 @@
 .PHONY: test nextest clean update doc
 test:
-	cargo test
+	cargo test --all-features
 nextest:
-	cargo nextest run
+	cargo nextest run --all-features
 clean:
 	cargo clean
 update:
