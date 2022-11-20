@@ -124,7 +124,7 @@ impl WasmtimeModule {
 impl RawModule for WasmtimeModule {
     type Linker = WasmtimeStoreLinker;
 
-    type Func = WasmtimeFunc;
+    type Func = Func;
 
     fn call<T>(&self, name: &str, data: &[u8], f: impl FnOnce(&[u8]) -> Result<T>) -> Result<T> {
         let memory = &self.memory;
@@ -188,24 +188,24 @@ impl StoreLinker<WasmtimeModule> for WasmtimeStoreLinker {
     fn import(
         &mut self,
         ns: impl Into<String>,
-        funcs: std::collections::HashMap<String, WasmtimeFunc>,
+        funcs: std::collections::HashMap<String, Func>,
     ) -> Result<()> {
         let ns = ns.into();
         for (name, func) in funcs {
-            self.linker.define(&ns, &name, func.into_raw())?;
+            self.linker.define(&ns, &name, func)?;
         }
         Ok(())
     }
 
-    fn wrap(&self, f: impl Fn() + Send + Sync + 'static) -> WasmtimeFunc {
-        WasmtimeFunc::new(Func::wrap(self.store.lock().unwrap().as_context_mut(), f))
+    fn wrap(&self, f: impl Fn() + Send + Sync + 'static) -> Func {
+        Func::wrap(self.store.lock().unwrap().as_context_mut(), f)
     }
 
     fn wrap_with_args_raw(
         &self,
         f: impl (Fn(*const [u8]) -> Result<()>) + Send + Sync + 'static,
-    ) -> WasmtimeFunc {
-        WasmtimeFunc::new(Func::wrap(
+    ) -> Func {
+        Func::wrap(
             self.store.lock().unwrap().as_context_mut(),
             move |mut store: Caller<WasiCtx>, len: i32, data: i32| unsafe {
                 let memory = store.get_export("memory").unwrap().into_memory().unwrap();
@@ -213,20 +213,6 @@ impl StoreLinker<WasmtimeModule> for WasmtimeStoreLinker {
                 f(data).map_err(|e| Trap::new(e.to_string()))?;
                 Ok(())
             },
-        ))
-    }
-}
-
-pub struct WasmtimeFunc {
-    func: Func,
-}
-
-impl WasmtimeFunc {
-    pub(crate) fn new(func: Func) -> Self {
-        Self { func }
-    }
-
-    pub fn into_raw(self) -> Func {
-        self.func
+        )
     }
 }

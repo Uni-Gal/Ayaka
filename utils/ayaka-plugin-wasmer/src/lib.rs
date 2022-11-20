@@ -50,7 +50,7 @@ impl WasmerModule {
 impl RawModule for WasmerModule {
     type Linker = WasmerStoreLinker;
 
-    type Func = WasmerFunc;
+    type Func = Function;
 
     fn call<T>(&self, name: &str, data: &[u8], f: impl FnOnce(&[u8]) -> Result<T>) -> Result<T> {
         let memory = &self.memory;
@@ -145,45 +145,31 @@ impl StoreLinker<WasmerModule> for WasmerStoreLinker {
         Ok(host)
     }
 
-    fn import(&mut self, ns: impl Into<String>, funcs: HashMap<String, WasmerFunc>) -> Result<()> {
+    fn import(&mut self, ns: impl Into<String>, funcs: HashMap<String, Function>) -> Result<()> {
         let mut import_object = ImportObject::new();
         let mut namespace = Exports::new();
         for (name, func) in funcs {
-            namespace.insert(name, func.into_raw());
+            namespace.insert(name, func);
         }
         import_object.register(ns, namespace);
         self.imports.push(import_object);
         Ok(())
     }
 
-    fn wrap(&self, f: impl Fn() + Send + Sync + 'static) -> WasmerFunc {
-        WasmerFunc::new(Function::new_native(&self.store, f))
+    fn wrap(&self, f: impl Fn() + Send + Sync + 'static) -> Function {
+        Function::new_native(&self.store, f)
     }
 
     fn wrap_with_args_raw(
         &self,
         f: impl (Fn(*const [u8]) -> Result<()>) + Send + Sync + 'static,
-    ) -> WasmerFunc {
-        WasmerFunc::new(Function::new_native_with_env(
+    ) -> Function {
+        Function::new_native_with_env(
             &self.store,
             RuntimeInstanceData::default(),
             move |env_data: &RuntimeInstanceData, len: i32, data: i32| unsafe {
                 env_data.import(len, data, &f)
             },
-        ))
-    }
-}
-
-pub struct WasmerFunc {
-    func: Function,
-}
-
-impl WasmerFunc {
-    pub(crate) fn new(func: Function) -> Self {
-        Self { func }
-    }
-
-    pub fn into_raw(self) -> Function {
-        self.func
+        )
     }
 }
