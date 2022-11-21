@@ -4,7 +4,6 @@ use crate::{
 };
 use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::*;
-use ayaka_plugin::PluginResolver;
 use ayaka_script::{Command, Line, Text};
 use fallback::Fallback;
 use log::error;

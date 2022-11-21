@@ -4,8 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ayaka-bindings-types = { path = "../ayaka-bindings-types" }
-ayaka-script = { path = "../ayaka-script" }
-serde = { version = "1.0", features = ["derive"] }
+serde = "1.0"
 anyhow = "1.0"
 rmp-serde = "1.1"

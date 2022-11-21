@@ -9,6 +9,7 @@
 #![feature(fn_traits)]
 #![feature(generators)]
 #![feature(once_cell)]
+#![feature(type_alias_impl_trait)]
 #![feature(unboxed_closures)]
 
 mod config;

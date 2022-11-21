@@ -6,7 +6,7 @@ mod runtime_tests {
     use ayaka_plugin_wasmtime::WasmtimeModule;
     use ayaka_runtime::{plugin::HostRuntime, script::*, *};
 
-    async fn with_ctx<M: RawModule>(f: impl FnOnce(&mut VarTable<HostRuntime<M>>)) {
+    async fn with_ctx<M: RawModule>(f: impl FnOnce(&mut VarTable<M>)) {
         let runtime = HostRuntime::load(
             "../../examples/plugins",
             env!("CARGO_MANIFEST_DIR"),

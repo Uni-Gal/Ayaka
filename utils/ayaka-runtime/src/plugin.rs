@@ -9,9 +9,65 @@ use std::{collections::HashMap, path::Path};
 use stream_future::stream;
 use tryiterator::TryIteratorExt;
 
+/// The plugin module with high-level interfaces.
+pub struct HostModule<M: RawModule> {
+    module: PluginModule<M>,
+}
+
+impl<M: RawModule> HostModule<M> {
+    fn new(module: M) -> Self {
+        Self {
+            module: PluginModule::new(module),
+        }
+    }
+
+    /// Calls a script plugin method by name.
+    pub fn dispatch_method(&self, name: &str, args: &[RawValue]) -> Result<RawValue> {
+        self.module.call(name, (args,))
+    }
+
+    /// Gets the [`PluginType`].
+    pub fn plugin_type(&self) -> Result<PluginType> {
+        self.module.call("plugin_type", ())
+    }
+
+    /// Processes [`Action`] in action plugin.
+    pub fn process_action(&self, ctx: ActionProcessContextRef) -> Result<ActionProcessResult> {
+        self.module.call("process_action", (ctx,))
+    }
+
+    /// Calls a custom command in the text plugin.
+    pub fn dispatch_text(
+        &self,
+        name: &str,
+        args: &[String],
+        ctx: TextProcessContextRef,
+    ) -> Result<TextProcessResult> {
+        self.module.call(name, (args, ctx))
+    }
+
+    /// Calls a custom command in the line plugin.
+    pub fn dispatch_line(
+        &self,
+        name: &str,
+        ctx: LineProcessContextRef,
+    ) -> Result<LineProcessResult> {
+        self.module.call(name, (ctx,))
+    }
+
+    /// Processes [`Game`] when opening the config file.
+    pub fn process_game(&self, ctx: GameProcessContextRef) -> Result<GameProcessResult> {
+        self.module.call("process_game", (ctx,))
+    }
+}
+
 /// The plugin runtime.
 pub struct HostRuntime<M: RawModule> {
-    runtime: PluginRuntime<M>,
+    modules: HashMap<String, HostModule<M>>,
+    action_modules: Vec<String>,
+    text_modules: HashMap<String, String>,
+    line_modules: HashMap<String, String>,
+    game_modules: Vec<String>,
 }
 
 /// The load status of [`Runtime`].
@@ -64,7 +120,7 @@ impl<M: RawModule> HostRuntime<M> {
         let path = root_path.join(dir);
         yield LoadStatus::CreateEngine;
         let store = Self::new_linker(root_path)?;
-        let mut runtime = PluginRuntime::new();
+        let mut runtime = Self::new();
         let paths = if names.is_empty() {
             std::fs::read_dir(path)?
                 .try_filter_map(|f| {
@@ -99,47 +155,91 @@ impl<M: RawModule> HostRuntime<M> {
         for (i, (name, p)) in paths.into_iter().enumerate() {
             yield LoadStatus::LoadPlugin(name.clone(), i, total_len);
             let buf = std::fs::read(p)?;
-            let module = PluginModule::new(store.create(&buf)?);
+            let module = HostModule::new(store.create(&buf)?);
             runtime.insert_module(name, module)?;
         }
-        Ok(Self { runtime })
-    }
-}
-
-impl<M: RawModule> PluginResolver for HostRuntime<M> {
-    type Module = M;
-
-    fn module(&self, key: &str) -> Option<&PluginModule<Self::Module>> {
-        self.runtime.module(key)
+        Ok(runtime)
     }
 
-    type ActionMIter<'a> = <PluginRuntime<M> as PluginResolver>::ActionMIter<'a>
-    where
-        M: 'a;
-
-    fn action_modules(&self) -> Self::ActionMIter<'_> {
-        self.runtime.action_modules()
+    fn new() -> Self {
+        Self {
+            modules: HashMap::default(),
+            action_modules: vec![],
+            text_modules: HashMap::default(),
+            line_modules: HashMap::default(),
+            game_modules: vec![],
+        }
     }
 
-    fn text_module(&self, cmd: &str) -> Option<&PluginModule<Self::Module>> {
-        self.runtime.text_module(cmd)
+    fn insert_module(&mut self, name: String, module: HostModule<M>) -> Result<()> {
+        let plugin_type = module.plugin_type()?;
+        if plugin_type.action {
+            self.action_modules.push(name.clone());
+        }
+        for cmd in plugin_type.text {
+            let res = self.text_modules.insert(cmd.clone(), name.clone());
+            if let Some(old_module) = res {
+                log::warn!(
+                    "Command `{}` is overrided by \"{}\" over \"{}\"",
+                    cmd,
+                    name,
+                    old_module
+                );
+            }
+        }
+        for cmd in plugin_type.line {
+            let res = self.line_modules.insert(cmd.clone(), name.clone());
+            if let Some(old_module) = res {
+                log::warn!(
+                    "Command `{}` is overrided by \"{}\" over \"{}\"",
+                    cmd,
+                    name,
+                    old_module
+                );
+            }
+        }
+        if plugin_type.game {
+            self.game_modules.push(name.clone());
+        }
+        self.modules.insert(name, module);
+        Ok(())
     }
 
-    fn line_module(&self, cmd: &str) -> Option<&PluginModule<Self::Module>> {
-        self.runtime.line_module(cmd)
+    /// Gets module from name.
+    pub fn module(&self, key: &str) -> Option<&HostModule<M>> {
+        self.modules.get(key)
     }
 
-    type GameMIter<'a> = <PluginRuntime<M> as PluginResolver>::GameMIter<'a>
-    where
-        M: 'a;
+    /// Iterates action modules.
+    pub fn action_modules(&self) -> impl Iterator<Item = &HostModule<M>> {
+        self.action_modules
+            .iter()
+            .map(|key| self.module(key).unwrap())
+    }
 
-    fn game_modules(&self) -> Self::GameMIter<'_> {
-        self.runtime.game_modules()
+    /// Gets text module from command.
+    pub fn text_module(&self, cmd: &str) -> Option<&HostModule<M>> {
+        self.text_modules.get(cmd).and_then(|key| self.module(key))
+    }
+
+    /// Gets line module from command.
+    pub fn line_module(&self, cmd: &str) -> Option<&HostModule<M>> {
+        self.line_modules.get(cmd).and_then(|key| self.module(key))
+    }
+
+    /// Iterates game modules.
+    pub fn game_modules(&self) -> impl Iterator<Item = &HostModule<M>> {
+        self.game_modules
+            .iter()
+            .map(|key| self.module(key).unwrap())
     }
 }
 
 /// The plugin runtime used in public.
-pub type Runtime = HostRuntime<backend::BackendModule>;
+pub type Runtime = HostRuntime<BackendModule>;
+
+#[doc(hidden)]
+pub use backend::BackendModule;
 
 #[doc(hidden)]
 mod backend {

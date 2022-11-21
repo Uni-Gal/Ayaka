@@ -1,25 +1,25 @@
 //! The script interpreter.
 
-use crate::plugin::Runtime;
+use crate::plugin::{BackendModule, HostRuntime};
 use ayaka_bindings_types::VarMap;
-use ayaka_plugin::PluginResolver;
+use ayaka_plugin::RawModule;
 use ayaka_script::*;
 use log::warn;
 use trylog::TryLog;
 
 /// The variable table in scripts.
-pub struct VarTable<'a, R: PluginResolver = Runtime> {
+pub struct VarTable<'a, M: RawModule = BackendModule> {
     /// The plugin runtime.
-    pub runtime: &'a R,
+    pub runtime: &'a HostRuntime<M>,
     /// The context variables.
     pub locals: &'a mut VarMap,
     /// The locale variables.
     pub vars: VarMap,
 }
 
-impl<'a, R: PluginResolver> VarTable<'a, R> {
+impl<'a, M: RawModule> VarTable<'a, M> {
     /// Creates a new [`VarTable`].
-    pub fn new(runtime: &'a R, locals: &'a mut VarMap) -> Self {
+    pub fn new(runtime: &'a HostRuntime<M>, locals: &'a mut VarMap) -> Self {
         Self {
             runtime,
             locals,
@@ -36,17 +36,17 @@ impl<'a, R: PluginResolver> VarTable<'a, R> {
 /// Represents a callable part of a script.
 pub trait Callable {
     /// Calls the part with the [`VarTable`].
-    fn call<R: PluginResolver>(&self, ctx: &mut VarTable<R>) -> RawValue;
+    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue;
 }
 
 impl<T: Callable> Callable for &T {
-    fn call<R: PluginResolver>(&self, ctx: &mut VarTable<R>) -> RawValue {
+    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
         (*self).call(ctx)
     }
 }
 
 impl<T: Callable> Callable for Option<T> {
-    fn call<R: PluginResolver>(&self, ctx: &mut VarTable<R>) -> RawValue {
+    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
         match self {
             Some(c) => c.call(ctx),
             None => RawValue::Unit,
@@ -55,7 +55,7 @@ impl<T: Callable> Callable for Option<T> {
 }
 
 impl Callable for Program {
-    fn call<R: PluginResolver>(&self, ctx: &mut VarTable<R>) -> RawValue {
+    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
         ctx.vars.clear();
         let mut res = RawValue::Unit;
         for expr in &self.0 {
@@ -66,7 +66,7 @@ impl Callable for Program {
 }
 
 impl Callable for Expr {
-    fn call<R: PluginResolver>(&self, ctx: &mut VarTable<R>) -> RawValue {
+    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
         match self {
             Self::Ref(r) => r.call(ctx),
             Self::Const(c) => c.clone(),
@@ -97,8 +97,8 @@ impl Callable for Expr {
     }
 }
 
-fn bin_val<R: PluginResolver>(
-    ctx: &mut VarTable<R>,
+fn bin_val<M: RawModule>(
+    ctx: &mut VarTable<M>,
     lhs: &Expr,
     op: &ValBinaryOp,
     rhs: &Expr,
@@ -160,8 +160,8 @@ fn bin_str_val(lhs: RawValue, op: &ValBinaryOp, rhs: RawValue) -> RawValue {
     }
 }
 
-fn bin_logic<R: PluginResolver>(
-    ctx: &mut VarTable<R>,
+fn bin_logic<M: RawModule>(
+    ctx: &mut VarTable<M>,
     lhs: &Expr,
     op: &LogicBinaryOp,
     rhs: &Expr,
@@ -196,7 +196,7 @@ fn bin_ord_logic<T: Ord>(lhs: &T, op: &LogicBinaryOp, rhs: &T) -> bool {
     }
 }
 
-fn assign<R: PluginResolver>(ctx: &mut VarTable<R>, e: &Expr, val: RawValue) -> RawValue {
+fn assign<M: RawModule>(ctx: &mut VarTable<M>, e: &Expr, val: RawValue) -> RawValue {
     match e {
         Expr::Ref(r) => match r {
             Ref::Var(n) => ctx.vars.insert(n.into(), val),
@@ -207,7 +207,7 @@ fn assign<R: PluginResolver>(ctx: &mut VarTable<R>, e: &Expr, val: RawValue) -> 
     RawValue::Unit
 }
 
-fn call<R: PluginResolver>(ctx: &mut VarTable<R>, ns: &str, name: &str, args: &[Expr]) -> RawValue {
+fn call<M: RawModule>(ctx: &mut VarTable<M>, ns: &str, name: &str, args: &[Expr]) -> RawValue {
     if ns.is_empty() {
         match name {
             "if" => if args.get(0).call(ctx).get_bool() {
@@ -232,7 +232,7 @@ fn call<R: PluginResolver>(ctx: &mut VarTable<R>, ns: &str, name: &str, args: &[
 }
 
 impl Callable for Ref {
-    fn call<R: PluginResolver>(&self, ctx: &mut VarTable<R>) -> RawValue {
+    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
         match self {
             Self::Var(n) => ctx
                 .vars
@@ -249,7 +249,7 @@ impl Callable for Ref {
 }
 
 impl Callable for Text {
-    fn call<R: PluginResolver>(&self, ctx: &mut VarTable<R>) -> RawValue {
+    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
         let mut str = String::new();
         for line in &self.0 {
             match line {
