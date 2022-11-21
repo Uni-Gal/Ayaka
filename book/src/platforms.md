@@ -11,6 +11,9 @@ Ensured to work well with these triples:
 ## Tier 2
 Should work well with these triples, but not tested:
 
+* i686-pc-windows-msvc
+* aarch64-pc-windows-msvc
+* i686-pc-windows-gnu
 * x86_64-pc-windows-gnu
 * aarch64-unknown-linux-gnu
 * aarch64-apple-darwin
@@ -18,6 +21,4 @@ Should work well with these triples, but not tested:
 ## Tier 3
 May not build or run because of dependencies:
 
-* i686-pc-windows-msvc
-* i686-pc-windows-gnu
-* aarch64-pc-windows-msvc
+* s390x-unknown-linux-gnu

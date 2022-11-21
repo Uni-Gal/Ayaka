@@ -1,4 +1,7 @@
 //! Base crate for plugin runtimes.
+//!
+//! This crate provides abstract types and traits
+//! for different plugin backends.
 
 #![feature(fn_traits)]
 #![feature(tuple_trait)]

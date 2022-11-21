@@ -1,3 +1,7 @@
+//! Wasmtime-based plugin backend.
+
+#![warn(missing_docs)]
+
 use ayaka_plugin::*;
 use scopeguard::defer;
 use std::{
@@ -99,6 +103,7 @@ impl<Params: WasmParams, Results: WasmResults> HostTypedFunc<Params, Results> {
     }
 }
 
+/// A Wasmtime [`Instance`].
 pub struct WasmtimeModule {
     instance: HostInstance,
     memory: HostMemory,
@@ -144,6 +149,7 @@ impl RawModule for WasmtimeModule {
     }
 }
 
+/// A Wasmtime [`Store`] with [`Linker`].
 pub struct WasmtimeStoreLinker {
     engine: Engine,
     store: HostStore,

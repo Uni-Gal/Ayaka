@@ -1,7 +1,14 @@
+//! A no-operation plugin backend.
+
+#![warn(missing_docs)]
+
 use anyhow::bail;
 use ayaka_plugin::*;
 use std::{collections::HashMap, path::Path};
 
+/// A no-operation WASM module.
+///
+/// Any call will return an error.
 pub struct NopModule;
 
 impl RawModule for NopModule {
@@ -14,6 +21,7 @@ impl RawModule for NopModule {
     }
 }
 
+/// A no-operation store & linker.
 pub struct NopStoreLinker;
 
 impl StoreLinker<NopModule> for NopStoreLinker {

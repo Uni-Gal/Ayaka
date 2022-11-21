@@ -1,3 +1,7 @@
+//! Wasmi-based plugin backend.
+
+#![warn(missing_docs)]
+
 use ayaka_plugin::*;
 use scopeguard::defer;
 use std::{
@@ -106,6 +110,7 @@ impl<Params: WasmParams, Results: WasmResults> HostTypedFunc<Params, Results> {
     }
 }
 
+/// A Wasmi [`Instance`].
 pub struct WasmiModule {
     instance: HostInstance,
     memory: HostMemory,
@@ -156,6 +161,7 @@ impl RawModule for WasmiModule {
     }
 }
 
+/// A Wasmi [`Store`] with [`Linker`].
 pub struct WasmiStoreLinker {
     engine: Engine,
     store: HostStore,

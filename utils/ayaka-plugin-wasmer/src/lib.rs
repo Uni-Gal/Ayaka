@@ -1,4 +1,7 @@
+//! Wasmer-based plugin backend.
+
 #![allow(clippy::mut_from_ref)]
+#![warn(missing_docs)]
 
 use ayaka_plugin::*;
 use scopeguard::defer;
@@ -24,6 +27,7 @@ unsafe fn mem_slice_mut(memory: &Memory, start: i32, len: i32) -> &mut [u8] {
         .get_unchecked_mut(..len as usize)
 }
 
+/// A Wasmer [`Instance`].
 pub struct WasmerModule {
     instance: Instance,
     memory: Memory,
@@ -121,6 +125,7 @@ impl DerefMut for WasmerImportObjects {
     }
 }
 
+/// A Wasmer [`Store`] with some [`ImportObject`]s.
 pub struct WasmerStoreLinker {
     store: Store,
     imports: WasmerImportObjects,
