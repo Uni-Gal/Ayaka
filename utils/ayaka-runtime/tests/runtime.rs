@@ -1,9 +1,9 @@
 use ayaka_plugin::RawModule;
 use ayaka_plugin_nop::NopModule;
-use ayaka_runtime::{plugin::HostRuntime, script::*, *};
+use ayaka_runtime::{plugin::Runtime, script::*, *};
 
 async fn with_ctx<M: RawModule>(f: impl FnOnce(&mut VarTable<M>)) {
-    let runtime = HostRuntime::load(
+    let runtime = Runtime::load(
         "../../examples/plugins",
         env!("CARGO_MANIFEST_DIR"),
         &["random"],

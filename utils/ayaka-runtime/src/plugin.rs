@@ -11,11 +11,11 @@ use tryiterator::TryIteratorExt;
 use trylog::TryLog;
 
 /// The plugin module with high-level interfaces.
-pub struct HostModule<M: RawModule> {
+pub struct Module<M: RawModule = BackendModule> {
     module: PluginModule<M>,
 }
 
-impl<M: RawModule> HostModule<M> {
+impl<M: RawModule> Module<M> {
     fn new(module: M) -> Self {
         Self {
             module: PluginModule::new(module),
@@ -63,8 +63,8 @@ impl<M: RawModule> HostModule<M> {
 }
 
 /// The plugin runtime.
-pub struct HostRuntime<M: RawModule> {
-    modules: HashMap<String, HostModule<M>>,
+pub struct Runtime<M: RawModule = BackendModule> {
+    modules: HashMap<String, Module<M>>,
     action_modules: Vec<String>,
     text_modules: HashMap<String, String>,
     line_modules: HashMap<String, String>,
@@ -80,7 +80,7 @@ pub enum LoadStatus {
     LoadPlugin(String, usize, usize),
 }
 
-impl<M: RawModule> HostRuntime<M> {
+impl<M: RawModule> Runtime<M> {
     fn new_linker(root_path: impl AsRef<Path>) -> Result<M::Linker> {
         let mut store = M::Linker::new(root_path)?;
         let log_func = store.wrap_with_args(|data: Record| {
@@ -156,7 +156,7 @@ impl<M: RawModule> HostRuntime<M> {
         for (i, (name, p)) in paths.into_iter().enumerate() {
             yield LoadStatus::LoadPlugin(name.clone(), i, total_len);
             let buf = std::fs::read(p)?;
-            let module = HostModule::new(store.create(&buf)?);
+            let module = Module::new(store.create(&buf)?);
             runtime.insert_module(name, module)?;
         }
         Ok(runtime)
@@ -172,7 +172,7 @@ impl<M: RawModule> HostRuntime<M> {
         }
     }
 
-    fn insert_module(&mut self, name: String, module: HostModule<M>) -> Result<()> {
+    fn insert_module(&mut self, name: String, module: Module<M>) -> Result<()> {
         let plugin_type = module
             .plugin_type()
             .unwrap_or_default_log("Cannot determine module type");
@@ -209,37 +209,34 @@ impl<M: RawModule> HostRuntime<M> {
     }
 
     /// Gets module from name.
-    pub fn module(&self, key: &str) -> Option<&HostModule<M>> {
+    pub fn module(&self, key: &str) -> Option<&Module<M>> {
         self.modules.get(key)
     }
 
     /// Iterates action modules.
-    pub fn action_modules(&self) -> impl Iterator<Item = &HostModule<M>> {
+    pub fn action_modules(&self) -> impl Iterator<Item = &Module<M>> {
         self.action_modules
             .iter()
             .map(|key| self.module(key).unwrap())
     }
 
     /// Gets text module from command.
-    pub fn text_module(&self, cmd: &str) -> Option<&HostModule<M>> {
+    pub fn text_module(&self, cmd: &str) -> Option<&Module<M>> {
         self.text_modules.get(cmd).and_then(|key| self.module(key))
     }
 
     /// Gets line module from command.
-    pub fn line_module(&self, cmd: &str) -> Option<&HostModule<M>> {
+    pub fn line_module(&self, cmd: &str) -> Option<&Module<M>> {
         self.line_modules.get(cmd).and_then(|key| self.module(key))
     }
 
     /// Iterates game modules.
-    pub fn game_modules(&self) -> impl Iterator<Item = &HostModule<M>> {
+    pub fn game_modules(&self) -> impl Iterator<Item = &Module<M>> {
         self.game_modules
             .iter()
             .map(|key| self.module(key).unwrap())
     }
 }
-
-/// The plugin runtime used in public.
-pub type Runtime = HostRuntime<BackendModule>;
 
 #[doc(hidden)]
 pub use backend::BackendModule;

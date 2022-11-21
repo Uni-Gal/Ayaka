@@ -1,6 +1,6 @@
 //! The script interpreter.
 
-use crate::plugin::{BackendModule, HostRuntime};
+use crate::plugin::{BackendModule, Runtime};
 use ayaka_bindings_types::VarMap;
 use ayaka_plugin::RawModule;
 use ayaka_script::*;
@@ -10,7 +10,7 @@ use trylog::TryLog;
 /// The variable table in scripts.
 pub struct VarTable<'a, M: RawModule = BackendModule> {
     /// The plugin runtime.
-    pub runtime: &'a HostRuntime<M>,
+    pub runtime: &'a Runtime<M>,
     /// The context variables.
     pub locals: &'a mut VarMap,
     /// The locale variables.
@@ -19,7 +19,7 @@ pub struct VarTable<'a, M: RawModule = BackendModule> {
 
 impl<'a, M: RawModule> VarTable<'a, M> {
     /// Creates a new [`VarTable`].
-    pub fn new(runtime: &'a HostRuntime<M>, locals: &'a mut VarMap) -> Self {
+    pub fn new(runtime: &'a Runtime<M>, locals: &'a mut VarMap) -> Self {
         Self {
             runtime,
             locals,
