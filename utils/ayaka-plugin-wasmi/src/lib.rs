@@ -1,6 +1,7 @@
 use ayaka_plugin::*;
 use scopeguard::defer;
 use std::{
+    collections::HashMap,
     path::Path,
     sync::{Arc, Mutex},
 };
@@ -156,6 +157,7 @@ impl RawModule for WasmiModule {
 }
 
 pub struct WasmiStoreLinker {
+    engine: Engine,
     store: HostStore,
     linker: Linker<WasiCtx>,
 }
@@ -186,22 +188,19 @@ impl StoreLinker<WasmiModule> for WasmiStoreLinker {
         let mut linker = Linker::new();
         define_wasi(&mut linker, &mut store, |ctx| ctx)?;
         Ok(Self {
+            engine,
             store: Arc::new(Mutex::new(store)),
             linker,
         })
     }
 
     fn create(&self, binary: &[u8]) -> Result<WasmiModule> {
-        let module = Module::new(self.store.lock().unwrap().engine(), binary)?;
+        let module = Module::new(&self.engine, binary)?;
         let host = WasmiModule::new(self.store.clone(), &module, &self.linker)?;
         Ok(host)
     }
 
-    fn import(
-        &mut self,
-        ns: impl Into<String>,
-        funcs: std::collections::HashMap<String, Func>,
-    ) -> Result<()> {
+    fn import(&mut self, ns: impl Into<String>, funcs: HashMap<String, Func>) -> Result<()> {
         let ns = ns.into();
         for (name, func) in funcs {
             self.linker.define(&ns, &name, func)?;

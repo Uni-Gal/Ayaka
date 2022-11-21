@@ -1,5 +1,6 @@
 use anyhow::bail;
 use ayaka_plugin::*;
+use std::{collections::HashMap, path::Path};
 
 pub struct NopModule;
 
@@ -16,7 +17,7 @@ impl RawModule for NopModule {
 pub struct NopStoreLinker;
 
 impl StoreLinker<NopModule> for NopStoreLinker {
-    fn new(_root_path: impl AsRef<std::path::Path>) -> Result<Self> {
+    fn new(_root_path: impl AsRef<Path>) -> Result<Self> {
         Ok(Self)
     }
 
@@ -24,11 +25,7 @@ impl StoreLinker<NopModule> for NopStoreLinker {
         Ok(NopModule)
     }
 
-    fn import(
-        &mut self,
-        _ns: impl Into<String>,
-        _funcs: std::collections::HashMap<String, ()>,
-    ) -> Result<()> {
+    fn import(&mut self, _ns: impl Into<String>, _funcs: HashMap<String, ()>) -> Result<()> {
         Ok(())
     }
 

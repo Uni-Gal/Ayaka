@@ -1,6 +1,7 @@
 use ayaka_plugin::*;
 use scopeguard::defer;
 use std::{
+    collections::HashMap,
     path::Path,
     sync::{Arc, Mutex},
 };
@@ -144,6 +145,7 @@ impl RawModule for WasmtimeModule {
 }
 
 pub struct WasmtimeStoreLinker {
+    engine: Engine,
     store: HostStore,
     linker: Linker<WasiCtx>,
 }
@@ -174,22 +176,19 @@ impl StoreLinker<WasmtimeModule> for WasmtimeStoreLinker {
         let mut linker = Linker::new(&engine);
         add_to_linker(&mut linker, |ctx| ctx)?;
         Ok(Self {
+            engine,
             store: Arc::new(Mutex::new(store)),
             linker,
         })
     }
 
     fn create(&self, binary: &[u8]) -> Result<WasmtimeModule> {
-        let module = Module::new(self.store.lock().unwrap().engine(), binary)?;
+        let module = Module::new(&self.engine, binary)?;
         let host = WasmtimeModule::new(self.store.clone(), &module, &self.linker)?;
         Ok(host)
     }
 
-    fn import(
-        &mut self,
-        ns: impl Into<String>,
-        funcs: std::collections::HashMap<String, Func>,
-    ) -> Result<()> {
+    fn import(&mut self, ns: impl Into<String>, funcs: HashMap<String, Func>) -> Result<()> {
         let ns = ns.into();
         for (name, func) in funcs {
             self.linker.define(&ns, &name, func)?;

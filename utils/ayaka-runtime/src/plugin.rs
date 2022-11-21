@@ -39,12 +39,13 @@ impl<M: RawModule> HostRuntime<M> {
             )
         });
         let log_flush_func = store.wrap(|| log::logger().flush());
-        store.import("log", {
-            let mut map = HashMap::new();
-            map.insert("__log".to_string(), log_func);
-            map.insert("__log_flush".to_string(), log_flush_func);
-            map
-        })?;
+        store.import(
+            "log",
+            HashMap::from([
+                ("__log".to_string(), log_func),
+                ("__log_flush".to_string(), log_flush_func),
+            ]),
+        )?;
         Ok(store)
     }
 
