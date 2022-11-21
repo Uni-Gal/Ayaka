@@ -39,9 +39,9 @@ impl WasmerModule {
     /// Loads the WASM [`Module`], with some imports.
     pub(crate) fn new(module: &Module, resolver: &(dyn Resolver + Send + Sync)) -> Result<Self> {
         let instance = Instance::new(module, resolver)?;
-        let memory = instance.exports.get_memory("memory")?.clone();
-        let abi_free = instance.exports.get_native_function("__abi_free")?;
-        let abi_alloc = instance.exports.get_native_function("__abi_alloc")?;
+        let memory = instance.exports.get_memory(MEMORY_NAME)?.clone();
+        let abi_free = instance.exports.get_native_function(ABI_FREE_NAME)?;
+        let abi_alloc = instance.exports.get_native_function(ABI_ALLOC_NAME)?;
         Ok(Self {
             instance,
             memory,

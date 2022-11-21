@@ -13,6 +13,13 @@ pub use anyhow::Result;
 use serde::{de::DeserializeOwned, Serialize};
 use std::{collections::HashMap, marker::Tuple, path::Path};
 
+/// The exported method `__abi_alloc`.
+pub const ABI_ALLOC_NAME: &str = "__abi_alloc";
+/// The exported method `__abi_free`.
+pub const ABI_FREE_NAME: &str = "__abi_free";
+/// The default exported memory name.
+pub const MEMORY_NAME: &str = "memory";
+
 /// Represents a raw plugin module.
 pub trait RawModule: Sized {
     /// The linker type that can create raw module.

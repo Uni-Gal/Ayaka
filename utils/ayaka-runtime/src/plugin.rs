@@ -8,6 +8,7 @@ use ayaka_plugin::*;
 use std::{collections::HashMap, path::Path};
 use stream_future::stream;
 use tryiterator::TryIteratorExt;
+use trylog::TryLog;
 
 /// The plugin module with high-level interfaces.
 pub struct HostModule<M: RawModule> {
@@ -172,7 +173,9 @@ impl<M: RawModule> HostRuntime<M> {
     }
 
     fn insert_module(&mut self, name: String, module: HostModule<M>) -> Result<()> {
-        let plugin_type = module.plugin_type()?;
+        let plugin_type = module
+            .plugin_type()
+            .unwrap_or_default_log("Cannot determine module type");
         if plugin_type.action {
             self.action_modules.push(name.clone());
         }
@@ -180,7 +183,7 @@ impl<M: RawModule> HostRuntime<M> {
             let res = self.text_modules.insert(cmd.clone(), name.clone());
             if let Some(old_module) = res {
                 log::warn!(
-                    "Command `{}` is overrided by \"{}\" over \"{}\"",
+                    "Text command `{}` is overrided by \"{}\" over \"{}\"",
                     cmd,
                     name,
                     old_module
@@ -191,7 +194,7 @@ impl<M: RawModule> HostRuntime<M> {
             let res = self.line_modules.insert(cmd.clone(), name.clone());
             if let Some(old_module) = res {
                 log::warn!(
-                    "Command `{}` is overrided by \"{}\" over \"{}\"",
+                    "Line command `{}` is overrided by \"{}\" over \"{}\"",
                     cmd,
                     name,
                     old_module

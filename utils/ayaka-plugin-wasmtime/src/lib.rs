@@ -50,7 +50,7 @@ impl HostInstance {
 
     pub fn get_memory(&self) -> Option<HostMemory> {
         self.instance
-            .get_memory(self.store.lock().unwrap().as_context_mut(), "memory")
+            .get_memory(self.store.lock().unwrap().as_context_mut(), MEMORY_NAME)
             .map(|mem| HostMemory::new(self.store.clone(), mem))
     }
 
@@ -116,8 +116,8 @@ impl WasmtimeModule {
         let instance = linker.instantiate(store.lock().unwrap().as_context_mut(), module)?;
         let instance = HostInstance::new(store, instance);
         let memory = instance.get_memory().unwrap();
-        let abi_free = instance.get_typed_func("__abi_free")?;
-        let abi_alloc = instance.get_typed_func("__abi_alloc")?;
+        let abi_free = instance.get_typed_func(ABI_FREE_NAME)?;
+        let abi_alloc = instance.get_typed_func(ABI_ALLOC_NAME)?;
         Ok(Self {
             instance,
             memory,
@@ -213,7 +213,11 @@ impl StoreLinker<WasmtimeModule> for WasmtimeStoreLinker {
         Func::wrap(
             self.store.lock().unwrap().as_context_mut(),
             move |mut store: Caller<WasiCtx>, len: i32, data: i32| unsafe {
-                let memory = store.get_export("memory").unwrap().into_memory().unwrap();
+                let memory = store
+                    .get_export(MEMORY_NAME)
+                    .unwrap()
+                    .into_memory()
+                    .unwrap();
                 let data = mem_slice(store.as_context(), &memory, data, len);
                 f(data).map_err(|e| Trap::new(e.to_string()))?;
                 Ok(())
