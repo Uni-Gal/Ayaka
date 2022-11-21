@@ -199,7 +199,7 @@ pub trait PluginResolver {
         Self: 'a;
 
     /// Iterates action modules.
-    fn action_modules<'a>(&'a self) -> Self::ActionMIter<'a>;
+    fn action_modules(&self) -> Self::ActionMIter<'_>;
 
     /// Gets text module from command.
     fn text_module(&self, cmd: &str) -> Option<&PluginModule<Self::Module>>;
@@ -213,7 +213,7 @@ pub trait PluginResolver {
         Self: 'a;
 
     /// Iterates game modules.
-    fn game_modules<'a>(&'a self) -> Self::GameMIter<'a>;
+    fn game_modules(&self) -> Self::GameMIter<'_>;
 }
 
 impl<M: RawModule> PluginResolver for PluginRuntime<M> {
@@ -227,7 +227,7 @@ impl<M: RawModule> PluginResolver for PluginRuntime<M> {
     where
         M: 'a;
 
-    fn action_modules<'a>(&'a self) -> Self::ActionMIter<'a> {
+    fn action_modules(&self) -> Self::ActionMIter<'_> {
         self.action_modules
             .iter()
             .map(|key| self.module(key).unwrap())
@@ -245,7 +245,7 @@ impl<M: RawModule> PluginResolver for PluginRuntime<M> {
     where
         M: 'a;
 
-    fn game_modules<'a>(&'a self) -> Self::GameMIter<'a> {
+    fn game_modules(&self) -> Self::GameMIter<'_> {
         self.game_modules
             .iter()
             .map(|key| self.module(key).unwrap())

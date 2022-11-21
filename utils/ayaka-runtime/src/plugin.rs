@@ -116,7 +116,7 @@ impl<M: RawModule> PluginResolver for HostRuntime<M> {
     where
         M: 'a;
 
-    fn action_modules<'a>(&'a self) -> Self::ActionMIter<'a> {
+    fn action_modules(&self) -> Self::ActionMIter<'_> {
         self.runtime.action_modules()
     }
 
@@ -132,7 +132,7 @@ impl<M: RawModule> PluginResolver for HostRuntime<M> {
     where
         M: 'a;
 
-    fn game_modules<'a>(&'a self) -> Self::GameMIter<'a> {
+    fn game_modules(&self) -> Self::GameMIter<'_> {
         self.runtime.game_modules()
     }
 }
