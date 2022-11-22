@@ -87,8 +87,8 @@ impl RuntimeInstanceData {
         &self,
         len: i32,
         data: i32,
-        f: impl Fn(*const [u8]) -> Result<()>,
-    ) -> std::result::Result<(), RuntimeError> {
+        f: impl Fn(&[u8]) -> Result<()>,
+    ) -> Result<(), RuntimeError> {
         let memory = self.memory.get_unchecked();
         let data = mem_slice(memory, data, len);
         f(data).map_err(|e| RuntimeError::new(e.to_string()))?;
@@ -167,7 +167,7 @@ impl StoreLinker<WasmerModule> for WasmerStoreLinker {
 
     fn wrap_with_args_raw(
         &self,
-        f: impl (Fn(*const [u8]) -> Result<()>) + Send + Sync + 'static,
+        f: impl (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static,
     ) -> Function {
         Function::new_native_with_env(
             &self.store,

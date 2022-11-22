@@ -39,6 +39,5 @@ impl StoreLinker<NopModule> for NopStoreLinker {
 
     fn wrap(&self, _f: impl Fn() + Send + Sync + 'static) {}
 
-    fn wrap_with_args_raw(&self, _f: impl (Fn(*const [u8]) -> Result<()>) + Send + Sync + 'static) {
-    }
+    fn wrap_with_args_raw(&self, _f: impl (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static) {}
 }

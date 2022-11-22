@@ -7,6 +7,7 @@
 #![feature(tuple_trait)]
 #![feature(unboxed_closures)]
 #![warn(missing_docs)]
+#![deny(unsafe_code)]
 
 pub use anyhow::Result;
 
@@ -77,7 +78,7 @@ pub trait StoreLinker<M: RawModule>: Sized {
     /// Wrap a function with args in bytes.
     fn wrap_with_args_raw(
         &self,
-        f: impl (Fn(*const [u8]) -> Result<()>) + Send + Sync + 'static,
+        f: impl (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static,
     ) -> M::Func;
 
     /// Wrap a function with args.
@@ -86,7 +87,7 @@ pub trait StoreLinker<M: RawModule>: Sized {
         f: impl Fn<Params, Output = ()> + Send + Sync + 'static,
     ) -> M::Func {
         self.wrap_with_args_raw(move |data| {
-            let data = rmp_serde::from_slice(unsafe { &*data })?;
+            let data = rmp_serde::from_slice(data)?;
             f.call(data);
             Ok(())
         })

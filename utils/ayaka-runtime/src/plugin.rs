@@ -1,7 +1,5 @@
 //! The plugin utilities.
 
-#![allow(unsafe_code)]
-
 use crate::*;
 use anyhow::Result;
 use ayaka_plugin::*;

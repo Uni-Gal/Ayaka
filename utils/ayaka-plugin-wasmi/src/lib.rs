@@ -220,12 +220,16 @@ impl StoreLinker<WasmiModule> for WasmiStoreLinker {
 
     fn wrap_with_args_raw(
         &self,
-        f: impl (Fn(*const [u8]) -> Result<()>) + Send + Sync + 'static,
+        f: impl (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static,
     ) -> Func {
         Func::wrap(
             self.store.lock().unwrap().as_context_mut(),
             move |store: Caller<WasiCtx>, len: i32, data: i32| unsafe {
-                let memory = store.get_export(MEMORY_NAME).unwrap().into_memory().unwrap();
+                let memory = store
+                    .get_export(MEMORY_NAME)
+                    .unwrap()
+                    .into_memory()
+                    .unwrap();
                 let data = mem_slice(store.as_context(), &memory, data, len);
                 f(data).map_err(|e| Trap::new(e.to_string()))?;
                 Ok(())

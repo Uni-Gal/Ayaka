@@ -208,7 +208,7 @@ impl StoreLinker<WasmtimeModule> for WasmtimeStoreLinker {
 
     fn wrap_with_args_raw(
         &self,
-        f: impl (Fn(*const [u8]) -> Result<()>) + Send + Sync + 'static,
+        f: impl (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static,
     ) -> Func {
         Func::wrap(
             self.store.lock().unwrap().as_context_mut(),
