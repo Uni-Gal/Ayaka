@@ -87,10 +87,11 @@ impl<M: RawModule> Runtime<M> {
                 module_path!(),
                 data.module_path.unwrap_or_default()
             );
+            let target = format!("{}::<plugin>::{}", module_path!(), data.target);
             log::logger().log(
                 &log::Record::builder()
                     .level(data.level)
-                    .target(&data.target)
+                    .target(&target)
                     .args(format_args!("{}", data.msg))
                     .module_path(Some(&module_path))
                     .file(data.file.as_deref())
