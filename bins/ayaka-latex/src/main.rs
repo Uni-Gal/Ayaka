@@ -1,7 +1,8 @@
 mod writer;
 
-use ayaka_runtime::{anyhow::Result, log::LevelFilter, *};
+use ayaka_runtime::{anyhow::Result, *};
 use clap::Parser;
+use flexi_logger::{LogSpecification, Logger};
 use std::ffi::OsString;
 use writer::LaTeXWriter;
 
@@ -18,9 +19,12 @@ pub struct Options {
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     let opts = Options::parse();
-    env_logger::Builder::from_default_env()
-        .filter_module("wasmer", LevelFilter::Warn)
-        .try_init()?;
+    let spec = LogSpecification::parse("warn")?;
+    let _log_handle = Logger::with(spec)
+        .log_to_stdout()
+        .set_palette("b1;3;2;4;6".to_string())
+        .use_utc()
+        .start()?;
     let context = Context::open(&opts.input, FrontendType::Latex);
     let mut ctx = context.await?;
 

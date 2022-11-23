@@ -82,12 +82,17 @@ impl<M: RawModule> Runtime<M> {
     fn new_linker(root_path: impl AsRef<Path>) -> Result<M::Linker> {
         let mut store = M::Linker::new(root_path)?;
         let log_func = store.wrap_with_args(|data: Record| {
+            let module_path = format!(
+                "{}::<plugin>::{}",
+                module_path!(),
+                data.module_path.unwrap_or_default()
+            );
             log::logger().log(
                 &log::Record::builder()
                     .level(data.level)
                     .target(&data.target)
                     .args(format_args!("{}", data.msg))
-                    .module_path(data.module_path.as_deref())
+                    .module_path(Some(&module_path))
                     .file(data.file.as_deref())
                     .line(data.line)
                     .build(),

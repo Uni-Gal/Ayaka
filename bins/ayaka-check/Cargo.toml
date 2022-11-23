@@ -7,4 +7,4 @@ edition = "2021"
 ayaka-runtime = { path = "../../utils/ayaka-runtime" }
 tokio = { version = "1", features = ["macros", "rt"] }
 clap = { version = "4.0", features = ["derive"] }
-env_logger = "0.9"
+flexi_logger = { version = "0.24", default-features = false, features = ["colors"] }

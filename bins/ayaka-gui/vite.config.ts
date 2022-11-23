@@ -6,7 +6,7 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig({
   plugins: [vue()],
   clearScreen: false,
-  envPrefix: ['VITE_', 'TAURI_', 'RUST_'],
+  envPrefix: ['VITE_', 'TAURI_'],
   build: {
     target: ['es2021', 'chrome97', 'safari13'],
     minify: !env.TAURI_DEBUG ? 'esbuild' : false,
