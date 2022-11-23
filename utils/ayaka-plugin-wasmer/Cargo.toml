@@ -5,6 +5,6 @@ edition = "2021"
 
 [dependencies]
 ayaka-plugin = { path = "../ayaka-plugin" }
-wasmer = "2.3"
-wasmer-wasi = "2.3"
+wasmer = "3.0"
+wasmer-wasi = "3.0"
 scopeguard = "1.1"

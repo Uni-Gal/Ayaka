@@ -7,41 +7,119 @@ use ayaka_plugin::*;
 use scopeguard::defer;
 use std::{
     collections::HashMap,
-    ops::{Deref, DerefMut},
     path::Path,
+    sync::{Arc, Mutex},
 };
 use wasmer::*;
 use wasmer_wasi::*;
 
-unsafe fn mem_slice(memory: &Memory, start: i32, len: i32) -> &[u8] {
-    memory
+unsafe fn mem_slice<'a, R>(
+    store: &impl AsStoreRef,
+    memory: &'a Memory,
+    start: i32,
+    len: i32,
+    f: impl FnOnce(&[u8]) -> R,
+) -> R {
+    f(memory
+        .view(store)
         .data_unchecked()
         .get_unchecked(start as usize..)
-        .get_unchecked(..len as usize)
+        .get_unchecked(..len as usize))
 }
 
-unsafe fn mem_slice_mut(memory: &Memory, start: i32, len: i32) -> &mut [u8] {
-    memory
+unsafe fn mem_slice_mut<'a, R>(
+    store: &impl AsStoreRef,
+    memory: &'a Memory,
+    start: i32,
+    len: i32,
+    f: impl FnOnce(&mut [u8]) -> R,
+) -> R {
+    f(memory
+        .view(store)
         .data_unchecked_mut()
         .get_unchecked_mut(start as usize..)
-        .get_unchecked_mut(..len as usize)
+        .get_unchecked_mut(..len as usize))
+}
+
+type HostStore = Arc<Mutex<Store>>;
+
+struct HostInstance {
+    store: HostStore,
+    instance: Instance,
+}
+
+impl HostInstance {
+    pub fn new(store: HostStore, instance: Instance) -> Self {
+        Self { store, instance }
+    }
+
+    pub fn get_memory(&self) -> Result<HostMemory, ExportError> {
+        self.instance
+            .exports
+            .get_memory(MEMORY_NAME)
+            .map(|mem| HostMemory::new(self.store.clone(), mem.clone()))
+    }
+
+    pub fn get_func(&self, name: &str) -> Result<HostFunction, ExportError> {
+        self.instance
+            .exports
+            .get_function(name)
+            .map(|func| HostFunction::new(self.store.clone(), func.clone()))
+    }
+}
+
+struct HostMemory {
+    store: HostStore,
+    memory: Memory,
+}
+
+impl HostMemory {
+    pub fn new(store: HostStore, memory: Memory) -> Self {
+        Self { store, memory }
+    }
+
+    pub unsafe fn slice<R>(&self, start: i32, len: i32, f: impl FnOnce(&[u8]) -> R) -> R {
+        let store = self.store.lock().unwrap();
+        mem_slice(&store.as_store_ref(), &self.memory, start, len, f)
+    }
+
+    pub unsafe fn slice_mut<R>(&self, start: i32, len: i32, f: impl FnOnce(&mut [u8]) -> R) -> R {
+        let store = self.store.lock().unwrap();
+        mem_slice_mut(&store.as_store_ref(), &self.memory, start, len, f)
+    }
+}
+
+struct HostFunction {
+    store: HostStore,
+    func: Function,
+}
+
+impl HostFunction {
+    pub fn new(store: HostStore, func: Function) -> Self {
+        Self { store, func }
+    }
+
+    pub fn call(&self, params: &[Value]) -> Result<Box<[Value]>, RuntimeError> {
+        self.func
+            .call(&mut self.store.lock().unwrap().as_store_mut(), params)
+    }
 }
 
 /// A Wasmer [`Instance`].
 pub struct WasmerModule {
-    instance: Instance,
-    memory: Memory,
-    abi_free: NativeFunc<(i32, i32), ()>,
-    abi_alloc: NativeFunc<i32, i32>,
+    instance: HostInstance,
+    memory: HostMemory,
+    abi_free: HostFunction,
+    abi_alloc: HostFunction,
 }
 
 impl WasmerModule {
     /// Loads the WASM [`Module`], with some imports.
-    pub(crate) fn new(module: &Module, resolver: &(dyn Resolver + Send + Sync)) -> Result<Self> {
-        let instance = Instance::new(module, resolver)?;
-        let memory = instance.exports.get_memory(MEMORY_NAME)?.clone();
-        let abi_free = instance.exports.get_native_function(ABI_FREE_NAME)?;
-        let abi_alloc = instance.exports.get_native_function(ABI_ALLOC_NAME)?;
+    pub(crate) fn new(store: HostStore, instance: Instance) -> Result<Self> {
+        let instance = HostInstance::new(store, instance);
+        let memory = instance.get_memory()?;
+        let abi_free = instance.get_func(ABI_FREE_NAME)?;
+        let abi_alloc = instance.get_func(ABI_ALLOC_NAME)?;
         Ok(Self {
             instance,
             memory,
@@ -54,127 +132,165 @@ impl WasmerModule {
 impl RawModule for WasmerModule {
     type Linker = WasmerStoreLinker;
 
-    type Func = Function;
+    type Func = WasmerFunction;
 
     fn call<T>(&self, name: &str, data: &[u8], f: impl FnOnce(&[u8]) -> Result<T>) -> Result<T> {
         let memory = &self.memory;
-        let func = self
-            .instance
-            .exports
-            .get_native_function::<(i32, i32), u64>(name)?;
+        let func = self.instance.get_func(name)?;
 
-        let ptr = self.abi_alloc.call(data.len() as i32)?;
-        defer! { self.abi_free.call(ptr, data.len() as i32).unwrap(); }
-        unsafe { mem_slice_mut(memory, ptr, data.len() as i32) }.copy_from_slice(data);
+        let ptr = self.abi_alloc.call(&[Value::I32(data.len() as i32)])?[0].unwrap_i32();
+        defer! { self.abi_free.call(&[Value::I32(ptr), Value::I32(data.len() as i32)]).unwrap(); }
+        unsafe { memory.slice_mut(ptr, data.len() as i32, |s| s.copy_from_slice(data)) };
 
-        let res = func.call(data.len() as i32, ptr)?;
+        let res = func.call(&[Value::I32(data.len() as i32), Value::I32(ptr)])?[0].unwrap_i64();
         let (len, res) = ((res >> 32) as i32, (res & 0xFFFFFFFF) as i32);
-        defer! { self.abi_free.call(res, len).unwrap(); }
+        defer! { self.abi_free.call(&[Value::I32(res), Value::I32(len)]).unwrap(); }
 
-        let res_data = unsafe { mem_slice(memory, res, len) };
-        f(res_data)
+        let res_data = unsafe { memory.slice(res, len, |s| f(s)) }?;
+        Ok(res_data)
     }
 }
 
-#[derive(Default, Clone, WasmerEnv)]
-struct RuntimeInstanceData {
-    #[wasmer(export)]
-    memory: LazyInit<Memory>,
+#[doc(hidden)]
+#[derive(Clone)]
+pub struct RuntimeInstanceData {
+    memory: Option<Memory>,
+    func: Arc<dyn (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static>,
 }
 
 impl RuntimeInstanceData {
-    pub unsafe fn import(
-        &self,
-        len: i32,
-        data: i32,
-        f: impl Fn(&[u8]) -> Result<()>,
-    ) -> Result<(), RuntimeError> {
-        let memory = self.memory.get_unchecked();
-        let data = mem_slice(memory, data, len);
-        f(data).map_err(|e| RuntimeError::new(e.to_string()))?;
-        Ok(())
-    }
-}
-
-struct WasmerImportObjects(Vec<ImportObject>);
-
-impl NamedResolver for WasmerImportObjects {
-    fn resolve_by_name(&self, module: &str, field: &str) -> Option<Export> {
-        let mut result = None;
-        for imp in &self.0 {
-            result = imp.resolve_by_name(module, field);
-            if result.is_some() {
-                return result;
-            }
+    pub fn new(func: impl (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static) -> Self {
+        Self {
+            memory: None,
+            func: Arc::new(func),
         }
-        result
     }
-}
 
-impl Deref for WasmerImportObjects {
-    type Target = Vec<ImportObject>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    pub fn set_memory(&mut self, memory: Memory) {
+        self.memory = Some(memory);
     }
-}
 
-impl DerefMut for WasmerImportObjects {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+    pub fn memory(&self) -> &Memory {
+        self.memory.as_ref().unwrap()
+    }
+
+    pub fn call(this: FunctionEnvMut<Self>, len: i32, ptr: i32) {
+        let memory = this.data().memory();
+        unsafe {
+            mem_slice(&this, memory, ptr, len, |slice| {
+                (this.data().func)(slice).unwrap();
+            })
+        };
     }
 }
 
 /// A Wasmer [`Store`] with some [`ImportObject`]s.
 pub struct WasmerStoreLinker {
-    store: Store,
-    imports: WasmerImportObjects,
+    store: HostStore,
+    wasi_env: WasiEnv,
+    imports: HashMap<String, HashMap<String, WasmerFunction>>,
+}
+
+impl WasmerStoreLinker {
+    fn wrap_impl(
+        store: &mut impl AsStoreMut,
+        func: WasmerFunction,
+    ) -> (Function, Option<FunctionEnv<RuntimeInstanceData>>) {
+        match func {
+            WasmerFunction::Function(func) => (func, None),
+            WasmerFunction::WithEnv(env_data) => {
+                let env = FunctionEnv::new(store, env_data);
+                let func = Function::new_typed_with_env(store, &env, RuntimeInstanceData::call);
+                (func, Some(env))
+            }
+        }
+    }
 }
 
 impl StoreLinker<WasmerModule> for WasmerStoreLinker {
     fn new(root_path: impl AsRef<Path>) -> Result<Self> {
         let store = Store::default();
-        let wasi_env = WasiState::new("ayaka-runtime")
-            .preopen_dir(root_path)?
-            .finalize()?;
-        let wasi_import = generate_import_object_from_env(&store, wasi_env, WasiVersion::Latest);
+        let wasi_state = WasiState::new("ayaka-plugin-wasmer")
+            .preopen(|p| p.directory(root_path.as_ref()).alias("/").read(true))?
+            .build()?;
+        let wasi_env = WasiEnv::new(wasi_state);
         Ok(Self {
-            store,
-            imports: WasmerImportObjects(vec![wasi_import]),
+            store: Arc::new(Mutex::new(store)),
+            wasi_env,
+            imports: HashMap::default(),
         })
     }
 
     fn create(&self, binary: &[u8]) -> Result<WasmerModule> {
-        let module = Module::from_binary(&self.store, binary)?;
-        let host = WasmerModule::new(&module, &self.imports)?;
+        let instance = {
+            let mut store = self.store.lock().unwrap();
+            let module = Module::from_binary(&store.as_store_ref(), binary)?;
+            let wasi_env = self.wasi_env.clone();
+            let mut wasi_env = WasiFunctionEnv::new(&mut store.as_store_mut(), wasi_env);
+            let mut wasi_import = generate_import_object_from_env(
+                &mut store.as_store_mut(),
+                &wasi_env.env,
+                WasiVersion::Latest,
+            );
+            let mut envs = vec![];
+            for (ns, funcs) in &self.imports {
+                wasi_import.register_namespace(
+                    ns,
+                    funcs.iter().map(|(name, func)| {
+                        (
+                            name.clone(),
+                            Extern::Function({
+                                let (func, env) =
+                                    Self::wrap_impl(&mut store.as_store_mut(), func.clone());
+                                if let Some(env) = env {
+                                    envs.push(env)
+                                }
+                                func
+                            }),
+                        )
+                    }),
+                );
+            }
+            let instance = Instance::new(&mut store.as_store_mut(), &module, &wasi_import)?;
+            wasi_env.initialize(&mut store.as_store_mut(), &instance)?;
+            let memory = instance.exports.get_memory(MEMORY_NAME)?;
+            for env in &envs {
+                env.as_mut(&mut store.as_store_mut())
+                    .set_memory(memory.clone());
+            }
+            instance
+        };
+        let host = WasmerModule::new(self.store.clone(), instance)?;
         Ok(host)
     }
 
-    fn import(&mut self, ns: impl Into<String>, funcs: HashMap<String, Function>) -> Result<()> {
-        let mut import_object = ImportObject::new();
-        let mut namespace = Exports::new();
-        for (name, func) in funcs {
-            namespace.insert(name, func);
-        }
-        import_object.register(ns, namespace);
-        self.imports.push(import_object);
+    fn import(
+        &mut self,
+        ns: impl Into<String>,
+        funcs: HashMap<String, WasmerFunction>,
+    ) -> Result<()> {
+        self.imports.insert(ns.into(), funcs);
         Ok(())
     }
 
-    fn wrap(&self, f: impl Fn() + Send + Sync + 'static) -> Function {
-        Function::new_native(&self.store, f)
+    fn wrap(&self, f: impl Fn() + Send + Sync + 'static) -> WasmerFunction {
+        WasmerFunction::Function(Function::new_typed(
+            &mut self.store.lock().unwrap().as_store_mut(),
+            f,
+        ))
     }
 
     fn wrap_with_args_raw(
         &self,
         f: impl (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static,
-    ) -> Function {
-        Function::new_native_with_env(
-            &self.store,
-            RuntimeInstanceData::default(),
-            move |env_data: &RuntimeInstanceData, len: i32, data: i32| unsafe {
-                env_data.import(len, data, &f)
-            },
-        )
+    ) -> WasmerFunction {
+        WasmerFunction::WithEnv(RuntimeInstanceData::new(f))
     }
+}
+
+#[doc(hidden)]
+#[derive(Clone)]
+pub enum WasmerFunction {
+    Function(Function),
+    WithEnv(RuntimeInstanceData),
 }
