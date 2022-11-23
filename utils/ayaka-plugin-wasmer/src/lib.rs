@@ -13,9 +13,9 @@ use std::{
 use wasmer::*;
 use wasmer_wasi::*;
 
-unsafe fn mem_slice<'a, R>(
+unsafe fn mem_slice<R>(
     store: &impl AsStoreRef,
-    memory: &'a Memory,
+    memory: &Memory,
     start: i32,
     len: i32,
     f: impl FnOnce(&[u8]) -> R,
@@ -27,9 +27,9 @@ unsafe fn mem_slice<'a, R>(
         .get_unchecked(..len as usize))
 }
 
-unsafe fn mem_slice_mut<'a, R>(
+unsafe fn mem_slice_mut<R>(
     store: &impl AsStoreRef,
-    memory: &'a Memory,
+    memory: &Memory,
     start: i32,
     len: i32,
     f: impl FnOnce(&mut [u8]) -> R,
@@ -155,6 +155,7 @@ impl RawModule for WasmerModule {
 #[derive(Clone)]
 pub struct RuntimeInstanceData {
     memory: Option<Memory>,
+    #[allow(clippy::type_complexity)]
     func: Arc<dyn (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static>,
 }
 
