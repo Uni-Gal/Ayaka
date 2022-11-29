@@ -1,24 +1,25 @@
 //! The script interpreter.
 
-use crate::plugin::Runtime;
+use crate::plugin::{BackendModule, Runtime};
 use ayaka_bindings_types::VarMap;
+use ayaka_plugin::RawModule;
 use ayaka_script::*;
 use log::warn;
 use trylog::TryLog;
 
 /// The variable table in scripts.
-pub struct VarTable<'a> {
+pub struct VarTable<'a, M: RawModule = BackendModule> {
     /// The plugin runtime.
-    pub runtime: &'a Runtime,
+    pub runtime: &'a Runtime<M>,
     /// The context variables.
     pub locals: &'a mut VarMap,
     /// The locale variables.
     pub vars: VarMap,
 }
 
-impl<'a> VarTable<'a> {
+impl<'a, M: RawModule> VarTable<'a, M> {
     /// Creates a new [`VarTable`].
-    pub fn new(runtime: &'a Runtime, locals: &'a mut VarMap) -> Self {
+    pub fn new(runtime: &'a Runtime<M>, locals: &'a mut VarMap) -> Self {
         Self {
             runtime,
             locals,
@@ -35,17 +36,17 @@ impl<'a> VarTable<'a> {
 /// Represents a callable part of a script.
 pub trait Callable {
     /// Calls the part with the [`VarTable`].
-    fn call(&self, ctx: &mut VarTable) -> RawValue;
+    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue;
 }
 
 impl<T: Callable> Callable for &T {
-    fn call(&self, ctx: &mut VarTable) -> RawValue {
+    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
         (*self).call(ctx)
     }
 }
 
 impl<T: Callable> Callable for Option<T> {
-    fn call(&self, ctx: &mut VarTable) -> RawValue {
+    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
         match self {
             Some(c) => c.call(ctx),
             None => RawValue::Unit,
@@ -54,7 +55,7 @@ impl<T: Callable> Callable for Option<T> {
 }
 
 impl Callable for Program {
-    fn call(&self, ctx: &mut VarTable) -> RawValue {
+    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
         ctx.vars.clear();
         let mut res = RawValue::Unit;
         for expr in &self.0 {
@@ -65,7 +66,7 @@ impl Callable for Program {
 }
 
 impl Callable for Expr {
-    fn call(&self, ctx: &mut VarTable) -> RawValue {
+    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
         match self {
             Self::Ref(r) => r.call(ctx),
             Self::Const(c) => c.clone(),
@@ -96,7 +97,12 @@ impl Callable for Expr {
     }
 }
 
-fn bin_val(ctx: &mut VarTable, lhs: &Expr, op: &ValBinaryOp, rhs: &Expr) -> RawValue {
+fn bin_val<M: RawModule>(
+    ctx: &mut VarTable<M>,
+    lhs: &Expr,
+    op: &ValBinaryOp,
+    rhs: &Expr,
+) -> RawValue {
     let lhs = lhs.call(ctx);
     let rhs = rhs.call(ctx);
     let t = lhs.get_type().max(rhs.get_type());
@@ -154,7 +160,12 @@ fn bin_str_val(lhs: RawValue, op: &ValBinaryOp, rhs: RawValue) -> RawValue {
     }
 }
 
-fn bin_logic(ctx: &mut VarTable, lhs: &Expr, op: &LogicBinaryOp, rhs: &Expr) -> RawValue {
+fn bin_logic<M: RawModule>(
+    ctx: &mut VarTable<M>,
+    lhs: &Expr,
+    op: &LogicBinaryOp,
+    rhs: &Expr,
+) -> RawValue {
     let res = match op {
         LogicBinaryOp::And => lhs.call(ctx).get_bool() && rhs.call(ctx).get_bool(),
         LogicBinaryOp::Or => lhs.call(ctx).get_bool() || rhs.call(ctx).get_bool(),
@@ -185,7 +196,7 @@ fn bin_ord_logic<T: Ord>(lhs: &T, op: &LogicBinaryOp, rhs: &T) -> bool {
     }
 }
 
-fn assign(ctx: &mut VarTable, e: &Expr, val: RawValue) -> RawValue {
+fn assign<M: RawModule>(ctx: &mut VarTable<M>, e: &Expr, val: RawValue) -> RawValue {
     match e {
         Expr::Ref(r) => match r {
             Ref::Var(n) => ctx.vars.insert(n.into(), val),
@@ -196,7 +207,7 @@ fn assign(ctx: &mut VarTable, e: &Expr, val: RawValue) -> RawValue {
     RawValue::Unit
 }
 
-fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
+fn call<M: RawModule>(ctx: &mut VarTable<M>, ns: &str, name: &str, args: &[Expr]) -> RawValue {
     if ns.is_empty() {
         match name {
             "if" => if args.get(0).call(ctx).get_bool() {
@@ -210,8 +221,7 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
     } else {
         let args = args.iter().map(|e| e.call(ctx)).collect::<Vec<_>>();
         ctx.runtime
-            .modules
-            .get(ns)
+            .module(ns)
             .map(|runtime| {
                 runtime
                     .dispatch_method(name, &args)
@@ -222,7 +232,7 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
 }
 
 impl Callable for Ref {
-    fn call(&self, ctx: &mut VarTable) -> RawValue {
+    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
         match self {
             Self::Var(n) => ctx
                 .vars
@@ -239,7 +249,7 @@ impl Callable for Ref {
 }
 
 impl Callable for Text {
-    fn call(&self, ctx: &mut VarTable) -> RawValue {
+    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
         let mut str = String::new();
         for line in &self.0 {
             match line {
@@ -262,124 +272,5 @@ impl Callable for Text {
             }
         }
         RawValue::Str(str.trim().to_string())
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::{plugin::Runtime, script::*};
-    use tokio::sync::OnceCell;
-
-    static RUNTIME: OnceCell<Runtime> = OnceCell::const_new();
-
-    async fn with_ctx(f: impl FnOnce(&mut VarTable)) {
-        let runtime = RUNTIME
-            .get_or_init(|| async {
-                let runtime = Runtime::load(
-                    "../../examples/plugins",
-                    env!("CARGO_MANIFEST_DIR"),
-                    &["random"],
-                );
-                runtime.await.unwrap()
-            })
-            .await;
-        let mut locals = VarMap::default();
-        let mut ctx = VarTable::new(runtime, &mut locals);
-        f(&mut ctx);
-    }
-
-    #[tokio::test]
-    async fn vars() {
-        with_ctx(|ctx| {
-            assert_eq!(
-                ProgramParser::new()
-                    .parse(
-                        "
-                            a = 0;
-                            a += 1;
-                            a += a;
-                            a
-                        "
-                    )
-                    .ok()
-                    .call(ctx),
-                RawValue::Num(2)
-            );
-
-            assert_eq!(
-                ProgramParser::new().parse("a").ok().call(ctx),
-                RawValue::Unit
-            );
-
-            assert_eq!(
-                ProgramParser::new()
-                    .parse(
-                        "
-                            $a = 0;
-                            $a += 1;
-                            $a += a;
-                            $a
-                        "
-                    )
-                    .ok()
-                    .call(ctx),
-                RawValue::Num(1)
-            );
-
-            assert_eq!(
-                ProgramParser::new().parse("$a").ok().call(ctx),
-                RawValue::Num(1)
-            );
-        })
-        .await;
-    }
-
-    #[tokio::test]
-    async fn if_test() {
-        with_ctx(|ctx| {
-            assert_eq!(
-                ProgramParser::new()
-                    .parse(
-                        r##"
-                            if(1 + 1 + 4 + 5 + 1 + 4 == 16, "sodayo", ~)
-                        "##
-                    )
-                    .ok()
-                    .call(ctx)
-                    .get_num(),
-                6
-            );
-            assert_eq!(
-                ProgramParser::new()
-                    .parse(
-                        r##"
-                            if(true, "sodayo")
-                        "##
-                    )
-                    .ok()
-                    .call(ctx)
-                    .get_str(),
-                "sodayo"
-            );
-        })
-        .await;
-    }
-
-    #[tokio::test]
-    async fn random() {
-        with_ctx(|ctx| {
-            assert!((0..10).contains(
-                &ProgramParser::new()
-                    .parse(
-                        r##"
-                            random.rnd(10)
-                        "##
-                    )
-                    .ok()
-                    .call(ctx)
-                    .get_num()
-            ))
-        })
-        .await;
     }
 }

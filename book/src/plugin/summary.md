@@ -24,6 +24,12 @@ plugins:
 ```
 You don't need to specify the extension.
 
+## WASM directory mappings
+The parent directory of the config file (aka. the root directory) is mapped to `/` in the plugins.
+Some plugins, e.g. media, need to determine if the resource files exist.
+Therefore, the files should be placed under the root directory.
+Symbolic links may not work if they point to directories outside the root directory.
+
 ## The text processing workflow
 ``` dot process
 digraph {

@@ -1,0 +1,10 @@
+[package]
+name = "ayaka-plugin-wasmer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ayaka-plugin = { path = "../ayaka-plugin" }
+wasmer = "3.0"
+wasmer-wasi = "3.0"
+scopeguard = "1.1"

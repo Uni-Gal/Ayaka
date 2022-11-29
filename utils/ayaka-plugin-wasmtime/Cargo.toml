@@ -1,0 +1,10 @@
+[package]
+name = "ayaka-plugin-wasmtime"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ayaka-plugin = { path = "../ayaka-plugin" }
+wasmtime = "2.0"
+wasmtime-wasi = "2.0"
+scopeguard = "1.1"

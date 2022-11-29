@@ -2,6 +2,7 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
+#![feature(absolute_path)]
 
 use ayaka_runtime::{
     anyhow::{self, anyhow, Result},
@@ -13,6 +14,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
+    path::PathBuf,
 };
 use tauri::{async_runtime::Mutex, command, AppHandle, Manager, State};
 use trylog::TryLog;
@@ -68,6 +70,7 @@ impl OpenGameStatus {
 struct Storage {
     ident: String,
     config: String,
+    root_path: PathBuf,
     records: Mutex<Vec<ActionRecord>>,
     context: Mutex<Option<Context>>,
     current: Mutex<Option<RawContext>>,
@@ -77,9 +80,16 @@ struct Storage {
 
 impl Storage {
     pub fn new(ident: impl Into<String>, config: impl Into<String>) -> Self {
+        let config = config.into();
+        let root_path = std::path::absolute(&config)
+            .unwrap()
+            .parent()
+            .unwrap()
+            .to_path_buf();
         Self {
             ident: ident.into(),
-            config: config.into(),
+            config,
+            root_path,
             ..Default::default()
         }
     }
@@ -100,6 +110,11 @@ impl GameInfo {
             props: game.config.props.clone(),
         }
     }
+}
+
+#[command]
+fn absolute_path(storage: State<'_, Storage>, path: String) -> CommandResult<String> {
+    Ok(storage.root_path.join(path).to_string_lossy().into_owned())
 }
 
 #[command]
@@ -415,16 +430,15 @@ fn main() -> Result<()> {
         .plugin(tauri_plugin_localhost::Builder::new(port).build())
         .setup(|app| {
             let ident = app.config().tauri.bundle.identifier.clone();
+            let spec = LogSpecification::parse("warn,ayaka=debug")?;
             let log_handle = if cfg!(debug_assertions) {
-                Logger::with(LogSpecification::parse(
-                    "debug,wasmer=warn,regalloc=info,cranelift=info",
-                )?)
-                .log_to_stdout()
-                .set_palette("b1;3;2;4;6".to_string())
-                .use_utc()
-                .start()?
+                Logger::with(spec)
+                    .log_to_stdout()
+                    .set_palette("b1;3;2;4;6".to_string())
+                    .use_utc()
+                    .start()?
             } else {
-                Logger::with(LogSpecification::parse("info,wasmer=warn")?)
+                Logger::with(spec)
                     .log_to_file(
                         FileSpec::default()
                             .directory(app.path_resolver().app_log_dir().unwrap())
@@ -458,6 +472,7 @@ fn main() -> Result<()> {
         })
         .invoke_handler(tauri::generate_handler![
             ayaka_version,
+            absolute_path,
             open_game,
             get_settings,
             set_settings,

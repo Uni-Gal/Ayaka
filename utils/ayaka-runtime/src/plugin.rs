@@ -1,99 +1,38 @@
 //! The plugin utilities.
 
-#![allow(unsafe_code)]
-#![allow(clippy::mut_from_ref)]
-
 use crate::*;
 use anyhow::Result;
-use ayaka_bindings_types::*;
-use log::warn;
-use scopeguard::defer;
-use serde::{de::DeserializeOwned, Serialize};
-use std::{collections::HashMap, marker::Tuple, path::Path};
+use ayaka_plugin::*;
+use std::{collections::HashMap, path::Path};
 use stream_future::stream;
 use tryiterator::TryIteratorExt;
-use wasmer::*;
-use wasmer_wasi::*;
+use trylog::TryLog;
 
-/// An instance of a WASM plugin module.
-pub struct Host {
-    instance: Instance,
-    memory: Memory,
-    abi_free: NativeFunc<(i32, i32), ()>,
-    abi_alloc: NativeFunc<i32, i32>,
+/// The plugin module with high-level interfaces.
+pub struct Module<M: RawModule = BackendModule> {
+    module: PluginModule<M>,
 }
 
-unsafe fn mem_slice(memory: &Memory, start: i32, len: i32) -> &[u8] {
-    memory
-        .data_unchecked()
-        .get_unchecked(start as usize..)
-        .get_unchecked(..len as usize)
-}
-
-unsafe fn mem_slice_mut(memory: &Memory, start: i32, len: i32) -> &mut [u8] {
-    memory
-        .data_unchecked_mut()
-        .get_unchecked_mut(start as usize..)
-        .get_unchecked_mut(..len as usize)
-}
-
-impl Host {
-    /// Loads the WASM [`Module`], with some imports.
-    pub fn new(module: &Module, resolver: &(dyn Resolver + Send + Sync)) -> Result<Self> {
-        let instance = Instance::new(module, resolver)?;
-        let memory = instance.exports.get_memory("memory")?.clone();
-        let abi_free = instance.exports.get_native_function("__abi_free")?;
-        let abi_alloc = instance.exports.get_native_function("__abi_alloc")?;
-        Ok(Self {
-            instance,
-            memory,
-            abi_free,
-            abi_alloc,
-        })
-    }
-
-    /// Calls a method by name.
-    ///
-    /// The args and returns are passed by MessagePack with [`rmp_serde`].
-    pub fn call<Params: Serialize, Res: DeserializeOwned>(
-        &self,
-        name: &str,
-        args: Params,
-    ) -> Result<Res> {
-        let memory = &self.memory;
-        let func = self
-            .instance
-            .exports
-            .get_native_function::<(i32, i32), u64>(name)?;
-
-        let data = rmp_serde::to_vec(&args)?;
-
-        let ptr = self.abi_alloc.call(data.len() as i32)?;
-        defer! { self.abi_free.call(ptr, data.len() as i32).unwrap(); }
-        unsafe { mem_slice_mut(memory, ptr, data.len() as i32) }.copy_from_slice(&data);
-
-        let res = func.call(data.len() as i32, ptr)?;
-        let (len, res) = ((res >> 32) as i32, (res & 0xFFFFFFFF) as i32);
-        defer! { self.abi_free.call(res, len).unwrap(); }
-
-        let res_data = unsafe { mem_slice(memory, res, len) };
-        let res_data = rmp_serde::from_slice(res_data)?;
-        Ok(res_data)
+impl<M: RawModule> Module<M> {
+    fn new(module: M) -> Self {
+        Self {
+            module: PluginModule::new(module),
+        }
     }
 
     /// Calls a script plugin method by name.
     pub fn dispatch_method(&self, name: &str, args: &[RawValue]) -> Result<RawValue> {
-        self.call(name, (args,))
+        self.module.call(name, (args,))
     }
 
     /// Gets the [`PluginType`].
     pub fn plugin_type(&self) -> Result<PluginType> {
-        self.call("plugin_type", ())
+        self.module.call("plugin_type", ())
     }
 
     /// Processes [`Action`] in action plugin.
     pub fn process_action(&self, ctx: ActionProcessContextRef) -> Result<ActionProcessResult> {
-        self.call("process_action", (ctx,))
+        self.module.call("process_action", (ctx,))
     }
 
     /// Calls a custom command in the text plugin.
@@ -103,7 +42,7 @@ impl Host {
         args: &[String],
         ctx: TextProcessContextRef,
     ) -> Result<TextProcessResult> {
-        self.call(name, (args, ctx))
+        self.module.call(name, (args, ctx))
     }
 
     /// Calls a custom command in the line plugin.
@@ -112,27 +51,22 @@ impl Host {
         name: &str,
         ctx: LineProcessContextRef,
     ) -> Result<LineProcessResult> {
-        self.call(name, (ctx,))
+        self.module.call(name, (ctx,))
     }
 
     /// Processes [`Game`] when opening the config file.
     pub fn process_game(&self, ctx: GameProcessContextRef) -> Result<GameProcessResult> {
-        self.call("process_game", (ctx,))
+        self.module.call("process_game", (ctx,))
     }
 }
 
 /// The plugin runtime.
-pub struct Runtime {
-    /// The plugins map by name.
-    pub modules: HashMap<String, Host>,
-    /// The action plugins.
-    pub action_modules: Vec<String>,
-    /// The text plugins by command name.
-    pub text_modules: HashMap<String, String>,
-    /// The line plugins by command name.
-    pub line_modules: HashMap<String, String>,
-    /// The game plugins.
-    pub game_modules: Vec<String>,
+pub struct Runtime<M: RawModule = BackendModule> {
+    modules: HashMap<String, Module<M>>,
+    action_modules: Vec<String>,
+    text_modules: HashMap<String, String>,
+    line_modules: HashMap<String, String>,
+    game_modules: Vec<String>,
 }
 
 /// The load status of [`Runtime`].
@@ -144,66 +78,36 @@ pub enum LoadStatus {
     LoadPlugin(String, usize, usize),
 }
 
-#[derive(Default, Clone, WasmerEnv)]
-struct RuntimeInstanceData {
-    #[wasmer(export)]
-    memory: LazyInit<Memory>,
-    #[wasmer(export(name = "__abi_alloc"))]
-    alloc: LazyInit<NativeFunc<i32, i32>>,
-}
-
-impl RuntimeInstanceData {
-    pub unsafe fn import<Params: DeserializeOwned + Tuple, Res: Serialize>(
-        &self,
-        len: i32,
-        data: i32,
-        f: impl FnOnce<Params, Output = Res>,
-    ) -> std::result::Result<u64, RuntimeError> {
-        let memory = self.memory.get_unchecked();
-        let data = mem_slice(memory, data, len);
-        let data = rmp_serde::from_slice(data).map_err(|e| RuntimeError::new(e.to_string()))?;
-        let res = f.call_once(data);
-        let data = rmp_serde::to_vec(&res).map_err(|e| RuntimeError::new(e.to_string()))?;
-        let alloc = self.alloc.get_unchecked();
-        let ptr = alloc.call(data.len() as _)?;
-        mem_slice_mut(memory, ptr, data.len() as _).copy_from_slice(&data);
-        Ok(((data.len() as u64) << 32) | (ptr as u64))
-    }
-}
-
-impl Runtime {
-    fn imports(store: &Store) -> Result<Box<dyn NamedResolver + Send + Sync>> {
-        let log_func = Function::new_native_with_env(
-            store,
-            RuntimeInstanceData::default(),
-            |env_data: &RuntimeInstanceData, len: i32, data: i32| unsafe {
-                env_data.import(len, data, |data: Record| {
-                    log::logger().log(
-                        &log::Record::builder()
-                            .level(data.level)
-                            .target(&data.target)
-                            .args(format_args!("{}", data.msg))
-                            .module_path(data.module_path.as_deref())
-                            .file(data.file.as_deref())
-                            .line(data.line)
-                            .build(),
-                    );
-                })
-            },
-        );
-        let log_flush_func = Function::new_native(store, || log::logger().flush());
-
-        let import_object = imports! {
-            "log" => {
-                "__log" => log_func,
-                "__log_flush" => log_flush_func,
-            }
-        };
-        let wasi_env = WasiState::new("ayaka-runtime")
-            .preopen_dir("/")?
-            .finalize()?;
-        let wasi_import = generate_import_object_from_env(store, wasi_env, WasiVersion::Latest);
-        Ok(Box::new(import_object.chain_front(wasi_import)))
+impl<M: RawModule> Runtime<M> {
+    fn new_linker(root_path: impl AsRef<Path>) -> Result<M::Linker> {
+        let mut store = M::Linker::new(root_path)?;
+        let log_func = store.wrap_with_args(|data: Record| {
+            let module_path = format!(
+                "{}::<plugin>::{}",
+                module_path!(),
+                data.module_path.unwrap_or_default()
+            );
+            let target = format!("{}::<plugin>::{}", module_path!(), data.target);
+            log::logger().log(
+                &log::Record::builder()
+                    .level(data.level)
+                    .target(&target)
+                    .args(format_args!("{}", data.msg))
+                    .module_path(Some(&module_path))
+                    .file(data.file.as_deref())
+                    .line(data.line)
+                    .build(),
+            )
+        });
+        let log_flush_func = store.wrap(|| log::logger().flush());
+        store.import(
+            "log",
+            HashMap::from([
+                ("__log".to_string(), log_func),
+                ("__log_flush".to_string(), log_flush_func),
+            ]),
+        )?;
+        Ok(store)
     }
 
     /// Load plugins from specific directory and plugin names.
@@ -217,15 +121,11 @@ impl Runtime {
         rel_to: impl AsRef<Path> + 'a,
         names: &'a [impl AsRef<str>],
     ) -> Result<Self> {
-        let path = rel_to.as_ref().join(dir);
+        let root_path = rel_to.as_ref();
+        let path = root_path.join(dir);
         yield LoadStatus::CreateEngine;
-        let store = Store::default();
-        let import_object = Self::imports(&store)?;
-        let mut modules = HashMap::new();
-        let mut action_modules = vec![];
-        let mut text_modules = HashMap::new();
-        let mut line_modules = HashMap::new();
-        let mut game_modules = vec![];
+        let store = Self::new_linker(root_path)?;
+        let mut runtime = Self::new();
         let paths = if names.is_empty() {
             std::fs::read_dir(path)?
                 .try_filter_map(|f| {
@@ -260,41 +160,102 @@ impl Runtime {
         for (i, (name, p)) in paths.into_iter().enumerate() {
             yield LoadStatus::LoadPlugin(name.clone(), i, total_len);
             let buf = std::fs::read(p)?;
-            let module = Module::from_binary(&store, &buf)?;
-            let runtime = Host::new(&module, &import_object)?;
-            let plugin_type = runtime.plugin_type()?;
-            if plugin_type.action {
-                action_modules.push(name.clone());
-            }
-            for cmd in plugin_type.text {
-                let res = text_modules.insert(cmd.clone(), name.clone());
-                if let Some(old_module) = res {
-                    warn!(
-                        "Command `{}` is overrided by \"{}\" over \"{}\"",
-                        cmd, name, old_module
-                    );
-                }
-            }
-            for cmd in plugin_type.line {
-                let res = line_modules.insert(cmd.clone(), name.clone());
-                if let Some(old_module) = res {
-                    warn!(
-                        "Command `{}` is overrided by \"{}\" over \"{}\"",
-                        cmd, name, old_module
-                    );
-                }
-            }
-            if plugin_type.game {
-                game_modules.push(name.clone());
-            }
-            modules.insert(name, runtime);
+            let module = Module::new(store.create(&buf)?);
+            runtime.insert_module(name, module)?;
         }
-        Ok(Self {
-            modules,
-            action_modules,
-            text_modules,
-            line_modules,
-            game_modules,
-        })
+        Ok(runtime)
+    }
+
+    fn new() -> Self {
+        Self {
+            modules: HashMap::default(),
+            action_modules: vec![],
+            text_modules: HashMap::default(),
+            line_modules: HashMap::default(),
+            game_modules: vec![],
+        }
+    }
+
+    fn insert_module(&mut self, name: String, module: Module<M>) -> Result<()> {
+        let plugin_type = module
+            .plugin_type()
+            .unwrap_or_default_log("Cannot determine module type");
+        if plugin_type.action {
+            self.action_modules.push(name.clone());
+        }
+        for cmd in plugin_type.text {
+            let res = self.text_modules.insert(cmd.clone(), name.clone());
+            if let Some(old_module) = res {
+                log::warn!(
+                    "Text command `{}` is overrided by \"{}\" over \"{}\"",
+                    cmd,
+                    name,
+                    old_module
+                );
+            }
+        }
+        for cmd in plugin_type.line {
+            let res = self.line_modules.insert(cmd.clone(), name.clone());
+            if let Some(old_module) = res {
+                log::warn!(
+                    "Line command `{}` is overrided by \"{}\" over \"{}\"",
+                    cmd,
+                    name,
+                    old_module
+                );
+            }
+        }
+        if plugin_type.game {
+            self.game_modules.push(name.clone());
+        }
+        self.modules.insert(name, module);
+        Ok(())
+    }
+
+    /// Gets module from name.
+    pub fn module(&self, key: &str) -> Option<&Module<M>> {
+        self.modules.get(key)
+    }
+
+    /// Iterates action modules.
+    pub fn action_modules(&self) -> impl Iterator<Item = &Module<M>> {
+        self.action_modules
+            .iter()
+            .map(|key| self.module(key).unwrap())
+    }
+
+    /// Gets text module from command.
+    pub fn text_module(&self, cmd: &str) -> Option<&Module<M>> {
+        self.text_modules.get(cmd).and_then(|key| self.module(key))
+    }
+
+    /// Gets line module from command.
+    pub fn line_module(&self, cmd: &str) -> Option<&Module<M>> {
+        self.line_modules.get(cmd).and_then(|key| self.module(key))
+    }
+
+    /// Iterates game modules.
+    pub fn game_modules(&self) -> impl Iterator<Item = &Module<M>> {
+        self.game_modules
+            .iter()
+            .map(|key| self.module(key).unwrap())
+    }
+}
+
+#[doc(hidden)]
+pub use backend::BackendModule;
+
+#[doc(hidden)]
+mod backend {
+    cfg_if::cfg_if! {
+        if #[cfg(feature = "wasmi")] {
+            pub use ayaka_plugin_wasmi::WasmiModule as BackendModule;
+        } else if #[cfg(feature = "wasmtime")] {
+            pub use ayaka_plugin_wasmtime::WasmtimeModule as BackendModule;
+        } else if #[cfg(feature = "wasmer")] {
+            pub use ayaka_plugin_wasmer::WasmerModule as BackendModule;
+        } else {
+            pub use ayaka_plugin_nop::NopModule as BackendModule;
+        }
     }
 }

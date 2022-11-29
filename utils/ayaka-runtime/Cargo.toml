@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 ayaka-bindings-types = { path = "../ayaka-bindings-types" }
 ayaka-script = { path = "../ayaka-script" }
+ayaka-plugin = { path = "../ayaka-plugin" }
 fallback = "0.1"
 language-matcher = "0.1"
 icu_locid = { version = "1.0.0", features = ["std"] }
@@ -13,17 +14,30 @@ sys-locale = "0.2"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 serde_json = "1.0"
-rmp-serde = "1.1"
 anyhow = "1.0"
-wasmer = "2.3"
-wasmer-wasi = "2.3"
-tokio = { version = "1", features = ["macros", "sync"] }
 stream-future = "0.3"
 futures-util = "0.3"
 tryiterator = { git = "https://github.com/Pernosco/tryiterator.git" }
 dirs = "4.0"
-scopeguard = "1.1"
 trylog = "0.2"
+cfg-if = "1.0"
+
+ayaka-plugin-nop = { path = "../ayaka-plugin-nop" }
+ayaka-plugin-wasmi = { path = "../ayaka-plugin-wasmi", optional = true }
+ayaka-plugin-wasmtime = { path = "../ayaka-plugin-wasmtime", optional = true }
+ayaka-plugin-wasmer = { path = "../ayaka-plugin-wasmer", optional = true }
 
 [dev-dependencies]
-tokio = { version = "1", features = ["parking_lot", "rt"] }
+tokio = { version = "1", features = ["macros", "parking_lot", "rt"] }
+generic-tests = "0.1"
+
+[features]
+default = ["wasmi"]
+wasmi = ["ayaka-plugin-wasmi"]
+wasmtime = ["ayaka-plugin-wasmtime"]
+wasmer = ["ayaka-plugin-wasmer"]
+
+[[test]]
+name = "runtime"
+path = "tests/runtime.rs"
+required-features = ["wasmi", "wasmtime", "wasmer"]

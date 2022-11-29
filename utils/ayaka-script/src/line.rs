@@ -127,11 +127,7 @@ mod test {
         );
         assert_eq!(
             lines[3],
-            Line::Custom({
-                let mut map = HashMap::new();
-                map.insert("video".to_string(), RawValue::Num(0));
-                map
-            })
+            Line::Custom(HashMap::from([("video".to_string(), RawValue::Num(0))]))
         );
         assert_eq!(lines[4], Line::Empty);
     }

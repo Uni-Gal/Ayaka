@@ -6,11 +6,10 @@
 
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
-#![feature(absolute_path)]
 #![feature(fn_traits)]
 #![feature(generators)]
 #![feature(once_cell)]
-#![feature(tuple_trait)]
+#![feature(type_alias_impl_trait)]
 #![feature(unboxed_closures)]
 
 mod config;
