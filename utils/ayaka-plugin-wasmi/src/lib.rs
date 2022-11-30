@@ -169,7 +169,7 @@ pub struct WasmiStoreLinker {
 }
 
 impl WasmiStoreLinker {
-    fn preopen_root(root_path: impl AsRef<Path>) -> Result<cap_std::fs::Dir> {
+    fn preopen_root(root_path: impl AsRef<Path>) -> Result<Dir> {
         let mut options = std::fs::OpenOptions::new();
         options.read(true);
         #[cfg(windows)]
@@ -179,7 +179,7 @@ impl WasmiStoreLinker {
             options.custom_flags(0x02000000); // open dir with FILE_FLAG_BACKUP_SEMANTICS
         }
         let root = options.open(root_path)?;
-        Ok(cap_std::fs::Dir::from_std_file(root))
+        Ok(Dir::from_std_file(root))
     }
 }
 
