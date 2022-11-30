@@ -1,8 +1,12 @@
+use std::{path::PathBuf, sync::OnceLock};
+
 use tauri::{
     plugin::{Builder, TauriPlugin},
     Runtime,
 };
 use tiny_http::{Header, Server};
+
+pub(crate) static ROOT_PATH: OnceLock<PathBuf> = OnceLock::new();
 
 pub fn init<R: Runtime>(dev_url: String, port: u16) -> TauriPlugin<R> {
     Builder::new("asset_resolver")
@@ -12,33 +16,16 @@ pub fn init<R: Runtime>(dev_url: String, port: u16) -> TauriPlugin<R> {
                 let server = Server::http(format!("127.0.0.1:{port}"))
                     .expect("Unable to start local server");
                 for req in server.incoming_requests() {
-                    #[cfg(debug_assertions)]
-                    let _ = asset_resolver;
-                    #[cfg(not(debug_assertions))]
-                    if req.url().starts_with("/assets/")
-                        || req.url() == "/"
-                        || req.url() == "/live2d.min.js"
-                        || req.url() == "/live2dcubismcore.min.js"
+                    let url = req.url().to_string();
+                    if cfg!(debug_assertions) {
+                        let _ = asset_resolver;
+                    } else if url.starts_with("/assets/")
+                        || url == "/"
+                        || url == "/live2d.min.js"
+                        || url == "/live2dcubismcore.min.js"
                     {
-                        let asset = asset_resolver.get(req.url().into()).unwrap();
-                        let mut resp = if let Some(csp) = asset.csp_header {
-                            #[cfg(target_os = "linux")]
-                            let mut resp = {
-                                let html = String::from_utf8_lossy(&asset.bytes);
-                                let body = html.replacen(tauri::utils::html::CSP_TOKEN, &csp, 1);
-                                tiny_http::Response::from_data(body)
-                            };
-                            #[cfg(not(target_os = "linux"))]
-                            let mut resp = Response::from_data(asset.bytes);
-                            resp.add_header(
-                                Header::from_bytes("Content-Security-Policy", csp).expect(
-                                    "Unable to convert csp_header to Content-Security-Policy",
-                                ),
-                            );
-                            resp
-                        } else {
-                            tiny_http::Response::from_data(asset.bytes)
-                        };
+                        let asset = asset_resolver.get(url).unwrap();
+                        let mut resp = tiny_http::Response::from_data(asset.bytes);
                         resp.add_header(
                             Header::from_bytes("Content-Type", asset.mime_type)
                                 .expect("Unable to convert mime_type to Content-Type"),
@@ -46,60 +33,66 @@ pub fn init<R: Runtime>(dev_url: String, port: u16) -> TauriPlugin<R> {
                         req.respond(resp).expect("Unable to setup response");
                         continue;
                     }
-                    match (req.url(), std::fs::canonicalize(req.url())) {
-                        ("/", _) | (_, Err(_)) => {
-                            #[cfg(debug_assertions)]
-                            {
-                                let path = if req.url().ends_with('/') {
-                                    req.url().to_string() + "index.html"
-                                } else {
-                                    req.url().to_string()
-                                };
-                                let resp =
-                                    minreq::get(dev_url.trim_end_matches('/').to_string() + &path)
-                                        .send()
-                                        .expect("Unable to send request");
-                                req.respond(tiny_http::Response::new(
-                                    resp.status_code.into(),
-                                    resp.headers
-                                        .iter()
-                                        .map(|(k, v)| {
-                                            Header::from_bytes(k.as_bytes(), v.as_bytes())
-                                                .expect("Unable to convert Header")
-                                        })
-                                        .collect(),
-                                    resp.as_bytes(),
-                                    None,
-                                    None,
-                                ))
-                                .expect("Unable to setup response")
+                    if url.starts_with("/fs/") {
+                        let path = ROOT_PATH
+                            .get()
+                            .unwrap()
+                            .clone()
+                            .join(url.strip_prefix("/fs/").unwrap());
+                        let file = if path.is_file() || path.is_symlink() {
+                            std::fs::File::open(&path).unwrap()
+                        } else if path.is_dir() {
+                            let mut path = path.clone();
+                            path.push("index.html");
+                            match std::fs::File::open(path) {
+                                Ok(file) => file,
+                                Err(_) => {
+                                    req.respond(tiny_http::Response::empty(404))
+                                        .expect("Unable to setup response");
+                                    continue;
+                                }
                             }
-                            #[cfg(not(debug_assertions))]
-                            {
-                                let _ = dev_url;
-                                req.respond(tiny_http::Response::empty(404))
-                                    .expect("Unable to setup response")
-                            }
+                        } else {
+                            req.respond(tiny_http::Response::empty(404))
+                                .expect("Unable to setup response");
+                            continue;
+                        };
+                        let mut resp = tiny_http::Response::from_file(file);
+                        if let Some(mime) = mime_guess::from_path(url).first() {
+                            resp.add_header(
+                                Header::from_bytes("Content-Type", mime.essence_str())
+                                    .expect("Unable to convert mime_type to Content-Type"),
+                            );
                         }
-                        (_, Ok(path)) => {
-                            let file = std::fs::File::open(&path).unwrap();
-                            let file = if file.metadata().unwrap().is_dir() {
-                                let mut path = path.clone();
-                                path.push("index.html");
-                                std::fs::File::open(path).unwrap()
-                            } else {
-                                file
-                            };
-                            let mut resp = tiny_http::Response::from_file(file);
-                            if let Some(mime) = mime_guess::from_path(req.url()).first() {
-                                resp.add_header(
-                                    Header::from_bytes("Content-Type", mime.essence_str())
-                                        .expect("Unable to convert mime_type to Content-Type"),
-                                );
-                            }
-                            req.respond(resp).expect("Unable to setup response")
-                        }
-                    };
+                        req.respond(resp).expect("Unable to setup response");
+                    } else if cfg!(debug_assertions) {
+                        let path = if url.ends_with('/') {
+                            url + "index.html"
+                        } else {
+                            url
+                        };
+                        let resp = minreq::get(dev_url.trim_end_matches('/').to_string() + &path)
+                            .send()
+                            .expect("Unable to send request");
+                        req.respond(tiny_http::Response::new(
+                            resp.status_code.into(),
+                            resp.headers
+                                .iter()
+                                .map(|(k, v)| {
+                                    Header::from_bytes(k.as_bytes(), v.as_bytes())
+                                        .expect("Unable to convert Header")
+                                })
+                                .collect(),
+                            resp.as_bytes(),
+                            None,
+                            None,
+                        ))
+                        .expect("Unable to setup response")
+                    } else {
+                        let _ = dev_url;
+                        req.respond(tiny_http::Response::empty(404))
+                            .expect("Unable to setup response")
+                    }
                 }
             });
             Ok(())

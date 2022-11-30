@@ -3,6 +3,7 @@
     windows_subsystem = "windows"
 )]
 #![feature(absolute_path)]
+#![feature(once_cell)]
 
 mod asset_resolver;
 
@@ -16,7 +17,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
-    path::PathBuf,
+    path::Path,
 };
 use tauri::{
     async_runtime::Mutex, command, utils::config::AppUrl, AppHandle, Manager, State, WindowUrl,
@@ -74,7 +75,6 @@ impl OpenGameStatus {
 struct Storage {
     ident: String,
     config: String,
-    root_path: PathBuf,
     records: Mutex<Vec<ActionRecord>>,
     context: Mutex<Option<Context>>,
     current: Mutex<Option<RawContext>>,
@@ -85,15 +85,9 @@ struct Storage {
 impl Storage {
     pub fn new(ident: impl Into<String>, config: impl Into<String>) -> Self {
         let config = config.into();
-        let root_path = std::path::absolute(&config)
-            .unwrap()
-            .parent()
-            .unwrap()
-            .to_path_buf();
         Self {
             ident: ident.into(),
             config,
-            root_path,
             ..Default::default()
         }
     }
@@ -117,8 +111,8 @@ impl GameInfo {
 }
 
 #[command]
-fn absolute_path(storage: State<'_, Storage>, path: String) -> CommandResult<String> {
-    Ok(storage.root_path.join(path).to_string_lossy().into_owned())
+fn absolute_path(_storage: State<'_, Storage>, path: String) -> CommandResult<String> {
+    Ok(Path::new("/fs/").join(path).to_string_lossy().into_owned())
 }
 
 #[command]
@@ -476,6 +470,12 @@ fn main() -> Result<()> {
                         .to_string_lossy()
                         .into_owned()
                 });
+            let root_path = std::path::absolute(&config)
+                .unwrap()
+                .parent()
+                .unwrap()
+                .to_path_buf();
+            asset_resolver::ROOT_PATH.set(root_path).unwrap();
             app.manage(Storage::new(ident, config));
             Ok(())
         })
