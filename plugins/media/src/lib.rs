@@ -52,7 +52,7 @@ fn file_ctx(
 ) -> LineProcessResult {
     file(
         &ctx.props[prop].get_str(),
-        ctx.game_props.get(game_prop).map(PathBuf::from).as_deref(),
+        ctx.game_props.get(game_prop).map(AsRef::<Path>::as_ref),
         prop,
         exs,
         temp,
@@ -81,7 +81,7 @@ fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
         &voice_id,
         ctx.game_props
             .get("voices")
-            .map(|p| PathBuf::from(p).join(&ctx.ctx.cur_para))
+            .map(|p| AsRef::<Path>::as_ref(p).join(&ctx.ctx.cur_para))
             .as_deref(),
         "voice",
         &["mp3"],
@@ -93,10 +93,10 @@ fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
 
 #[export]
 fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {
-    let base_dir = ctx.props.get("bgs").map(PathBuf::from);
-    if let Some(bg) = ctx.props.get_mut("bg") {
-        if let Some(path) = find_exists(bg, base_dir.as_deref(), &["png", "jpg", "gif"]) {
-            *bg = path.to_string_lossy().into_owned();
+    if ctx.props.contains_key("bg") {
+        let base_dir = ctx.props.get("bgs").map(AsRef::<Path>::as_ref);
+        if let Some(path) = find_exists(&ctx.props["bg"], base_dir, &["png", "jpg", "gif"]) {
+            *ctx.props.get_mut("bg").unwrap() = path.to_string_lossy().into_owned();
         }
     }
     GameProcessResult { props: ctx.props }

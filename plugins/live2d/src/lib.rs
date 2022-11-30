@@ -9,13 +9,9 @@ fn plugin_type() -> PluginType {
     PluginType::builder().line(["show", "hide"]).game().build()
 }
 
-fn find_model(
-    ch: &str,
-    root_path: impl AsRef<Path>,
-    game_props: &HashMap<String, String>,
-) -> Option<PathBuf> {
+fn find_model(ch: &str, game_props: &HashMap<String, String>) -> Option<PathBuf> {
     game_props.get("ch_models").and_then(|ch_models| {
-        let base_dir = root_path.as_ref().join(ch_models);
+        let base_dir: &Path = ch_models.as_ref();
         ["model.json", "model3.json"]
             .iter()
             .map(|ex| base_dir.join(ch).join(ch).with_extension(ex))
@@ -76,7 +72,7 @@ fn hide(ctx: LineProcessContext) -> LineProcessResult {
 fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {
     if let Some(names) = ctx.props.remove("ch_names") {
         for name in names.split(',') {
-            if let Some(path) = find_model(name, "/", &ctx.props) {
+            if let Some(path) = find_model(name, &ctx.props) {
                 ctx.props.insert(
                     format!("ch_{}_model", name),
                     path.to_string_lossy().into_owned(),
