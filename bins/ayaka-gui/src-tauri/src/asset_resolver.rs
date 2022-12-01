@@ -66,14 +66,19 @@ pub fn init<R: Runtime>(dev_url: String, port: u16) -> TauriPlugin<R> {
                         }
                         req.respond(resp).expect("Unable to setup response");
                     } else if cfg!(debug_assertions) {
-                        let path = if url.ends_with('/') {
-                            url + "index.html"
+                        let req_url = url::Url::parse(&dev_url).unwrap().join(&url).unwrap();
+                        let req_url = if req_url
+                            .path_segments()
+                            .unwrap()
+                            .last()
+                            .unwrap_or_default()
+                            .is_empty()
+                        {
+                            req_url.join("index.html").unwrap()
                         } else {
-                            url
+                            req_url
                         };
-                        let resp = minreq::get(dev_url.trim_end_matches('/').to_string() + &path)
-                            .send()
-                            .expect("Unable to send request");
+                        let resp = minreq::get(req_url).send().expect("Unable to send request");
                         req.respond(tiny_http::Response::new(
                             resp.status_code.into(),
                             resp.headers
