@@ -1,9 +1,15 @@
 import { invoke } from "@tauri-apps/api/tauri"
 import { Locale } from 'vue-i18n'
 
+export var DIST_PORT: number = -1
+
+export async function init(): Promise<void> {
+    DIST_PORT = await invoke("dist_port")
+}
+
 export function conv_src(path?: string): string | undefined {
     if (path) {
-        return decodeURIComponent("/fs/" + path)
+        return decodeURIComponent(`//127.0.0.1:${DIST_PORT}/fs/${path}`)
     }
     return undefined
 }

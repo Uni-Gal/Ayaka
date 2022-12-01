@@ -73,6 +73,7 @@ impl OpenGameStatus {
 struct Storage {
     ident: String,
     config: String,
+    dist_port: u16,
     records: Mutex<Vec<ActionRecord>>,
     context: Mutex<Option<Context>>,
     current: Mutex<Option<RawContext>>,
@@ -81,11 +82,11 @@ struct Storage {
 }
 
 impl Storage {
-    pub fn new(ident: impl Into<String>, config: impl Into<String>) -> Self {
-        let config = config.into();
+    pub fn new(ident: impl Into<String>, config: impl Into<String>, dist_port: u16) -> Self {
         Self {
             ident: ident.into(),
-            config,
+            config: config.into(),
+            dist_port,
             ..Default::default()
         }
     }
@@ -106,6 +107,11 @@ impl GameInfo {
             props: game.config.props.clone(),
         }
     }
+}
+
+#[command]
+fn dist_port(storage: State<Storage>) -> u16 {
+    storage.dist_port
 }
 
 #[command]
@@ -419,11 +425,9 @@ fn main() -> Result<()> {
     info!("Picked port {}", port);
     let mut context = tauri::generate_context!();
     let window_url = WindowUrl::External(format!("http://127.0.0.1:{port}").parse().unwrap());
-    let dev_url = context.config().build.dev_path.to_string();
-    context.config_mut().build.dist_dir = AppUrl::Url(window_url.clone());
-    context.config_mut().build.dev_path = AppUrl::Url(window_url);
+    context.config_mut().build.dist_dir = AppUrl::Url(window_url);
     tauri::Builder::default()
-        .plugin(asset_resolver::init(dev_url, port))
+        .plugin(asset_resolver::init(port))
         .setup(move |app| {
             let ident = app.config().tauri.bundle.identifier.clone();
             let spec = LogSpecification::parse("warn,ayaka=debug")?;
@@ -469,11 +473,12 @@ fn main() -> Result<()> {
                 .unwrap()
                 .to_path_buf();
             asset_resolver::ROOT_PATH.set(root_path).unwrap();
-            app.manage(Storage::new(ident, config));
+            app.manage(Storage::new(ident, config, port));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
             ayaka_version,
+            dist_port,
             open_game,
             get_settings,
             set_settings,
