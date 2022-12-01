@@ -2,7 +2,9 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
-#![feature(absolute_path)]
+#![feature(once_cell)]
+
+mod asset_resolver;
 
 use ayaka_runtime::{
     anyhow::{self, anyhow, Result},
@@ -14,9 +16,11 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
-    path::PathBuf,
+    path::Path,
 };
-use tauri::{async_runtime::Mutex, command, AppHandle, Manager, State};
+use tauri::{
+    async_runtime::Mutex, command, utils::config::AppUrl, AppHandle, Manager, State, WindowUrl,
+};
 use trylog::TryLog;
 
 type CommandResult<T> = std::result::Result<T, CommandError>;
@@ -70,7 +74,6 @@ impl OpenGameStatus {
 struct Storage {
     ident: String,
     config: String,
-    root_path: PathBuf,
     records: Mutex<Vec<ActionRecord>>,
     context: Mutex<Option<Context>>,
     current: Mutex<Option<RawContext>>,
@@ -81,15 +84,9 @@ struct Storage {
 impl Storage {
     pub fn new(ident: impl Into<String>, config: impl Into<String>) -> Self {
         let config = config.into();
-        let root_path = std::path::absolute(&config)
-            .unwrap()
-            .parent()
-            .unwrap()
-            .to_path_buf();
         Self {
             ident: ident.into(),
             config,
-            root_path,
             ..Default::default()
         }
     }
@@ -113,8 +110,8 @@ impl GameInfo {
 }
 
 #[command]
-fn absolute_path(storage: State<'_, Storage>, path: String) -> CommandResult<String> {
-    Ok(storage.root_path.join(path).to_string_lossy().into_owned())
+fn absolute_path(path: String) -> CommandResult<String> {
+    Ok(Path::new("/fs/").join(path).to_string_lossy().into_owned())
 }
 
 #[command]
@@ -426,9 +423,14 @@ fn main() -> Result<()> {
     let port =
         portpicker::pick_unused_port().ok_or_else(|| anyhow!("failed to find unused port"))?;
     info!("Picked port {}", port);
+    let mut context = tauri::generate_context!();
+    let window_url = WindowUrl::External(format!("http://127.0.0.1:{port}").parse().unwrap());
+    let dev_url = context.config().build.dev_path.to_string();
+    context.config_mut().build.dist_dir = AppUrl::Url(window_url.clone());
+    context.config_mut().build.dev_path = AppUrl::Url(window_url);
     tauri::Builder::default()
-        .plugin(tauri_plugin_localhost::Builder::new(port).build())
-        .setup(|app| {
+        .plugin(asset_resolver::init(dev_url, port))
+        .setup(move |app| {
             let ident = app.config().tauri.bundle.identifier.clone();
             let spec = LogSpecification::parse("warn,ayaka=debug")?;
             let log_handle = if cfg!(debug_assertions) {
@@ -467,6 +469,12 @@ fn main() -> Result<()> {
                         .to_string_lossy()
                         .into_owned()
                 });
+            let root_path = std::fs::canonicalize(&config)
+                .expect("configuration file not found")
+                .parent()
+                .unwrap()
+                .to_path_buf();
+            asset_resolver::ROOT_PATH.set(root_path).unwrap();
             app.manage(Storage::new(ident, config));
             Ok(())
         })
@@ -493,6 +501,6 @@ fn main() -> Result<()> {
             switch,
             history,
         ])
-        .run(tauri::generate_context!())?;
+        .run(context)?;
     Ok(())
 }
