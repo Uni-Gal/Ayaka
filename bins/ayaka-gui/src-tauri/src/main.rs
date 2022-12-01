@@ -2,7 +2,6 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
-#![feature(absolute_path)]
 #![feature(once_cell)]
 
 mod asset_resolver;
@@ -111,7 +110,7 @@ impl GameInfo {
 }
 
 #[command]
-fn absolute_path(_storage: State<'_, Storage>, path: String) -> CommandResult<String> {
+fn absolute_path(path: String) -> CommandResult<String> {
     Ok(Path::new("/fs/").join(path).to_string_lossy().into_owned())
 }
 
@@ -470,8 +469,8 @@ fn main() -> Result<()> {
                         .to_string_lossy()
                         .into_owned()
                 });
-            let root_path = std::path::absolute(&config)
-                .unwrap()
+            let root_path = std::fs::canonicalize(&config)
+                .expect("configuration file not found")
                 .parent()
                 .unwrap()
                 .to_path_buf();

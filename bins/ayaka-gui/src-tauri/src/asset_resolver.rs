@@ -1,5 +1,4 @@
 use std::{path::PathBuf, sync::OnceLock};
-
 use tauri::{
     plugin::{Builder, TauriPlugin},
     Runtime,
@@ -39,12 +38,10 @@ pub fn init<R: Runtime>(dev_url: String, port: u16) -> TauriPlugin<R> {
                             .unwrap()
                             .clone()
                             .join(url.strip_prefix("/fs/").unwrap());
-                        let file = if path.is_file() || path.is_symlink() {
+                        let file = if path.is_file() {
                             std::fs::File::open(&path).unwrap()
                         } else if path.is_dir() {
-                            let mut path = path.clone();
-                            path.push("index.html");
-                            match std::fs::File::open(path) {
+                            match std::fs::File::open(path.join("index.html")) {
                                 Ok(file) => file,
                                 Err(_) => {
                                     req.respond(tiny_http::Response::empty(404))
