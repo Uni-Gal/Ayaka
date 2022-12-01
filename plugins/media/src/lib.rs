@@ -52,7 +52,7 @@ fn file_ctx(
 ) -> LineProcessResult {
     file(
         &ctx.props[prop].get_str(),
-        ctx.game_props.get(game_prop).map(AsRef::<Path>::as_ref),
+        ctx.game_props.get(game_prop).map(Path::new),
         prop,
         exs,
         temp,
@@ -81,7 +81,7 @@ fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
         &voice_id,
         ctx.game_props
             .get("voices")
-            .map(|p| AsRef::<Path>::as_ref(p).join(&ctx.ctx.cur_para))
+            .map(|p| Path::new(p).join(&ctx.ctx.cur_para))
             .as_deref(),
         "voice",
         &["mp3"],
@@ -94,7 +94,7 @@ fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
 #[export]
 fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {
     if ctx.props.contains_key("bg") {
-        let base_dir = ctx.props.get("bgs").map(AsRef::<Path>::as_ref);
+        let base_dir = ctx.props.get("bgs").map(Path::new);
         if let Some(path) = find_exists(&ctx.props["bg"], base_dir, &["png", "jpg", "gif"]) {
             *ctx.props.get_mut("bg").unwrap() = path.to_string_lossy().into_owned();
         }

@@ -11,7 +11,7 @@ fn plugin_type() -> PluginType {
 
 fn find_model(ch: &str, game_props: &HashMap<String, String>) -> Option<PathBuf> {
     game_props.get("ch_models").and_then(|ch_models| {
-        let base_dir: &Path = ch_models.as_ref();
+        let base_dir = Path::new(ch_models);
         ["model.json", "model3.json"]
             .iter()
             .map(|ex| base_dir.join(ch).join(ch).with_extension(ex))
