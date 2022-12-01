@@ -1,7 +1,6 @@
 use actix_files::NamedFile;
 use actix_web::{
-    http::header::{ContentType, TryIntoHeaderPair},
-    web, App, HttpRequest, HttpResponse, HttpServer, Responder,
+    http::header::ContentType, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use ayaka_runtime::log;
 use std::{path::PathBuf, sync::OnceLock};
@@ -21,15 +20,10 @@ async fn fs_resolver<R: Runtime>(app: AppHandle<R>, req: HttpRequest) -> impl Re
             .unwrap()
             .join(url.strip_prefix("/fs/").unwrap());
         if path.is_file() {
-            let mut resp = NamedFile::open_async(&path)
+            NamedFile::open_async(&path)
                 .await
                 .unwrap()
-                .into_response(&req);
-            if let Some(mime) = mime_guess::from_path(path).first() {
-                let (key, value) = ContentType(mime).try_into_pair().unwrap();
-                resp.headers_mut().append(key, value);
-            }
-            resp
+                .into_response(&req)
         } else {
             HttpResponse::NotFound().finish()
         }
