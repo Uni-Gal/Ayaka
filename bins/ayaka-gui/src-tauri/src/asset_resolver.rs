@@ -1,54 +1,63 @@
+use actix_files::NamedFile;
+use actix_web::{
+    http::header::{self, TryIntoHeaderPair},
+    web, App, HttpRequest, HttpResponse, HttpServer, Responder,
+};
 use ayaka_runtime::log;
 use std::{path::PathBuf, sync::OnceLock};
 use tauri::{
     plugin::{Builder, TauriPlugin},
-    Runtime,
+    AppHandle, Runtime,
 };
-use tiny_http::{Header, Server};
 
 pub(crate) static ROOT_PATH: OnceLock<PathBuf> = OnceLock::new();
+
+async fn fs_resolver<R: Runtime>(app: AppHandle<R>, req: HttpRequest) -> impl Responder {
+    let url = req.uri().path();
+    log::debug!("Acquiring {}", url);
+    if url.starts_with("/fs/") {
+        let path = ROOT_PATH
+            .get()
+            .unwrap()
+            .join(url.strip_prefix("/fs/").unwrap());
+        if path.is_file() {
+            let mut resp = NamedFile::open_async(&path)
+                .await
+                .unwrap()
+                .into_response(&req);
+            if let Some(mime) = mime_guess::from_path(path).first() {
+                let (key, value) = header::ContentType(mime).try_into_pair().unwrap();
+                resp.headers_mut().append(key, value);
+            }
+            resp
+        } else {
+            HttpResponse::NotFound().finish()
+        }
+    } else if let Some(asset) = app.asset_resolver().get(url.to_string()) {
+        HttpResponse::Ok()
+            .append_header(header::ContentType(asset.mime_type.parse().unwrap()))
+            .body(asset.bytes)
+    } else {
+        HttpResponse::NotFound().finish()
+    }
+}
 
 pub fn init<R: Runtime>(port: u16) -> TauriPlugin<R> {
     Builder::new("asset_resolver")
         .setup(move |app| {
-            let asset_resolver = app.asset_resolver();
+            let app = app.clone();
             std::thread::spawn(move || {
-                let server = Server::http(format!("127.0.0.1:{port}"))
-                    .expect("Unable to start local server");
-                for req in server.incoming_requests() {
-                    let url = req.url();
-                    log::warn!("Acquiring {}", url);
-                    if url.starts_with("/fs/") {
-                        let path = ROOT_PATH
-                            .get()
-                            .unwrap()
-                            .join(url.strip_prefix("/fs/").unwrap());
-                        if path.is_file() {
-                            let file = std::fs::File::open(&path).unwrap();
-                            let mut resp = tiny_http::Response::from_file(file);
-                            if let Some(mime) = mime_guess::from_path(path).first() {
-                                resp.add_header(
-                                    Header::from_bytes("Content-Type", mime.essence_str())
-                                        .expect("Unable to convert mime_type to Content-Type"),
-                                );
-                            }
-                            req.respond(resp).expect("Unable to setup response");
-                        } else {
-                            req.respond(tiny_http::Response::empty(404))
-                                .expect("Unable to setup response");
-                        };
-                    } else if let Some(asset) = asset_resolver.get(url.to_string()) {
-                        let mut resp = tiny_http::Response::from_data(asset.bytes);
-                        resp.add_header(
-                            Header::from_bytes("Content-Type", asset.mime_type)
-                                .expect("Unable to convert mime_type to Content-Type"),
-                        );
-                        req.respond(resp).expect("Unable to setup response");
-                    } else {
-                        req.respond(tiny_http::Response::empty(404))
-                            .expect("Unable to setup response")
-                    }
-                }
+                actix_web::rt::System::new().block_on(async move {
+                    HttpServer::new(move || {
+                        let app = app.clone();
+                        App::new()
+                            .default_service(web::to(move |req| fs_resolver(app.clone(), req)))
+                    })
+                    .bind(("127.0.0.1", port))
+                    .unwrap()
+                    .run()
+                    .await
+                })
             });
             Ok(())
         })
