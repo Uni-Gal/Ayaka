@@ -1,6 +1,8 @@
 use actix_files::NamedFile;
 use actix_web::{
-    http::header::ContentType, web, App, HttpRequest, HttpResponse, HttpServer, Responder,
+    dev::Service,
+    http::header::{ContentType, HeaderValue, ACCESS_CONTROL_ALLOW_ORIGIN},
+    web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use ayaka_runtime::log;
 use std::{path::PathBuf, sync::OnceLock};
@@ -46,6 +48,17 @@ pub fn init<R: Runtime>(port: u16) -> TauriPlugin<R> {
                         let app = app.clone();
                         App::new()
                             .default_service(web::to(move |req| fs_resolver(app.clone(), req)))
+                            .wrap_fn(|req, srv| {
+                                let fut = srv.call(req);
+                                async {
+                                    let mut res = fut.await?;
+                                    res.headers_mut().insert(
+                                        ACCESS_CONTROL_ALLOW_ORIGIN,
+                                        HeaderValue::from_static("*"),
+                                    );
+                                    Ok(res)
+                                }
+                            })
                     })
                     .bind(("127.0.0.1", port))
                     .unwrap()
