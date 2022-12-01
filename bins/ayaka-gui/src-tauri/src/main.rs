@@ -16,7 +16,6 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
-    path::Path,
 };
 use tauri::{
     async_runtime::Mutex, command, utils::config::AppUrl, AppHandle, Manager, State, WindowUrl,
@@ -107,11 +106,6 @@ impl GameInfo {
             props: game.config.props.clone(),
         }
     }
-}
-
-#[command]
-fn absolute_path(path: String) -> CommandResult<String> {
-    Ok(Path::new("/fs/").join(path).to_string_lossy().into_owned())
 }
 
 #[command]
@@ -480,7 +474,6 @@ fn main() -> Result<()> {
         })
         .invoke_handler(tauri::generate_handler![
             ayaka_version,
-            absolute_path,
             open_game,
             get_settings,
             set_settings,

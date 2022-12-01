@@ -1,9 +1,9 @@
 import { invoke } from "@tauri-apps/api/tauri"
 import { Locale } from 'vue-i18n'
 
-export async function conv_src(path?: string): Promise<string | undefined> {
+export function conv_src(path?: string): string | undefined {
     if (path) {
-        return decodeURIComponent(await invoke("absolute_path", { path: path }))
+        return decodeURIComponent("/fs/" + path)
     }
     return undefined
 }

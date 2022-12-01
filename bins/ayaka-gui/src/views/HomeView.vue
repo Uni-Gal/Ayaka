@@ -14,7 +14,7 @@ export default {
     async created() {
         const res = await info()
         this.title = res.title
-        this.bg = await conv_src(res.props.bg)
+        this.bg = conv_src(res.props.bg)
     },
     methods: {
         async new_game() {
