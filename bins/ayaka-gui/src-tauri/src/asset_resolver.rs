@@ -1,6 +1,6 @@
 use actix_files::NamedFile;
 use actix_web::{
-    http::header::{self, TryIntoHeaderPair},
+    http::header::{ContentType, TryIntoHeaderPair},
     web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use ayaka_runtime::log;
@@ -26,7 +26,7 @@ async fn fs_resolver<R: Runtime>(app: AppHandle<R>, req: HttpRequest) -> impl Re
                 .unwrap()
                 .into_response(&req);
             if let Some(mime) = mime_guess::from_path(path).first() {
-                let (key, value) = header::ContentType(mime).try_into_pair().unwrap();
+                let (key, value) = ContentType(mime).try_into_pair().unwrap();
                 resp.headers_mut().append(key, value);
             }
             resp
@@ -35,7 +35,7 @@ async fn fs_resolver<R: Runtime>(app: AppHandle<R>, req: HttpRequest) -> impl Re
         }
     } else if let Some(asset) = app.asset_resolver().get(url.to_string()) {
         HttpResponse::Ok()
-            .append_header(header::ContentType(asset.mime_type.parse().unwrap()))
+            .append_header(ContentType(asset.mime_type.parse().unwrap()))
             .body(asset.bytes)
     } else {
         HttpResponse::NotFound().finish()
