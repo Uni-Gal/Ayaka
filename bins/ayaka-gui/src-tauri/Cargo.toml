@@ -11,7 +11,7 @@ ayaka-runtime = { path = "../../../utils/ayaka-runtime" }
 flexi_logger = { version = "0.24", default-features = false, features = ["colors"] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.2", features = ["cli", "protocol-all", "window-all"] }
+tauri = { version = "1.2", features = ["cli", "window-all"] }
 actix-web = "4"
 actix-files = "0.6"
 trylog = "0.2"

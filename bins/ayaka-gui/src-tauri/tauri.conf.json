@@ -15,9 +15,6 @@
       "all": false,
       "window": {
         "all": true
-      },
-      "protocol": {
-        "all": true
       }
     },
     "bundle": {
