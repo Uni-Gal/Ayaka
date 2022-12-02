@@ -7,7 +7,7 @@
 mod asset_resolver;
 
 use ayaka_runtime::{
-    anyhow::{self, anyhow, Result},
+    anyhow::{self, Result},
     log::{debug, info},
     *,
 };
@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
+    net::TcpListener,
 };
 use tauri::{
     async_runtime::Mutex, command, utils::config::AppUrl, AppHandle, Manager, State, WindowUrl,
@@ -420,14 +421,10 @@ async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<(Action, Opti
 }
 
 fn main() -> Result<()> {
-    let port =
-        portpicker::pick_unused_port().ok_or_else(|| anyhow!("failed to find unused port"))?;
-    info!("Picked port {}", port);
-    let mut context = tauri::generate_context!();
-    let window_url = WindowUrl::External(format!("http://127.0.0.1:{port}").parse().unwrap());
-    context.config_mut().build.dist_dir = AppUrl::Url(window_url);
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
     tauri::Builder::default()
-        .plugin(asset_resolver::init(port))
+        .plugin(asset_resolver::init(listener))
         .setup(move |app| {
             let ident = app.config().tauri.bundle.identifier.clone();
             let spec = LogSpecification::parse("warn,ayaka=debug")?;
@@ -499,6 +496,12 @@ fn main() -> Result<()> {
             switch,
             history,
         ])
-        .run(context)?;
+        .run({
+            let mut context = tauri::generate_context!();
+            context.config_mut().build.dist_dir = AppUrl::Url(WindowUrl::External(
+                format!("http://127.0.0.1:{port}").parse().unwrap(),
+            ));
+            context
+        })?;
     Ok(())
 }
