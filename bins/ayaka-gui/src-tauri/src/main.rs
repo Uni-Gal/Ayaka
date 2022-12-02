@@ -425,6 +425,7 @@ fn main() -> Result<()> {
     let port = listener.local_addr().unwrap().port();
     tauri::Builder::default()
         .plugin(asset_resolver::init(listener))
+        .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(move |app| {
             let ident = app.config().tauri.bundle.identifier.clone();
             let spec = LogSpecification::parse("warn,ayaka=debug")?;
