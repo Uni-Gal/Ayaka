@@ -20,6 +20,7 @@ export default {
         this.game = await info()
     },
     async mounted() {
+        PIXI.settings.PREFER_ENV = PIXI.ENV.WEBGL_LEGACY;
         this.app = new PIXI.Application({
             view: this.$refs.canvas as HTMLCanvasElement,
             backgroundAlpha: 0,
