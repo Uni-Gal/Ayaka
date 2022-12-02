@@ -17,10 +17,12 @@ export default {
         }
     },
     async created() {
+        if (document.createElement('canvas').getContext('webgl2') === null) {
+            PIXI.settings.PREFER_ENV = PIXI.ENV.WEBGL_LEGACY;
+        }
         this.game = await info()
     },
     async mounted() {
-        PIXI.settings.PREFER_ENV = PIXI.ENV.WEBGL_LEGACY;
         this.app = new PIXI.Application({
             view: this.$refs.canvas as HTMLCanvasElement,
             backgroundAlpha: 0,
