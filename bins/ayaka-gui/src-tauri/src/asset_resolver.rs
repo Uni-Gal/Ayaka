@@ -5,7 +5,7 @@ use actix_web::{
     web, App, HttpRequest, HttpResponse, HttpServer, Responder,
 };
 use ayaka_runtime::log;
-use std::{path::PathBuf, sync::OnceLock};
+use std::{net::TcpListener, path::PathBuf, sync::OnceLock};
 use tauri::{
     plugin::{Builder, TauriPlugin},
     AppHandle, Runtime,
@@ -38,7 +38,7 @@ async fn fs_resolver<R: Runtime>(app: AppHandle<R>, req: HttpRequest) -> impl Re
     }
 }
 
-pub fn init<R: Runtime>(port: u16) -> TauriPlugin<R> {
+pub fn init<R: Runtime>(listener: TcpListener) -> TauriPlugin<R> {
     Builder::new("asset_resolver")
         .setup(move |app| {
             let app = app.clone();
@@ -60,7 +60,7 @@ pub fn init<R: Runtime>(port: u16) -> TauriPlugin<R> {
                                 }
                             })
                     })
-                    .bind(("127.0.0.1", port))
+                    .listen(listener)
                     .unwrap()
                     .run()
                     .await
