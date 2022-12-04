@@ -22,7 +22,7 @@ pub struct Context {
     pub ctx: RawContext,
     /// The inner record.
     pub record: ActionRecord,
-    switches: Vec<(bool, Program)>,
+    switches: Vec<bool>,
     vars: VarMap,
 }
 
@@ -187,10 +187,15 @@ impl Context {
     }
 
     /// Choose a switch item by index, start by 0.
-    pub fn switch(&mut self, i: usize) -> RawValue {
+    pub fn switch(&mut self, i: usize) {
         assert!((0..self.switches.len()).contains(&i));
-        assert!(self.switches[i].0);
-        self.call(&self.switches[i].1.clone())
+        assert!(self.switches[i]);
+        self.ctx
+            .locals
+            .insert("?".to_string(), RawValue::Num(i as i64));
+        for i in 0..self.switches.len() {
+            self.ctx.locals.remove(&i.to_string());
+        }
     }
 
     fn parse_text(&self, loc: &Locale, text: &Text) -> Result<ActionText> {
@@ -235,11 +240,11 @@ impl Context {
         Ok(action)
     }
 
-    fn parse_switches(&self, s: &[SwitchItem]) -> Vec<Switch> {
+    fn parse_switches(&self, s: &[String]) -> Vec<Switch> {
         s.iter()
             .zip(&self.switches)
-            .map(|(item, (enabled, _))| Switch {
-                text: item.text.clone(),
+            .map(|(item, enabled)| Switch {
+                text: item.clone(),
                 enabled: *enabled,
             })
             .collect()
@@ -253,13 +258,18 @@ impl Context {
             }
             Line::Switch { switches } => {
                 self.switches.clear();
-                for item in switches {
-                    let enabled = item
-                        .enabled
-                        .as_ref()
-                        .map(|p| self.call(p).get_bool())
-                        .unwrap_or(true);
-                    self.switches.push((enabled, item.action));
+                for i in 0..switches.len() {
+                    let enabled = self
+                        .ctx
+                        .locals
+                        .get(&i.to_string())
+                        .unwrap_or(&RawValue::Unit);
+                    let enabled = if let RawValue::Unit = enabled {
+                        true
+                    } else {
+                        enabled.get_bool()
+                    };
+                    self.switches.push(enabled);
                 }
             }
             Line::Custom(props) => {

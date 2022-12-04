@@ -7,16 +7,17 @@
   texts:
     - 你共抽了\var{total}次，三星\var{t3}个，四星\var{t4}个，五星\var{t5}个
     - switches:
-      - 祈愿一次||$n = 1
-      - 祈愿十次||$n = 10
-      - 退出||$n = -1
+      - 祈愿一次
+      - 祈愿十次
+      - 退出
     - exec: |
+        $n = if($? == 0, 1, 10);
         $total5 = 0;
         $total4 = 0;
         $total3 = 0;
         $temp5 = $c5;
         $temp4 = $c4;
-        $next = if($n > 0, "calc")
+        $next = if($? < 2, "calc")
   next: \var{next}
 
 - tag: calc
