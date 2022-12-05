@@ -1,4 +1,5 @@
 use proc_macro::TokenStream;
+use proc_macro_crate::{crate_name, FoundCrate};
 use quote::{quote, TokenStreamExt};
 use syn::{
     parse_macro_input, parse_str, AttributeArgs, FnArg, ForeignItem, Ident, ItemFn, ItemForeignMod,
@@ -56,6 +57,13 @@ pub fn import(attr: TokenStream, input: TokenStream) -> TokenStream {
                 let name = sig.ident.clone();
                 let name_str = name.to_string();
                 let impname = parse_str::<Ident>(&format!("__import_{}", name_str)).unwrap();
+                let bindings_crate_name = match crate_name("ayaka-bindings").unwrap() {
+                    FoundCrate::Itself => quote!(crate),
+                    FoundCrate::Name(name) => {
+                        let name = parse_str::<Ident>(&name).unwrap();
+                        quote!(::#name)
+                    }
+                };
                 let import_func = quote! {
                     #[doc(hidden)]
                     #[link(wasm_import_module = #module)]
@@ -65,7 +73,7 @@ pub fn import(attr: TokenStream, input: TokenStream) -> TokenStream {
                     }
                     #[allow(unsafe_code)]
                     #(#attrs)* #vis #sig {
-                        unsafe { ::ayaka_bindings::__import(#impname, (#(#params,)*)) }
+                        unsafe { #bindings_crate_name::__import(#impname, (#(#params,)*)) }
                     }
                 };
                 imports.append_all(import_func);

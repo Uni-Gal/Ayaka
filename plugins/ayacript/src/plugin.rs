@@ -1,6 +1,13 @@
+use crate::*;
 use ayaka_plugin::*;
 use ayaka_script::*;
 use std::collections::HashMap;
+
+#[import("plugin")]
+extern "C" {
+    fn __modules() -> Vec<String>;
+    fn __call(module: &str, name: &str, args: &[u8]) -> Vec<u8>;
+}
 
 pub struct HostModule {
     name: String,
@@ -12,7 +19,8 @@ impl RawModule for HostModule {
     type Func = ();
 
     fn call<T>(&self, name: &str, args: &[u8], f: impl FnOnce(&[u8]) -> Result<T>) -> Result<T> {
-        todo!()
+        let data = __call(&self.name, name, args);
+        f(&data)
     }
 }
 
@@ -58,6 +66,18 @@ pub struct Runtime {
 }
 
 impl Runtime {
+    pub fn new() -> Self {
+        let modules = __modules();
+        let modules = modules
+            .into_iter()
+            .map(|name| {
+                let m = HostModule { name: name.clone() };
+                (name, Module::new(m))
+            })
+            .collect();
+        Self { modules }
+    }
+
     /// Gets module from name.
     pub fn module(&self, key: &str) -> Option<&Module> {
         self.modules.get(key)

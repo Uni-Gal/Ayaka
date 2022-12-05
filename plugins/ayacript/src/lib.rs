@@ -15,7 +15,7 @@ fn plugin_type() -> PluginType {
     PluginType::builder().line(["exec"]).build()
 }
 
-static RUNTIME: LazyLock<Runtime> = LazyLock::new(|| todo!());
+static RUNTIME: LazyLock<Runtime> = LazyLock::new(Runtime::new);
 
 #[export]
 fn exec(mut ctx: LineProcessContext) -> LineProcessResult {
