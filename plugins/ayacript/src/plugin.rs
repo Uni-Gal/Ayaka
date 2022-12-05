@@ -16,6 +16,8 @@ pub struct HostModule {
 impl RawModule for HostModule {
     type Linker = HostLinker;
 
+    type LinkerHandle<'a> = HostLinker;
+
     type Func = ();
 
     fn call<T>(&self, name: &str, args: &[u8], f: impl FnOnce(&[u8]) -> Result<T>) -> Result<T> {
@@ -26,7 +28,7 @@ impl RawModule for HostModule {
 
 pub struct HostLinker;
 
-impl StoreLinker<HostModule> for HostLinker {
+impl Linker<HostModule> for HostLinker {
     fn new(_root_path: impl AsRef<std::path::Path>) -> Result<Self> {
         unimplemented!()
     }
@@ -39,7 +41,23 @@ impl StoreLinker<HostModule> for HostLinker {
         Ok(())
     }
 
-    fn wrap_raw(&self, _f: impl (Fn(&[u8]) -> Result<Vec<u8>>) + Send + Sync + 'static) {}
+    fn wrap_raw(&self, _f: impl (Fn(Self, i32, i32) -> Result<Vec<u8>>) + Send + Sync + 'static) {}
+}
+
+impl<'a> LinkerHandle<'a, HostModule> for HostLinker {
+    fn call<T>(
+        &mut self,
+        _m: &HostModule,
+        _name: &str,
+        _args: &[u8],
+        _f: impl FnOnce(&[u8]) -> Result<T>,
+    ) -> Result<T> {
+        unimplemented!()
+    }
+
+    fn slice<T>(&self, _start: i32, _len: i32, _f: impl FnOnce(&[u8]) -> T) -> T {
+        unimplemented!()
+    }
 }
 
 pub struct Module {

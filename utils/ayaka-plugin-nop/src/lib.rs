@@ -12,7 +12,9 @@ use std::{collections::HashMap, path::Path};
 pub struct NopModule;
 
 impl RawModule for NopModule {
-    type Linker = NopStoreLinker;
+    type Linker = NopLinker;
+
+    type LinkerHandle<'a> = NopLinker;
 
     type Func = ();
 
@@ -22,9 +24,9 @@ impl RawModule for NopModule {
 }
 
 /// A no-operation store & linker.
-pub struct NopStoreLinker;
+pub struct NopLinker;
 
-impl StoreLinker<NopModule> for NopStoreLinker {
+impl Linker<NopModule> for NopLinker {
     fn new(_root_path: impl AsRef<Path>) -> Result<Self> {
         Ok(Self)
     }
@@ -37,5 +39,21 @@ impl StoreLinker<NopModule> for NopStoreLinker {
         Ok(())
     }
 
-    fn wrap_raw(&self, _f: impl (Fn(&[u8]) -> Result<Vec<u8>>) + Send + Sync + 'static) {}
+    fn wrap_raw(&self, _f: impl (Fn(Self, i32, i32) -> Result<Vec<u8>>) + Send + Sync + 'static) {}
+}
+
+impl<'a> LinkerHandle<'a, NopModule> for NopLinker {
+    fn call<T>(
+        &mut self,
+        _m: &NopModule,
+        name: &str,
+        _args: &[u8],
+        _f: impl FnOnce(&[u8]) -> Result<T>,
+    ) -> Result<T> {
+        bail!("Trying to call {name}.")
+    }
+
+    fn slice<T>(&self, _start: i32, _len: i32, _f: impl FnOnce(&[u8]) -> T) -> T {
+        unimplemented!("Trying to slice.")
+    }
 }

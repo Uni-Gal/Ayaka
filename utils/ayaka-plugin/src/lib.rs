@@ -24,7 +24,10 @@ pub const MEMORY_NAME: &str = "memory";
 /// Represents a raw plugin module.
 pub trait RawModule: Sized {
     /// The linker type that can create raw module.
-    type Linker: StoreLinker<Self>;
+    type Linker: Linker<Self>;
+
+    /// The linker handle type.
+    type LinkerHandle<'a>: LinkerHandle<'a, Self>;
 
     /// The import function type.
     type Func;
@@ -46,11 +49,6 @@ impl<M: RawModule> PluginModule<M> {
         Self { module }
     }
 
-    #[doc(hidden)]
-    pub fn call_raw(&self, name: &str, args: &[u8]) -> Result<Vec<u8>> {
-        self.module.call(name, args, |data| Ok(data.to_vec()))
-    }
-
     /// Call a method by name.
     ///
     /// The args and returns are passed by MessagePack with [`rmp_serde`].
@@ -61,12 +59,15 @@ impl<M: RawModule> PluginModule<M> {
             Ok(res)
         })
     }
+
+    /// Get inner raw module.
+    pub fn inner(&self) -> &M {
+        &self.module
+    }
 }
 
-/// Represents the store & linker of plugin modules.
-pub trait StoreLinker<M: RawModule>: Sized {
-    /// Creates a new instance of [`StoreLinker`].
-    ///
+/// Represents the linker of plugin modules.
+pub trait Linker<M: RawModule>: Sized {
     /// The `root_path` is used to preopen the root dir,
     /// and mapped to `/`.
     fn new(root_path: impl AsRef<Path>) -> Result<Self>;
@@ -78,18 +79,52 @@ pub trait StoreLinker<M: RawModule>: Sized {
     fn import(&mut self, ns: impl Into<String>, funcs: HashMap<String, M::Func>) -> Result<()>;
 
     /// Wrap a function with args in bytes.
-    fn wrap_raw(&self, f: impl (Fn(&[u8]) -> Result<Vec<u8>>) + Send + Sync + 'static) -> M::Func;
+    fn wrap_raw(
+        &self,
+        f: impl (Fn(M::LinkerHandle<'_>, i32, i32) -> Result<Vec<u8>>) + Send + Sync + 'static,
+    ) -> M::Func;
 
     /// Wrap a function with args.
     fn wrap<P: DeserializeOwned + Tuple, R: Serialize>(
         &self,
         f: impl Fn<P, Output = R> + Send + Sync + 'static,
     ) -> M::Func {
-        self.wrap_raw(move |data| {
-            let data = rmp_serde::from_slice(data)?;
+        self.wrap_raw(move |handle, start, len| {
+            let data = handle.slice(start, len, |data| rmp_serde::from_slice(data))?;
             let data = f.call(data);
             let data = rmp_serde::to_vec(&data)?;
             Ok(data)
         })
     }
+
+    /// Wrap a function with args and linker handle.
+    fn wrap_with<P: DeserializeOwned + Tuple, R: Serialize>(
+        &self,
+        f: impl (Fn(M::LinkerHandle<'_>, P) -> R) + Send + Sync + 'static,
+    ) -> M::Func {
+        self.wrap_raw(move |handle, start, len| {
+            let data = handle.slice(start, len, |data| rmp_serde::from_slice(data))?;
+            let data = f(handle, data);
+            let data = rmp_serde::to_vec(&data)?;
+            Ok(data)
+        })
+    }
+}
+
+/// Represents a handle of linker.
+///
+/// Usually it is not easy to call function inside host functions.
+/// A handle provides methods to do so.
+pub trait LinkerHandle<'a, M: RawModule> {
+    /// Call methods of a module.
+    fn call<T>(
+        &mut self,
+        m: &M,
+        name: &str,
+        args: &[u8],
+        f: impl FnOnce(&[u8]) -> Result<T>,
+    ) -> Result<T>;
+
+    /// Get memory slice.
+    fn slice<T>(&self, start: i32, len: i32, f: impl FnOnce(&[u8]) -> T) -> T;
 }

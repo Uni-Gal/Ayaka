@@ -3,7 +3,6 @@
 #![warn(missing_docs)]
 
 use ayaka_plugin::*;
-use scopeguard::defer;
 use std::{
     collections::HashMap,
     path::Path,
@@ -38,125 +37,88 @@ unsafe fn mem_slice_mut<'a, T: 'a>(
 
 type HostStore = Arc<Mutex<Store<WasiCtx>>>;
 
-struct HostInstance {
-    store: HostStore,
-    instance: Instance,
-}
-
-impl HostInstance {
-    pub fn new(store: HostStore, instance: Instance) -> Self {
-        Self { store, instance }
-    }
-
-    pub fn get_memory(&self) -> Option<HostMemory> {
-        self.instance
-            .get_memory(self.store.lock().unwrap().as_context_mut(), MEMORY_NAME)
-            .map(|mem| HostMemory::new(self.store.clone(), mem))
-    }
-
-    pub fn get_typed_func<Params: WasmParams, Results: WasmResults>(
-        &self,
-        name: &str,
-    ) -> Result<HostTypedFunc<Params, Results>> {
-        self.instance
-            .get_typed_func(self.store.lock().unwrap().as_context_mut(), name)
-            .map(|func| HostTypedFunc::new(self.store.clone(), func))
-    }
-}
-
-struct HostMemory {
-    store: HostStore,
-    memory: Memory,
-}
-
-impl HostMemory {
-    pub fn new(store: HostStore, memory: Memory) -> Self {
-        Self { store, memory }
-    }
-
-    pub unsafe fn slice<R>(&self, start: i32, len: i32, f: impl FnOnce(&[u8]) -> R) -> R {
-        let store = self.store.lock().unwrap();
-        let data = mem_slice(store.as_context(), &self.memory, start, len);
-        f(data)
-    }
-
-    pub unsafe fn slice_mut<R>(&self, start: i32, len: i32, f: impl FnOnce(&mut [u8]) -> R) -> R {
-        let mut store = self.store.lock().unwrap();
-        let data = mem_slice_mut(store.as_context_mut(), &self.memory, start, len);
-        f(data)
-    }
-}
-
-struct HostTypedFunc<Params, Results> {
-    store: HostStore,
-    func: TypedFunc<Params, Results>,
-}
-
-impl<Params: WasmParams, Results: WasmResults> HostTypedFunc<Params, Results> {
-    pub fn new(store: HostStore, func: TypedFunc<Params, Results>) -> Self {
-        Self { store, func }
-    }
-
-    pub fn call(&self, params: Params) -> Result<Results, Trap> {
-        self.func
-            .call(self.store.lock().unwrap().as_context_mut(), params)
-    }
-}
-
 /// A Wasmtime [`Instance`].
 pub struct WasmtimeModule {
-    instance: HostInstance,
-    memory: HostMemory,
-    abi_free: HostTypedFunc<(i32, i32), ()>,
-    abi_alloc: HostTypedFunc<i32, i32>,
+    store: HostStore,
+    instance: Instance,
+    memory: Memory,
+    abi_free: TypedFunc<(i32, i32), ()>,
+    abi_alloc: TypedFunc<i32, i32>,
 }
 
 impl WasmtimeModule {
-    pub(crate) fn new(store: HostStore, module: &Module, linker: &Linker<WasiCtx>) -> Result<Self> {
-        let instance = linker.instantiate(store.lock().unwrap().as_context_mut(), module)?;
-        let instance = HostInstance::new(store, instance);
-        let memory = instance.get_memory().unwrap();
-        let abi_free = instance.get_typed_func(ABI_FREE_NAME)?;
-        let abi_alloc = instance.get_typed_func(ABI_ALLOC_NAME)?;
+    fn new(store: HostStore, module: &Module, linker: &wasmtime::Linker<WasiCtx>) -> Result<Self> {
+        let mut inner_store = store.lock().unwrap();
+        let instance = linker.instantiate(inner_store.as_context_mut(), module)?;
+        let memory = instance
+            .get_memory(inner_store.as_context_mut(), MEMORY_NAME)
+            .unwrap();
+        let abi_free = instance.get_typed_func(inner_store.as_context_mut(), ABI_FREE_NAME)?;
+        let abi_alloc = instance.get_typed_func(inner_store.as_context_mut(), ABI_ALLOC_NAME)?;
+        drop(inner_store);
         Ok(Self {
+            store,
             instance,
             memory,
             abi_free,
             abi_alloc,
         })
     }
-}
 
-impl RawModule for WasmtimeModule {
-    type Linker = WasmtimeStoreLinker;
+    fn call_impl<T>(
+        &self,
+        mut store: StoreContextMut<WasiCtx>,
+        name: &str,
+        data: &[u8],
+        f: impl FnOnce(&[u8]) -> Result<T>,
+    ) -> Result<T> {
+        let func = self
+            .instance
+            .get_typed_func::<(i32, i32), u64, _>(&mut store, name)?;
 
-    type Func = Func;
+        let ptr = self.abi_alloc.call(&mut store, data.len() as i32)?;
+        unsafe {
+            mem_slice_mut(&mut store, &self.memory, ptr, data.len() as i32).copy_from_slice(data)
+        };
 
-    fn call<T>(&self, name: &str, data: &[u8], f: impl FnOnce(&[u8]) -> Result<T>) -> Result<T> {
-        let memory = &self.memory;
-        let func = self.instance.get_typed_func::<(i32, i32), u64>(name)?;
+        let res = func.call(&mut store, (data.len() as i32, ptr));
 
-        let ptr = self.abi_alloc.call(data.len() as i32)?;
-        defer! { self.abi_free.call((ptr, data.len() as i32)).unwrap(); }
-        unsafe { memory.slice_mut(ptr, data.len() as i32, |s| s.copy_from_slice(data)) };
+        self.abi_free.call(&mut store, (ptr, data.len() as i32))?;
 
-        let res = func.call((data.len() as i32, ptr))?;
+        let res = res?;
         let (len, res) = ((res >> 32) as i32, (res & 0xFFFFFFFF) as i32);
-        defer! { self.abi_free.call((res, len)).unwrap(); }
 
-        let res_data = unsafe { memory.slice(res, len, |s| f(s)) }?;
+        let res_data = unsafe { mem_slice(&store, &self.memory, res, len) };
+
+        let res_data = f(res_data);
+
+        self.abi_free.call(&mut store, (res, len))?;
+
+        let res_data = res_data?;
         Ok(res_data)
     }
 }
 
-/// A Wasmtime [`Store`] with [`Linker`].
-pub struct WasmtimeStoreLinker {
-    engine: Engine,
-    store: HostStore,
-    linker: Linker<WasiCtx>,
+impl RawModule for WasmtimeModule {
+    type Linker = WasmtimeLinker;
+
+    type LinkerHandle<'a> = WasmtimeLinkerHandle<'a>;
+
+    type Func = Func;
+
+    fn call<T>(&self, name: &str, data: &[u8], f: impl FnOnce(&[u8]) -> Result<T>) -> Result<T> {
+        self.call_impl(self.store.lock().unwrap().as_context_mut(), name, data, f)
+    }
 }
 
-impl WasmtimeStoreLinker {
+/// A Wasmtime [`Store`] with [`Linker`].
+pub struct WasmtimeLinker {
+    engine: Engine,
+    store: HostStore,
+    linker: wasmtime::Linker<WasiCtx>,
+}
+
+impl WasmtimeLinker {
     fn preopen_root(root_path: impl AsRef<Path>) -> Result<Dir> {
         let mut options = std::fs::OpenOptions::new();
         options.read(true);
@@ -171,7 +133,7 @@ impl WasmtimeStoreLinker {
     }
 }
 
-impl StoreLinker<WasmtimeModule> for WasmtimeStoreLinker {
+impl ayaka_plugin::Linker<WasmtimeModule> for WasmtimeLinker {
     fn new(root_path: impl AsRef<Path>) -> Result<Self> {
         let engine = Engine::default();
         let wasi = WasiCtxBuilder::new()
@@ -179,7 +141,7 @@ impl StoreLinker<WasmtimeModule> for WasmtimeStoreLinker {
             .preopened_dir(Self::preopen_root(root_path)?, "/")?
             .build();
         let store = Store::new(&engine, wasi);
-        let mut linker = Linker::new(&engine);
+        let mut linker = wasmtime::Linker::new(&engine);
         add_to_linker(&mut linker, |ctx| ctx)?;
         Ok(Self {
             engine,
@@ -202,7 +164,10 @@ impl StoreLinker<WasmtimeModule> for WasmtimeStoreLinker {
         Ok(())
     }
 
-    fn wrap_raw(&self, f: impl (Fn(&[u8]) -> Result<Vec<u8>>) + Send + Sync + 'static) -> Func {
+    fn wrap_raw(
+        &self,
+        f: impl (Fn(WasmtimeLinkerHandle<'_>, i32, i32) -> Result<Vec<u8>>) + Send + Sync + 'static,
+    ) -> Func {
         Func::wrap(
             self.store.lock().unwrap().as_context_mut(),
             move |mut store: Caller<WasiCtx>, len: i32, data: i32| unsafe {
@@ -211,8 +176,11 @@ impl StoreLinker<WasmtimeModule> for WasmtimeStoreLinker {
                     .unwrap()
                     .into_memory()
                     .unwrap();
-                let data = mem_slice(store.as_context(), &memory, data, len);
-                let data = f(data).map_err(|e| Trap::new(e.to_string()))?;
+                let data = {
+                    let store = store.as_context_mut();
+                    let handle = WasmtimeLinkerHandle { store, memory };
+                    f(handle, data, len).map_err(|e| Trap::new(e.to_string()))?
+                };
                 let abi_alloc = store
                     .get_export(ABI_ALLOC_NAME)
                     .unwrap()
@@ -225,5 +193,27 @@ impl StoreLinker<WasmtimeModule> for WasmtimeStoreLinker {
                 Ok(((data.len() as u64) << 32) | (ptr as u64))
             },
         )
+    }
+}
+
+/// A Wasmtime [`StoreContextMut`].
+pub struct WasmtimeLinkerHandle<'a> {
+    store: StoreContextMut<'a, WasiCtx>,
+    memory: Memory,
+}
+
+impl<'a> LinkerHandle<'a, WasmtimeModule> for WasmtimeLinkerHandle<'a> {
+    fn call<T>(
+        &mut self,
+        m: &WasmtimeModule,
+        name: &str,
+        data: &[u8],
+        f: impl FnOnce(&[u8]) -> Result<T>,
+    ) -> Result<T> {
+        m.call_impl(self.store.as_context_mut(), name, data, f)
+    }
+
+    fn slice<T>(&self, start: i32, len: i32, f: impl FnOnce(&[u8]) -> T) -> T {
+        f(unsafe { mem_slice(self.store.as_context(), &self.memory, start, len) })
     }
 }

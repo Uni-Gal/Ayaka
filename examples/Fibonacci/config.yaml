@@ -1,5 +1,9 @@
 title: Fibonacci
 author: Berrysoft
+plugins:
+  dir: ../plugins/
+  modules:
+    - ayacript
 base_lang: en
 paras: paras
 start: init

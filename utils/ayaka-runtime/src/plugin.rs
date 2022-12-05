@@ -24,10 +24,6 @@ impl<M: RawModule> Module<M> {
         }
     }
 
-    fn call_raw(&self, name: &str, args: &[u8]) -> Result<Vec<u8>> {
-        self.module.call_raw(name, args)
-    }
-
     /// Gets the [`PluginType`].
     pub fn plugin_type(&self) -> Result<PluginType> {
         self.module.call("plugin_type", ())
@@ -123,13 +119,22 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
             }
         });
         let h = handle;
-        let call_func = store.wrap(move |module: String, name: String, args: Vec<u8>| {
-            if let Some(this) = h.read().unwrap().upgrade() {
-                this.modules[&module].call_raw(&name, &args).unwrap()
-            } else {
-                vec![]
-            }
-        });
+        let call_func = store.wrap_with(
+            move |mut handle, (module, name, args): (String, String, Vec<u8>)| {
+                if let Some(this) = h.read().unwrap().upgrade() {
+                    handle
+                        .call(
+                            this.modules[&module].module.inner(),
+                            &name,
+                            &args,
+                            |slice| Ok(slice.to_vec()),
+                        )
+                        .unwrap()
+                } else {
+                    vec![]
+                }
+            },
+        );
         store.import(
             "plugin",
             HashMap::from([
