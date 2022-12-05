@@ -3,7 +3,11 @@
 use crate::*;
 use anyhow::Result;
 use ayaka_plugin::*;
-use std::{collections::HashMap, path::Path};
+use std::{
+    collections::HashMap,
+    path::Path,
+    sync::{Arc, RwLock, Weak},
+};
 use stream_future::stream;
 use tryiterator::TryIteratorExt;
 use trylog::TryLog;
@@ -18,6 +22,10 @@ impl<M: RawModule> Module<M> {
         Self {
             module: PluginModule::new(module),
         }
+    }
+
+    fn call_raw(&self, name: &str, args: &[u8]) -> Result<Vec<u8>> {
+        self.module.call_raw(name, args)
     }
 
     /// Gets the [`PluginType`].
@@ -56,7 +64,7 @@ impl<M: RawModule> Module<M> {
 }
 
 /// The plugin runtime.
-pub struct Runtime<M: RawModule = BackendModule> {
+pub struct Runtime<M: RawModule + Send + Sync + 'static = BackendModule> {
     modules: HashMap<String, Module<M>>,
     action_modules: Vec<String>,
     text_modules: HashMap<String, String>,
@@ -73,8 +81,11 @@ pub enum LoadStatus {
     LoadPlugin(String, usize, usize),
 }
 
-impl<M: RawModule> Runtime<M> {
-    fn new_linker(root_path: impl AsRef<Path>) -> Result<M::Linker> {
+impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
+    fn new_linker(
+        root_path: impl AsRef<Path>,
+        handle: Arc<RwLock<Weak<Self>>>,
+    ) -> Result<M::Linker> {
         let mut store = M::Linker::new(root_path)?;
         let log_func = store.wrap(|data: Record| {
             let module_path = format!(
@@ -102,6 +113,31 @@ impl<M: RawModule> Runtime<M> {
                 ("__log_flush".to_string(), log_flush_func),
             ]),
         )?;
+
+        let h = handle.clone();
+        let modules_func = store.wrap(move || {
+            if let Some(this) = h.read().unwrap().upgrade() {
+                this.modules.keys().cloned().collect::<Vec<_>>()
+            } else {
+                vec![]
+            }
+        });
+        let h = handle;
+        let call_func = store.wrap(move |module: String, name: String, args: Vec<u8>| {
+            if let Some(this) = h.read().unwrap().upgrade() {
+                this.modules[&module].call_raw(&name, &args).unwrap()
+            } else {
+                vec![]
+            }
+        });
+        store.import(
+            "plugin",
+            HashMap::from([
+                ("__modules".to_string(), modules_func),
+                ("__call".to_string(), call_func),
+            ]),
+        )?;
+
         Ok(store)
     }
 
@@ -115,12 +151,9 @@ impl<M: RawModule> Runtime<M> {
         dir: impl AsRef<Path> + 'a,
         rel_to: impl AsRef<Path> + 'a,
         names: &'a [impl AsRef<str>],
-    ) -> Result<Self> {
+    ) -> Result<Arc<Self>> {
         let root_path = rel_to.as_ref();
         let path = root_path.join(dir);
-        yield LoadStatus::CreateEngine;
-        let store = Self::new_linker(root_path)?;
-        let mut runtime = Self::new();
         let paths = if names.is_empty() {
             std::fs::read_dir(path)?
                 .try_filter_map(|f| {
@@ -151,6 +184,12 @@ impl<M: RawModule> Runtime<M> {
                 })
                 .collect::<Vec<_>>()
         };
+
+        yield LoadStatus::CreateEngine;
+        let handle = Arc::new(RwLock::new(Weak::new()));
+        let store = Self::new_linker(root_path, handle.clone())?;
+        let mut runtime = Self::new();
+
         let total_len = paths.len();
         for (i, (name, p)) in paths.into_iter().enumerate() {
             yield LoadStatus::LoadPlugin(name.clone(), i, total_len);
@@ -158,6 +197,8 @@ impl<M: RawModule> Runtime<M> {
             let module = Module::new(store.create(&buf)?);
             runtime.insert_module(name, module)?;
         }
+        let runtime = Arc::new(runtime);
+        *handle.write().unwrap() = Arc::downgrade(&runtime);
         Ok(runtime)
     }
 

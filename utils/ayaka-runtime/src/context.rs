@@ -6,7 +6,7 @@ use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::*;
 use fallback::Fallback;
 use log::error;
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, path::Path, sync::Arc};
 use stream_future::stream;
 use trylog::TryLog;
 
@@ -15,7 +15,7 @@ pub struct Context {
     /// The inner [`Game`] object.
     pub game: Game,
     frontend: FrontendType,
-    runtime: Runtime,
+    runtime: Arc<Runtime>,
     /// The inner raw context.
     pub ctx: RawContext,
     /// The inner record.

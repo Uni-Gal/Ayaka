@@ -46,6 +46,11 @@ impl<M: RawModule> PluginModule<M> {
         Self { module }
     }
 
+    #[doc(hidden)]
+    pub fn call_raw(&self, name: &str, args: &[u8]) -> Result<Vec<u8>> {
+        self.module.call(name, args, |data| Ok(data.to_vec()))
+    }
+
     /// Call a method by name.
     ///
     /// The args and returns are passed by MessagePack with [`rmp_serde`].
