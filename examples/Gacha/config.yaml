@@ -3,6 +3,7 @@ author: Berrysoft
 plugins:
   dir: ../plugins/
   modules:
+    - ayacript
     - ayalog
     - media
     - random
