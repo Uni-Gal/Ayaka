@@ -1,0 +1,17 @@
+cargo-features = ["per-package-target"]
+
+[package]
+name = "ayacript"
+version = "0.1.0"
+edition = "2021"
+forced-target = "wasm32-unknown-unknown"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ayaka-bindings = { path = "../../utils/ayaka-bindings" }
+ayaka-bindings-types = { path = "../../utils/ayaka-bindings-types" }
+ayaka-script = { path = "../../utils/ayaka-script" }
+ayaka-plugin = { path = "../../utils/ayaka-plugin" }
+trylog = "0.2"

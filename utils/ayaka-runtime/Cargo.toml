@@ -6,7 +6,6 @@ edition = "2021"
 [dependencies]
 ayaka-primitive = { path = "../ayaka-primitive" }
 ayaka-bindings-types = { path = "../ayaka-bindings-types" }
-ayaka-script = { path = "../ayaka-script" }
 ayaka-plugin = { path = "../ayaka-plugin" }
 fallback = "0.1"
 language-matcher = "0.1"
@@ -20,6 +19,7 @@ stream-future = "0.3"
 futures-util = "0.3"
 tryiterator = { git = "https://github.com/Pernosco/tryiterator.git" }
 dirs = "4.0"
+log = "0.4"
 trylog = "0.2"
 cfg-if = "1.0"
 

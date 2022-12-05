@@ -1,27 +1,21 @@
 //! The script interpreter.
 
-use crate::{
-    plugin::{BackendModule, Runtime},
-    *,
-};
-use ayaka_bindings_types::VarMap;
-use ayaka_plugin::RawModule;
-use log::warn;
+use crate::*;
 use trylog::TryLog;
 
 /// The variable table in scripts.
-pub struct VarTable<'a, M: RawModule = BackendModule> {
+pub struct VarTable<'a> {
     /// The plugin runtime.
-    pub runtime: &'a Runtime<M>,
+    pub runtime: &'a Runtime,
     /// The context variables.
     pub locals: &'a mut VarMap,
     /// The locale variables.
     pub vars: VarMap,
 }
 
-impl<'a, M: RawModule> VarTable<'a, M> {
+impl<'a> VarTable<'a> {
     /// Creates a new [`VarTable`].
-    pub fn new(runtime: &'a Runtime<M>, locals: &'a mut VarMap) -> Self {
+    pub fn new(runtime: &'a Runtime, locals: &'a mut VarMap) -> Self {
         Self {
             runtime,
             locals,
@@ -38,17 +32,17 @@ impl<'a, M: RawModule> VarTable<'a, M> {
 /// Represents a callable part of a script.
 pub trait Callable {
     /// Calls the part with the [`VarTable`].
-    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue;
+    fn call(&self, ctx: &mut VarTable) -> RawValue;
 }
 
 impl<T: Callable> Callable for &T {
-    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
+    fn call(&self, ctx: &mut VarTable) -> RawValue {
         (*self).call(ctx)
     }
 }
 
 impl<T: Callable> Callable for Option<T> {
-    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
+    fn call(&self, ctx: &mut VarTable) -> RawValue {
         match self {
             Some(c) => c.call(ctx),
             None => RawValue::Unit,
@@ -57,7 +51,7 @@ impl<T: Callable> Callable for Option<T> {
 }
 
 impl Callable for Program {
-    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
+    fn call(&self, ctx: &mut VarTable) -> RawValue {
         ctx.vars.clear();
         let mut res = RawValue::Unit;
         for expr in &self.0 {
@@ -68,7 +62,7 @@ impl Callable for Program {
 }
 
 impl Callable for Expr {
-    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
+    fn call(&self, ctx: &mut VarTable) -> RawValue {
         match self {
             Self::Ref(r) => r.call(ctx),
             Self::Const(c) => c.clone(),
@@ -99,12 +93,7 @@ impl Callable for Expr {
     }
 }
 
-fn bin_val<M: RawModule>(
-    ctx: &mut VarTable<M>,
-    lhs: &Expr,
-    op: &ValBinaryOp,
-    rhs: &Expr,
-) -> RawValue {
+fn bin_val(ctx: &mut VarTable, lhs: &Expr, op: &ValBinaryOp, rhs: &Expr) -> RawValue {
     let lhs = lhs.call(ctx);
     let rhs = rhs.call(ctx);
     let t = lhs.get_type().max(rhs.get_type());
@@ -162,12 +151,7 @@ fn bin_str_val(lhs: RawValue, op: &ValBinaryOp, rhs: RawValue) -> RawValue {
     }
 }
 
-fn bin_logic<M: RawModule>(
-    ctx: &mut VarTable<M>,
-    lhs: &Expr,
-    op: &LogicBinaryOp,
-    rhs: &Expr,
-) -> RawValue {
+fn bin_logic(ctx: &mut VarTable, lhs: &Expr, op: &LogicBinaryOp, rhs: &Expr) -> RawValue {
     let res = match op {
         LogicBinaryOp::And => lhs.call(ctx).get_bool() && rhs.call(ctx).get_bool(),
         LogicBinaryOp::Or => lhs.call(ctx).get_bool() || rhs.call(ctx).get_bool(),
@@ -198,7 +182,7 @@ fn bin_ord_logic<T: Ord>(lhs: &T, op: &LogicBinaryOp, rhs: &T) -> bool {
     }
 }
 
-fn assign<M: RawModule>(ctx: &mut VarTable<M>, e: &Expr, val: RawValue) -> RawValue {
+fn assign(ctx: &mut VarTable, e: &Expr, val: RawValue) -> RawValue {
     match e {
         Expr::Ref(r) => match r {
             Ref::Var(n) => ctx.vars.insert(n.into(), val),
@@ -209,7 +193,7 @@ fn assign<M: RawModule>(ctx: &mut VarTable<M>, e: &Expr, val: RawValue) -> RawVa
     RawValue::Unit
 }
 
-fn call<M: RawModule>(ctx: &mut VarTable<M>, ns: &str, name: &str, args: &[Expr]) -> RawValue {
+fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
     if ns.is_empty() {
         match name {
             "if" => if args.get(0).call(ctx).get_bool() {
@@ -234,7 +218,7 @@ fn call<M: RawModule>(ctx: &mut VarTable<M>, ns: &str, name: &str, args: &[Expr]
 }
 
 impl Callable for Ref {
-    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
+    fn call(&self, ctx: &mut VarTable) -> RawValue {
         match self {
             Self::Var(n) => ctx
                 .vars
@@ -247,32 +231,5 @@ impl Callable for Ref {
                 .cloned()
                 .unwrap_or_default_log("Cannot find context variable"),
         }
-    }
-}
-
-impl Callable for Text {
-    fn call<M: RawModule>(&self, ctx: &mut VarTable<M>) -> RawValue {
-        let mut str = String::new();
-        for line in &self.0 {
-            match line {
-                SubText::Str(s) => str.push_str(s),
-                SubText::Cmd(c) => {
-                    let value = match c {
-                        Command::Character(_, _) => RawValue::Unit,
-                        Command::Res(_) | Command::Other(_, _) => {
-                            warn!("Unsupported command in text.");
-                            RawValue::Unit
-                        }
-                        Command::Ctx(n) => ctx
-                            .locals
-                            .get(n)
-                            .cloned()
-                            .unwrap_or_default_log("Cannot find variable"),
-                    };
-                    str.push_str(&value.get_str());
-                }
-            }
-        }
-        RawValue::Str(str.trim().to_string())
     }
 }

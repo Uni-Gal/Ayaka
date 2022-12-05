@@ -16,7 +16,6 @@ mod config;
 mod context;
 mod locale;
 pub mod plugin;
-pub mod script;
 mod settings;
 
 #[doc(no_inline)]
@@ -25,14 +24,14 @@ pub use anyhow;
 pub use ayaka_bindings_types::*;
 #[doc(no_inline)]
 pub use ayaka_primitive::*;
-#[doc(no_inline)]
-pub use ayaka_script::*;
 pub use config::*;
 pub use context::*;
 #[doc(no_inline)]
 pub use futures_util::{pin_mut, StreamExt, TryStreamExt};
 #[doc(no_inline)]
 pub use locale::*;
+#[doc(no_inline)]
+pub use log;
 pub use settings::*;
 
 /// Get the version of Ayaka runtime.

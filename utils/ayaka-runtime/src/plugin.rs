@@ -20,11 +20,6 @@ impl<M: RawModule> Module<M> {
         }
     }
 
-    /// Calls a script plugin method by name.
-    pub fn dispatch_method(&self, name: &str, args: &[RawValue]) -> Result<RawValue> {
-        self.module.call(name, (args,))
-    }
-
     /// Gets the [`PluginType`].
     pub fn plugin_type(&self) -> Result<PluginType> {
         self.module.call("plugin_type", ())

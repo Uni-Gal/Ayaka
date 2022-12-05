@@ -6,7 +6,6 @@ use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::*;
 use fallback::Fallback;
 use log::error;
-use script::*;
 use std::{collections::HashMap, path::Path};
 use stream_future::stream;
 use trylog::TryLog;
@@ -155,10 +154,6 @@ impl Context {
         }
     }
 
-    fn table(&mut self) -> VarTable {
-        VarTable::new(&self.runtime, &mut self.ctx.locals)
-    }
-
     fn current_paragraph(&self, loc: &Locale) -> Option<&Paragraph> {
         self.game
             .find_para(loc, &self.ctx.cur_base_para, &self.ctx.cur_para)
@@ -181,8 +176,30 @@ impl Context {
     }
 
     /// Call the part of script with this context.
-    pub fn call(&mut self, expr: &impl Callable) -> RawValue {
-        self.table().call(expr)
+    pub fn call(&mut self, text: &Text) -> String {
+        let mut str = String::new();
+        for line in &text.0 {
+            match line {
+                SubText::Str(s) => str.push_str(s),
+                SubText::Cmd(c) => {
+                    let value = match c {
+                        Command::Character(_, _) => RawValue::Unit,
+                        Command::Res(_) | Command::Other(_, _) => {
+                            log::warn!("Unsupported command in text.");
+                            RawValue::Unit
+                        }
+                        Command::Ctx(n) => self
+                            .ctx
+                            .locals
+                            .get(n)
+                            .cloned()
+                            .unwrap_or_default_log("Cannot find variable"),
+                    };
+                    str.push_str(&value.get_str());
+                }
+            }
+        }
+        str.trim().to_string()
     }
 
     /// Choose a switch item by index, start by 0.
@@ -272,12 +289,7 @@ impl Context {
                 self.vars.clear();
                 let cmd = props.iter().next().map(|(key, _)| key);
                 if let Some(cmd) = cmd {
-                    // TODO: decouple with ayaka-script
-                    if cmd == "exec" {
-                        let program = props[cmd].get_str();
-                        let exec = program.parse::<Program>()?;
-                        self.call(&exec);
-                    } else if let Some(module) = self.runtime.line_module(cmd) {
+                    if let Some(module) = self.runtime.line_module(cmd) {
                         let ctx = LineProcessContextRef {
                             game_props: &self.game.config.props,
                             frontend: self.frontend,
@@ -408,7 +420,7 @@ impl Context {
                         .and_then(|p| p.next.as_ref())
                         // TODO: reduce clone
                         .cloned()
-                        .map(|text| self.call(&text).into_str())
+                        .map(|text| self.call(&text))
                         .unwrap_or_default();
                     self.ctx.cur_act = 0;
                 }
