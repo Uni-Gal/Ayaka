@@ -421,8 +421,8 @@ async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<(Action, Opti
 }
 
 fn main() -> Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let port = listener.local_addr().unwrap().port();
+    let listener = TcpListener::bind("127.0.0.1:0")?;
+    let port = listener.local_addr()?.port();
     tauri::Builder::default()
         .plugin(asset_resolver::init(listener))
         .plugin(tauri_plugin_window_state::Builder::default().build())

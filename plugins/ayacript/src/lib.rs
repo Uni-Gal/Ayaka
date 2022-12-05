@@ -9,6 +9,7 @@ use ayaka_script::*;
 use plugin::*;
 use script::*;
 use std::sync::LazyLock;
+use trylog::TryLog;
 
 #[export]
 fn plugin_type() -> PluginType {
@@ -20,11 +21,15 @@ static RUNTIME: LazyLock<Runtime> = LazyLock::new(Runtime::new);
 #[export]
 fn exec(mut ctx: LineProcessContext) -> LineProcessResult {
     let program = ctx.props["exec"].get_str();
-    let exec = program.parse::<Program>().unwrap();
-    let mut table = VarTable::new(&RUNTIME, &mut ctx.ctx.locals);
-    table.call(&exec);
-    LineProcessResult {
-        locals: ctx.ctx.locals,
-        vars: VarMap::default(),
-    }
+    program
+        .parse::<Program>()
+        .map(|exec| {
+            let mut table = VarTable::new(&RUNTIME, &mut ctx.ctx.locals);
+            table.call(&exec);
+            LineProcessResult {
+                locals: ctx.ctx.locals,
+                vars: VarMap::default(),
+            }
+        })
+        .unwrap_or_default_log("Cannot parse program")
 }
