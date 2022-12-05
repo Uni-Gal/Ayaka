@@ -9,10 +9,11 @@ use std::borrow::Cow;
 /// assert_eq!(serde_yaml::from_str::<RawValue>("123").unwrap(), RawValue::Num(123));
 /// assert_eq!(serde_yaml::from_str::<RawValue>("\"hello\"").unwrap(), RawValue::Str("hello".to_string()));
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum RawValue {
     /// The unit type. It is empty, just like [`None`] or [`()`] in Rust.
+    #[default]
     Unit,
     /// The boolean type.
     Bool(bool),
@@ -33,12 +34,6 @@ pub enum ValueType {
     Num,
     /// The string type.
     Str,
-}
-
-impl Default for RawValue {
-    fn default() -> Self {
-        Self::Unit
-    }
 }
 
 impl RawValue {
