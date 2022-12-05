@@ -1,9 +1,11 @@
 //! The script interpreter.
 
-use crate::plugin::{BackendModule, Runtime};
+use crate::{
+    plugin::{BackendModule, Runtime},
+    *,
+};
 use ayaka_bindings_types::VarMap;
 use ayaka_plugin::RawModule;
-use ayaka_script::*;
 use log::warn;
 use trylog::TryLog;
 

@@ -24,7 +24,7 @@ pub use anyhow;
 #[doc(no_inline)]
 pub use ayaka_bindings_types::*;
 #[doc(no_inline)]
-pub use ayaka_script::log;
+pub use ayaka_primitive::*;
 #[doc(no_inline)]
 pub use ayaka_script::*;
 pub use config::*;

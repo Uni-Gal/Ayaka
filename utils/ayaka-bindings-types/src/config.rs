@@ -1,4 +1,4 @@
-use ayaka_script::RawValue;
+use ayaka_primitive::RawValue;
 use fallback::FallbackSpec;
 use serde::{Deserialize, Serialize};
 use std::{

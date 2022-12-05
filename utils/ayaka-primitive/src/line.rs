@@ -11,11 +11,6 @@ pub enum Line {
     Empty,
     /// A text line.
     Text(Text),
-    /// An `exec` line, to execute scripts.
-    Exec {
-        /// The program to execute.
-        exec: Program,
-    },
     /// Some `switches`.
     Switch {
         /// The switch items.
@@ -40,21 +35,21 @@ mod test {
 - switches:
   - a
   - b
-- exec: $?
 - video: 0
 -
         "#;
         let lines: Vec<Line> = serde_yaml::from_str(lines).unwrap();
-        assert_eq!(lines.len(), 6);
+        assert_eq!(lines.len(), 5);
         assert_eq!(
             lines[0],
             Line::Text(Text(vec![SubText::Str("abc".to_string())]))
         );
         assert_eq!(
             lines[1],
-            Line::Exec {
-                exec: Program(vec![Expr::Ref(Ref::Ctx("a".to_string()))])
-            }
+            Line::Custom(HashMap::from([(
+                "exec".to_string(),
+                RawValue::Str("$a".to_string())
+            )]))
         );
         assert_eq!(
             lines[2],
@@ -64,14 +59,8 @@ mod test {
         );
         assert_eq!(
             lines[3],
-            Line::Exec {
-                exec: Program(vec![Expr::Ref(Ref::Ctx("?".to_string()))])
-            }
-        );
-        assert_eq!(
-            lines[4],
             Line::Custom(HashMap::from([("video".to_string(), RawValue::Num(0))]))
         );
-        assert_eq!(lines[5], Line::Empty);
+        assert_eq!(lines[4], Line::Empty);
     }
 }

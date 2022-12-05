@@ -4,16 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+ayaka-primitive = { path = "../ayaka-primitive" }
 anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-serde_with = "2.0"
 lalrpop-util = { version = "0.19", features = ["lexer"] }
-regex = "1"
 log = "0.4"
 trylog = "0.2"
-
-[dev-dependencies]
-serde_yaml = "0.9"
 
 [build-dependencies]
 lalrpop = "0.19"

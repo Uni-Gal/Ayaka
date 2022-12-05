@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+ayaka-primitive = { path = "../ayaka-primitive" }
 ayaka-bindings-types = { path = "../ayaka-bindings-types" }
 ayaka-script = { path = "../ayaka-script" }
 ayaka-plugin = { path = "../ayaka-plugin" }

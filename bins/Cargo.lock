@@ -346,7 +346,7 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 name = "ayaka-bindings-types"
 version = "0.1.0"
 dependencies = [
- "ayaka-script",
+ "ayaka-primitive",
  "fallback",
  "log",
  "serde",
@@ -416,6 +416,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "ayaka-primitive"
+version = "0.1.0"
+dependencies = [
+ "regex",
+ "serde",
+ "serde_with 2.1.0",
+]
+
+[[package]]
 name = "ayaka-runtime"
 version = "0.1.0"
 dependencies = [
@@ -424,6 +433,7 @@ dependencies = [
  "ayaka-plugin",
  "ayaka-plugin-nop",
  "ayaka-plugin-wasmi",
+ "ayaka-primitive",
  "ayaka-script",
  "cfg-if",
  "dirs",
@@ -445,12 +455,11 @@ name = "ayaka-script"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "ayaka-primitive",
  "lalrpop",
  "lalrpop-util",
  "log",
- "regex",
  "serde",
- "serde_with 2.1.0",
  "trylog",
 ]
 

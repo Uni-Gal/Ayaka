@@ -5,7 +5,7 @@
 #[doc(no_inline)]
 pub use ayaka_bindings_types::*;
 #[doc(no_inline)]
-pub use ayaka_script::{RawValue, ValueType};
+pub use ayaka_primitive::{RawValue, ValueType};
 #[doc(no_inline)]
 pub use log;
 

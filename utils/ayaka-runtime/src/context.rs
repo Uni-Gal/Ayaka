@@ -4,7 +4,6 @@ use crate::{
 };
 use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::*;
-use ayaka_script::{Command, Line, Text};
 use fallback::Fallback;
 use log::error;
 use script::*;
@@ -253,9 +252,6 @@ impl Context {
     fn process_line(&mut self, t: Line) -> Result<()> {
         match t {
             Line::Empty | Line::Text(_) => {}
-            Line::Exec { exec } => {
-                self.call(&exec);
-            }
             Line::Switch { switches } => {
                 self.switches.clear();
                 for i in 0..switches.len() {
@@ -276,7 +272,12 @@ impl Context {
                 self.vars.clear();
                 let cmd = props.iter().next().map(|(key, _)| key);
                 if let Some(cmd) = cmd {
-                    if let Some(module) = self.runtime.line_module(cmd) {
+                    // TODO: decouple with ayaka-script
+                    if cmd == "exec" {
+                        let program = props[cmd].get_str();
+                        let exec = program.parse::<Program>()?;
+                        self.call(&exec);
+                    } else if let Some(module) = self.runtime.line_module(cmd) {
                         let ctx = LineProcessContextRef {
                             game_props: &self.game.config.props,
                             frontend: self.frontend,

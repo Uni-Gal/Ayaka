@@ -55,7 +55,7 @@ impl Loc {
     /// Combines a series of [`Loc`].
     ///
     /// ```
-    /// # use ayaka_script::Loc;
+    /// # use ayaka_primitive::Loc;
     /// let full_loc = Loc::from_locs([Loc(1, 2), Loc(4, 6), Loc(5, 8)]);
     /// assert_eq!(full_loc, Loc(1, 8));
     /// ```
@@ -205,8 +205,6 @@ pub enum ParseErrorType {
     CmdInCmd,
     /// The builtin commands check the parameters count.
     InvalidParamsCount(String, usize),
-    /// An error occurred when parsing [`Program`].
-    InvalidProgram(String),
 }
 
 impl Display for ParseErrorType {
@@ -222,7 +220,6 @@ impl Display for ParseErrorType {
                 count,
                 name.escape_default()
             )?,
-            Self::InvalidProgram(err) => write!(f, "Program parse error: {}", err)?,
         }
         Ok(())
     }
