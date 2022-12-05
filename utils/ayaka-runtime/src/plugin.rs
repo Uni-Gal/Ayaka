@@ -76,7 +76,7 @@ pub enum LoadStatus {
 impl<M: RawModule> Runtime<M> {
     fn new_linker(root_path: impl AsRef<Path>) -> Result<M::Linker> {
         let mut store = M::Linker::new(root_path)?;
-        let log_func = store.wrap_with_args(|data: Record| {
+        let log_func = store.wrap(|data: Record| {
             let module_path = format!(
                 "{}::<plugin>::{}",
                 module_path!(),

@@ -214,25 +214,28 @@ impl StoreLinker<WasmiModule> for WasmiStoreLinker {
         Ok(())
     }
 
-    fn wrap(&self, f: impl Fn() + Send + Sync + 'static) -> Func {
-        Func::wrap(self.store.lock().unwrap().as_context_mut(), f)
-    }
-
-    fn wrap_with_args_raw(
-        &self,
-        f: impl (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static,
-    ) -> Func {
+    fn wrap_raw(&self, f: impl (Fn(&[u8]) -> Result<Vec<u8>>) + Send + Sync + 'static) -> Func {
         Func::wrap(
             self.store.lock().unwrap().as_context_mut(),
-            move |store: Caller<WasiCtx>, len: i32, data: i32| unsafe {
+            move |mut store: Caller<WasiCtx>, len: i32, data: i32| unsafe {
                 let memory = store
                     .get_export(MEMORY_NAME)
                     .unwrap()
                     .into_memory()
                     .unwrap();
                 let data = mem_slice(store.as_context(), &memory, data, len);
-                f(data).map_err(|e| Trap::new(e.to_string()))?;
-                Ok(())
+                let data = f(data).map_err(|e| Trap::new(e.to_string()))?;
+                let abi_alloc = store
+                    .get_export(ABI_ALLOC_NAME)
+                    .unwrap()
+                    .into_func()
+                    .unwrap()
+                    .typed::<i32, i32>(store.as_context())
+                    .map_err(|e| Trap::new(e.to_string()))?;
+                let ptr = abi_alloc.call(store.as_context_mut(), data.len() as i32)?;
+                mem_slice_mut(store.as_context_mut(), &memory, ptr, data.len() as i32)
+                    .copy_from_slice(&data);
+                Ok(((data.len() as u64) << 32) | (ptr as u64))
             },
         )
     }

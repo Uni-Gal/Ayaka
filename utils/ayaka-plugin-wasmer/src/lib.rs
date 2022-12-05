@@ -155,14 +155,16 @@ impl RawModule for WasmerModule {
 #[derive(Clone)]
 pub struct RuntimeInstanceData {
     memory: Option<Memory>,
+    abi_alloc: Option<TypedFunction<i32, i32>>,
     #[allow(clippy::type_complexity)]
-    func: Arc<dyn (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static>,
+    func: Arc<dyn (Fn(&[u8]) -> Result<Vec<u8>>) + Send + Sync + 'static>,
 }
 
 impl RuntimeInstanceData {
-    pub fn new(func: impl (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static) -> Self {
+    pub fn new(func: impl (Fn(&[u8]) -> Result<Vec<u8>>) + Send + Sync + 'static) -> Self {
         Self {
             memory: None,
+            abi_alloc: None,
             func: Arc::new(func),
         }
     }
@@ -175,13 +177,28 @@ impl RuntimeInstanceData {
         self.memory.as_ref().unwrap()
     }
 
-    pub fn call(this: FunctionEnvMut<Self>, len: i32, ptr: i32) {
-        let memory = this.data().memory();
+    pub fn set_abi_alloc(&mut self, func: TypedFunction<i32, i32>) {
+        self.abi_alloc = Some(func);
+    }
+
+    pub fn call(mut this: FunctionEnvMut<Self>, len: i32, ptr: i32) -> u64 {
         unsafe {
-            mem_slice(&this, memory, ptr, len, |slice| {
-                (this.data().func)(slice).unwrap();
-            })
-        };
+            let data = mem_slice(&this, this.data().memory(), ptr, len, |slice| {
+                (this.data().func)(slice).unwrap()
+            });
+            let abi_alloc = this.data().abi_alloc.clone().unwrap();
+            let ptr = abi_alloc.call(&mut this, data.len() as i32).unwrap();
+            mem_slice_mut(
+                &this,
+                this.data().memory(),
+                ptr,
+                data.len() as i32,
+                |slice| {
+                    slice.copy_from_slice(&data);
+                },
+            );
+            ((data.len() as u64) << 32) | (ptr as u64)
+        }
     }
 }
 
@@ -197,14 +214,10 @@ impl WasmerStoreLinker {
         store: &mut impl AsStoreMut,
         func: WasmerFunction,
     ) -> (Function, Option<FunctionEnv<RuntimeInstanceData>>) {
-        match func {
-            WasmerFunction::Function(func) => (func, None),
-            WasmerFunction::WithEnv(env_data) => {
-                let env = FunctionEnv::new(store, env_data);
-                let func = Function::new_typed_with_env(store, &env, RuntimeInstanceData::call);
-                (func, Some(env))
-            }
-        }
+        let env_data = func.0;
+        let env = FunctionEnv::new(store, env_data);
+        let func = Function::new_typed_with_env(store, &env, RuntimeInstanceData::call);
+        (func, Some(env))
     }
 }
 
@@ -255,9 +268,14 @@ impl StoreLinker<WasmerModule> for WasmerStoreLinker {
             let instance = Instance::new(&mut store.as_store_mut(), &module, &wasi_import)?;
             wasi_env.initialize(&mut store.as_store_mut(), &instance)?;
             let memory = instance.exports.get_memory(MEMORY_NAME)?;
+            let abi_alloc = instance
+                .exports
+                .get_typed_function(&store.as_store_ref(), ABI_ALLOC_NAME)?;
+            let mut store = store.as_store_mut();
             for env in &envs {
-                env.as_mut(&mut store.as_store_mut())
-                    .set_memory(memory.clone());
+                let env_mut = env.as_mut(&mut store);
+                env_mut.set_memory(memory.clone());
+                env_mut.set_abi_alloc(abi_alloc.clone());
             }
             instance
         };
@@ -274,24 +292,14 @@ impl StoreLinker<WasmerModule> for WasmerStoreLinker {
         Ok(())
     }
 
-    fn wrap(&self, f: impl Fn() + Send + Sync + 'static) -> WasmerFunction {
-        WasmerFunction::Function(Function::new_typed(
-            &mut self.store.lock().unwrap().as_store_mut(),
-            f,
-        ))
-    }
-
-    fn wrap_with_args_raw(
+    fn wrap_raw(
         &self,
-        f: impl (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static,
+        f: impl (Fn(&[u8]) -> Result<Vec<u8>>) + Send + Sync + 'static,
     ) -> WasmerFunction {
-        WasmerFunction::WithEnv(RuntimeInstanceData::new(f))
+        WasmerFunction(RuntimeInstanceData::new(f))
     }
 }
 
-#[doc(hidden)]
+/// Represents a wrapped wasmer function.
 #[derive(Clone)]
-pub enum WasmerFunction {
-    Function(Function),
-    WithEnv(RuntimeInstanceData),
-}
+pub struct WasmerFunction(RuntimeInstanceData);

@@ -72,24 +72,19 @@ pub trait StoreLinker<M: RawModule>: Sized {
     /// Import functions by namespace and names.
     fn import(&mut self, ns: impl Into<String>, funcs: HashMap<String, M::Func>) -> Result<()>;
 
-    /// Wrap a simple function.
-    fn wrap(&self, f: impl Fn() + Send + Sync + 'static) -> M::Func;
-
     /// Wrap a function with args in bytes.
-    fn wrap_with_args_raw(
-        &self,
-        f: impl (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static,
-    ) -> M::Func;
+    fn wrap_raw(&self, f: impl (Fn(&[u8]) -> Result<Vec<u8>>) + Send + Sync + 'static) -> M::Func;
 
     /// Wrap a function with args.
-    fn wrap_with_args<Params: DeserializeOwned + Tuple>(
+    fn wrap<P: DeserializeOwned + Tuple, R: Serialize>(
         &self,
-        f: impl Fn<Params, Output = ()> + Send + Sync + 'static,
+        f: impl Fn<P, Output = R> + Send + Sync + 'static,
     ) -> M::Func {
-        self.wrap_with_args_raw(move |data| {
+        self.wrap_raw(move |data| {
             let data = rmp_serde::from_slice(data)?;
-            f.call(data);
-            Ok(())
+            let data = f.call(data);
+            let data = rmp_serde::to_vec(&data)?;
+            Ok(data)
         })
     }
 }
