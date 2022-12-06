@@ -1,0 +1,29 @@
+- tag: init
+  texts:
+    - ┏━━━┓┏┓━━┏┓┏━━━┓┏┓┏━┓┏━━━┓
+    - ┃┏━┓┃┃┗┓┏┛┃┃┏━┓┃┃┃┃┏┛┃┏━┓┃
+    - ┃┃━┃┃┗┓┗┛┏┛┃┃━┃┃┃┗┛┛━┃┃━┃┃
+    - ┃┗━┛┃━┗┓┏┛━┃┗━┛┃┃┏┓┃━┃┗━┛┃
+    - ┃┏━┓┃━━┃┃━━┃┏━┓┃┃┃┃┗┓┃┏━┓┃
+    - ┗┛━┗┛━━┗┛━━┗┛━┗┛┗┛┗━┛┗┛━┗┛
+    - This is the first line.
+    - This is the second line.
+    - Choose a switch from the following line.
+    - switches:
+      - Jump to paragraph 0
+      - Jump to paragraph 1
+      - Exit
+  next: para\var{?}
+
+- tag: para0
+  texts:
+    - This is paragraph 0.
+    - Note that the start index of switches is 0.
+    - >
+      This paragraph is in the init.yaml file,
+      therefore it could be only seen in this file.
+  next: para1
+
+- tag: para2
+  texts: 
+    - # We use an empty line to pass
