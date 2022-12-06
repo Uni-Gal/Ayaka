@@ -1,0 +1,21 @@
+- tag: init
+  texts:
+    - # Empty line to fallback to base language
+    - # 空白は基礎の言語に切り戻されます
+    -
+    -
+    -
+    -
+    - １列目
+    - ２列目
+    - 次の列に一つを選んでください
+    - switches:
+      - 第０段落へ
+      - 第１段落へ
+      - 終了する
+
+- tag: para0
+  texts:
+    - 第０段落です
+    - 選択肢の索引は０に始まって注意してください
+    - この段落は init.yaml にあるから、このファイルだけに見られます

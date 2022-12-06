@@ -3,11 +3,14 @@
   texts:
     - bg: 0
     - \ch{rd}団長！車の用意できました！
+    - exec: $2 = false
     - switches:
-      - おう！||$end = false
-      - 止まるんじゃねぇぞ！||$end = true
-      - 止まれ！|false
-    - exec: $next = if($end, "end", "walk")
+      - おう！
+      - 止まるんじゃねぇぞ！
+      - 止まれ！
+    - exec: |
+        $end = $? == 1;
+        $next = if($end, "end", "walk")
   next: \var{next}
 - tag: walk
   title: 静かだ
@@ -16,9 +19,10 @@
     - /kdr//はい、お気をつけて。
     - bg: 1
     - /rd//なんか静かですね。街の中にはギャラルホルンもいないし本部とはえらい違いだ。
+    - exec: $1 = false
     - switches:
       - 安全
-      - 気を付け|false
+      - 気を付け
     - /org//ああ。火星の戦力は軒並み向こうに回してんのかもな。
     - /rd//まっそんなのもう関係ないですけどね！
     - /org//上機嫌だな。

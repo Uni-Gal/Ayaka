@@ -9,6 +9,7 @@ res: res
 plugins:
   dir: ../plugins/
   modules:
+    - ayacript
     - basictex
     - media
 base_lang: ja

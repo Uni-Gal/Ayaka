@@ -53,12 +53,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
+name = "ayacript"
+version = "0.1.0"
+dependencies = [
+ "ayaka-bindings",
+ "ayaka-bindings-types",
+ "ayaka-plugin",
+ "ayaka-script",
+ "trylog",
+]
+
+[[package]]
 name = "ayaka-bindings"
 version = "0.1.0"
 dependencies = [
  "ayaka-bindings-impl",
  "ayaka-bindings-types",
- "ayaka-script",
+ "ayaka-primitive",
  "log",
  "rmp-serde",
  "scopeguard",
@@ -69,6 +80,7 @@ dependencies = [
 name = "ayaka-bindings-impl"
 version = "0.1.0"
 dependencies = [
+ "proc-macro-crate",
  "proc-macro2",
  "quote",
  "syn",
@@ -78,10 +90,28 @@ dependencies = [
 name = "ayaka-bindings-types"
 version = "0.1.0"
 dependencies = [
- "ayaka-script",
+ "ayaka-primitive",
  "fallback",
  "log",
  "serde",
+]
+
+[[package]]
+name = "ayaka-plugin"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "rmp-serde",
+ "serde",
+]
+
+[[package]]
+name = "ayaka-primitive"
+version = "0.1.0"
+dependencies = [
+ "regex",
+ "serde",
+ "serde_with",
 ]
 
 [[package]]
@@ -89,12 +119,11 @@ name = "ayaka-script"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "ayaka-primitive",
  "lalrpop",
  "lalrpop-util",
  "log",
- "regex",
  "serde",
- "serde_with",
  "trylog",
 ]
 
@@ -650,6 +679,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "925383efa346730478fb4838dbe9137d2a47675ad789c546d150a6e1dd4ab31c"
 
 [[package]]
+name = "proc-macro-crate"
+version = "1.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eda0fc3b0fb7c975631757e14d9049da17374063edb6ebbcbc54d880d4fe94e9"
+dependencies = [
+ "once_cell",
+ "thiserror",
+ "toml",
+]
+
+[[package]]
 name = "proc-macro2"
 version = "1.0.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -803,18 +843,18 @@ checksum = "9c8132065adcfd6e02db789d9285a0deb2f3fcb04002865ab67d5fb103533898"
 
 [[package]]
 name = "serde"
-version = "1.0.148"
+version = "1.0.149"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e53f64bb4ba0191d6d0676e1b141ca55047d83b74f5607e6d8eb88126c52c2dc"
+checksum = "256b9932320c590e707b94576e3cc1f7c9024d0ee6612dfbcf1cb106cbe8e055"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.148"
+version = "1.0.149"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a55492425aa53521babf6137309e7d34c20bbfbbfcfe2c7f3a047fd1f6b92c0c"
+checksum = "b4eae9b04cbffdfd550eb462ed33bc6a1b68c935127d008b27444d08380f94e4"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -979,10 +1019,19 @@ dependencies = [
 ]
 
 [[package]]
-name = "trylog"
-version = "0.2.0"
+name = "toml"
+version = "0.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f693ba1b7784211afaca884e0dffe0c6086a1113c44ee7030f3277bcd63fde2a"
+checksum = "8d82e1a7758622a465f8cee077614c73484dac5b836c02ff6a40d5d1010324d7"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "trylog"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5c3c554f1b36be2f3c2233dafea1bbaf3e5d07d3b81db54d62606d31805ac7b1"
 dependencies = [
  "log",
 ]

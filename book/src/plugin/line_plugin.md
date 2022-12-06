@@ -34,6 +34,7 @@ Hello world!
 The `LineProcessResult` object contains the global variables and temp variables. The temp variables will only apply to this specific line.
 
 ## Existing plugins
-| Plugin  | Description          |
-| ------- | -------------------- |
-| `media` | Multimedia commands. |
+| Plugin     | Description          |
+| ---------- | -------------------- |
+| `ayacript` | Ayaka script.        |
+| `media`    | Multimedia commands. |

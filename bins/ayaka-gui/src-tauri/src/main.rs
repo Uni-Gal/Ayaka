@@ -21,7 +21,7 @@ use std::{
 use tauri::{
     async_runtime::Mutex, command, utils::config::AppUrl, AppHandle, Manager, State, WindowUrl,
 };
-use trylog::TryLog;
+use trylog::macros::*;
 
 type CommandResult<T> = std::result::Result<T, CommandError>;
 
@@ -140,18 +140,22 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
     window.set_title(&ctx.game.config.title)?;
     let settings = {
         OpenGameStatus::LoadSettings.emit(&handle)?;
-        load_settings(&storage.ident).unwrap_or_default_log("Load settings failed")
+        unwrap_or_default_log!(load_settings(&storage.ident), "Load settings failed")
     };
     *storage.settings.lock().await = Some(settings);
 
     OpenGameStatus::LoadGlobalRecords.emit(&handle)?;
-    let global_record = load_global_record(&storage.ident, &ctx.game.config.title)
-        .unwrap_or_default_log("Load global records failed");
+    let global_record = unwrap_or_default_log!(
+        load_global_record(&storage.ident, &ctx.game.config.title),
+        "Load global records failed"
+    );
     *storage.global_record.lock().await = Some(global_record);
 
     OpenGameStatus::LoadRecords.emit(&handle)?;
-    *storage.records.lock().await = load_records(&storage.ident, &ctx.game.config.title)
-        .unwrap_or_default_log("Load records failed");
+    *storage.records.lock().await = unwrap_or_default_log!(
+        load_records(&storage.ident, &ctx.game.config.title),
+        "Load records failed"
+    );
     *storage.context.lock().await = Some(ctx);
 
     OpenGameStatus::Loaded.emit(&handle)?;
@@ -357,13 +361,15 @@ fn get_actions(
     settings: &Settings,
     raw_ctx: &RawContext,
 ) -> (Action, Option<Action>) {
-    let action = context
-        .get_action(&settings.lang, raw_ctx)
-        .unwrap_or_default_log("Cannot get action");
+    let action = unwrap_or_default_log!(
+        context.get_action(&settings.lang, raw_ctx),
+        "Cannot get action"
+    );
     let base_action = settings.sub_lang.as_ref().map(|sub_lang| {
-        context
-            .get_action(sub_lang, raw_ctx)
-            .unwrap_or_default_log("Cannot get sub action")
+        unwrap_or_default_log!(
+            context.get_action(sub_lang, raw_ctx),
+            "Cannot get sub action"
+        )
     });
     (action, base_action)
 }
@@ -421,8 +427,8 @@ async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<(Action, Opti
 }
 
 fn main() -> Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
-    let port = listener.local_addr().unwrap().port();
+    let listener = TcpListener::bind("127.0.0.1:0")?;
+    let port = listener.local_addr()?.port();
     tauri::Builder::default()
         .plugin(asset_resolver::init(listener))
         .plugin(tauri_plugin_window_state::Builder::default().build())

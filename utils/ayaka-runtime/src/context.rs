@@ -4,25 +4,23 @@ use crate::{
 };
 use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::*;
-use ayaka_script::{Command, Line, Text};
 use fallback::Fallback;
 use log::error;
-use script::*;
-use std::{collections::HashMap, path::Path};
+use std::{collections::HashMap, path::Path, sync::Arc};
 use stream_future::stream;
-use trylog::TryLog;
+use trylog::macros::*;
 
 /// The game running context.
 pub struct Context {
     /// The inner [`Game`] object.
     pub game: Game,
     frontend: FrontendType,
-    runtime: Runtime,
+    runtime: Arc<Runtime>,
     /// The inner raw context.
     pub ctx: RawContext,
     /// The inner record.
     pub record: ActionRecord,
-    switches: Vec<(bool, Program)>,
+    switches: Vec<bool>,
     vars: VarMap,
 }
 
@@ -156,10 +154,6 @@ impl Context {
         }
     }
 
-    fn table(&mut self) -> VarTable {
-        VarTable::new(&self.runtime, &mut self.ctx.locals)
-    }
-
     fn current_paragraph(&self, loc: &Locale) -> Option<&Paragraph> {
         self.game
             .find_para(loc, &self.ctx.cur_base_para, &self.ctx.cur_para)
@@ -182,15 +176,40 @@ impl Context {
     }
 
     /// Call the part of script with this context.
-    pub fn call(&mut self, expr: &impl Callable) -> RawValue {
-        self.table().call(expr)
+    pub fn call(&mut self, text: &Text) -> String {
+        let mut str = String::new();
+        for line in &text.0 {
+            match line {
+                SubText::Str(s) => str.push_str(s),
+                SubText::Cmd(c) => {
+                    let value = match c {
+                        Command::Character(_, _) => RawValue::Unit,
+                        Command::Res(_) | Command::Other(_, _) => {
+                            log::warn!("Unsupported command in text.");
+                            RawValue::Unit
+                        }
+                        Command::Ctx(n) => unwrap_or_default_log!(
+                            self.ctx.locals.get(n).cloned(),
+                            format!("Cannot find variable {}", n)
+                        ),
+                    };
+                    str.push_str(&value.get_str());
+                }
+            }
+        }
+        str.trim().to_string()
     }
 
     /// Choose a switch item by index, start by 0.
-    pub fn switch(&mut self, i: usize) -> RawValue {
+    pub fn switch(&mut self, i: usize) {
         assert!((0..self.switches.len()).contains(&i));
-        assert!(self.switches[i].0);
-        self.call(&self.switches[i].1.clone())
+        assert!(self.switches[i]);
+        self.ctx
+            .locals
+            .insert("?".to_string(), RawValue::Num(i as i64));
+        for i in 0..self.switches.len() {
+            self.ctx.locals.remove(&i.to_string());
+        }
     }
 
     fn parse_text(&self, loc: &Locale, text: &Text) -> Result<ActionText> {
@@ -216,6 +235,8 @@ impl Context {
                     Command::Ctx(n) => {
                         if let Some(value) = self.ctx.locals.get(n) {
                             action.push_back_block(value.get_str())
+                        } else {
+                            log::warn!("Cannot find variable {}", n)
                         }
                     }
                     Command::Other(cmd, args) => {
@@ -235,11 +256,11 @@ impl Context {
         Ok(action)
     }
 
-    fn parse_switches(&self, s: &[SwitchItem]) -> Vec<Switch> {
+    fn parse_switches(&self, s: &[String]) -> Vec<Switch> {
         s.iter()
             .zip(&self.switches)
-            .map(|(item, (enabled, _))| Switch {
-                text: item.text.clone(),
+            .map(|(item, enabled)| Switch {
+                text: item.clone(),
                 enabled: *enabled,
             })
             .collect()
@@ -248,18 +269,20 @@ impl Context {
     fn process_line(&mut self, t: Line) -> Result<()> {
         match t {
             Line::Empty | Line::Text(_) => {}
-            Line::Exec { exec } => {
-                self.call(&exec);
-            }
             Line::Switch { switches } => {
                 self.switches.clear();
-                for item in switches {
-                    let enabled = item
-                        .enabled
-                        .as_ref()
-                        .map(|p| self.call(p).get_bool())
-                        .unwrap_or(true);
-                    self.switches.push((enabled, item.action));
+                for i in 0..switches.len() {
+                    let enabled = self
+                        .ctx
+                        .locals
+                        .get(&i.to_string())
+                        .unwrap_or(&RawValue::Unit);
+                    let enabled = if let RawValue::Unit = enabled {
+                        true
+                    } else {
+                        enabled.get_bool()
+                    };
+                    self.switches.push(enabled);
                 }
             }
             Line::Custom(props) => {
@@ -397,7 +420,7 @@ impl Context {
                         .and_then(|p| p.next.as_ref())
                         // TODO: reduce clone
                         .cloned()
-                        .map(|text| self.call(&text).into_str())
+                        .map(|text| self.call(&text))
                         .unwrap_or_default();
                     self.ctx.cur_act = 0;
                 }
@@ -418,8 +441,7 @@ impl Context {
         };
 
         let ctx = cur_text_base.cloned().map(|t| {
-            self.process_line(t)
-                .unwrap_or_default_log("Parse line error");
+            unwrap_or_default_log!(self.process_line(t), "Parse line error");
             self.push_history();
             self.ctx.clone()
         });

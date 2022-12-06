@@ -4,7 +4,6 @@
 #![warn(missing_docs)]
 
 use ayaka_plugin::*;
-use scopeguard::defer;
 use std::{
     collections::HashMap,
     path::Path,
@@ -43,111 +42,80 @@ unsafe fn mem_slice_mut<R>(
 
 type HostStore = Arc<Mutex<Store>>;
 
-struct HostInstance {
-    store: HostStore,
-    instance: Instance,
-}
-
-impl HostInstance {
-    pub fn new(store: HostStore, instance: Instance) -> Self {
-        Self { store, instance }
-    }
-
-    pub fn get_memory(&self) -> Result<HostMemory, ExportError> {
-        self.instance
-            .exports
-            .get_memory(MEMORY_NAME)
-            .map(|mem| HostMemory::new(self.store.clone(), mem.clone()))
-    }
-
-    pub fn get_func(&self, name: &str) -> Result<HostFunction, ExportError> {
-        self.instance
-            .exports
-            .get_function(name)
-            .map(|func| HostFunction::new(self.store.clone(), func.clone()))
-    }
-}
-
-struct HostMemory {
-    store: HostStore,
-    memory: Memory,
-}
-
-impl HostMemory {
-    pub fn new(store: HostStore, memory: Memory) -> Self {
-        Self { store, memory }
-    }
-
-    pub unsafe fn slice<R>(&self, start: i32, len: i32, f: impl FnOnce(&[u8]) -> R) -> R {
-        let store = self.store.lock().unwrap();
-        mem_slice(&store.as_store_ref(), &self.memory, start, len, f)
-    }
-
-    pub unsafe fn slice_mut<R>(&self, start: i32, len: i32, f: impl FnOnce(&mut [u8]) -> R) -> R {
-        let store = self.store.lock().unwrap();
-        mem_slice_mut(&store.as_store_ref(), &self.memory, start, len, f)
-    }
-}
-
-struct HostFunction {
-    store: HostStore,
-    func: Function,
-}
-
-impl HostFunction {
-    pub fn new(store: HostStore, func: Function) -> Self {
-        Self { store, func }
-    }
-
-    pub fn call(&self, params: &[Value]) -> Result<Box<[Value]>, RuntimeError> {
-        self.func
-            .call(&mut self.store.lock().unwrap().as_store_mut(), params)
-    }
-}
-
 /// A Wasmer [`Instance`].
 pub struct WasmerModule {
-    instance: HostInstance,
-    memory: HostMemory,
-    abi_free: HostFunction,
-    abi_alloc: HostFunction,
+    store: HostStore,
+    instance: Instance,
+    memory: Memory,
+    abi_free: TypedFunction<(i32, i32), ()>,
+    abi_alloc: TypedFunction<i32, i32>,
 }
 
 impl WasmerModule {
     /// Loads the WASM [`Module`], with some imports.
-    pub(crate) fn new(store: HostStore, instance: Instance) -> Result<Self> {
-        let instance = HostInstance::new(store, instance);
-        let memory = instance.get_memory()?;
-        let abi_free = instance.get_func(ABI_FREE_NAME)?;
-        let abi_alloc = instance.get_func(ABI_ALLOC_NAME)?;
+    fn new(store: HostStore, instance: Instance) -> Result<Self> {
+        let memory = instance.exports.get_memory(MEMORY_NAME)?.clone();
+        let inner_store = store.lock().unwrap();
+        let abi_free = instance
+            .exports
+            .get_typed_function(&inner_store.as_store_ref(), ABI_FREE_NAME)?;
+        let abi_alloc = instance
+            .exports
+            .get_typed_function(&inner_store.as_store_ref(), ABI_ALLOC_NAME)?;
+        drop(inner_store);
         Ok(Self {
+            store,
             instance,
             memory,
             abi_free,
             abi_alloc,
         })
     }
+
+    fn call_impl<T>(
+        &self,
+        mut store: StoreMut,
+        name: &str,
+        data: &[u8],
+        f: impl FnOnce(&[u8]) -> Result<T>,
+    ) -> Result<T> {
+        let func = self
+            .instance
+            .exports
+            .get_typed_function::<(i32, i32), u64>(&store, name)?;
+
+        let ptr = self.abi_alloc.call(&mut store, data.len() as i32)?;
+        unsafe {
+            mem_slice_mut(&store, &self.memory, ptr, data.len() as i32, |s| {
+                s.copy_from_slice(data)
+            })
+        };
+
+        let res = func.call(&mut store, data.len() as i32, ptr);
+
+        self.abi_free.call(&mut store, ptr, data.len() as i32)?;
+
+        let res = res?;
+        let (len, res) = ((res >> 32) as i32, (res & 0xFFFFFFFF) as i32);
+
+        let res_data = unsafe { mem_slice(&store, &self.memory, res, len, |s| f(s)) };
+
+        self.abi_free.call(&mut store, res, len)?;
+
+        let res_data = res_data?;
+        Ok(res_data)
+    }
 }
 
 impl RawModule for WasmerModule {
-    type Linker = WasmerStoreLinker;
+    type Linker = WasmerLinker;
+
+    type LinkerHandle<'a> = WasmerLinkerHandle<'a>;
 
     type Func = WasmerFunction;
 
     fn call<T>(&self, name: &str, data: &[u8], f: impl FnOnce(&[u8]) -> Result<T>) -> Result<T> {
-        let memory = &self.memory;
-        let func = self.instance.get_func(name)?;
-
-        let ptr = self.abi_alloc.call(&[Value::I32(data.len() as i32)])?[0].unwrap_i32();
-        defer! { self.abi_free.call(&[Value::I32(ptr), Value::I32(data.len() as i32)]).unwrap(); }
-        unsafe { memory.slice_mut(ptr, data.len() as i32, |s| s.copy_from_slice(data)) };
-
-        let res = func.call(&[Value::I32(data.len() as i32), Value::I32(ptr)])?[0].unwrap_i64();
-        let (len, res) = ((res >> 32) as i32, (res & 0xFFFFFFFF) as i32);
-        defer! { self.abi_free.call(&[Value::I32(res), Value::I32(len)]).unwrap(); }
-
-        let res_data = unsafe { memory.slice(res, len, |s| f(s)) }?;
-        Ok(res_data)
+        self.call_impl(self.store.lock().unwrap().as_store_mut(), name, data, f)
     }
 }
 
@@ -155,14 +123,18 @@ impl RawModule for WasmerModule {
 #[derive(Clone)]
 pub struct RuntimeInstanceData {
     memory: Option<Memory>,
+    abi_alloc: Option<TypedFunction<i32, i32>>,
     #[allow(clippy::type_complexity)]
-    func: Arc<dyn (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static>,
+    func: Arc<dyn (Fn(WasmerLinkerHandle, i32, i32) -> Result<Vec<u8>>) + Send + Sync + 'static>,
 }
 
 impl RuntimeInstanceData {
-    pub fn new(func: impl (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static) -> Self {
+    pub fn new(
+        func: impl (Fn(WasmerLinkerHandle, i32, i32) -> Result<Vec<u8>>) + Send + Sync + 'static,
+    ) -> Self {
         Self {
             memory: None,
+            abi_alloc: None,
             func: Arc::new(func),
         }
     }
@@ -175,40 +147,51 @@ impl RuntimeInstanceData {
         self.memory.as_ref().unwrap()
     }
 
-    pub fn call(this: FunctionEnvMut<Self>, len: i32, ptr: i32) {
-        let memory = this.data().memory();
+    pub fn set_abi_alloc(&mut self, func: TypedFunction<i32, i32>) {
+        self.abi_alloc = Some(func);
+    }
+
+    pub fn call(mut this: FunctionEnvMut<Self>, len: i32, ptr: i32) -> u64 {
         unsafe {
-            mem_slice(&this, memory, ptr, len, |slice| {
-                (this.data().func)(slice).unwrap();
-            })
-        };
+            let memory = this.data().memory().clone();
+            let data = {
+                let func = this.data().func.clone();
+                let handle = WasmerLinkerHandle {
+                    store: this.as_store_mut(),
+                    memory: memory.clone(),
+                };
+                (func)(handle, ptr, len).unwrap()
+            };
+            let abi_alloc = this.data().abi_alloc.clone().unwrap();
+            let ptr = abi_alloc.call(&mut this, data.len() as i32).unwrap();
+            mem_slice_mut(&this, &memory, ptr, data.len() as i32, |slice| {
+                slice.copy_from_slice(&data);
+            });
+            ((data.len() as u64) << 32) | (ptr as u64)
+        }
     }
 }
 
-/// A Wasmer [`Store`] with some [`ImportObject`]s.
-pub struct WasmerStoreLinker {
+/// A Wasmer [`Store`] with some imports.
+pub struct WasmerLinker {
     store: HostStore,
     wasi_env: WasiEnv,
     imports: HashMap<String, HashMap<String, WasmerFunction>>,
 }
 
-impl WasmerStoreLinker {
+impl WasmerLinker {
     fn wrap_impl(
         store: &mut impl AsStoreMut,
         func: WasmerFunction,
     ) -> (Function, Option<FunctionEnv<RuntimeInstanceData>>) {
-        match func {
-            WasmerFunction::Function(func) => (func, None),
-            WasmerFunction::WithEnv(env_data) => {
-                let env = FunctionEnv::new(store, env_data);
-                let func = Function::new_typed_with_env(store, &env, RuntimeInstanceData::call);
-                (func, Some(env))
-            }
-        }
+        let env_data = func.0;
+        let env = FunctionEnv::new(store, env_data);
+        let func = Function::new_typed_with_env(store, &env, RuntimeInstanceData::call);
+        (func, Some(env))
     }
 }
 
-impl StoreLinker<WasmerModule> for WasmerStoreLinker {
+impl Linker<WasmerModule> for WasmerLinker {
     fn new(root_path: impl AsRef<Path>) -> Result<Self> {
         let store = Store::default();
         let wasi_state = WasiState::new("ayaka-plugin-wasmer")
@@ -255,9 +238,14 @@ impl StoreLinker<WasmerModule> for WasmerStoreLinker {
             let instance = Instance::new(&mut store.as_store_mut(), &module, &wasi_import)?;
             wasi_env.initialize(&mut store.as_store_mut(), &instance)?;
             let memory = instance.exports.get_memory(MEMORY_NAME)?;
+            let abi_alloc = instance
+                .exports
+                .get_typed_function(&store.as_store_ref(), ABI_ALLOC_NAME)?;
+            let mut store = store.as_store_mut();
             for env in &envs {
-                env.as_mut(&mut store.as_store_mut())
-                    .set_memory(memory.clone());
+                let env_mut = env.as_mut(&mut store);
+                env_mut.set_memory(memory.clone());
+                env_mut.set_abi_alloc(abi_alloc.clone());
             }
             instance
         };
@@ -274,24 +262,36 @@ impl StoreLinker<WasmerModule> for WasmerStoreLinker {
         Ok(())
     }
 
-    fn wrap(&self, f: impl Fn() + Send + Sync + 'static) -> WasmerFunction {
-        WasmerFunction::Function(Function::new_typed(
-            &mut self.store.lock().unwrap().as_store_mut(),
-            f,
-        ))
-    }
-
-    fn wrap_with_args_raw(
+    fn wrap_raw(
         &self,
-        f: impl (Fn(&[u8]) -> Result<()>) + Send + Sync + 'static,
+        f: impl (Fn(WasmerLinkerHandle, i32, i32) -> Result<Vec<u8>>) + Send + Sync + 'static,
     ) -> WasmerFunction {
-        WasmerFunction::WithEnv(RuntimeInstanceData::new(f))
+        WasmerFunction(RuntimeInstanceData::new(f))
     }
 }
 
-#[doc(hidden)]
+/// Represents a wrapped wasmer function.
 #[derive(Clone)]
-pub enum WasmerFunction {
-    Function(Function),
-    WithEnv(RuntimeInstanceData),
+pub struct WasmerFunction(RuntimeInstanceData);
+
+/// A Wasmer [`StoreMut`].
+pub struct WasmerLinkerHandle<'a> {
+    store: StoreMut<'a>,
+    memory: Memory,
+}
+
+impl<'a> LinkerHandle<'a, WasmerModule> for WasmerLinkerHandle<'a> {
+    fn call<T>(
+        &mut self,
+        m: &WasmerModule,
+        name: &str,
+        data: &[u8],
+        f: impl FnOnce(&[u8]) -> Result<T>,
+    ) -> Result<T> {
+        m.call_impl(self.store.as_store_mut(), name, data, f)
+    }
+
+    fn slice<T>(&self, start: i32, len: i32, f: impl FnOnce(&[u8]) -> T) -> T {
+        unsafe { mem_slice(&self.store.as_store_ref(), &self.memory, start, len, f) }
+    }
 }

@@ -1,7 +1,8 @@
 [workspace]
 members = [
-    "basictex",
+    "ayacript",
     "ayalog",
+    "basictex",
     "live2d",
     "markdown",
     "media",

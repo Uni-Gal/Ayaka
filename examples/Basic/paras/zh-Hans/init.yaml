@@ -1,0 +1,21 @@
+- tag: init
+  texts:
+    - # Empty line to fallback to base language
+    - # 空行会回退到基础语言
+    -
+    -
+    -
+    -
+    - 这是第一行
+    - 这是第二行
+    - 从下面选择一个选项
+    - switches:
+      - 跳到第0段
+      - 跳到第1段
+      - 退出
+
+- tag: para0
+  texts:
+    - 这是第0段
+    - 注意选项的起始索引为0
+    - 这个段落在 init.yaml 文件中，因此只在本文件中可见

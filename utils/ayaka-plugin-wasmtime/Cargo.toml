@@ -7,4 +7,3 @@ edition = "2021"
 ayaka-plugin = { path = "../ayaka-plugin" }
 wasmtime = "2.0"
 wasmtime-wasi = "2.0"
-scopeguard = "1.1"

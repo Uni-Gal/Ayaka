@@ -1,5 +1,6 @@
 [workspace]
 members = [
+    "ayaka-primitive",
     "ayaka-bindings-types",
     "ayaka-script",
     "ayaka-plugin",

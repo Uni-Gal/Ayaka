@@ -3,16 +3,17 @@ use std::borrow::Cow;
 
 /// The basic and only type used in scripts.
 /// ```
-/// # use ayaka_script::RawValue;
+/// # use ayaka_primitive::RawValue;
 /// assert_eq!(serde_yaml::from_str::<RawValue>("~").unwrap(), RawValue::Unit);
 /// assert_eq!(serde_yaml::from_str::<RawValue>("true").unwrap(), RawValue::Bool(true));
 /// assert_eq!(serde_yaml::from_str::<RawValue>("123").unwrap(), RawValue::Num(123));
 /// assert_eq!(serde_yaml::from_str::<RawValue>("\"hello\"").unwrap(), RawValue::Str("hello".to_string()));
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum RawValue {
     /// The unit type. It is empty, just like [`None`] or [`()`] in Rust.
+    #[default]
     Unit,
     /// The boolean type.
     Bool(bool),
@@ -35,12 +36,6 @@ pub enum ValueType {
     Str,
 }
 
-impl Default for RawValue {
-    fn default() -> Self {
-        Self::Unit
-    }
-}
-
 impl RawValue {
     /// Gets [`ValueType`].
     pub fn get_type(&self) -> ValueType {
@@ -58,7 +53,7 @@ impl RawValue {
     /// * A [`RawValue::Str`] converts to `false` if and only if it's empty.
     ///
     /// ```
-    /// # use ayaka_script::RawValue;
+    /// # use ayaka_primitive::RawValue;
     /// let unit_value = RawValue::Unit;
     /// assert!(!unit_value.get_bool());
     /// let num_value = RawValue::Num(123);
@@ -83,7 +78,7 @@ impl RawValue {
     /// * A [`RawValue::Str`] converts to the length of the string.
     ///
     /// ```
-    /// # use ayaka_script::RawValue;
+    /// # use ayaka_primitive::RawValue;
     /// let unit_value = RawValue::Unit;
     /// assert_eq!(unit_value.get_num(), 0);
     /// let bool_value = RawValue::Bool(true);
@@ -108,7 +103,7 @@ impl RawValue {
     /// Be careful to use `get_str().into_owned()`, if possible, use `into_str()` instead.
     ///
     /// ```
-    /// # use ayaka_script::RawValue;
+    /// # use ayaka_primitive::RawValue;
     /// let unit_value = RawValue::Unit;
     /// assert_eq!(unit_value.get_str(), "");
     /// let bool_value = RawValue::Bool(true);

@@ -6,17 +6,13 @@
 
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
-#![feature(fn_traits)]
 #![feature(generators)]
 #![feature(once_cell)]
-#![feature(type_alias_impl_trait)]
-#![feature(unboxed_closures)]
 
 mod config;
 mod context;
 mod locale;
 pub mod plugin;
-pub mod script;
 mod settings;
 
 #[doc(no_inline)]
@@ -24,15 +20,15 @@ pub use anyhow;
 #[doc(no_inline)]
 pub use ayaka_bindings_types::*;
 #[doc(no_inline)]
-pub use ayaka_script::log;
-#[doc(no_inline)]
-pub use ayaka_script::*;
+pub use ayaka_primitive::*;
 pub use config::*;
 pub use context::*;
 #[doc(no_inline)]
 pub use futures_util::{pin_mut, StreamExt, TryStreamExt};
 #[doc(no_inline)]
 pub use locale::*;
+#[doc(no_inline)]
+pub use log;
 pub use settings::*;
 
 /// Get the version of Ayaka runtime.

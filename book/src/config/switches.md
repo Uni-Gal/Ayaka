@@ -1,16 +1,17 @@
 # Switches
 The switches could be specified with `switches` command.
-The parameters in one line of text are separated by `|`.
 
-The first parameter is the display text;
-the third parameter is a boolean expression of whether the switch is enabled.
-the second parameter is the action script;
-For the second and the third parameter, see [Script](./script.md).
+Some special global variables are used.
+`$?` is the index of selected switch (start from 0).
+`$<num>` indicates whether a switch is enabled, and is cleared after one switch is selected.
+If a specific `$<num>` variable is not defined or defined as `null` or `~`, it is treated as `true`.
 
 ``` yaml
 - 'Choose a switch:'
+- exec: $3 = false
 - switches:
-  - Switch 1||$s = 1
-  - Switch 2||$s = 2
-  - Not enabled|false
+  - Switch 1
+  - Switch 2
+  - Not enabled
+- You chose switch \var{?}
 ```

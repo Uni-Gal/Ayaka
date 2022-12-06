@@ -9,6 +9,11 @@ pub enum RawValue {
     Str(String),
 }
 ```
+
+## Using `ayacript`
+`ayacript` is the plugin that provides Ayaka script functionalities.
+You need to add `ayascript` to the config file. See [Plugin](../plugin/summary.md).
+
 ## Execute scripts
 Execute a piece of script(we call it *program*) with `exec` command:
 ``` yaml

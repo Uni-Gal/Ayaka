@@ -1,0 +1,6 @@
+- tag: para1
+  texts:
+    - This is paragraph 1.
+    - >
+      This paragraph is in the para1.yaml file,
+      therefore it could be seen in all files.

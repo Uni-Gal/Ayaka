@@ -1,8 +1,9 @@
+use crate::import;
 use log::Log;
 
-#[link(wasm_import_module = "log")]
+#[import("log")]
 extern "C" {
-    fn __log(len: usize, data: *const u8);
+    fn __log(record: ayaka_bindings_types::Record);
     fn __log_flush();
 }
 
@@ -29,13 +30,10 @@ impl Log for PluginLogger {
     }
 
     fn log(&self, record: &log::Record) {
-        let record: ayaka_bindings_types::Record = record.into();
-        let record: ayaka_bindings_types::Record = record.into();
-        let data = rmp_serde::to_vec(&(record,)).unwrap();
-        unsafe { __log(data.len(), data.as_ptr()) };
+        __log(record.into())
     }
 
     fn flush(&self) {
-        unsafe { __log_flush() }
+        __log_flush()
     }
 }

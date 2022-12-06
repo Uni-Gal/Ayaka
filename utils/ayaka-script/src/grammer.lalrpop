@@ -1,6 +1,6 @@
 use super::*;
 use std::str::FromStr;
-use trylog::TryLog;
+use trylog::macros::*;
 
 grammar;
 
@@ -100,6 +100,8 @@ AssignOp: BinaryOp = {
 pub Ref: Ref = {
     <i:Id> => Ref::Var(i),
     "$" <i:Id> => Ref::Ctx(i),
+    "$?" => Ref::Ctx("?".to_string()),
+    "$" <i:Num> => Ref::Ctx(i.to_string()),
 }
 
 Id: String = <s:r"[A-Za-z]\w*"> => s.into();
@@ -117,6 +119,6 @@ Bool: bool = {
     "false" => false,
 }
 
-Num: i64 = <s:r"[0-9]+"> => i64::from_str(s).unwrap_or_default_log("Parse num error");
+Num: i64 = <s:r"[0-9]+"> => unwrap_or_default_log!(i64::from_str(s), "Parse num error");
 
 Str: String = <s:r##""[^"\\]*(\\.[^"\\]*)*""##> => s[1..s.len() - 1].into();
