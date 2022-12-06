@@ -1,7 +1,7 @@
 //! The plugin utilities.
 
 use crate::*;
-use anyhow::Result;
+use anyhow::{bail, Result};
 use ayaka_plugin::*;
 use std::{
     collections::HashMap,
@@ -83,7 +83,7 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
         handle: Arc<RwLock<Weak<Self>>>,
     ) -> Result<M::Linker> {
         let mut store = M::Linker::new(root_path)?;
-        let log_func = store.wrap(|data: Record| {
+        let log_func = store.wrap(|(data,): (Record,)| {
             let module_path = format!(
                 "{}::<plugin>::{}",
                 module_path!(),
@@ -99,9 +99,13 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
                     .file(data.file.as_deref())
                     .line(data.line)
                     .build(),
-            )
+            );
+            Ok(())
         });
-        let log_flush_func = store.wrap(|| log::logger().flush());
+        let log_flush_func = store.wrap(|_: ()| {
+            log::logger().flush();
+            Ok(())
+        });
         store.import(
             "log",
             HashMap::from([
@@ -111,27 +115,25 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
         )?;
 
         let h = handle.clone();
-        let modules_func = store.wrap(move || {
+        let modules_func = store.wrap(move |_: ()| {
             if let Some(this) = h.read().unwrap().upgrade() {
-                this.modules.keys().cloned().collect::<Vec<_>>()
+                Ok(this.modules.keys().cloned().collect::<Vec<_>>())
             } else {
-                vec![]
+                bail!("Runtime hasn't been initialized.")
             }
         });
         let h = handle;
         let call_func = store.wrap_with(
             move |mut handle, (module, name, args): (String, String, Vec<u8>)| {
                 if let Some(this) = h.read().unwrap().upgrade() {
-                    handle
-                        .call(
-                            this.modules[&module].module.inner(),
-                            &name,
-                            &args,
-                            |slice| Ok(slice.to_vec()),
-                        )
-                        .unwrap()
+                    Ok(handle.call(
+                        this.modules[&module].module.inner(),
+                        &name,
+                        &args,
+                        |slice| Ok(slice.to_vec()),
+                    )?)
                 } else {
-                    vec![]
+                    bail!("Runtime hasn't been initialized.")
                 }
             },
         );

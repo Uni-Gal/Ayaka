@@ -3,9 +3,7 @@
 //! This crate provides abstract types and traits
 //! for different plugin backends.
 
-#![feature(fn_traits)]
 #![feature(tuple_trait)]
-#![feature(unboxed_closures)]
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
 
@@ -87,11 +85,11 @@ pub trait Linker<M: RawModule>: Sized {
     /// Wrap a function with args.
     fn wrap<P: DeserializeOwned + Tuple, R: Serialize>(
         &self,
-        f: impl Fn<P, Output = R> + Send + Sync + 'static,
+        f: impl (Fn(P) -> Result<R>) + Send + Sync + 'static,
     ) -> M::Func {
         self.wrap_raw(move |handle, start, len| {
             let data = handle.slice(start, len, |data| rmp_serde::from_slice(data))?;
-            let data = f.call(data);
+            let data = f(data)?;
             let data = rmp_serde::to_vec(&data)?;
             Ok(data)
         })
@@ -100,11 +98,11 @@ pub trait Linker<M: RawModule>: Sized {
     /// Wrap a function with args and linker handle.
     fn wrap_with<P: DeserializeOwned + Tuple, R: Serialize>(
         &self,
-        f: impl (Fn(M::LinkerHandle<'_>, P) -> R) + Send + Sync + 'static,
+        f: impl (Fn(M::LinkerHandle<'_>, P) -> Result<R>) + Send + Sync + 'static,
     ) -> M::Func {
         self.wrap_raw(move |handle, start, len| {
             let data = handle.slice(start, len, |data| rmp_serde::from_slice(data))?;
-            let data = f(handle, data);
+            let data = f(handle, data)?;
             let data = rmp_serde::to_vec(&data)?;
             Ok(data)
         })
