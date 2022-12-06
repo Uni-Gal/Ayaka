@@ -10,7 +10,7 @@ use std::{
 };
 use stream_future::stream;
 use tryiterator::TryIteratorExt;
-use trylog::TryLog;
+use trylog::macros::*;
 
 /// The plugin module with high-level interfaces.
 pub struct Module<M: RawModule = BackendModule> {
@@ -220,9 +220,8 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
     }
 
     fn insert_module(&mut self, name: String, module: Module<M>) -> Result<()> {
-        let plugin_type = module
-            .plugin_type()
-            .unwrap_or_default_log("Cannot determine module type");
+        let plugin_type =
+            unwrap_or_default_log!(module.plugin_type(), "Cannot determine module type");
         if plugin_type.action {
             self.action_modules.push(name.clone());
         }

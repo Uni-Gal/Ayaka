@@ -8,7 +8,7 @@ use fallback::Fallback;
 use log::error;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use stream_future::stream;
-use trylog::TryLog;
+use trylog::macros::*;
 
 /// The game running context.
 pub struct Context {
@@ -188,12 +188,10 @@ impl Context {
                             log::warn!("Unsupported command in text.");
                             RawValue::Unit
                         }
-                        Command::Ctx(n) => self
-                            .ctx
-                            .locals
-                            .get(n)
-                            .cloned()
-                            .unwrap_or_default_log("Cannot find variable"),
+                        Command::Ctx(n) => unwrap_or_default_log!(
+                            self.ctx.locals.get(n).cloned(),
+                            format!("Cannot find variable {}", n)
+                        ),
                     };
                     str.push_str(&value.get_str());
                 }
@@ -237,6 +235,8 @@ impl Context {
                     Command::Ctx(n) => {
                         if let Some(value) = self.ctx.locals.get(n) {
                             action.push_back_block(value.get_str())
+                        } else {
+                            log::warn!("Cannot find variable {}", n)
                         }
                     }
                     Command::Other(cmd, args) => {
@@ -441,8 +441,7 @@ impl Context {
         };
 
         let ctx = cur_text_base.cloned().map(|t| {
-            self.process_line(t)
-                .unwrap_or_default_log("Parse line error");
+            unwrap_or_default_log!(self.process_line(t), "Parse line error");
             self.push_history();
             self.ctx.clone()
         });

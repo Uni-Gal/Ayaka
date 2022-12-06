@@ -20,7 +20,7 @@ futures-util = "0.3"
 tryiterator = { git = "https://github.com/Pernosco/tryiterator.git" }
 dirs = "4.0"
 log = "0.4"
-trylog = "0.2"
+trylog = "0.3"
 cfg-if = "1.0"
 
 ayaka-plugin-nop = { path = "../ayaka-plugin-nop" }

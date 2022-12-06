@@ -1,7 +1,7 @@
 //! The script interpreter.
 
 use crate::*;
-use trylog::TryLog;
+use trylog::macros::*;
 
 /// The variable table in scripts.
 pub struct VarTable<'a> {
@@ -206,30 +206,33 @@ fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
         }
     } else {
         let args = args.iter().map(|e| e.call(ctx)).collect::<Vec<_>>();
-        ctx.runtime
-            .module(ns)
-            .map(|runtime| {
-                runtime
-                    .dispatch_method(name, &args)
-                    .unwrap_or_default_log_with(|| format!("Calling `{}.{}` error", ns, name))
-            })
-            .unwrap_or_default_log_with(|| format!("Cannot find namespace `{}`", ns))
+        unwrap_or_default_log!(
+            ctx.runtime.module(ns).map(|runtime| {
+                unwrap_or_default_log!(
+                    runtime.dispatch_method(name, &args),
+                    format!("Calling `{}.{}` error", ns, name)
+                )
+            }),
+            format!("Cannot find namespace `{}`", ns)
+        )
     }
 }
 
 impl Callable for Ref {
     fn call(&self, ctx: &mut VarTable) -> RawValue {
         match self {
-            Self::Var(n) => ctx
-                .vars
-                .get(n)
-                .cloned()
-                .unwrap_or_default_log("Cannot find variable"),
-            Self::Ctx(n) => ctx
-                .locals
-                .get(n)
-                .cloned()
-                .unwrap_or_default_log("Cannot find context variable"),
+            Self::Var(n) => {
+                unwrap_or_default_log!(
+                    ctx.vars.get(n).cloned(),
+                    format!("Cannot find variable {}", n)
+                )
+            }
+            Self::Ctx(n) => {
+                unwrap_or_default_log!(
+                    ctx.locals.get(n).cloned(),
+                    format!("Cannot find variable ${}", n)
+                )
+            }
         }
     }
 }

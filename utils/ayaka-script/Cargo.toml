@@ -9,7 +9,7 @@ anyhow = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 lalrpop-util = { version = "0.19", features = ["lexer"] }
 log = "0.4"
-trylog = "0.2"
+trylog = "0.3"
 
 [build-dependencies]
 lalrpop = "0.19"
