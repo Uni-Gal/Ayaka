@@ -134,17 +134,18 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="switches"><a class="header" href="#switches">Switches</a></h1>
-<p>The switches could be specified with <code>switches</code> command.
-The parameters in one line of text are separated by <code>|</code>.</p>
-<p>The first parameter is the display text;
-the third parameter is a boolean expression of whether the switch is enabled.
-the second parameter is the action script;
-For the second and the third parameter, see <a href="./script.html">Script</a>.</p>
+<p>The switches could be specified with <code>switches</code> command.</p>
+<p>Some special global variables are used.
+<code>$?</code> is the index of selected switch (start from 0).
+<code>$&lt;num&gt;</code> indicates whether a switch is enabled, and is cleared after one switch is selected.
+If a specific <code>$&lt;num&gt;</code> variable is not defined or defined as <code>null</code> or <code>~</code>, it is treated as <code>true</code>.</p>
 <pre><code class="language-yaml">- 'Choose a switch:'
+- exec: $3 = false
 - switches:
-  - Switch 1||$s = 1
-  - Switch 2||$s = 2
-  - Not enabled|false
+  - Switch 1
+  - Switch 2
+  - Not enabled
+- You chose switch \var{?}
 </code></pre>
 
                     </main>

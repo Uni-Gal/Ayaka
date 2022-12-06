@@ -357,9 +357,9 @@ For example, the original text (<code>ja</code>)</p>
 <pre><code class="language-ignore">- bg: 0
 - \ch{rd}団長！車の用意できました！
 - switches:
-  - おう！||$end = false
-  - 止まるんじゃねぇぞ！||$end = true
-  - 止まれ！|false
+  - おう！
+  - 止まるんじゃねぇぞ！
+  - 止まれ！
 </code></pre>
 <p>could be translated as (<code>zh-Hans</code>)</p>
 <pre><code class="language-ignore">-
@@ -375,17 +375,18 @@ However, some other ones couldn't be fell back.</p>
 <h3 id="fallback-with-empty-text"><a class="header" href="#fallback-with-empty-text">Fallback with empty text</a></h3>
 <p>If a certain translated line is empty, it will fall back to the base language one.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="switches"><a class="header" href="#switches">Switches</a></h1>
-<p>The switches could be specified with <code>switches</code> command.
-The parameters in one line of text are separated by <code>|</code>.</p>
-<p>The first parameter is the display text;
-the third parameter is a boolean expression of whether the switch is enabled.
-the second parameter is the action script;
-For the second and the third parameter, see <a href="config/./script.html">Script</a>.</p>
+<p>The switches could be specified with <code>switches</code> command.</p>
+<p>Some special global variables are used.
+<code>$?</code> is the index of selected switch (start from 0).
+<code>$&lt;num&gt;</code> indicates whether a switch is enabled, and is cleared after one switch is selected.
+If a specific <code>$&lt;num&gt;</code> variable is not defined or defined as <code>null</code> or <code>~</code>, it is treated as <code>true</code>.</p>
 <pre><code class="language-yaml">- 'Choose a switch:'
+- exec: $3 = false
 - switches:
-  - Switch 1||$s = 1
-  - Switch 2||$s = 2
-  - Not enabled|false
+  - Switch 1
+  - Switch 2
+  - Not enabled
+- You chose switch \var{?}
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="script"><a class="header" href="#script">Script</a></h1>
 <p>Ayaka script is dynamic typed.
@@ -399,6 +400,9 @@ The only supported types are unit <code>~</code>, boolean, integer, and string.<
     Str(String),
 }
 <span class="boring">}</span></code></pre></pre>
+<h2 id="using-ayacript"><a class="header" href="#using-ayacript">Using <code>ayacript</code></a></h2>
+<p><code>ayacript</code> is the plugin that provides Ayaka script functionalities.
+You need to add <code>ayascript</code> to the config file. See <a href="config/../plugin/summary.html">Plugin</a>.</p>
 <h2 id="execute-scripts"><a class="header" href="#execute-scripts">Execute scripts</a></h2>
 <p>Execute a piece of script(we call it <em>program</em>) with <code>exec</code> command:</p>
 <pre><code class="language-yaml">- exec: $res = 1 + 1
@@ -574,6 +578,7 @@ fn hello(_ctx: LineProcessContext) -&gt; LineProcessResult {
 <p>The <code>LineProcessResult</code> object contains the global variables and temp variables. The temp variables will only apply to this specific line.</p>
 <h2 id="existing-plugins-2"><a class="header" href="#existing-plugins-2">Existing plugins</a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Plugin</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>ayacript</code></td><td>Ayaka script.</td></tr>
 <tr><td><code>media</code></td><td>Multimedia commands.</td></tr>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="action-plugin"><a class="header" href="#action-plugin">Action plugin</a></h1>
