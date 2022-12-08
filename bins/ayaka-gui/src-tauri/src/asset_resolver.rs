@@ -1,9 +1,8 @@
+use actix_cors::Cors;
 use actix_files::NamedFile;
 use actix_web::{
-    dev::Service,
-    http::header::{HeaderValue, ACCESS_CONTROL_ALLOW_ORIGIN, CONTENT_TYPE},
-    middleware::Logger,
-    web, App, HttpRequest, HttpResponse, HttpServer, Responder, Scope,
+    http::header::CONTENT_TYPE, middleware::Logger, web, App, HttpRequest, HttpResponse,
+    HttpServer, Responder, Scope,
 };
 use std::{net::TcpListener, path::PathBuf, sync::OnceLock};
 use tauri::{
@@ -46,17 +45,7 @@ pub fn init<R: Runtime>(listener: TcpListener) -> TauriPlugin<R> {
                             .service(Scope::new("/fs").default_service(web::to(fs_resolver)))
                             .default_service(web::to(move |req| resolver(app.clone(), req)))
                             .wrap(Logger::new("\"%r\" %s").log_target(module_path!()))
-                            .wrap_fn(|req, srv| {
-                                let fut = srv.call(req);
-                                async {
-                                    let mut res = fut.await?;
-                                    res.headers_mut().insert(
-                                        ACCESS_CONTROL_ALLOW_ORIGIN,
-                                        HeaderValue::from_static("*"),
-                                    );
-                                    Ok(res)
-                                }
-                            })
+                            .wrap(Cors::permissive())
                     })
                     .listen(listener)
                     .unwrap()
