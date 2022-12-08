@@ -84,18 +84,13 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
     ) -> Result<M::Linker> {
         let mut store = M::Linker::new(root_path)?;
         let log_func = store.wrap(|(data,): (Record,)| {
-            let module_path = format!(
-                "{}::<plugin>::{}",
-                module_path!(),
-                data.module_path.unwrap_or_default()
-            );
             let target = format!("{}::<plugin>::{}", module_path!(), data.target);
             log::logger().log(
                 &log::Record::builder()
                     .level(data.level)
                     .target(&target)
                     .args(format_args!("{}", data.msg))
-                    .module_path(Some(&module_path))
+                    .module_path(data.module_path.as_deref())
                     .file(data.file.as_deref())
                     .line(data.line)
                     .build(),
