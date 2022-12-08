@@ -25,7 +25,7 @@
     "vue-router": "^4.1.6"
   },
   "devDependencies": {
-    "@tauri-apps/cli": "^1.2.1",
+    "@tauri-apps/cli": "^1.2.2",
     "@types/bootstrap": "^5.2.6",
     "@types/lodash": "^4.14.191",
     "@types/node": "^18.11.11",
