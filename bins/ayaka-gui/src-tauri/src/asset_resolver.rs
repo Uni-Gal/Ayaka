@@ -37,7 +37,7 @@ pub fn init<R: Runtime>(listener: TcpListener) -> TauriPlugin<R> {
     Builder::new("asset_resolver")
         .setup(move |app| {
             let app = app.clone();
-            std::thread::spawn(move || {
+            tauri::async_runtime::spawn_blocking(move || {
                 actix_web::rt::System::new().block_on(async move {
                     HttpServer::new(move || {
                         let app = app.clone();
