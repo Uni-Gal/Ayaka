@@ -3,17 +3,17 @@ updates:
 - package-ecosystem: cargo
   directory: "/utils"
   schedule:
-    interval: daily
+    interval: weekly
 
 - package-ecosystem: cargo
   directory: "/plugins"
   schedule:
-    interval: daily
+    interval: weekly
 
 - package-ecosystem: cargo
   directory: "/bins"
   schedule:
-    interval: daily
+    interval: weekly
 
 - package-ecosystem: npm
   directory: "/bins/ayaka-gui"
