@@ -18,4 +18,4 @@ updates:
 - package-ecosystem: npm
   directory: "/bins/ayaka-gui"
   schedule:
-    interval: daily
+    interval: weekly
