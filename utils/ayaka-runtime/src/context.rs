@@ -176,7 +176,7 @@ impl Context {
     }
 
     /// Call the part of script with this context.
-    pub fn call(&mut self, text: &Text) -> String {
+    pub fn call(&self, text: &Text) -> String {
         let mut str = String::new();
         for line in &text.0 {
             match line {
@@ -418,9 +418,7 @@ impl Context {
                 (true, false) => {
                     self.ctx.cur_para = cur_para
                         .and_then(|p| p.next.as_ref())
-                        // TODO: reduce clone
-                        .cloned()
-                        .map(|text| self.call(&text))
+                        .map(|text| self.call(text))
                         .unwrap_or_default();
                     self.ctx.cur_act = 0;
                 }
