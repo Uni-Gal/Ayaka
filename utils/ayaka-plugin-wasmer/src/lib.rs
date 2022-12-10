@@ -291,4 +291,8 @@ impl<'a> LinkerHandle<'a, WasmerModule> for WasmerLinkerHandle<'a> {
     fn slice<T>(&self, start: i32, len: i32, f: impl FnOnce(&[u8]) -> T) -> T {
         unsafe { mem_slice(&self.store.as_store_ref(), &self.memory, start, len, f) }
     }
+
+    fn slice_mut<T>(&mut self, start: i32, len: i32, f: impl FnOnce(&mut [u8]) -> T) -> T {
+        unsafe { mem_slice_mut(&self.store.as_store_ref(), &self.memory, start, len, f) }
+    }
 }

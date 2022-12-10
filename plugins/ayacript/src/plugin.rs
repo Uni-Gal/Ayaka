@@ -58,6 +58,10 @@ impl<'a> LinkerHandle<'a, HostModule> for HostLinker {
     fn slice<T>(&self, _start: i32, _len: i32, _f: impl FnOnce(&[u8]) -> T) -> T {
         unimplemented!()
     }
+
+    fn slice_mut<T>(&mut self, _start: i32, _len: i32, _f: impl FnOnce(&mut [u8]) -> T) -> T {
+        unimplemented!()
+    }
 }
 
 pub struct Module {

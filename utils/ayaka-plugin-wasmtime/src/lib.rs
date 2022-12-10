@@ -197,4 +197,8 @@ impl<'a> LinkerHandle<'a, WasmtimeModule> for WasmtimeLinkerHandle<'a> {
     fn slice<T>(&self, start: i32, len: i32, f: impl FnOnce(&[u8]) -> T) -> T {
         f(unsafe { mem_slice(self.store.as_context(), &self.memory, start, len) })
     }
+
+    fn slice_mut<T>(&mut self, start: i32, len: i32, f: impl FnOnce(&mut [u8]) -> T) -> T {
+        f(unsafe { mem_slice_mut(self.store.as_context_mut(), &self.memory, start, len) })
+    }
 }

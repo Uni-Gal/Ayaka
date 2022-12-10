@@ -124,4 +124,7 @@ pub trait LinkerHandle<'a, M: RawModule> {
 
     /// Get memory slice.
     fn slice<T>(&self, start: i32, len: i32, f: impl FnOnce(&[u8]) -> T) -> T;
+
+    /// Get memory mutable slice.
+    fn slice_mut<T>(&mut self, start: i32, len: i32, f: impl FnOnce(&mut [u8]) -> T) -> T;
 }

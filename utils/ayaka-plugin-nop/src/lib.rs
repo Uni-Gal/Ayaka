@@ -56,4 +56,8 @@ impl<'a> LinkerHandle<'a, NopModule> for NopLinker {
     fn slice<T>(&self, _start: i32, _len: i32, _f: impl FnOnce(&[u8]) -> T) -> T {
         unimplemented!("Trying to slice.")
     }
+
+    fn slice_mut<T>(&mut self, _start: i32, _len: i32, _f: impl FnOnce(&mut [u8]) -> T) -> T {
+        unimplemented!("Trying to slice.")
+    }
 }
