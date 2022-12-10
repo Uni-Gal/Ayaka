@@ -7,3 +7,5 @@ edition = "2021"
 ayaka-plugin = { workspace = true }
 wasmi = { git = "https://github.com/paritytech/wasmi.git" }
 wasmi_wasi = { git = "https://github.com/paritytech/wasmi.git" }
+# TODO: remove it after wasmi fixes.
+ambient-authority = "*"

@@ -118,27 +118,12 @@ pub struct WasmtimeLinker {
     linker: wasmtime::Linker<WasiCtx>,
 }
 
-impl WasmtimeLinker {
-    fn preopen_root(root_path: impl AsRef<Path>) -> Result<Dir> {
-        let mut options = std::fs::OpenOptions::new();
-        options.read(true);
-        #[cfg(windows)]
-        {
-            use std::os::windows::fs::OpenOptionsExt;
-            options.share_mode(3); // remove FILE_SHARE_DELETE
-            options.custom_flags(0x02000000); // open dir with FILE_FLAG_BACKUP_SEMANTICS
-        }
-        let root = options.open(root_path)?;
-        Ok(Dir::from_std_file(root))
-    }
-}
-
 impl ayaka_plugin::Linker<WasmtimeModule> for WasmtimeLinker {
     fn new(root_path: impl AsRef<Path>) -> Result<Self> {
         let engine = Engine::default();
         let wasi = WasiCtxBuilder::new()
             .inherit_stdio()
-            .preopened_dir(Self::preopen_root(root_path)?, "/")?
+            .preopened_dir(Dir::open_ambient_dir(root_path, ambient_authority())?, "/")?
             .build();
         let store = Store::new(&engine, wasi);
         let mut linker = wasmtime::Linker::new(&engine);
