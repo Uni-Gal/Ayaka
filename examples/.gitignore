@@ -5,7 +5,7 @@ ch_models
 efms
 voices
 videos
-plugins
+/plugins
 *.tex
 
 ## Core latex/pdflatex auxiliary files:

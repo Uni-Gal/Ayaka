@@ -4,7 +4,7 @@ cargo-features = ["per-package-target"]
 name = "live2d"
 version = "0.1.0"
 edition = "2021"
-forced-target = "wasm32-wasi"
+forced-target = "wasm32-unknown-unknown"
 
 [lib]
 crate-type = ["cdylib"]
