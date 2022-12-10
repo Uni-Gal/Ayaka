@@ -9,6 +9,7 @@ pub use ayaka_primitive::{RawValue, ValueType};
 #[doc(no_inline)]
 pub use log;
 
+pub mod fs;
 mod logger;
 
 use scopeguard::defer;

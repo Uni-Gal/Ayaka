@@ -9,3 +9,4 @@ ayaka-primitive = { workspace = true }
 fallback = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 log = { workspace = true, features = ["serde"] }
+vfs = { workspace = true }

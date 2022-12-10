@@ -11,4 +11,5 @@ ayaka-bindings-impl = { workspace = true }
 serde = { workspace = true }
 rmp-serde = { workspace = true }
 log = { workspace = true }
+vfs = { workspace = true }
 scopeguard = "1.1"
