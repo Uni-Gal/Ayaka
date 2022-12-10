@@ -3,9 +3,12 @@ use std::io::SeekFrom;
 use serde::{Deserialize, Serialize};
 use vfs::*;
 
+/// Type of a file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 pub enum FileType {
+    /// A file.
     File,
+    /// A directory.
     Dir,
 }
 
@@ -27,9 +30,12 @@ impl From<FileType> for VfsFileType {
     }
 }
 
+/// File metadata.
 #[derive(Debug, Deserialize, Serialize)]
 pub struct FileMetadata {
+    /// Type of file.
     pub file_type: FileType,
+    /// Length of the file.
     pub len: u64,
 }
 
@@ -51,10 +57,14 @@ impl From<FileMetadata> for VfsMetadata {
     }
 }
 
+/// A [`SeekFrom`] type which implements `serde`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize, Serialize)]
 pub enum FileSeekFrom {
+    /// Seek from start.
     Start(u64),
+    /// Seek from end.
     End(i64),
+    /// Seek from current position.
     Current(i64),
 }
 
