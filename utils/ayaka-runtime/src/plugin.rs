@@ -139,6 +139,19 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
             ]),
         )?;
 
+        // fs
+        let p = root_path.clone();
+        let read_dir_func = store.wrap(move |(path,): (String,)| {
+            Ok(p.join(path)?
+                .read_dir()?
+                .map(|p| p.as_str().to_string())
+                .collect::<Vec<_>>())
+        });
+        store.import(
+            "fs",
+            HashMap::from([("__read_dir".to_string(), read_dir_func)]),
+        )?;
+
         Ok(store)
     }
 
