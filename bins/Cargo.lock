@@ -397,6 +397,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-window-state",
+ "tryiterator",
  "trylog",
 ]
 
@@ -456,7 +457,6 @@ dependencies = [
  "ayaka-plugin-wasmtime",
  "ayaka-primitive",
  "cfg-if",
- "dirs",
  "fallback",
  "futures-util",
  "icu_locid",

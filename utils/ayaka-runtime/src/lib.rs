@@ -13,7 +13,7 @@ mod config;
 mod context;
 mod locale;
 pub mod plugin;
-mod settings;
+pub mod settings;
 
 #[doc(no_inline)]
 pub use anyhow;
@@ -29,7 +29,6 @@ pub use futures_util::{pin_mut, StreamExt, TryStreamExt};
 pub use locale::*;
 #[doc(no_inline)]
 pub use log;
-pub use settings::*;
 
 /// Get the version of Ayaka runtime.
 /// This version string is exacted from `CARGO_PKG_VERSION`.

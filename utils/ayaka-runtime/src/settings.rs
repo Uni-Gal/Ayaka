@@ -1,7 +1,8 @@
+//! Settings of the runtime.
+
 use crate::*;
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use ayaka_bindings_types::RawContext;
-use dirs::{config_dir, data_local_dir};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::{
     collections::HashMap,
@@ -71,85 +72,65 @@ impl ActionRecord {
     }
 }
 
-fn load_file<T: DeserializeOwned>(path: impl AsRef<Path>) -> Result<T> {
-    let buffer = std::fs::read(path)?;
-    Ok(serde_json::from_slice(&buffer)?)
-}
+/// A settings manager trait.
+///
+/// This type should handle the file loading and saving,
+/// and manage the paths of the files.
+pub trait SettingsManager {
+    /// Load a file from specified path.
+    fn load_file<T: DeserializeOwned>(&self, path: impl AsRef<Path>) -> Result<T>;
 
-fn save_file<T: Serialize>(data: &T, path: impl AsRef<Path>, pretty: bool) -> Result<()> {
-    let path = path.as_ref();
-    if let Some(parent) = path.parent() {
-        std::fs::create_dir_all(parent)?;
+    /// Save a file to specified path.
+    fn save_file<T: Serialize>(&self, path: impl AsRef<Path>, data: &T, pretty: bool)
+        -> Result<()>;
+
+    /// Get the settings path.
+    fn settings_path(&self) -> Result<PathBuf>;
+
+    /// Load [`Settings`].
+    fn load_settings(&self) -> Result<Settings> {
+        self.load_file(self.settings_path()?)
     }
-    let buffer = if pretty {
-        serde_json::to_vec_pretty(data)
-    } else {
-        serde_json::to_vec(data)
-    }?;
-    std::fs::write(path, buffer)?;
-    Ok(())
-}
 
-fn settings_path(ident: &str) -> Result<PathBuf> {
-    let path = config_dir().ok_or_else(|| anyhow!("Cannot find config path"))?;
-    Ok(path.join(ident).join("settings.json"))
-}
-
-/// Load settings from JSON file.
-pub fn load_settings(ident: &str) -> Result<Settings> {
-    load_file(settings_path(ident)?)
-}
-
-/// Save settings into pretty JSON file.
-pub fn save_settings(ident: &str, data: &Settings) -> Result<()> {
-    save_file(data, settings_path(ident)?, true)
-}
-
-fn records_path(ident: &str, game: &str) -> Result<PathBuf> {
-    let path = data_local_dir().ok_or_else(|| anyhow!("Cannot find config path"))?;
-    Ok(path.join(ident).join("save").join(game))
-}
-
-fn global_record_path(ident: &str, game: &str) -> Result<PathBuf> {
-    Ok(records_path(ident, game)?.join("global.json"))
-}
-
-/// Load [`GlobalRecord`] from the records folder.
-pub fn load_global_record(ident: &str, game: &str) -> Result<GlobalRecord> {
-    load_file(global_record_path(ident, game)?)
-}
-
-/// Save [`GlobalRecord`] into the records folder.
-pub fn save_global_record(ident: &str, game: &str, data: &GlobalRecord) -> Result<()> {
-    save_file(data, global_record_path(ident, game)?, false)
-}
-
-/// Load all [`ActionRecord`] from the records folder.
-pub fn load_records(ident: &str, game: &str) -> Result<Vec<ActionRecord>> {
-    let ctx_path = records_path(ident, game)?;
-    let contexts = std::fs::read_dir(ctx_path)?
-        .map_err(anyhow::Error::from)
-        .try_filter_map(|entry| {
-            let p = entry.path();
-            if p.is_file() && p.file_name().unwrap_or_default() != "global.json" {
-                Ok(Some(load_file(&p)?))
-            } else {
-                Ok(None)
-            }
-        })
-        .try_collect()?;
-    Ok(contexts)
-}
-
-/// Save all [`ActionRecord`] into the records folder.
-pub fn save_records(ident: &str, game: &str, contexts: &[ActionRecord]) -> Result<()> {
-    let ctx_path = records_path(ident, game)?;
-    for (i, ctx) in contexts.iter().enumerate() {
-        save_file(
-            ctx,
-            ctx_path.join(i.to_string()).with_extension("json"),
-            false,
-        )?;
+    /// Save [`Settings`].
+    fn save_settings(&self, data: &Settings) -> Result<()> {
+        self.save_file(self.settings_path()?, data, true)
     }
-    Ok(())
+
+    /// Get the global record path.
+    fn global_record_path(&self, game: &str) -> Result<PathBuf>;
+
+    /// Load [`GlobalRecord`].
+    fn load_global_record(&self, game: &str) -> Result<GlobalRecord> {
+        self.load_file(self.global_record_path(game)?)
+    }
+
+    /// Save [`GlobalRecord`].
+    fn save_global_record(&self, game: &str, data: &GlobalRecord) -> Result<()> {
+        self.save_file(self.global_record_path(game)?, data, false)
+    }
+
+    #[doc(hidden)]
+    type RecordsPathIter: Iterator<Item = Result<PathBuf>>;
+
+    /// Get an iterator of record paths.
+    fn records_path(&self, game: &str) -> Result<Self::RecordsPathIter>;
+
+    /// Get the record path from index.
+    fn record_path(&self, game: &str, i: usize) -> Result<PathBuf>;
+
+    /// Load all [`ActionRecord`].
+    fn load_records(&self, game: &str) -> Result<Vec<ActionRecord>> {
+        self.records_path(game)?
+            .try_filter_map(|path| Ok(Some(self.load_file(path)?)))
+            .try_collect()
+    }
+
+    /// Save all [`ActionRecord`].
+    fn save_records(&self, game: &str, contexts: &[ActionRecord]) -> Result<()> {
+        for (i, ctx) in contexts.iter().enumerate() {
+            self.save_file(self.record_path(game, i)?, ctx, false)?;
+        }
+        Ok(())
+    }
 }

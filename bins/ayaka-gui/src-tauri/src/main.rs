@@ -3,23 +3,28 @@
     windows_subsystem = "windows"
 )]
 #![feature(once_cell)]
+#![feature(type_alias_impl_trait)]
 
 mod asset_resolver;
+mod settings;
 
 use ayaka_runtime::{
     anyhow::{self, Result},
     log::{debug, info},
+    settings::*,
     *,
 };
 use flexi_logger::{FileSpec, LogSpecification, Logger};
 use serde::{Deserialize, Serialize};
+use settings::*;
 use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
     net::TcpListener,
 };
 use tauri::{
-    async_runtime::Mutex, command, utils::config::AppUrl, AppHandle, Manager, State, WindowUrl,
+    async_runtime::Mutex, command, utils::config::AppUrl, AppHandle, Manager, PathResolver, State,
+    WindowUrl,
 };
 use trylog::macros::*;
 
@@ -72,9 +77,9 @@ impl OpenGameStatus {
 
 #[derive(Default)]
 struct Storage {
-    ident: String,
     config: String,
     dist_port: u16,
+    manager: FileSettingsManager,
     records: Mutex<Vec<ActionRecord>>,
     context: Mutex<Option<Context>>,
     current: Mutex<Option<RawContext>>,
@@ -83,11 +88,11 @@ struct Storage {
 }
 
 impl Storage {
-    pub fn new(ident: impl Into<String>, config: impl Into<String>, dist_port: u16) -> Self {
+    pub fn new(resolver: &PathResolver, config: impl Into<String>, dist_port: u16) -> Self {
         Self {
-            ident: ident.into(),
             config: config.into(),
             dist_port,
+            manager: FileSettingsManager::new(resolver),
             ..Default::default()
         }
     }
@@ -140,20 +145,20 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
     window.set_title(&ctx.game.config.title)?;
     let settings = {
         OpenGameStatus::LoadSettings.emit(&handle)?;
-        unwrap_or_default_log!(load_settings(&storage.ident), "Load settings failed")
+        unwrap_or_default_log!(storage.manager.load_settings(), "Load settings failed")
     };
     *storage.settings.lock().await = Some(settings);
 
     OpenGameStatus::LoadGlobalRecords.emit(&handle)?;
     let global_record = unwrap_or_default_log!(
-        load_global_record(&storage.ident, &ctx.game.config.title),
+        storage.manager.load_global_record(&ctx.game.config.title),
         "Load global records failed"
     );
     *storage.global_record.lock().await = Some(global_record);
 
     OpenGameStatus::LoadRecords.emit(&handle)?;
     *storage.records.lock().await = unwrap_or_default_log!(
-        load_records(&storage.ident, &ctx.game.config.title),
+        storage.manager.load_records(&ctx.game.config.title),
         "Load records failed"
     );
     *storage.context.lock().await = Some(ctx);
@@ -215,16 +220,15 @@ async fn save_record_to(index: usize, storage: State<'_, Storage>) -> CommandRes
 async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
     let context = storage.context.lock().await;
     let game = &context.as_ref().unwrap().game.config.title;
-    save_settings(
-        &storage.ident,
-        storage.settings.lock().await.as_ref().unwrap(),
-    )?;
-    save_global_record(
-        &storage.ident,
-        game,
-        storage.global_record.lock().await.as_ref().unwrap(),
-    )?;
-    save_records(&storage.ident, game, &storage.records.lock().await)?;
+    storage
+        .manager
+        .save_settings(storage.settings.lock().await.as_ref().unwrap())?;
+    storage
+        .manager
+        .save_global_record(game, storage.global_record.lock().await.as_ref().unwrap())?;
+    storage
+        .manager
+        .save_records(game, &storage.records.lock().await)?;
     Ok(())
 }
 
@@ -433,7 +437,7 @@ fn main() -> Result<()> {
         .plugin(asset_resolver::init(listener))
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(move |app| {
-            let ident = app.config().tauri.bundle.identifier.clone();
+            let resolver = app.path_resolver();
             let spec = LogSpecification::parse("warn,ayaka=debug")?;
             let log_handle = if cfg!(debug_assertions) {
                 Logger::with(spec)
@@ -445,7 +449,7 @@ fn main() -> Result<()> {
                 Logger::with(spec)
                     .log_to_file(
                         FileSpec::default()
-                            .directory(app.path_resolver().app_log_dir().unwrap())
+                            .directory(resolver.app_log_dir().unwrap())
                             .basename("ayaka-gui"),
                     )
                     .use_utc()
@@ -477,7 +481,7 @@ fn main() -> Result<()> {
                 .unwrap()
                 .to_path_buf();
             asset_resolver::ROOT_PATH.set(root_path).unwrap();
-            app.manage(Storage::new(ident, config, port));
+            app.manage(Storage::new(&resolver, config, port));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
