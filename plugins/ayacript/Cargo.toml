@@ -10,8 +10,8 @@ forced-target = "wasm32-unknown-unknown"
 crate-type = ["cdylib"]
 
 [dependencies]
-ayaka-bindings = { path = "../../utils/ayaka-bindings" }
-ayaka-bindings-types = { path = "../../utils/ayaka-bindings-types" }
-ayaka-script = { path = "../../utils/ayaka-script" }
-ayaka-plugin = { path = "../../utils/ayaka-plugin" }
-trylog = "0.3"
+ayaka-bindings = { workspace = true }
+ayaka-bindings-types = { workspace = true }
+ayaka-script = { workspace = true }
+ayaka-plugin = { workspace = true }
+trylog = { workspace = true }

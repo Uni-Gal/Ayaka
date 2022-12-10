@@ -12,3 +12,26 @@ members = [
 ]
 
 resolver = "2"
+
+[workspace.dependencies]
+ayaka-primitive = { path = "ayaka-primitive" }
+ayaka-bindings-types = { path = "ayaka-bindings-types" }
+ayaka-bindings-impl = { path = "ayaka-bindings-impl" }
+ayaka-plugin = { path = "ayaka-plugin" }
+ayaka-plugin-nop = { path = "ayaka-plugin-nop" }
+ayaka-plugin-wasmer = { path = "ayaka-plugin-wasmer" }
+ayaka-plugin-wasmtime = { path = "ayaka-plugin-wasmtime" }
+ayaka-plugin-wasmi = { path = "ayaka-plugin-wasmi" }
+
+anyhow = "1.0"
+
+fallback = "0.1"
+
+log = "0.4"
+trylog = "0.3"
+
+rmp-serde = "1.1"
+serde = "1.0"
+serde_json = "1.0"
+serde_with = "2.0"
+serde_yaml = "0.9"

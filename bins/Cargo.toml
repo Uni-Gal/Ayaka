@@ -11,3 +11,9 @@ resolver = "2"
 lto = true
 codegen-units = 1
 opt-level = "z"
+
+[workspace.dependencies]
+ayaka-runtime = { path = "../utils/ayaka-runtime" }
+tokio = { version = "1" }
+clap = { version = "4.0" }
+flexi_logger = { version = "0.24", default-features = false, features = ["colors"] }

@@ -10,4 +10,4 @@ forced-target = "wasm32-wasi"
 crate-type = ["cdylib"]
 
 [dependencies]
-ayaka-bindings = { path = "../../utils/ayaka-bindings" }
+ayaka-bindings = { workspace = true }

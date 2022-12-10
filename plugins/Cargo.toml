@@ -12,3 +12,11 @@ members = [
 [profile.release]
 lto = true
 codegen-units = 1
+
+[workspace.dependencies]
+ayaka-bindings = { path = "../utils/ayaka-bindings" }
+ayaka-bindings-types = { path = "../utils/ayaka-bindings-types" }
+ayaka-script = { path = "../utils/ayaka-script" }
+ayaka-plugin = { path = "../utils/ayaka-plugin" }
+
+trylog = "0.3"

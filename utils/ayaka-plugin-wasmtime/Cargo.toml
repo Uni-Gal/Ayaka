@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ayaka-plugin = { path = "../ayaka-plugin" }
+ayaka-plugin = { workspace = true }
 wasmtime = "2.0"
 wasmtime-wasi = "2.0"

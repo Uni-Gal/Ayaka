@@ -226,7 +226,7 @@ impl Display for ParseErrorType {
 }
 
 /// The [`std::result::Result`] when parsing [`Text`].
-pub type ParseResult<T> = std::result::Result<T, ParseError>;
+pub type ParseResult<T> = Result<T, ParseError>;
 
 const fn is_special_char(c: char) -> bool {
     matches!(c, '\\' | '{' | '}' | '/')

@@ -23,7 +23,7 @@ use tauri::{
 };
 use trylog::macros::*;
 
-type CommandResult<T> = std::result::Result<T, CommandError>;
+type CommandResult<T> = Result<T, CommandError>;
 
 #[derive(Debug, Default, Serialize)]
 struct CommandError {
@@ -65,7 +65,7 @@ enum OpenGameStatus {
 }
 
 impl OpenGameStatus {
-    pub fn emit(self, handle: &AppHandle) -> std::result::Result<(), tauri::Error> {
+    pub fn emit(self, handle: &AppHandle) -> Result<(), tauri::Error> {
         handle.emit_all("ayaka://open_status", self)
     }
 }

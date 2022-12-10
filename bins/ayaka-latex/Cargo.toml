@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ayaka-runtime = { path = "../../utils/ayaka-runtime" }
-tokio = { version = "1", features = ["fs", "io-util", "macros", "rt"] }
-clap = { version = "4.0", features = ["derive"] }
-flexi_logger = { version = "0.24", default-features = false, features = ["colors"] }
+ayaka-runtime = { workspace = true }
+tokio = { workspace = true, features = ["fs", "io-util", "macros", "rt"] }
+clap = { workspace = true, features = ["derive"] }
+flexi_logger = { workspace = true }

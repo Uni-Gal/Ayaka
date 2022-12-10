@@ -4,23 +4,23 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ayaka-primitive = { path = "../ayaka-primitive" }
-ayaka-bindings-types = { path = "../ayaka-bindings-types" }
-ayaka-plugin = { path = "../ayaka-plugin" }
-fallback = "0.1"
+ayaka-primitive = { workspace = true }
+ayaka-bindings-types = { workspace = true }
+ayaka-plugin = { workspace = true }
+fallback = { workspace = true }
 language-matcher = "0.1"
 icu_locid = { version = "1.0.0", features = ["std"] }
 sys-locale = "0.2"
-serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.9"
-serde_json = "1.0"
-anyhow = "1.0"
+serde = { workspace = true, features = ["derive"] }
+serde_yaml = { workspace = true }
+serde_json = { workspace = true }
+anyhow = { workspace = true }
 stream-future = "0.3"
 futures-util = "0.3"
 tryiterator = { git = "https://github.com/Pernosco/tryiterator.git" }
 dirs = "4.0"
-log = "0.4"
-trylog = "0.3"
+log = { workspace = true }
+trylog = { workspace = true }
 cfg-if = "1.0"
 
 ayaka-plugin-nop = { path = "../ayaka-plugin-nop" }

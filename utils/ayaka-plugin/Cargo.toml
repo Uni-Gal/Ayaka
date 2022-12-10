@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-serde = "1.0"
-anyhow = "1.0"
-rmp-serde = "1.1"
+serde = { workspace = true }
+anyhow = { workspace = true }
+rmp-serde = { workspace = true }

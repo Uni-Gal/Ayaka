@@ -4,5 +4,5 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ayaka-plugin = { path = "../ayaka-plugin" }
-anyhow = "1.0"
+ayaka-plugin = { workspace = true }
+anyhow = { workspace = true }

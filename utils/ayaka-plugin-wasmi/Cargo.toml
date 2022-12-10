@@ -4,6 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-ayaka-plugin = { path = "../ayaka-plugin" }
+ayaka-plugin = { workspace = true }
 wasmi = { git = "https://github.com/paritytech/wasmi.git" }
 wasmi_wasi = { git = "https://github.com/paritytech/wasmi.git" }
