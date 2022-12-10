@@ -1,6 +1,4 @@
-use std::path::{Path, PathBuf};
-
-use ayaka_bindings::*;
+use ayaka_bindings::{fs::HostFS, vfs::*, *};
 
 #[export]
 fn plugin_type() -> PluginType {
@@ -11,17 +9,17 @@ fn plugin_type() -> PluginType {
         .build()
 }
 
-fn find_exists(name: &str, base_dir: Option<&Path>, exs: &[&str]) -> Option<PathBuf> {
+fn find_exists(name: &str, base_dir: Option<&VfsPath>, exs: &[&str]) -> Option<VfsPath> {
     base_dir.and_then(|base_dir| {
         exs.iter()
-            .map(|ex| base_dir.join(name).with_extension(ex))
-            .find(|p| p.exists())
+            .map(|ex| base_dir.join(format!("{}.{}", name, ex)).unwrap())
+            .find(|p| p.exists().unwrap_or_default())
     })
 }
 
 fn file(
     arg: &str,
-    base_dir: Option<&Path>,
+    base_dir: Option<&VfsPath>,
     prop: &str,
     exs: &[&str],
     temp: bool,
@@ -29,16 +27,14 @@ fn file(
     log::debug!(
         "File {}, {:?}, {}, {:?}",
         arg,
-        base_dir.map(|p| p.display()),
+        base_dir.map(|p| p.as_str()),
         prop,
         exs
     );
     let mut res = LineProcessResult::default();
     if let Some(path) = find_exists(arg, base_dir, exs) {
-        if temp { &mut res.vars } else { &mut res.locals }.insert(
-            prop.to_string(),
-            RawValue::Str(path.to_string_lossy().into_owned()),
-        );
+        if temp { &mut res.vars } else { &mut res.locals }
+            .insert(prop.to_string(), RawValue::Str(path.as_str().to_string()));
     }
     res
 }
@@ -50,9 +46,11 @@ fn file_ctx(
     exs: &[&str],
     temp: bool,
 ) -> LineProcessResult {
+    let root: VfsPath = HostFS::default().into();
+    let base_dir = ctx.game_props.get(game_prop).map(|p| root.join(p).unwrap());
     file(
         &ctx.props[prop].get_str(),
-        ctx.game_props.get(game_prop).map(Path::new),
+        base_dir.as_ref(),
         prop,
         exs,
         temp,
@@ -76,13 +74,14 @@ fn video(ctx: LineProcessContext) -> LineProcessResult {
 
 #[export]
 fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
+    let root: VfsPath = HostFS::default().into();
     let voice_id = ctx.ctx.cur_act.to_string();
     let res = file(
         &voice_id,
         ctx.game_props
             .get("voices")
-            .map(|p| Path::new(p).join(&ctx.ctx.cur_para))
-            .as_deref(),
+            .map(|p| root.join(p).unwrap().join(&ctx.ctx.cur_para).unwrap())
+            .as_ref(),
         "voice",
         &["mp3"],
         true,
@@ -93,10 +92,12 @@ fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
 
 #[export]
 fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {
+    let root: VfsPath = HostFS::default().into();
     if ctx.props.contains_key("bg") {
-        let base_dir = ctx.props.get("bgs").map(Path::new);
-        if let Some(path) = find_exists(&ctx.props["bg"], base_dir, &["png", "jpg", "gif"]) {
-            *ctx.props.get_mut("bg").unwrap() = path.to_string_lossy().into_owned();
+        let base_dir = ctx.props.get("bgs").map(|p| root.join(p).unwrap());
+        if let Some(path) = find_exists(&ctx.props["bg"], base_dir.as_ref(), &["png", "jpg", "gif"])
+        {
+            *ctx.props.get_mut("bg").unwrap() = path.as_str().to_string();
         }
     }
     GameProcessResult { props: ctx.props }

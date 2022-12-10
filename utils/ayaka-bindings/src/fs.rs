@@ -16,7 +16,7 @@ extern "C" {
     fn __file_seek(fd: u64, pos: FileSeekFrom) -> Option<u64>;
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct HostFS;
 
 impl FileSystem for HostFS {

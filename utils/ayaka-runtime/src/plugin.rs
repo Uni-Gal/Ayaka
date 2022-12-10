@@ -181,23 +181,23 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
         // fs
         let p = root_path.clone();
         let read_dir_func = store.wrap(move |(path,): (String,)| {
-            Ok(p.join(path)?
+            Ok(p.join(&path[1..])?
                 .read_dir()
                 .map(|iter| iter.map(|p| p.as_str().to_string()).collect::<Vec<_>>())
                 .ok())
         });
         let p = root_path.clone();
         let metadata_func = store.wrap(move |(path,): (String,)| {
-            Ok(p.join(path)?.metadata().map(FileMetadata::from).ok())
+            Ok(p.join(&path[1..])?.metadata().map(FileMetadata::from).ok())
         });
         let p = root_path.clone();
-        let exists_func = store.wrap(move |(path,): (String,)| Ok(p.join(path)?.exists()?));
+        let exists_func = store.wrap(move |(path,): (String,)| Ok(p.join(&path[1..])?.exists()?));
 
         let fd_map = Arc::new(Mutex::new(FDMap::default()));
         let p = root_path.clone();
         let map = fd_map.clone();
         let open_file_func = store.wrap(move |(path,): (String,)| {
-            let file = p.join(path)?.open_file();
+            let file = p.join(&path[1..])?.open_file();
             Ok(file.map(|file| map.lock().unwrap().open(file)).ok())
         });
         let map = fd_map.clone();

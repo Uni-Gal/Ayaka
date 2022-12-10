@@ -8,6 +8,8 @@ pub use ayaka_bindings_types::*;
 pub use ayaka_primitive::{RawValue, ValueType};
 #[doc(no_inline)]
 pub use log;
+#[doc(no_inline)]
+pub use vfs;
 
 pub mod fs;
 mod logger;
