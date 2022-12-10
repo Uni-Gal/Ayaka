@@ -5,7 +5,6 @@
 use ayaka_plugin::*;
 use std::{
     collections::HashMap,
-    path::Path,
     sync::{Arc, Mutex},
 };
 use wasmtime::*;
@@ -119,12 +118,9 @@ pub struct WasmtimeLinker {
 }
 
 impl ayaka_plugin::Linker<WasmtimeModule> for WasmtimeLinker {
-    fn new(root_path: impl AsRef<Path>) -> Result<Self> {
+    fn new() -> Result<Self> {
         let engine = Engine::default();
-        let wasi = WasiCtxBuilder::new()
-            .inherit_stdio()
-            .preopened_dir(Dir::open_ambient_dir(root_path, ambient_authority())?, "/")?
-            .build();
+        let wasi = WasiCtxBuilder::new().inherit_stdio().build();
         let store = Store::new(&engine, wasi);
         let mut linker = wasmtime::Linker::new(&engine);
         add_to_linker(&mut linker, |ctx| ctx)?;

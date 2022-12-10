@@ -10,7 +10,7 @@
 pub use anyhow::Result;
 
 use serde::{de::DeserializeOwned, Serialize};
-use std::{collections::HashMap, marker::Tuple, path::Path};
+use std::{collections::HashMap, marker::Tuple};
 
 /// The exported method `__abi_alloc`.
 pub const ABI_ALLOC_NAME: &str = "__abi_alloc";
@@ -66,9 +66,8 @@ impl<M: RawModule> PluginModule<M> {
 
 /// Represents the linker of plugin modules.
 pub trait Linker<M: RawModule>: Sized {
-    /// The `root_path` is used to preopen the root dir,
-    /// and mapped to `/`.
-    fn new(root_path: impl AsRef<Path>) -> Result<Self>;
+    /// Create the linker.
+    fn new() -> Result<Self>;
 
     /// Create a raw module from binary.
     fn create(&self, binary: &[u8]) -> Result<M>;

@@ -2,7 +2,7 @@ use crate::*;
 use ayaka_bindings_types::VarMap;
 use fallback::Fallback;
 use serde::Deserialize;
-use std::{collections::HashMap, path::PathBuf};
+use std::collections::HashMap;
 
 /// The paragraph in a paragraph config.
 #[derive(Debug, Deserialize)]
@@ -31,7 +31,7 @@ pub struct GameConfig {
     #[serde(default)]
     pub author: String,
     /// The paragraphs path.
-    pub paras: PathBuf,
+    pub paras: String,
     /// The start paragraph tag.
     pub start: String,
     /// The plugin config.
@@ -41,7 +41,7 @@ pub struct GameConfig {
     #[serde(default)]
     pub props: HashMap<String, String>,
     /// The resources path.
-    pub res: Option<PathBuf>,
+    pub res: Option<String>,
     /// The base language.
     /// If the runtime fails to choose a best match,
     /// it fallbacks to this one.
@@ -52,7 +52,7 @@ pub struct GameConfig {
 #[derive(Debug, Default, Deserialize)]
 pub struct PluginConfig {
     /// The directory of the plugins.
-    pub dir: PathBuf,
+    pub dir: String,
     /// The names of the plugins, without extension.
     #[serde(default)]
     pub modules: Vec<String>,

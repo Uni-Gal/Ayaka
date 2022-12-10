@@ -21,6 +21,7 @@ tryiterator = { git = "https://github.com/Pernosco/tryiterator.git" }
 log = { workspace = true }
 trylog = { workspace = true }
 cfg-if = "1.0"
+vfs = { workspace = true }
 
 ayaka-plugin-nop = { path = "../ayaka-plugin-nop" }
 ayaka-plugin-wasmi = { path = "../ayaka-plugin-wasmi", optional = true }

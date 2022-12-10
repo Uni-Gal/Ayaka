@@ -5,12 +5,11 @@ use anyhow::{bail, Result};
 use ayaka_plugin::*;
 use std::{
     collections::HashMap,
-    path::Path,
     sync::{Arc, RwLock, Weak},
 };
 use stream_future::stream;
-use tryiterator::TryIteratorExt;
 use trylog::macros::*;
+use vfs::*;
 
 /// The plugin module with high-level interfaces.
 pub struct Module<M: RawModule = BackendModule> {
@@ -78,11 +77,10 @@ pub enum LoadStatus {
 }
 
 impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
-    fn new_linker(
-        root_path: impl AsRef<Path>,
-        handle: Arc<RwLock<Weak<Self>>>,
-    ) -> Result<M::Linker> {
-        let mut store = M::Linker::new(root_path)?;
+    fn new_linker(root_path: &VfsPath, handle: Arc<RwLock<Weak<Self>>>) -> Result<M::Linker> {
+        let mut store = M::Linker::new()?;
+
+        // log
         let log_func = store.wrap(|(data,): (Record,)| {
             let target = format!("{}::<plugin>::{}", module_path!(), data.target);
             log::logger().log(
@@ -109,6 +107,7 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
             ]),
         )?;
 
+        // plugin
         let h = handle.clone();
         let modules_func = store.wrap(move |_: ()| {
             if let Some(this) = h.read().unwrap().upgrade() {
@@ -150,35 +149,35 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
     /// If `names` is empty, all WASM files will be loaded.
     #[stream(LoadStatus, lifetime = "'a")]
     pub async fn load<'a>(
-        dir: impl AsRef<Path> + 'a,
-        rel_to: impl AsRef<Path> + 'a,
+        dir: impl AsRef<str> + 'a,
+        root_path: &'a VfsPath,
         names: &'a [impl AsRef<str>],
     ) -> Result<Arc<Self>> {
-        let root_path = rel_to.as_ref();
-        let path = root_path.join(dir);
+        let path = root_path.join(dir)?;
         let paths = if names.is_empty() {
-            std::fs::read_dir(path)?
-                .try_filter_map(|f| {
-                    let p = f.path();
-                    if p.is_file() && p.extension().unwrap_or_default() == "wasm" {
+            path.read_dir()?
+                .filter_map(|p| {
+                    if p.is_file().unwrap_or_default()
+                        && p.extension().unwrap_or_default() == "wasm"
+                    {
                         let name = p
-                            .file_stem()
+                            .filename()
+                            .strip_suffix(".wasm")
                             .unwrap_or_default()
-                            .to_string_lossy()
-                            .into_owned();
-                        Ok(Some((name, p)))
+                            .to_string();
+                        Some((name, p))
                     } else {
-                        Ok(None)
+                        None
                     }
                 })
-                .try_collect::<Vec<_>>()?
+                .collect::<Vec<_>>()
         } else {
             names
                 .iter()
                 .filter_map(|name| {
                     let name = name.as_ref();
-                    let p = path.join(name).with_extension("wasm");
-                    if p.exists() {
+                    let p = path.join(format!("{}.wasm", name)).unwrap();
+                    if p.exists().unwrap_or_default() {
                         Some((name.to_string(), p))
                     } else {
                         None
@@ -195,7 +194,8 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
         let total_len = paths.len();
         for (i, (name, p)) in paths.into_iter().enumerate() {
             yield LoadStatus::LoadPlugin(name.clone(), i, total_len);
-            let buf = std::fs::read(p)?;
+            let mut buf = vec![];
+            p.open_file()?.read_to_end(&mut buf)?;
             let module = Module::new(store.create(&buf)?);
             runtime.insert_module(name, module)?;
         }

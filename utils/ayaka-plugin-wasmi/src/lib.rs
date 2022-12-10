@@ -2,11 +2,9 @@
 
 #![warn(missing_docs)]
 
-use ambient_authority::ambient_authority;
 use ayaka_plugin::*;
 use std::{
     collections::HashMap,
-    path::Path,
     sync::{Arc, Mutex},
 };
 use wasmi::{core::Trap, *};
@@ -138,12 +136,9 @@ pub struct WasmiLinker {
 }
 
 impl ayaka_plugin::Linker<WasmiModule> for WasmiLinker {
-    fn new(root_path: impl AsRef<Path>) -> Result<Self> {
+    fn new() -> Result<Self> {
         let engine = Engine::default();
-        let wasi = WasiCtxBuilder::new()
-            .inherit_stdio()
-            .preopened_dir(Dir::open_ambient_dir(root_path, ambient_authority())?, "/")?
-            .build();
+        let wasi = WasiCtxBuilder::new().inherit_stdio().build();
         let mut store = Store::new(&engine, wasi);
         let mut linker = wasmi::Linker::new();
         define_wasi(&mut linker, &mut store, |ctx| ctx)?;

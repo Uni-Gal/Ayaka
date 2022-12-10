@@ -53,8 +53,9 @@ impl Context {
             .as_ref()
             .parent()
             .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
+        let root_path = vfs::PhysicalFS::new(root_path).into();
         let runtime = {
-            let runtime = Runtime::load(&config.plugins.dir, root_path, &config.plugins.modules);
+            let runtime = Runtime::load(&config.plugins.dir, &root_path, &config.plugins.modules);
             pin_mut!(runtime);
             while let Some(load_status) = runtime.next().await {
                 match load_status {
@@ -83,16 +84,17 @@ impl Context {
         yield OpenStatus::LoadResource;
         let mut res = HashMap::new();
         if let Some(res_path) = &config.res {
-            let res_path = root_path.join(res_path);
-            for rl in std::fs::read_dir(res_path)? {
-                let p = rl?.path();
-                if p.is_file() && p.extension().unwrap_or_default() == "yaml" {
-                    if let Some(loc) = p
-                        .file_stem()
-                        .and_then(|s| s.to_string_lossy().parse::<Locale>().ok())
+            let res_path = root_path.join(res_path)?;
+            for p in res_path.read_dir()? {
+                if p.is_file()? && p.extension().unwrap_or_default() == "yaml" {
+                    if let Ok(loc) = p
+                        .filename()
+                        .strip_suffix(".yaml")
+                        .unwrap_or_default()
+                        .parse::<Locale>()
                     {
-                        let r = std::fs::read(p)?;
-                        let r = serde_yaml::from_slice(&r)?;
+                        let r = p.read_to_string()?;
+                        let r = serde_yaml::from_str(&r)?;
                         res.insert(loc, r);
                     }
                 }
@@ -101,25 +103,20 @@ impl Context {
 
         yield OpenStatus::LoadParagraph;
         let mut paras = HashMap::new();
-        let paras_path = root_path.join(&config.paras);
-        for pl in std::fs::read_dir(paras_path)? {
-            let p = pl?.path();
-            if p.is_dir() {
-                if let Some(loc) = p
-                    .file_name()
-                    .and_then(|s| s.to_string_lossy().parse::<Locale>().ok())
-                {
+        let paras_path = root_path.join(&config.paras)?;
+        for p in paras_path.read_dir()? {
+            if p.is_dir()? {
+                if let Ok(loc) = p.filename().parse::<Locale>() {
                     let mut paras_map = HashMap::new();
-                    for p in std::fs::read_dir(p)? {
-                        let p = p?.path();
-                        if p.is_file() && p.extension().unwrap_or_default() == "yaml" {
+                    for p in p.read_dir()? {
+                        if p.is_file()? && p.extension().unwrap_or_default() == "yaml" {
                             let key = p
-                                .file_stem()
+                                .filename()
+                                .strip_suffix(".yaml")
                                 .unwrap_or_default()
-                                .to_string_lossy()
-                                .into_owned();
-                            let para = std::fs::read(p)?;
-                            let para = serde_yaml::from_slice(&para)?;
+                                .to_string();
+                            let para = p.read_to_string()?;
+                            let para = serde_yaml::from_str(&para)?;
                             paras_map.insert(key, para);
                         }
                     }

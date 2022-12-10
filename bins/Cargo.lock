@@ -470,6 +470,7 @@ dependencies = [
  "sys-locale",
  "tryiterator",
  "trylog",
+ "vfs",
 ]
 
 [[package]]

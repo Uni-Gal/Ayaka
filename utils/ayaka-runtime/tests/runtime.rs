@@ -1,6 +1,6 @@
 use ayaka_plugin::RawModule;
 use ayaka_runtime::{plugin::*, *};
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 struct ModuleWrapper<'a, M: RawModule> {
     module: &'a Module<M>,
@@ -24,13 +24,11 @@ impl<'a, M: RawModule> ModuleWrapper<'a, M> {
 }
 
 async fn with_ctx<M: RawModule + Send + Sync + 'static>(f: impl FnOnce(&ModuleWrapper<M>)) {
-    let runtime = Runtime::load(
-        "../../examples/plugins",
-        env!("CARGO_MANIFEST_DIR"),
-        &["ayacript", "random"],
-    )
-    .await
-    .unwrap();
+    let root_path =
+        vfs::PhysicalFS::new(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples")).into();
+    let runtime = Runtime::load("plugins", &root_path, &["ayacript", "random"])
+        .await
+        .unwrap();
     let module = runtime.line_module("exec").unwrap();
     let wrapper = ModuleWrapper { module };
     f(&wrapper);

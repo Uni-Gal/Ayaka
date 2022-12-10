@@ -6,7 +6,6 @@
 use ayaka_plugin::*;
 use std::{
     collections::HashMap,
-    path::Path,
     sync::{Arc, Mutex},
 };
 use wasmer::*;
@@ -192,11 +191,9 @@ impl WasmerLinker {
 }
 
 impl Linker<WasmerModule> for WasmerLinker {
-    fn new(root_path: impl AsRef<Path>) -> Result<Self> {
+    fn new() -> Result<Self> {
         let store = Store::default();
-        let wasi_state = WasiState::new("ayaka-plugin-wasmer")
-            .preopen(|p| p.directory(root_path.as_ref()).alias("/").read(true))?
-            .build()?;
+        let wasi_state = WasiState::new("ayaka-plugin-wasmer").build()?;
         let wasi_env = WasiEnv::new(wasi_state);
         Ok(Self {
             store: Arc::new(Mutex::new(store)),

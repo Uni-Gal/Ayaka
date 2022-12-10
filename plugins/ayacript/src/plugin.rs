@@ -29,7 +29,7 @@ impl RawModule for HostModule {
 pub struct HostLinker;
 
 impl Linker<HostModule> for HostLinker {
-    fn new(_root_path: impl AsRef<std::path::Path>) -> Result<Self> {
+    fn new() -> Result<Self> {
         unimplemented!()
     }
 
