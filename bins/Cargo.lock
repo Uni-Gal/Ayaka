@@ -1535,7 +1535,7 @@ dependencies = [
 [[package]]
 name = "frfs"
 version = "0.2.0"
-source = "git+https://github.com/Tim-Paik/frfs.git#32135dffdc2082a41d4c37a97dcf624bc471cccf"
+source = "git+https://github.com/Tim-Paik/frfs.git#376056d89900a924e847119abf1653fa17802f2a"
 dependencies = [
  "bincode",
  "serde",

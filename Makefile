@@ -30,17 +30,15 @@ release-cross:
 EXAMPLES:=Basic Fibonacci Fibonacci2 Gacha Live2D Orga Styles
 
 define example-tpl
-.PHONY: example-$(1) example-$(1)-gui example-$(1)-release example-$(1)-gui-release examples/$(1)/config.tex
+.PHONY: example-$(1) example-$(1)-gui examples/$(1)/config.tex examples/$(1).frfs
 example-$(1): examples/$(1)/config.yaml plugins
 	cd bins && $$(MAKE) run FILE=$$(realpath $$<)
-example-$(1)-gui: examples/$(1)/config.yaml plugins
+example-$(1)-gui: examples/$(1).frfs plugins
 	cd bins && $$(MAKE) run-gui FILE=$$(realpath $$<)
-example-$(1)-release: examples/$(1)/config.yaml plugins release
-	bins/target/release/ayaka-check $$< --auto
-example-$(1)-gui-release: examples/$(1)/config.yaml plugins release
-	bins/target/release/ayaka-gui $$<
 examples/$(1)/config.tex: examples/$(1)/config.yaml plugins
 	cd bins && $$(MAKE) run-latex FILE=$$(realpath $$<)
+examples/$(1).frfs:
+	frfs pack examples/$(1)/ examples/$(1).frfs
 
 endef
 

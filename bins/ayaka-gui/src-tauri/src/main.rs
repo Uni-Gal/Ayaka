@@ -471,13 +471,15 @@ fn main() -> Result<()> {
                 .as_str()
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| {
-                    std::env::current_exe()
-                        .unwrap()
-                        .parent()
-                        .unwrap()
-                        .join("config.yaml")
-                        .to_string_lossy()
-                        .into_owned()
+                    let current = std::env::current_exe().unwrap();
+                    let current = current.parent().unwrap();
+                    let data = current.join("data.frfs");
+                    let data = if data.exists() {
+                        data
+                    } else {
+                        current.join("config.yaml")
+                    };
+                    data.to_string_lossy().into_owned()
                 });
             app.manage(Storage::new(&resolver, config, port));
             Ok(())
