@@ -432,6 +432,7 @@ dependencies = [
  "ayaka-primitive",
  "cfg-if",
  "fallback",
+ "frfs",
  "futures-util",
  "icu_locid",
  "language-matcher",
@@ -1529,6 +1530,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9c384f161156f5260c24a097c56119f9be8c798586aecc13afbcbe7b7e26bf8"
 dependencies = [
  "percent-encoding",
+]
+
+[[package]]
+name = "frfs"
+version = "0.1.0"
+source = "git+https://github.com/Tim-Paik/frfs.git#a4efaa0b8941c922203bfc40f57be4d613bb5122"
+dependencies = [
+ "bincode",
+ "mime_guess",
+ "serde",
+ "tempfile",
+ "thiserror",
 ]
 
 [[package]]

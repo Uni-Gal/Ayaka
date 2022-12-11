@@ -1,4 +1,5 @@
 use crate::{
+    pack::PackFS,
     plugin::{LoadStatus, Runtime},
     settings::*,
     *,
@@ -49,14 +50,24 @@ impl Context {
     /// Open a config file with frontend type.
     #[stream(OpenStatus, lifetime = "'a")]
     pub async fn open<'a>(path: impl AsRef<Path> + 'a, frontend: FrontendType) -> Result<Self> {
+        let path = path.as_ref();
         yield OpenStatus::LoadProfile;
-        let file = std::fs::read(&path)?;
-        let mut config: GameConfig = serde_yaml::from_slice(&file)?;
-        let root_path = path
-            .as_ref()
-            .parent()
-            .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
-        let root_path = PhysicalFS::new(root_path).into();
+        let ext = path.extension().unwrap_or_default();
+        let (root_path, filename) = if ext == "yaml" {
+            let root_path = path
+                .parent()
+                .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
+            (
+                VfsPath::from(PhysicalFS::new(root_path)),
+                path.file_name().unwrap_or_default().to_string_lossy(),
+            )
+        } else if ext == "frfs" {
+            (PackFS::new(path)?.into(), "config.yaml".into())
+        } else {
+            bail!("Cannot determine filesystem.")
+        };
+        let file = root_path.join(&filename)?.read_to_string()?;
+        let mut config: GameConfig = serde_yaml::from_str(&file)?;
         let runtime = {
             let runtime = Runtime::load(&config.plugins.dir, &root_path, &config.plugins.modules);
             pin_mut!(runtime);
