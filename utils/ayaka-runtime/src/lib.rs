@@ -12,7 +12,6 @@
 mod config;
 mod context;
 mod locale;
-mod pack;
 pub mod plugin;
 pub mod settings;
 

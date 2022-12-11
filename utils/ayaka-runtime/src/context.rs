@@ -1,5 +1,4 @@
 use crate::{
-    pack::PackFS,
     plugin::{LoadStatus, Runtime},
     settings::*,
     *,
@@ -7,6 +6,7 @@ use crate::{
 use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::*;
 use fallback::Fallback;
+use frfs::FRFS;
 use log::error;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use stream_future::stream;
@@ -62,7 +62,7 @@ impl Context {
                 path.file_name().unwrap_or_default().to_string_lossy(),
             )
         } else if ext == "frfs" {
-            (PackFS::new(path)?.into(), "config.yaml".into())
+            (FRFS::new(path)?.into(), "config.yaml".into())
         } else {
             bail!("Cannot determine filesystem.")
         };
