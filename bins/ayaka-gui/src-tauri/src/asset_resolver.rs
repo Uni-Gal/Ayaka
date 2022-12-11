@@ -1,22 +1,50 @@
 use actix_cors::Cors;
-use actix_files::NamedFile;
 use actix_web::{
-    http::header::CONTENT_TYPE, middleware::Logger, web, App, HttpRequest, HttpResponse,
-    HttpServer, Responder, Scope,
+    http::header::CONTENT_TYPE,
+    middleware::Logger,
+    web::{self, Bytes},
+    App, HttpRequest, HttpResponse, HttpServer, Responder, Scope,
 };
-use std::{net::TcpListener, path::PathBuf, sync::OnceLock};
+use ayaka_runtime::anyhow;
+use std::{net::TcpListener, sync::OnceLock};
+use stream_future::try_stream;
 use tauri::{
     plugin::{Builder, TauriPlugin},
     AppHandle, Runtime,
 };
+use vfs::*;
 
-pub(crate) static ROOT_PATH: OnceLock<PathBuf> = OnceLock::new();
+pub(crate) static ROOT_PATH: OnceLock<VfsPath> = OnceLock::new();
+const BUFFER_LEN: usize = 65536;
+
+#[try_stream(Bytes)]
+fn file_stream(mut file: Box<dyn SeekAndRead>, length: usize) -> anyhow::Result<()> {
+    let length = length.min(BUFFER_LEN);
+    loop {
+        let mut buffer = vec![0; length];
+        let read_bytes = file.read(&mut buffer)?;
+        buffer.resize(read_bytes, 0);
+        if read_bytes > 0 {
+            yield Bytes::from(buffer);
+        } else {
+            break;
+        }
+    }
+    Ok(())
+}
 
 async fn fs_resolver(req: HttpRequest) -> impl Responder {
     let url = req.uri().path().strip_prefix("/fs/").unwrap_or_default();
-    let path = ROOT_PATH.get().unwrap().join(url);
-    if let Ok(file) = NamedFile::open_async(&path).await {
-        file.into_response(&req)
+    let path = ROOT_PATH.get().unwrap().join(url).unwrap();
+    if let Ok(file) = path.open_file() {
+        let length = path
+            .metadata()
+            .map(|meta| meta.len as usize)
+            .unwrap_or(BUFFER_LEN);
+        let mime = mime_guess::from_path(path.as_str()).first_or_octet_stream();
+        HttpResponse::Ok()
+            .content_type(mime)
+            .streaming(file_stream(file, length))
     } else {
         HttpResponse::NotFound().finish()
     }

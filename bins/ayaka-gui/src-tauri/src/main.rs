@@ -2,6 +2,7 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
+#![feature(generators)]
 #![feature(once_cell)]
 #![feature(type_alias_impl_trait)]
 
@@ -140,6 +141,9 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
         }
     }
     let ctx = context.await?;
+    asset_resolver::ROOT_PATH
+        .set(ctx.root_path.clone())
+        .unwrap();
 
     let window = handle.get_window("main").unwrap();
     window.set_title(&ctx.game.config.title)?;
@@ -475,12 +479,6 @@ fn main() -> Result<()> {
                         .to_string_lossy()
                         .into_owned()
                 });
-            let root_path = std::fs::canonicalize(&config)
-                .expect("configuration file not found")
-                .parent()
-                .unwrap()
-                .to_path_buf();
-            asset_resolver::ROOT_PATH.set(root_path).unwrap();
             app.manage(Storage::new(&resolver, config, port));
             Ok(())
         })

@@ -10,11 +10,14 @@ use log::error;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use stream_future::stream;
 use trylog::macros::*;
+use vfs::*;
 
 /// The game running context.
 pub struct Context {
     /// The inner [`Game`] object.
     pub game: Game,
+    /// The root path of config.
+    pub root_path: VfsPath,
     frontend: FrontendType,
     runtime: Arc<Runtime>,
     /// The inner raw context.
@@ -53,7 +56,7 @@ impl Context {
             .as_ref()
             .parent()
             .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
-        let root_path = vfs::PhysicalFS::new(root_path).into();
+        let root_path = PhysicalFS::new(root_path).into();
         let runtime = {
             let runtime = Runtime::load(&config.plugins.dir, &root_path, &config.plugins.modules);
             pin_mut!(runtime);
@@ -126,6 +129,7 @@ impl Context {
         }
         Ok(Self {
             game: Game { config, paras, res },
+            root_path,
             frontend,
             runtime,
             ctx: RawContext::default(),
