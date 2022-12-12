@@ -5,8 +5,7 @@ use actix_web::{
     web::{self, Bytes},
     App, HttpRequest, HttpResponse, HttpServer, Responder, Scope,
 };
-use ayaka_runtime::anyhow;
-use std::{net::TcpListener, sync::OnceLock};
+use std::{io::Result, net::TcpListener, sync::OnceLock};
 use stream_future::try_stream;
 use tauri::{
     plugin::{Builder, TauriPlugin},
@@ -18,7 +17,7 @@ pub(crate) static ROOT_PATH: OnceLock<VfsPath> = OnceLock::new();
 const BUFFER_LEN: usize = 65536;
 
 #[try_stream(Bytes)]
-fn file_stream(mut file: Box<dyn SeekAndRead>, length: usize) -> anyhow::Result<()> {
+fn file_stream(mut file: Box<dyn SeekAndRead>, length: usize) -> Result<()> {
     let length = length.min(BUFFER_LEN);
     loop {
         let mut buffer = vec![0; length];
