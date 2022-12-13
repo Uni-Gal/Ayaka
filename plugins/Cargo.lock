@@ -72,7 +72,6 @@ dependencies = [
  "ayaka-primitive",
  "log",
  "rmp-serde",
- "scopeguard",
  "serde",
  "vfs",
 ]

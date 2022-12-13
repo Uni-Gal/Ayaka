@@ -1,3 +1,4 @@
+#![deny(unsafe_code)]
 #![feature(once_cell)]
 
 use ayaka_bindings::*;

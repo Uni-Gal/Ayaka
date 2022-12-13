@@ -16,9 +16,8 @@ pub fn export(_attr: TokenStream, input: TokenStream) -> TokenStream {
     let input = proc_macro2::TokenStream::from(input);
     let export_func = quote! {
         #[doc(hidden)]
-        #[allow(unsafe_code)]
         #[export_name = #name_str]
-        unsafe extern "C" fn #expname(len: usize, data: *const u8) -> u64 {
+        extern "C" fn #expname(len: usize, data: *const u8) -> u64 {
             ::ayaka_bindings::__export(len, data, #name)
         }
         #input
@@ -71,9 +70,8 @@ pub fn import(attr: TokenStream, input: TokenStream) -> TokenStream {
                         #[link_name = #name_str]
                         fn #impname(len: usize, data: *const u8) -> u64;
                     }
-                    #[allow(unsafe_code)]
                     #(#attrs)* #vis #sig {
-                        unsafe { #bindings_crate_name::__import(#impname, (#(#params,)*)) }
+                        #bindings_crate_name::__import(#impname, (#(#params,)*))
                     }
                 };
                 imports.append_all(import_func);

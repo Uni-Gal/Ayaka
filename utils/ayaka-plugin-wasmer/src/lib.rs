@@ -1,6 +1,5 @@
 //! Wasmer-based plugin backend.
 
-#![allow(clippy::mut_from_ref)]
 #![warn(missing_docs)]
 
 use ayaka_plugin::*;
