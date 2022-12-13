@@ -22,7 +22,7 @@ fn file_stream(mut file: Box<dyn SeekAndRead>, length: usize) -> Result<()> {
     loop {
         let mut buffer = vec![0; length];
         let read_bytes = file.read(&mut buffer)?;
-        buffer.resize(read_bytes, 0);
+        buffer.truncate(read_bytes);
         if read_bytes > 0 {
             yield Bytes::from(buffer);
         } else {
