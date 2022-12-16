@@ -8,7 +8,7 @@ props:
   ch_Mao_scale: 0.1
 res: res
 plugins:
-  dir: ../plugins/
+  dir: plugins
   modules:
     - live2d
 base_lang: ja

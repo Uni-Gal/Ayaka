@@ -29,7 +29,7 @@ impl RawModule for HostModule {
 pub struct HostLinker;
 
 impl Linker<HostModule> for HostLinker {
-    fn new(_root_path: impl AsRef<std::path::Path>) -> Result<Self> {
+    fn new() -> Result<Self> {
         unimplemented!()
     }
 
@@ -56,6 +56,10 @@ impl<'a> LinkerHandle<'a, HostModule> for HostLinker {
     }
 
     fn slice<T>(&self, _start: i32, _len: i32, _f: impl FnOnce(&[u8]) -> T) -> T {
+        unimplemented!()
+    }
+
+    fn slice_mut<T>(&mut self, _start: i32, _len: i32, _f: impl FnOnce(&mut [u8]) -> T) -> T {
         unimplemented!()
     }
 }

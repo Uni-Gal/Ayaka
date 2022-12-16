@@ -4,7 +4,7 @@
 
 use anyhow::bail;
 use ayaka_plugin::*;
-use std::{collections::HashMap, path::Path};
+use std::collections::HashMap;
 
 /// A no-operation WASM module.
 ///
@@ -27,7 +27,7 @@ impl RawModule for NopModule {
 pub struct NopLinker;
 
 impl Linker<NopModule> for NopLinker {
-    fn new(_root_path: impl AsRef<Path>) -> Result<Self> {
+    fn new() -> Result<Self> {
         Ok(Self)
     }
 
@@ -54,6 +54,10 @@ impl<'a> LinkerHandle<'a, NopModule> for NopLinker {
     }
 
     fn slice<T>(&self, _start: i32, _len: i32, _f: impl FnOnce(&[u8]) -> T) -> T {
+        unimplemented!("Trying to slice.")
+    }
+
+    fn slice_mut<T>(&mut self, _start: i32, _len: i32, _f: impl FnOnce(&mut [u8]) -> T) -> T {
         unimplemented!("Trying to slice.")
     }
 }

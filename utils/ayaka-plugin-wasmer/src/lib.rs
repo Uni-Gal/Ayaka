@@ -1,12 +1,10 @@
 //! Wasmer-based plugin backend.
 
-#![allow(clippy::mut_from_ref)]
 #![warn(missing_docs)]
 
 use ayaka_plugin::*;
 use std::{
     collections::HashMap,
-    path::Path,
     sync::{Arc, Mutex},
 };
 use wasmer::*;
@@ -192,11 +190,9 @@ impl WasmerLinker {
 }
 
 impl Linker<WasmerModule> for WasmerLinker {
-    fn new(root_path: impl AsRef<Path>) -> Result<Self> {
+    fn new() -> Result<Self> {
         let store = Store::default();
-        let wasi_state = WasiState::new("ayaka-plugin-wasmer")
-            .preopen(|p| p.directory(root_path.as_ref()).alias("/").read(true))?
-            .build()?;
+        let wasi_state = WasiState::new("ayaka-plugin-wasmer").build()?;
         let wasi_env = WasiEnv::new(wasi_state);
         Ok(Self {
             store: Arc::new(Mutex::new(store)),
@@ -293,5 +289,9 @@ impl<'a> LinkerHandle<'a, WasmerModule> for WasmerLinkerHandle<'a> {
 
     fn slice<T>(&self, start: i32, len: i32, f: impl FnOnce(&[u8]) -> T) -> T {
         unsafe { mem_slice(&self.store.as_store_ref(), &self.memory, start, len, f) }
+    }
+
+    fn slice_mut<T>(&mut self, start: i32, len: i32, f: impl FnOnce(&mut [u8]) -> T) -> T {
+        unsafe { mem_slice_mut(&self.store.as_store_ref(), &self.memory, start, len, f) }
     }
 }

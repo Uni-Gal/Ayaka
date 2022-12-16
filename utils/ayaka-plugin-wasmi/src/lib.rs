@@ -5,7 +5,6 @@
 use ayaka_plugin::*;
 use std::{
     collections::HashMap,
-    path::Path,
     sync::{Arc, Mutex},
 };
 use wasmi::{core::Trap, *};
@@ -136,28 +135,10 @@ pub struct WasmiLinker {
     linker: wasmi::Linker<WasiCtx>,
 }
 
-impl WasmiLinker {
-    fn preopen_root(root_path: impl AsRef<Path>) -> Result<Dir> {
-        let mut options = std::fs::OpenOptions::new();
-        options.read(true);
-        #[cfg(windows)]
-        {
-            use std::os::windows::fs::OpenOptionsExt;
-            options.share_mode(3); // remove FILE_SHARE_DELETE
-            options.custom_flags(0x02000000); // open dir with FILE_FLAG_BACKUP_SEMANTICS
-        }
-        let root = options.open(root_path)?;
-        Ok(Dir::from_std_file(root))
-    }
-}
-
 impl ayaka_plugin::Linker<WasmiModule> for WasmiLinker {
-    fn new(root_path: impl AsRef<Path>) -> Result<Self> {
+    fn new() -> Result<Self> {
         let engine = Engine::default();
-        let wasi = WasiCtxBuilder::new()
-            .inherit_stdio()
-            .preopened_dir(Self::preopen_root(root_path)?, "/")?
-            .build();
+        let wasi = WasiCtxBuilder::new().inherit_stdio().build();
         let mut store = Store::new(&engine, wasi);
         let mut linker = wasmi::Linker::new();
         define_wasi(&mut linker, &mut store, |ctx| ctx)?;
@@ -234,5 +215,9 @@ impl<'a> LinkerHandle<'a, WasmiModule> for WasmiLinkerHandle<'a> {
 
     fn slice<T>(&self, start: i32, len: i32, f: impl FnOnce(&[u8]) -> T) -> T {
         f(unsafe { mem_slice(self.store.as_context(), &self.memory, start, len) })
+    }
+
+    fn slice_mut<T>(&mut self, start: i32, len: i32, f: impl FnOnce(&mut [u8]) -> T) -> T {
+        f(unsafe { mem_slice_mut(self.store.as_context_mut(), &self.memory, start, len) })
     }
 }

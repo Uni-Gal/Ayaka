@@ -1,21 +1,27 @@
-use ayaka_bindings::*;
-use std::{
-    collections::{HashMap, HashSet},
-    path::{Path, PathBuf},
-};
+#![deny(unsafe_code)]
+
+use ayaka_bindings::{fs::HostFS, vfs::*, *};
+use std::collections::{HashMap, HashSet};
 
 #[export]
 fn plugin_type() -> PluginType {
     PluginType::builder().line(["show", "hide"]).game().build()
 }
 
-fn find_model(ch: &str, game_props: &HashMap<String, String>) -> Option<PathBuf> {
+fn find_model(ch: &str, game_props: &HashMap<String, String>) -> Option<VfsPath> {
+    let root: VfsPath = HostFS::default().into();
     game_props.get("ch_models").and_then(|ch_models| {
-        let base_dir = Path::new(ch_models);
+        let base_dir = root.join(ch_models).unwrap();
         ["model.json", "model3.json"]
             .iter()
-            .map(|ex| base_dir.join(ch).join(ch).with_extension(ex))
-            .find(|p| p.exists())
+            .map(|ex| {
+                base_dir
+                    .join(ch)
+                    .unwrap()
+                    .join(format!("{}.{}", ch, ex))
+                    .unwrap()
+            })
+            .find(|p| p.exists().unwrap_or_default())
     })
 }
 
@@ -73,10 +79,8 @@ fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {
     if let Some(names) = ctx.props.remove("ch_names") {
         for name in names.split(',') {
             if let Some(path) = find_model(name, &ctx.props) {
-                ctx.props.insert(
-                    format!("ch_{}_model", name),
-                    path.to_string_lossy().into_owned(),
-                );
+                ctx.props
+                    .insert(format!("ch_{}_model", name), path.as_str().to_string());
             }
         }
     }

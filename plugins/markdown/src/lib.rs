@@ -1,3 +1,5 @@
+#![deny(unsafe_code)]
+
 use ayaka_bindings::*;
 use pulldown_cmark::{Event::*, *};
 use std::{

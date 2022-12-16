@@ -11,3 +11,6 @@ pub use plugin::*;
 
 mod config;
 pub use config::*;
+
+mod fs;
+pub use fs::*;

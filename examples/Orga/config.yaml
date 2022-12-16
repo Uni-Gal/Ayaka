@@ -7,7 +7,7 @@ props:
   voices: voices
 res: res
 plugins:
-  dir: ../plugins/
+  dir: plugins
   modules:
     - ayacript
     - basictex
