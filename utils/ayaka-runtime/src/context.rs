@@ -10,6 +10,7 @@ use frfs::FRFS;
 use log::error;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use stream_future::stream;
+use tryiterator::TryIteratorExt;
 use trylog::macros::*;
 use vfs::*;
 
@@ -48,23 +49,40 @@ pub enum OpenStatus {
 
 impl Context {
     /// Open a config file with frontend type.
+    ///
+    /// If the input `paths` contains only one element, it may be a YAML or an FRFS file.
+    /// If the input `paths` contains many element, they should all be FRFS files,
+    /// and the latter one will override the former one.
     #[stream(OpenStatus, lifetime = "'a")]
-    pub async fn open<'a>(path: impl AsRef<Path> + 'a, frontend: FrontendType) -> Result<Self> {
-        let path = path.as_ref();
+    pub async fn open<'a>(paths: &'a [impl AsRef<Path>], frontend: FrontendType) -> Result<Self> {
+        if paths.is_empty() {
+            bail!("At least one path should be input.");
+        }
         yield OpenStatus::LoadProfile;
-        let ext = path.extension().unwrap_or_default();
-        let (root_path, filename) = if ext == "yaml" {
-            let root_path = path
-                .parent()
-                .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
-            (
-                VfsPath::from(PhysicalFS::new(root_path)),
-                path.file_name().unwrap_or_default().to_string_lossy(),
-            )
-        } else if ext == "frfs" {
-            (FRFS::new(path)?.into(), "config.yaml".into())
+        let (root_path, filename) = if paths.len() == 1 {
+            let path = paths[0].as_ref();
+            let ext = path.extension().unwrap_or_default();
+            if ext == "yaml" {
+                let root_path = path
+                    .parent()
+                    .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
+                (
+                    VfsPath::from(PhysicalFS::new(root_path)),
+                    path.file_name().unwrap_or_default().to_string_lossy(),
+                )
+            } else if ext == "frfs" {
+                (FRFS::new(path)?.into(), "config.yaml".into())
+            } else {
+                bail!("Cannot determine filesystem.")
+            }
         } else {
-            bail!("Cannot determine filesystem.")
+            let files = paths
+                .iter()
+                .rev()
+                .map(|path| FRFS::new(path.as_ref()))
+                .try_filter_map(|fs| Ok(Some(VfsPath::from(fs))))
+                .try_collect::<Vec<_>>()?;
+            (OverlayFS::new(&files).into(), "config.yaml".into())
         };
         let file = root_path.join(&filename)?.read_to_string()?;
         let mut config: GameConfig = serde_yaml::from_str(&file)?;
