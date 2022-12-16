@@ -4,12 +4,10 @@ cargo-features = ["per-package-target"]
 name = "random"
 version = "0.1.0"
 edition = "2021"
-forced-target = "wasm32-wasi"
+forced-target = "wasm32-unknown-unknown"
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
 ayaka-bindings = { workspace = true }
-trylog = { workspace = true }
-rand = "0.8"

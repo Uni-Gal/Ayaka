@@ -428,6 +428,7 @@ dependencies = [
  "icu_locid",
  "language-matcher",
  "log",
+ "rand 0.8.5",
  "serde",
  "serde_json",
  "serde_yaml",
