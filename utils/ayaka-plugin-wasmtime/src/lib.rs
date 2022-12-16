@@ -8,7 +8,6 @@ use std::{
     sync::{Arc, Mutex},
 };
 use wasmtime::*;
-use wasmtime_wasi::*;
 
 unsafe fn mem_slice<'a, T: 'a>(
     store: impl Into<StoreContext<'a, T>>,
@@ -34,7 +33,7 @@ unsafe fn mem_slice_mut<'a, T: 'a>(
         .get_unchecked_mut(..len as usize)
 }
 
-type HostStore = Arc<Mutex<Store<WasiCtx>>>;
+type HostStore = Arc<Mutex<Store<()>>>;
 
 /// A Wasmtime [`Instance`].
 pub struct WasmtimeModule {
@@ -46,7 +45,7 @@ pub struct WasmtimeModule {
 }
 
 impl WasmtimeModule {
-    fn new(store: HostStore, module: &Module, linker: &wasmtime::Linker<WasiCtx>) -> Result<Self> {
+    fn new(store: HostStore, module: &Module, linker: &wasmtime::Linker<()>) -> Result<Self> {
         let mut inner_store = store.lock().unwrap();
         let instance = linker.instantiate(inner_store.as_context_mut(), module)?;
         let memory = instance
@@ -66,7 +65,7 @@ impl WasmtimeModule {
 
     fn call_impl<T>(
         &self,
-        mut store: StoreContextMut<WasiCtx>,
+        mut store: StoreContextMut<()>,
         name: &str,
         data: &[u8],
         f: impl FnOnce(&[u8]) -> Result<T>,
@@ -114,16 +113,14 @@ impl RawModule for WasmtimeModule {
 pub struct WasmtimeLinker {
     engine: Engine,
     store: HostStore,
-    linker: wasmtime::Linker<WasiCtx>,
+    linker: wasmtime::Linker<()>,
 }
 
 impl ayaka_plugin::Linker<WasmtimeModule> for WasmtimeLinker {
     fn new() -> Result<Self> {
         let engine = Engine::default();
-        let wasi = WasiCtxBuilder::new().inherit_stdio().build();
-        let store = Store::new(&engine, wasi);
-        let mut linker = wasmtime::Linker::new(&engine);
-        add_to_linker(&mut linker, |ctx| ctx)?;
+        let store = Store::new(&engine, ());
+        let linker = wasmtime::Linker::new(&engine);
         Ok(Self {
             engine,
             store: Arc::new(Mutex::new(store)),
@@ -151,7 +148,7 @@ impl ayaka_plugin::Linker<WasmtimeModule> for WasmtimeLinker {
     ) -> Func {
         Func::wrap(
             self.store.lock().unwrap().as_context_mut(),
-            move |mut store: Caller<WasiCtx>, len: i32, data: i32| unsafe {
+            move |mut store: Caller<()>, len: i32, data: i32| unsafe {
                 let memory = store
                     .get_export(MEMORY_NAME)
                     .unwrap()
@@ -160,7 +157,7 @@ impl ayaka_plugin::Linker<WasmtimeModule> for WasmtimeLinker {
                 let data = {
                     let store = store.as_context_mut();
                     let handle = WasmtimeLinkerHandle { store, memory };
-                    f(handle, data, len).map_err(|e| Trap::new(e.to_string()))?
+                    f(handle, data, len)?
                 };
                 let abi_alloc = store
                     .get_export(ABI_ALLOC_NAME)
@@ -179,7 +176,7 @@ impl ayaka_plugin::Linker<WasmtimeModule> for WasmtimeLinker {
 
 /// A Wasmtime [`StoreContextMut`].
 pub struct WasmtimeLinkerHandle<'a> {
-    store: StoreContextMut<'a, WasiCtx>,
+    store: StoreContextMut<'a, ()>,
     memory: Memory,
 }
 

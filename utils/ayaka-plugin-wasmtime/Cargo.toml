@@ -5,5 +5,4 @@ edition = "2021"
 
 [dependencies]
 ayaka-plugin = { workspace = true }
-wasmtime = "2.0"
-wasmtime-wasi = "2.0"
+wasmtime = "3.0"

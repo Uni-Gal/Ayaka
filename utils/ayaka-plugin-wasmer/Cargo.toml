@@ -6,4 +6,3 @@ edition = "2021"
 [dependencies]
 ayaka-plugin = { workspace = true }
 wasmer = "3.0"
-wasmer-wasi = "3.0"
