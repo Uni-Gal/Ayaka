@@ -28,7 +28,6 @@ $ cd Ayaka
 
 ## Add targets for WebAssembly
 ``` bash
-$ rustup target add wasm32-wasi
 $ rustup target add wasm32-unknown-unknown
 ```
 

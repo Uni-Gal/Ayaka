@@ -1,6 +1,6 @@
 # Plugin
 All plugins should target WebAssembly.
-We now support `wasm32-unknown-unknown` and `wasm32-wasi` targets.
+We now support `wasm32-unknown-unknown` target.
 
 The plugin runtime is supported by [Wasmer](https://wasmer.io/).
 Our [platform support](../platforms.md) is largely limited by this engine.

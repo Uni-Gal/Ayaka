@@ -8,7 +8,6 @@ use std::{
     sync::{Arc, Mutex},
 };
 use wasmer::*;
-use wasmer_wasi::*;
 
 unsafe fn mem_slice<R>(
     store: &impl AsStoreRef,
@@ -173,7 +172,6 @@ impl RuntimeInstanceData {
 /// A Wasmer [`Store`] with some imports.
 pub struct WasmerLinker {
     store: HostStore,
-    wasi_env: WasiEnv,
     imports: HashMap<String, HashMap<String, WasmerFunction>>,
 }
 
@@ -192,11 +190,8 @@ impl WasmerLinker {
 impl Linker<WasmerModule> for WasmerLinker {
     fn new() -> Result<Self> {
         let store = Store::default();
-        let wasi_state = WasiState::new("ayaka-plugin-wasmer").build()?;
-        let wasi_env = WasiEnv::new(wasi_state);
         Ok(Self {
             store: Arc::new(Mutex::new(store)),
-            wasi_env,
             imports: HashMap::default(),
         })
     }
@@ -205,16 +200,10 @@ impl Linker<WasmerModule> for WasmerLinker {
         let instance = {
             let mut store = self.store.lock().unwrap();
             let module = Module::from_binary(&store.as_store_ref(), binary)?;
-            let wasi_env = self.wasi_env.clone();
-            let mut wasi_env = WasiFunctionEnv::new(&mut store.as_store_mut(), wasi_env);
-            let mut wasi_import = generate_import_object_from_env(
-                &mut store.as_store_mut(),
-                &wasi_env.env,
-                WasiVersion::Latest,
-            );
+            let mut imports = Imports::default();
             let mut envs = vec![];
             for (ns, funcs) in &self.imports {
-                wasi_import.register_namespace(
+                imports.register_namespace(
                     ns,
                     funcs.iter().map(|(name, func)| {
                         (
@@ -231,8 +220,7 @@ impl Linker<WasmerModule> for WasmerLinker {
                     }),
                 );
             }
-            let instance = Instance::new(&mut store.as_store_mut(), &module, &wasi_import)?;
-            wasi_env.initialize(&mut store.as_store_mut(), &instance)?;
+            let instance = Instance::new(&mut store.as_store_mut(), &module, &imports)?;
             let memory = instance.exports.get_memory(MEMORY_NAME)?;
             let abi_alloc = instance
                 .exports

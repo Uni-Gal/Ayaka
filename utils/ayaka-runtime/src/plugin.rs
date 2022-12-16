@@ -3,6 +3,7 @@
 mod fs_interop;
 mod log_interop;
 mod plugin_interop;
+mod rand_interop;
 
 use crate::*;
 use anyhow::Result;
@@ -131,6 +132,7 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
         log_interop::register(&mut store)?;
         plugin_interop::register(&mut store, handle.clone())?;
         fs_interop::register(&mut store, root_path)?;
+        rand_interop::register(&mut store)?;
         let mut runtime = Self::new();
 
         let total_len = paths.len();
