@@ -38,7 +38,7 @@ example-$(1)-gui: examples/$(1).frfs plugins
 examples/$(1)/config.tex: examples/$(1)/config.yaml plugins
 	cd bins && $$(MAKE) run-latex FILE=$$(realpath $$<)
 examples/$(1).frfs:
-	frfs pack examples/$(1)/ examples/$(1).frfs
+	frfs pack examples/$(1)/ examples/$(1).frfs --magic-number-start AYAPACK --magic-number-end PACKEND
 
 endef
 
