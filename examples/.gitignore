@@ -7,7 +7,7 @@ voices
 videos
 /plugins
 *.tex
-*.frfs
+*.ayapack
 
 ## Core latex/pdflatex auxiliary files:
 *.aux

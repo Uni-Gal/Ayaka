@@ -30,15 +30,15 @@ release-cross:
 EXAMPLES:=Basic Fibonacci Fibonacci2 Gacha Live2D Orga Styles
 
 define example-tpl
-.PHONY: example-$(1) example-$(1)-gui examples/$(1)/config.tex examples/$(1).frfs
+.PHONY: example-$(1) example-$(1)-gui examples/$(1)/config.tex examples/$(1).ayapack
 example-$(1): examples/$(1)/config.yaml plugins
 	cd bins && $$(MAKE) run FILE=$$(realpath $$<)
-example-$(1)-gui: examples/$(1).frfs plugins
+example-$(1)-gui: examples/$(1).ayapack plugins
 	cd bins && $$(MAKE) run-gui FILE=$$(realpath $$<)
 examples/$(1)/config.tex: examples/$(1)/config.yaml plugins
 	cd bins && $$(MAKE) run-latex FILE=$$(realpath $$<)
-examples/$(1).frfs:
-	frfs pack examples/$(1)/ examples/$(1).frfs
+examples/$(1).ayapack:
+	frfs pack examples/$(1)/ examples/$(1).ayapack --magic-number-start AYAPACK --magic-number-end PACKEND
 
 endef
 
