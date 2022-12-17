@@ -58,7 +58,7 @@ fn ayaka_version() -> &'static str {
 #[derive(Debug, Clone, Serialize)]
 #[serde(tag = "t", content = "data")]
 enum OpenGameStatus {
-    LoadProfile(String),
+    LoadProfile,
     CreateRuntime,
     LoadPlugin(String, usize, usize),
     GamePlugin,
@@ -78,7 +78,7 @@ impl OpenGameStatus {
 
 #[derive(Default)]
 struct Storage {
-    config: String,
+    config: Vec<String>,
     dist_port: u16,
     manager: FileSettingsManager,
     records: Mutex<Vec<ActionRecord>>,
@@ -89,9 +89,9 @@ struct Storage {
 }
 
 impl Storage {
-    pub fn new(resolver: &PathResolver, config: impl Into<String>, dist_port: u16) -> Self {
+    pub fn new(resolver: &PathResolver, config: Vec<String>, dist_port: u16) -> Self {
         Self {
-            config: config.into(),
+            config,
             dist_port,
             manager: FileSettingsManager::new(resolver),
             ..Default::default()
@@ -129,7 +129,7 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
     while let Some(status) = context.next().await {
         match status {
             OpenStatus::LoadProfile => {
-                OpenGameStatus::LoadProfile(config.clone()).emit(&handle)?;
+                OpenGameStatus::LoadProfile.emit(&handle)?;
             }
             OpenStatus::CreateRuntime => OpenGameStatus::CreateRuntime.emit(&handle)?,
             OpenStatus::LoadPlugin(name, i, len) => {
@@ -465,22 +465,41 @@ fn main() -> Result<()> {
                 let window = app.get_window("main").unwrap();
                 window.open_devtools();
             }
+
+            use serde_json::Value;
+
             let matches = app.get_cli_matches()?;
-            let config = matches.args["config"]
-                .value
-                .as_str()
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| {
+            let config = match &matches.args["config"].value {
+                Value::String(s) => vec![s.to_string()],
+                Value::Array(arr) => arr
+                    .iter()
+                    .filter_map(|v| v.as_str())
+                    .map(|s| s.to_string())
+                    .collect::<Vec<_>>(),
+                _ => {
                     let current = std::env::current_exe().unwrap();
                     let current = current.parent().unwrap();
+                    let mut paths = vec![];
+
                     let data = current.join("data.frfs");
-                    let data = if data.exists() {
-                        data
+                    if data.exists() {
+                        paths.push(data);
+                        paths.extend(
+                            ('a'..'z')
+                                .into_iter()
+                                .map(|c| current.join(format!("data.{}.frfs", c)))
+                                .filter(|p| p.exists()),
+                        );
                     } else {
-                        current.join("config.yaml")
-                    };
-                    data.to_string_lossy().into_owned()
-                });
+                        paths.push(current.join("config.yaml"));
+                    }
+
+                    paths
+                        .into_iter()
+                        .map(|p| p.to_string_lossy().into_owned())
+                        .collect()
+                }
+            };
             app.manage(Storage::new(&resolver, config, port));
             Ok(())
         })

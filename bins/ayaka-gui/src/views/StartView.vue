@@ -65,7 +65,7 @@ export default {
             const t = OpenGameStatusType[s.t]
             switch (t) {
                 case OpenGameStatusType.LoadProfile:
-                    return [`Loading profile "${s.data as unknown as string}"...`, step * (t + 1)]
+                    return [`Loading profile...`, step * (t + 1)]
                 case OpenGameStatusType.CreateRuntime:
                     return ["Creating runtime...", step * (t + 1)]
                 case OpenGameStatusType.LoadPlugin:

@@ -9,7 +9,8 @@ use writer::LaTeXWriter;
 #[derive(Debug, Parser)]
 #[clap(about, version, author)]
 pub struct Options {
-    input: OsString,
+    #[clap(required = true)]
+    input: Vec<OsString>,
     #[clap(short, long)]
     output: OsString,
     #[clap(short, long)]

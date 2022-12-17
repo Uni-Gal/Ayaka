@@ -9,7 +9,8 @@ use std::{
 #[derive(Debug, Parser)]
 #[clap(about, version, author)]
 pub struct Options {
-    input: OsString,
+    #[clap(required = true)]
+    input: Vec<OsString>,
     #[clap(long)]
     auto: bool,
     #[clap(short, long)]
