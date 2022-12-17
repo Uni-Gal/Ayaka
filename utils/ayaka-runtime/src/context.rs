@@ -73,7 +73,7 @@ impl Context {
                     VfsPath::from(PhysicalFS::new(root_path)),
                     path.file_name().unwrap_or_default().to_string_lossy(),
                 )
-            } else if ext == "frfs" {
+            } else if ext == "ayapack" {
                 (
                     FRFS::new_with_header(path, MAGIC_NUMBER_START, MAGIC_NUMBER_END)?.into(),
                     "config.yaml".into(),

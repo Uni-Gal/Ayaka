@@ -481,13 +481,13 @@ fn main() -> Result<()> {
                     let current = current.parent().unwrap();
                     let mut paths = vec![];
 
-                    let data = current.join("data.frfs");
+                    let data = current.join("data.ayapack");
                     if data.exists() {
                         paths.push(data);
                         paths.extend(
                             ('a'..'z')
                                 .into_iter()
-                                .map(|c| current.join(format!("data.{}.frfs", c)))
+                                .map(|c| current.join(format!("data.{}.ayapack", c)))
                                 .filter(|p| p.exists()),
                         );
                     } else {
