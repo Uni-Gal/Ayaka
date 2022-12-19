@@ -309,7 +309,9 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
                 if let Action::Empty = action {
                     true
                 } else if let Action::Custom(vars) = action {
-                    vars.is_empty()
+                    // Scripts will also update temp variables.
+                    // Only when the video is set will the method return.
+                    !vars.contains_key("video")
                 } else {
                     false
                 }
