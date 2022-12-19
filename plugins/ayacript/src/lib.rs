@@ -26,9 +26,10 @@ fn exec(mut ctx: LineProcessContext) -> LineProcessResult {
         program.parse::<Program>().map(|exec| {
             let mut table = VarTable::new(&RUNTIME, &mut ctx.ctx.locals);
             table.call(&exec);
+            let vars = table.vars;
             LineProcessResult {
                 locals: ctx.ctx.locals,
-                vars: VarMap::default(),
+                vars,
             }
         }),
         "Cannot parse program"
