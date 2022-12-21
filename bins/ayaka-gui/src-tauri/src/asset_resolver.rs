@@ -6,7 +6,9 @@ use axum::{
     routing::get,
     Router, Server,
 };
+use pin_project::pin_project;
 use std::{
+    io::Read,
     net::TcpListener,
     pin::Pin,
     sync::OnceLock,
@@ -17,6 +19,7 @@ use tauri::{
     plugin::{Builder, TauriPlugin},
     AppHandle, Runtime,
 };
+use tower_http::cors::{Any, CorsLayer};
 use vfs::*;
 
 pub(crate) static ROOT_PATH: OnceLock<VfsPath> = OnceLock::new();
@@ -29,12 +32,18 @@ unsafe impl Send for VfsFile {}
 #[allow(unsafe_code)]
 unsafe impl Sync for VfsFile {}
 
+impl Read for VfsFile {
+    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+        self.0.read(buf)
+    }
+}
+
 #[try_stream(Bytes)]
 fn file_stream(mut file: VfsFile, length: usize) -> Result<(), axum::Error> {
     let length = length.min(BUFFER_LEN);
     loop {
         let mut buffer = vec![0; length];
-        let read_bytes = file.0.read(&mut buffer).map_err(|e| axum::Error::new(e))?;
+        let read_bytes = file.read(&mut buffer).map_err(|e| axum::Error::new(e))?;
         buffer.truncate(read_bytes);
         if read_bytes > 0 {
             yield Bytes::from(buffer);
@@ -51,7 +60,7 @@ struct StreamBody<S: Stream<Item = Result<Bytes, axum::Error>> + Send> {
     stream: S,
 }
 
-impl<S: Stream<Item = Result<Bytes, axum::Error>> + Send> IntoResponse for StreamBody<S> {
+impl<S: Stream<Item = Result<Bytes, axum::Error>> + Send + 'static> IntoResponse for StreamBody<S> {
     fn into_response(self) -> Response {
         Response::new(axum::body::boxed(self))
     }
@@ -71,7 +80,7 @@ impl<S: Stream<Item = Result<Bytes, axum::Error>> + Send> HttpBody for StreamBod
 
     fn poll_trailers(
         self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
+        _cx: &mut Context<'_>,
     ) -> Poll<Result<Option<HeaderMap>, Self::Error>> {
         Poll::Ready(Ok(None))
     }
@@ -111,9 +120,11 @@ pub fn init<R: Runtime>(listener: TcpListener) -> TauriPlugin<R> {
         .setup(move |app| {
             let app = app.clone();
             tauri::async_runtime::spawn(async {
+                let cors = CorsLayer::new().allow_methods(Any).allow_origin(Any);
                 let app = Router::new()
                     .route("/fs/*.path", get(fs_resolver))
-                    .route("/*path", get(move |path| resolver(app, path)));
+                    .route("/*path", get(move |path| resolver(app, path)))
+                    .layer(cors);
                 Server::from_tcp(listener)
                     .unwrap()
                     .serve(app.into_make_service())
