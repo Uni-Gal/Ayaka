@@ -1,20 +1,13 @@
 use axum::{
-    body::{Bytes, HttpBody},
+    body::{Bytes, StreamBody},
     extract::Path,
-    http::{header::CONTENT_TYPE, HeaderMap, StatusCode},
+    http::{header::CONTENT_TYPE, StatusCode},
     response::{IntoResponse, Response},
     routing::get,
     Router, Server,
 };
-use pin_project::pin_project;
-use std::{
-    io::Read,
-    net::TcpListener,
-    pin::Pin,
-    sync::OnceLock,
-    task::{Context, Poll},
-};
-use stream_future::{try_stream, Stream};
+use std::{io::Read, net::TcpListener, sync::OnceLock};
+use stream_future::try_stream;
 use tauri::{
     plugin::{Builder, TauriPlugin},
     AppHandle, Runtime,
@@ -54,38 +47,6 @@ fn file_stream(mut file: VfsFile, length: usize) -> Result<(), axum::Error> {
     Ok(())
 }
 
-#[pin_project]
-struct StreamBody<S: Stream<Item = Result<Bytes, axum::Error>> + Send> {
-    #[pin]
-    stream: S,
-}
-
-impl<S: Stream<Item = Result<Bytes, axum::Error>> + Send + 'static> IntoResponse for StreamBody<S> {
-    fn into_response(self) -> Response {
-        Response::new(axum::body::boxed(self))
-    }
-}
-
-impl<S: Stream<Item = Result<Bytes, axum::Error>> + Send> HttpBody for StreamBody<S> {
-    type Data = Bytes;
-
-    type Error = axum::Error;
-
-    fn poll_data(
-        self: Pin<&mut Self>,
-        cx: &mut Context<'_>,
-    ) -> Poll<Option<Result<Self::Data, Self::Error>>> {
-        self.project().stream.poll_next(cx)
-    }
-
-    fn poll_trailers(
-        self: Pin<&mut Self>,
-        _cx: &mut Context<'_>,
-    ) -> Poll<Result<Option<HeaderMap>, Self::Error>> {
-        Poll::Ready(Ok(None))
-    }
-}
-
 async fn fs_resolver(Path(path): Path<String>) -> Response {
     let path = ROOT_PATH.get().unwrap().join(path).unwrap();
     if let Ok(file) = path.open_file() {
@@ -97,9 +58,7 @@ async fn fs_resolver(Path(path): Path<String>) -> Response {
         let mime = mime_guess::from_path(path.as_str()).first_or_octet_stream();
         (
             [(CONTENT_TYPE, mime.to_string())],
-            StreamBody {
-                stream: file_stream(file, length),
-            },
+            StreamBody::new(file_stream(file, length)),
         )
             .into_response()
     } else {

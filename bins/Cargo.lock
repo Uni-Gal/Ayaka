@@ -201,7 +201,6 @@ dependencies = [
  "ayaka-runtime",
  "flexi_logger",
  "mime_guess",
- "pin-project",
  "serde",
  "serde_json",
  "stream-future",
