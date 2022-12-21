@@ -1,7 +1,7 @@
 use axum::{
-    body::{Bytes, StreamBody},
+    body::{Body, Bytes, StreamBody},
     extract::Path,
-    http::{header::CONTENT_TYPE, StatusCode},
+    http::{header::CONTENT_TYPE, Request, StatusCode},
     response::{IntoResponse, Response},
     routing::get,
     Router, Server,
@@ -69,8 +69,8 @@ async fn fs_resolver(Path(path): Path<String>) -> Response {
     }
 }
 
-async fn resolver<R: Runtime>(app: AppHandle<R>, Path(path): Path<String>) -> Response {
-    if let Some(asset) = app.asset_resolver().get(path) {
+async fn resolver<R: Runtime>(app: AppHandle<R>, req: Request<Body>) -> Response {
+    if let Some(asset) = app.asset_resolver().get(req.uri().path().to_string()) {
         ([(CONTENT_TYPE, asset.mime_type)], asset.bytes).into_response()
     } else {
         (StatusCode::NOT_FOUND, ()).into_response()
@@ -84,8 +84,8 @@ pub fn init<R: Runtime>(listener: TcpListener) -> TauriPlugin<R> {
             tauri::async_runtime::spawn(async {
                 let cors = CorsLayer::new().allow_methods(Any).allow_origin(Any);
                 let app = Router::new()
-                    .route("/fs/*.path", get(fs_resolver))
-                    .route("/*path", get(move |path| resolver(app, path)))
+                    .route("/fs/*path", get(fs_resolver))
+                    .fallback(move |req| resolver(app, req))
                     .layer(cors);
                 Server::from_tcp(listener)
                     .unwrap()
