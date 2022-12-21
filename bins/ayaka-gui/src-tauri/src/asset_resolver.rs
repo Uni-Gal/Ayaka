@@ -6,6 +6,7 @@ use axum::{
     routing::get,
     Router, Server,
 };
+use ayaka_runtime::log;
 use std::{io::Read, net::TcpListener, sync::OnceLock};
 use stream_future::try_stream;
 use tauri::{
@@ -50,6 +51,7 @@ fn file_stream(mut file: VfsFile, length: usize) -> Result<(), axum::Error> {
 async fn fs_resolver(Path(path): Path<String>) -> Response {
     let path = ROOT_PATH.get().unwrap().join(path).unwrap();
     if let Ok(file) = path.open_file() {
+        log::debug!("Get FS {} 200", path.as_str());
         let file = VfsFile(file);
         let length = path
             .metadata()
@@ -62,6 +64,7 @@ async fn fs_resolver(Path(path): Path<String>) -> Response {
         )
             .into_response()
     } else {
+        log::debug!("Get FS {} 404", path.as_str());
         (StatusCode::NOT_FOUND, ()).into_response()
     }
 }
