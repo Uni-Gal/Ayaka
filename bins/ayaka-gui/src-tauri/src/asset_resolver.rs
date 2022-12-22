@@ -1,23 +1,43 @@
-use actix_cors::Cors;
-use actix_web::{
-    http::header::CONTENT_TYPE,
-    middleware::Logger,
-    web::{self, Bytes},
-    App, HttpRequest, HttpResponse, HttpServer, Responder, Scope,
+use axum::{
+    body::{Body, Bytes, StreamBody},
+    extract::Path,
+    http::{header::CONTENT_TYPE, Request, StatusCode},
+    response::{IntoResponse, Response},
+    routing::get,
+    Router, Server,
 };
-use std::{io::Result, net::TcpListener, sync::OnceLock};
+use ayaka_runtime::log;
+use std::{
+    io::{Read, Result},
+    net::TcpListener,
+    sync::OnceLock,
+};
 use stream_future::try_stream;
 use tauri::{
     plugin::{Builder, TauriPlugin},
     AppHandle, Runtime,
 };
+use tower_http::cors::{Any, CorsLayer};
 use vfs::*;
 
 pub(crate) static ROOT_PATH: OnceLock<VfsPath> = OnceLock::new();
 const BUFFER_LEN: usize = 65536;
 
+struct VfsFile(Box<dyn SeekAndRead>);
+
+#[allow(unsafe_code)]
+unsafe impl Send for VfsFile {}
+#[allow(unsafe_code)]
+unsafe impl Sync for VfsFile {}
+
+impl Read for VfsFile {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
+        self.0.read(buf)
+    }
+}
+
 #[try_stream(Bytes)]
-fn file_stream(mut file: Box<dyn SeekAndRead>, length: usize) -> Result<()> {
+fn file_stream(mut file: VfsFile, length: usize) -> Result<()> {
     let length = length.min(BUFFER_LEN);
     loop {
         let mut buffer = vec![0; length];
@@ -32,31 +52,32 @@ fn file_stream(mut file: Box<dyn SeekAndRead>, length: usize) -> Result<()> {
     Ok(())
 }
 
-async fn fs_resolver(req: HttpRequest) -> impl Responder {
-    let url = req.uri().path().strip_prefix("/fs/").unwrap_or_default();
-    let path = ROOT_PATH.get().unwrap().join(url).unwrap();
+async fn fs_resolver(Path(path): Path<String>) -> Response {
+    let path = ROOT_PATH.get().unwrap().join(path).unwrap();
     if let Ok(file) = path.open_file() {
+        log::debug!("Get FS {} 200", path.as_str());
+        let file = VfsFile(file);
         let length = path
             .metadata()
             .map(|meta| meta.len as usize)
             .unwrap_or(BUFFER_LEN);
         let mime = mime_guess::from_path(path.as_str()).first_or_octet_stream();
-        HttpResponse::Ok()
-            .content_type(mime)
-            .streaming(file_stream(file, length))
+        (
+            [(CONTENT_TYPE, mime.to_string())],
+            StreamBody::new(file_stream(file, length)),
+        )
+            .into_response()
     } else {
-        HttpResponse::NotFound().finish()
+        log::debug!("Get FS {} 404", path.as_str());
+        (StatusCode::NOT_FOUND, ()).into_response()
     }
 }
 
-async fn resolver<R: Runtime>(app: AppHandle<R>, req: HttpRequest) -> impl Responder {
-    let url = req.uri().path();
-    if let Some(asset) = app.asset_resolver().get(url.to_string()) {
-        HttpResponse::Ok()
-            .append_header((CONTENT_TYPE, asset.mime_type.as_str()))
-            .body(asset.bytes)
+async fn resolver<R: Runtime>(app: AppHandle<R>, req: Request<Body>) -> Response {
+    if let Some(asset) = app.asset_resolver().get(req.uri().path().to_string()) {
+        ([(CONTENT_TYPE, asset.mime_type)], asset.bytes).into_response()
     } else {
-        HttpResponse::NotFound().finish()
+        (StatusCode::NOT_FOUND, ()).into_response()
     }
 }
 
@@ -64,21 +85,17 @@ pub fn init<R: Runtime>(listener: TcpListener) -> TauriPlugin<R> {
     Builder::new("asset_resolver")
         .setup(move |app| {
             let app = app.clone();
-            tauri::async_runtime::spawn_blocking(move || {
-                actix_web::rt::System::new().block_on(async move {
-                    HttpServer::new(move || {
-                        let app = app.clone();
-                        App::new()
-                            .service(Scope::new("/fs").default_service(web::to(fs_resolver)))
-                            .default_service(web::to(move |req| resolver(app.clone(), req)))
-                            .wrap(Logger::new("\"%r\" %s").log_target(module_path!()))
-                            .wrap(Cors::permissive())
-                    })
-                    .listen(listener)
+            tauri::async_runtime::spawn(async {
+                let cors = CorsLayer::new().allow_methods(Any).allow_origin(Any);
+                let app = Router::new()
+                    .route("/fs/*path", get(fs_resolver))
+                    .fallback(move |req| resolver(app, req))
+                    .layer(cors);
+                Server::from_tcp(listener)
                     .unwrap()
-                    .run()
+                    .serve(app.into_make_service())
                     .await
-                })
+                    .unwrap()
             });
             Ok(())
         })
