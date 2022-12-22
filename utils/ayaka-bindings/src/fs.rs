@@ -20,7 +20,7 @@ extern "C" {
 pub struct HostFS;
 
 impl FileSystem for HostFS {
-    fn read_dir(&self, path: &str) -> VfsResult<Box<dyn Iterator<Item = String>>> {
+    fn read_dir(&self, path: &str) -> VfsResult<Box<dyn Iterator<Item = String> + Send>> {
         match __read_dir(path) {
             Some(paths) => Ok(Box::new(paths.into_iter())),
             None => Err(VfsErrorKind::FileNotFound.into()),
@@ -31,18 +31,18 @@ impl FileSystem for HostFS {
         Err(VfsErrorKind::NotSupported.into())
     }
 
-    fn open_file(&self, path: &str) -> VfsResult<Box<dyn SeekAndRead>> {
+    fn open_file(&self, path: &str) -> VfsResult<Box<dyn SeekAndRead + Send>> {
         match __open_file(path) {
             Some(fd) => Ok(Box::new(HostFile { fd })),
             None => Err(VfsErrorKind::FileNotFound.into()),
         }
     }
 
-    fn create_file(&self, _path: &str) -> VfsResult<Box<dyn Write>> {
+    fn create_file(&self, _path: &str) -> VfsResult<Box<dyn Write + Send>> {
         Err(VfsErrorKind::NotSupported.into())
     }
 
-    fn append_file(&self, _path: &str) -> VfsResult<Box<dyn Write>> {
+    fn append_file(&self, _path: &str) -> VfsResult<Box<dyn Write + Send>> {
         Err(VfsErrorKind::NotSupported.into())
     }
 

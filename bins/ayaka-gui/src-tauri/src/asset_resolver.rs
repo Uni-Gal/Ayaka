@@ -6,7 +6,7 @@ use axum::{
     routing::get,
     Router, Server,
 };
-use ayaka_runtime::log;
+use ayaka_runtime::{log, vfs::*};
 use std::{
     io::{Read, Result},
     net::TcpListener,
@@ -18,26 +18,12 @@ use tauri::{
     AppHandle, Runtime,
 };
 use tower_http::cors::{Any, CorsLayer};
-use vfs::*;
 
 pub(crate) static ROOT_PATH: OnceLock<VfsPath> = OnceLock::new();
 const BUFFER_LEN: usize = 65536;
 
-struct VfsFile(Box<dyn SeekAndRead>);
-
-#[allow(unsafe_code)]
-unsafe impl Send for VfsFile {}
-#[allow(unsafe_code)]
-unsafe impl Sync for VfsFile {}
-
-impl Read for VfsFile {
-    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
-        self.0.read(buf)
-    }
-}
-
 #[try_stream(Bytes)]
-fn file_stream(mut file: VfsFile, length: usize) -> Result<()> {
+fn file_stream(mut file: Box<dyn SeekAndRead + Send>, length: usize) -> Result<()> {
     let length = length.min(BUFFER_LEN);
     loop {
         let mut buffer = vec![0; length];
@@ -56,7 +42,6 @@ async fn fs_resolver(Path(path): Path<String>) -> Response {
     let path = ROOT_PATH.get().unwrap().join(path).unwrap();
     if let Ok(file) = path.open_file() {
         log::debug!("Get FS {} 200", path.as_str());
-        let file = VfsFile(file);
         let length = path
             .metadata()
             .map(|meta| meta.len as usize)

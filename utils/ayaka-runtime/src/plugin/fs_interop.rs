@@ -10,12 +10,12 @@ use vfs::*;
 
 #[derive(Default)]
 struct FDMap {
-    map: BTreeMap<u64, Box<dyn SeekAndRead>>,
+    map: BTreeMap<u64, Box<dyn SeekAndRead + Send>>,
     remain: BTreeSet<u64>,
 }
 
 impl FDMap {
-    pub fn open(&mut self, file: Box<dyn SeekAndRead>) -> u64 {
+    pub fn open(&mut self, file: Box<dyn SeekAndRead + Send>) -> u64 {
         let new_fd = match self.remain.pop_first() {
             Some(fd) => fd,
             None => match self.map.last_key_value() {
@@ -40,11 +40,6 @@ impl FDMap {
         self.map.get_mut(&fd).unwrap().seek(pos)
     }
 }
-
-#[allow(unsafe_code)]
-unsafe impl Send for FDMap {}
-#[allow(unsafe_code)]
-unsafe impl Sync for FDMap {}
 
 pub fn register<M: RawModule>(store: &mut impl Linker<M>, root_path: &VfsPath) -> Result<()> {
     let p = root_path.clone();

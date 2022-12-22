@@ -36,4 +36,4 @@ serde_json = "1.0"
 serde_with = "2.0"
 serde_yaml = "0.9"
 
-vfs = "0.8"
+vfs = "0.9"
