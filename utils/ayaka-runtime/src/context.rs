@@ -1,6 +1,5 @@
 use crate::{
     plugin::{LoadStatus, Runtime},
-    settings::*,
     *,
 };
 use anyhow::{anyhow, bail, Result};
@@ -21,7 +20,6 @@ pub struct Context {
     frontend: FrontendType,
     runtime: Arc<Runtime>,
     ctx: RawContext,
-    record: ActionRecord,
     switches: Vec<bool>,
     vars: VarMap,
 }
@@ -170,27 +168,14 @@ impl Context {
             frontend,
             runtime,
             ctx: RawContext::default(),
-            record: ActionRecord::default(),
             switches: vec![],
             vars: VarMap::default(),
         })
     }
 
-    /// Initialize the [`RawContext`] to the start of the game.
-    pub fn init_new(&mut self) {
-        self.init_context(ActionRecord { history: vec![] })
-    }
-
     /// Initialize the [`ActionRecord`] with given record.
-    pub fn init_context(&mut self, record: ActionRecord) {
-        self.ctx = record.last_ctx_with_game(&self.game);
-        log::debug!("Context: {:?}", self.ctx);
-        self.record = record;
-        if !self.record.history.is_empty() {
-            // If the record is not empty,
-            // we need to set current context to the next one.
-            self.ctx.cur_act += 1;
-        }
+    pub fn set_context(&mut self, ctx: RawContext) {
+        self.ctx = ctx;
     }
 
     fn current_paragraph(&self, loc: &Locale) -> Option<&Paragraph> {
@@ -222,11 +207,6 @@ impl Context {
     /// The root path of config.
     pub fn root_path(&self) -> &VfsPath {
         &self.root_path
-    }
-
-    /// The inner record.
-    pub fn record(&self) -> &ActionRecord {
-        &self.record
     }
 
     /// Call the part of script with this context.
@@ -444,24 +424,6 @@ impl Context {
         Ok(act)
     }
 
-    fn push_history(&mut self) {
-        let ctx = &self.ctx;
-        let cur_text = self
-            .game
-            .find_para(
-                &self.game.config.base_lang,
-                &ctx.cur_base_para,
-                &ctx.cur_para,
-            )
-            .and_then(|p| p.texts.get(ctx.cur_act));
-        let is_text = cur_text
-            .map(|line| matches!(line, Line::Text(_)))
-            .unwrap_or_default();
-        if is_text {
-            self.record.history.push(ctx.clone());
-        }
-    }
-
     /// Step to next line.
     pub fn next_run(&mut self) -> Option<RawContext> {
         let cur_text_base = loop {
@@ -494,28 +456,10 @@ impl Context {
 
         let ctx = cur_text_base.cloned().map(|t| {
             unwrap_or_default_log!(self.process_line(t), "Parse line error");
-            self.push_history();
             self.ctx.clone()
         });
         self.ctx.cur_act += 1;
         ctx
-    }
-
-    /// Step back to the last run.
-    pub fn next_back_run(&mut self) -> Option<&RawContext> {
-        if self.record.history.len() <= 1 {
-            None
-        } else {
-            if let Some(ctx) = self.record.history.pop() {
-                self.ctx = ctx;
-                log::debug!(
-                    "Back to para {}, act {}",
-                    self.ctx.cur_para,
-                    self.ctx.cur_act
-                );
-            }
-            self.record.history.last()
-        }
     }
 
     /// Get current paragraph title.
