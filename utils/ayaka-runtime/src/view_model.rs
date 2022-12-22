@@ -161,13 +161,8 @@ impl<M: SettingsManager> GameViewModel<M> {
 
     /// Start a game with record.
     pub fn init_context(&mut self, record: ActionRecord) {
-        let mut ctx = record.last_ctx_with_game(self.context().game());
+        let ctx = record.last_ctx_with_game(self.context().game());
         self.current_record = record;
-        if self.current_record.history.is_empty() {
-            // If the record is not empty,
-            // we need to set current context to the next one.
-            ctx.cur_act += 1;
-        }
         log::debug!("Context: {:?}", ctx);
         self.context_mut().set_context(ctx)
     }
