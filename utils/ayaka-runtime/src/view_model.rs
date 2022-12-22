@@ -208,9 +208,16 @@ impl<M: SettingsManager> GameViewModel<M> {
             log::debug!("No action in the history.");
             false
         } else {
+            // The last entry is the current one.
+            // We don't assume that a user could call next_back_run when the
+            // current run is empty.
             self.current_record.history.pop();
+            // When we pop the current run, the last entry is what we want.
             self.current_raw_context = self.current_record.history.last().cloned();
             debug_assert!(self.current_raw_context.is_some());
+            // We clone the (new) current run to set the "next" raw context.
+            // We don't use the popped run to set the raw context,
+            // because the empty runs are not recorded.
             let mut ctx = self.current_raw_context.clone().unwrap();
             ctx.cur_act += 1;
             self.context_mut().set_context(ctx);
