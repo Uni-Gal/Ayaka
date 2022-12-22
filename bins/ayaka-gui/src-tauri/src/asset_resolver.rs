@@ -7,7 +7,11 @@ use axum::{
     Router, Server,
 };
 use ayaka_runtime::log;
-use std::{io::Read, net::TcpListener, sync::OnceLock};
+use std::{
+    io::{Read, Result},
+    net::TcpListener,
+    sync::OnceLock,
+};
 use stream_future::try_stream;
 use tauri::{
     plugin::{Builder, TauriPlugin},
@@ -27,17 +31,17 @@ unsafe impl Send for VfsFile {}
 unsafe impl Sync for VfsFile {}
 
 impl Read for VfsFile {
-    fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+    fn read(&mut self, buf: &mut [u8]) -> Result<usize> {
         self.0.read(buf)
     }
 }
 
 #[try_stream(Bytes)]
-fn file_stream(mut file: VfsFile, length: usize) -> Result<(), axum::Error> {
+fn file_stream(mut file: VfsFile, length: usize) -> Result<()> {
     let length = length.min(BUFFER_LEN);
     loop {
         let mut buffer = vec![0; length];
-        let read_bytes = file.read(&mut buffer).map_err(|e| axum::Error::new(e))?;
+        let read_bytes = file.read(&mut buffer)?;
         buffer.truncate(read_bytes);
         if read_bytes > 0 {
             yield Bytes::from(buffer);
