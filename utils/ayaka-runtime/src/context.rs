@@ -252,7 +252,7 @@ impl Context {
         }
     }
 
-    fn parse_text(&self, loc: &Locale, text: &Text) -> Result<ActionText> {
+    fn parse_text(&self, loc: &Locale, text: &Text, ctx: &RawContext) -> Result<ActionText> {
         let mut action = ActionText::default();
         for subtext in &text.0 {
             match subtext {
@@ -273,7 +273,7 @@ impl Context {
                         }
                     }
                     Command::Ctx(n) => {
-                        if let Some(value) = self.ctx.locals.get(n) {
+                        if let Some(value) = ctx.locals.get(n) {
                             action.push_back_block(value.get_str())
                         } else {
                             log::warn!("Cannot find variable {}", n)
@@ -415,7 +415,7 @@ impl Context {
 
         let action = cur_text
             .map(|t| match t {
-                Line::Text(t) => self.parse_text(loc, t).map(Action::Text).ok(),
+                Line::Text(t) => self.parse_text(loc, t, ctx).map(Action::Text).ok(),
                 Line::Switch { switches } => Some(Action::Switches(self.parse_switches(switches))),
                 // The real vars will be filled in `merge_action`.
                 Line::Custom(_) => Some(Action::Custom(self.vars.clone())),

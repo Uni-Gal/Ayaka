@@ -1,7 +1,7 @@
 use crate::{settings::*, *};
 use anyhow::Result;
 use serde::Serialize;
-use std::{collections::HashSet, path::Path};
+use std::path::Path;
 use stream_future::stream;
 use trylog::macros::*;
 
@@ -150,8 +150,8 @@ impl<M: SettingsManager> GameViewModel<M> {
     }
 
     /// Get the avaliable locales from paragraphs.
-    pub fn avaliable_locale(&self) -> HashSet<Locale> {
-        self.context().game().paras.keys().cloned().collect()
+    pub fn avaliable_locale(&self) -> impl Iterator<Item = &Locale> {
+        self.context().game().paras.keys()
     }
 
     /// Start a new game.
@@ -299,27 +299,28 @@ impl<M: SettingsManager> GameViewModel<M> {
     }
 
     /// Get the last action text from each record.
-    pub fn records_text(&self) -> Result<Vec<ActionText>> {
-        let mut res = vec![];
-        for record in self.records() {
+    pub fn records_text(&self) -> impl Iterator<Item = ActionText> + '_ {
+        self.records().iter().map(|record| {
             let raw_ctx = record.history.last().unwrap();
-            let action = self.context().get_action(&self.settings().lang, raw_ctx)?;
+            let action = unwrap_or_default_log!(
+                self.context().get_action(&self.settings().lang, raw_ctx),
+                "Cannot get action"
+            );
             if let Action::Text(action) = action {
-                res.push(action);
+                action
             } else {
                 unreachable!()
             }
-        }
-        Ok(res)
+        })
     }
 
     /// Get the current history by language and secondary language.
-    pub fn current_history(&self) -> Vec<(Action, Option<Action>)> {
+    pub fn current_history(
+        &self,
+    ) -> impl DoubleEndedIterator<Item = (Action, Option<Action>)> + '_ {
         self.record()
             .history
             .iter()
-            .rev()
             .map(|raw_ctx| self.get_actions(raw_ctx))
-            .collect()
     }
 }

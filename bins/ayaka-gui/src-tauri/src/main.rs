@@ -129,7 +129,7 @@ async fn set_settings(settings: Settings, storage: State<'_, Storage>) -> Comman
 
 #[command]
 async fn get_records(storage: State<'_, Storage>) -> CommandResult<Vec<ActionText>> {
-    Ok(storage.model.read().await.records_text()?)
+    Ok(storage.model.read().await.records_text().collect())
 }
 
 #[command]
@@ -154,6 +154,8 @@ async fn avaliable_locale(
         .read()
         .await
         .avaliable_locale()
+        .cloned()
+        .collect::<HashSet<_>>()
         .intersection(&locales)
         .cloned()
         .collect())
@@ -246,7 +248,7 @@ async fn switch(i: usize, storage: State<'_, Storage>) -> CommandResult<()> {
 
 #[command]
 async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<(Action, Option<Action>)>> {
-    Ok(storage.model.read().await.current_history())
+    Ok(storage.model.read().await.current_history().rev().collect())
 }
 
 fn main() -> Result<()> {
