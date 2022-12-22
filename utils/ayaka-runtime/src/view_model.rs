@@ -236,6 +236,16 @@ impl<M: SettingsManager> GameViewModel<M> {
             .current_paragraph_title(&self.settings().lang)
     }
 
+    /// Get the current action by language.
+    pub fn current_action(&self) -> Option<Action> {
+        self.current_run().map(|raw_ctx| {
+            unwrap_or_default_log!(
+                self.context().get_action(&self.settings().lang, raw_ctx),
+                "Cannot get action"
+            )
+        })
+    }
+
     /// Get the current action by language and secondary language.
     pub fn current_actions(&self) -> Option<(Action, Option<Action>)> {
         self.current_run().map(|raw_ctx| self.get_actions(raw_ctx))

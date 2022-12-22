@@ -195,7 +195,7 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
         let mut model = storage.model.write().await;
         if model.next_run() {
             let is_empty = {
-                let action = model.current_actions().unwrap().0;
+                let action = model.current_action().unwrap();
                 match action {
                     Action::Empty => true,
                     Action::Custom(vars) => !vars.contains_key("video"),
