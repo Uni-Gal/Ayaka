@@ -134,6 +134,11 @@ impl<M: SettingsManager> GameViewModel<M> {
         self.settings.as_ref().unwrap()
     }
 
+    /// Set the [`Settings`].
+    pub fn set_settings(&mut self, settings: Settings) {
+        self.settings = Some(settings);
+    }
+
     /// The loaded [`ActionRecord`]s.
     pub fn records(&self) -> &[ActionRecord] {
         &self.records
@@ -167,6 +172,11 @@ impl<M: SettingsManager> GameViewModel<M> {
         self.context_mut().set_context(ctx)
     }
 
+    /// Start a game with the index of records.
+    pub fn init_context_by_index(&mut self, index: usize) {
+        self.init_context(self.records()[index].clone())
+    }
+
     fn push_history(&mut self, ctx: &RawContext) {
         let cur_text = self
             .context()
@@ -190,6 +200,8 @@ impl<M: SettingsManager> GameViewModel<M> {
         let ctx = self.context_mut().next_run();
         if let Some(ctx) = &ctx {
             self.push_history(ctx);
+            self.global_record.as_mut().unwrap().update(ctx);
+            log::debug!("{:?}", ctx);
         }
         self.current_raw_context = ctx;
         self.current_raw_context.is_some()
@@ -198,6 +210,7 @@ impl<M: SettingsManager> GameViewModel<M> {
     /// Step back to the last run.
     pub fn next_back_run(&mut self) -> bool {
         if self.current_record.history.len() <= 1 {
+            log::debug!("No action in the history.");
             false
         } else {
             if let Some(ctx) = self.current_record.history.pop() {
@@ -221,7 +234,7 @@ impl<M: SettingsManager> GameViewModel<M> {
     }
 
     /// Get the current action by language and secondary language.
-    pub fn current_action(&self) -> Option<(Action, Option<Action>)> {
+    pub fn current_actions(&self) -> Option<(Action, Option<Action>)> {
         self.current_run().map(|raw_ctx| self.get_actions(raw_ctx))
     }
 

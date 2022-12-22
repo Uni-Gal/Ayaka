@@ -19,7 +19,7 @@ export default {
     },
     async created() {
         this.locales = await avaliable_locale(this.$i18n.availableLocales)
-        let sub_locale = (await get_settings())?.sub_lang
+        let sub_locale = (await get_settings()).sub_lang
         if (sub_locale && this.$i18n.locale != sub_locale) {
             this.sub_locale = sub_locale
         }
