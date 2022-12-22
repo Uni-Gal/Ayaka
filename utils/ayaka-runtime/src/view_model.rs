@@ -208,12 +208,13 @@ impl<M: SettingsManager> GameViewModel<M> {
             log::debug!("No action in the history.");
             false
         } else {
-            if let Some(ctx) = self.current_record.history.pop() {
-                log::debug!("Back to para {}, act {}", ctx.cur_para, ctx.cur_act);
-                self.context_mut().set_context(ctx);
-            }
+            self.current_record.history.pop();
             self.current_raw_context = self.current_record.history.last().cloned();
-            self.current_raw_context.is_some()
+            debug_assert!(self.current_raw_context.is_some());
+            let mut ctx = self.current_raw_context.clone().unwrap();
+            ctx.cur_act += 1;
+            self.context_mut().set_context(ctx);
+            true
         }
     }
 
