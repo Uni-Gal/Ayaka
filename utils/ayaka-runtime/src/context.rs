@@ -16,16 +16,12 @@ use vfs::*;
 
 /// The game running context.
 pub struct Context {
-    /// The inner [`Game`] object.
-    pub game: Game,
-    /// The root path of config.
-    pub root_path: VfsPath,
+    game: Game,
+    root_path: VfsPath,
     frontend: FrontendType,
     runtime: Arc<Runtime>,
-    /// The inner raw context.
-    pub ctx: RawContext,
-    /// The inner record.
-    pub record: ActionRecord,
+    ctx: RawContext,
+    record: ActionRecord,
     switches: Vec<bool>,
     vars: VarMap,
 }
@@ -212,6 +208,21 @@ impl Context {
         self.game
             .find_res_fallback(loc)
             .and_then(|map| map.get(key))
+    }
+
+    /// The inner [`Game`] object.
+    pub fn game(&self) -> &Game {
+        &self.game
+    }
+
+    /// The root path of config.
+    pub fn root_path(&self) -> &VfsPath {
+        &self.root_path
+    }
+
+    /// The inner record.
+    pub fn record(&self) -> &ActionRecord {
+        &self.record
     }
 
     /// Call the part of script with this context.

@@ -36,8 +36,10 @@ async fn main() -> Result<()> {
     output.command("usepackage", ["lua-ul"]).await?;
     output.command("usepackage", ["luatexja-ruby"]).await?;
     output.command("usepackage", ["verbatim"]).await?;
-    output.command("title", [&ctx.game.config.title]).await?;
-    output.command("author", [&ctx.game.config.author]).await?;
+    output.command("title", [&ctx.game().config.title]).await?;
+    output
+        .command("author", [&ctx.game().config.author])
+        .await?;
     output
         .environment("document", |output| async move {
             output.command0("maketitle").await?;

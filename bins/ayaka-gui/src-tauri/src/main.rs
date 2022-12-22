@@ -142,11 +142,11 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
     }
     let ctx = context.await?;
     asset_resolver::ROOT_PATH
-        .set(ctx.root_path.clone())
+        .set(ctx.root_path().clone())
         .unwrap();
 
     let window = handle.get_window("main").unwrap();
-    window.set_title(&ctx.game.config.title)?;
+    window.set_title(&ctx.game().config.title)?;
     let settings = {
         OpenGameStatus::LoadSettings.emit(&handle)?;
         unwrap_or_default_log!(storage.manager.load_settings(), "Load settings failed")
@@ -155,14 +155,14 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
 
     OpenGameStatus::LoadGlobalRecords.emit(&handle)?;
     let global_record = unwrap_or_default_log!(
-        storage.manager.load_global_record(&ctx.game.config.title),
+        storage.manager.load_global_record(&ctx.game().config.title),
         "Load global records failed"
     );
     *storage.global_record.lock().await = Some(global_record);
 
     OpenGameStatus::LoadRecords.emit(&handle)?;
     *storage.records.lock().await = unwrap_or_default_log!(
-        storage.manager.load_records(&ctx.game.config.title),
+        storage.manager.load_records(&ctx.game().config.title),
         "Load records failed"
     );
     *storage.context.lock().await = Some(ctx);
@@ -210,7 +210,7 @@ async fn save_record_to(index: usize, storage: State<'_, Storage>) -> CommandRes
         .await
         .as_ref()
         .unwrap()
-        .record
+        .record()
         .clone();
     if index >= records.len() {
         records.push(record);
@@ -223,7 +223,7 @@ async fn save_record_to(index: usize, storage: State<'_, Storage>) -> CommandRes
 #[command]
 async fn save_all(storage: State<'_, Storage>) -> CommandResult<()> {
     let context = storage.context.lock().await;
-    let game = &context.as_ref().unwrap().game.config.title;
+    let game = &context.as_ref().unwrap().game().config.title;
     storage
         .manager
         .save_settings(storage.settings.lock().await.as_ref().unwrap())?;
@@ -247,7 +247,7 @@ async fn avaliable_locale(
         .await
         .as_ref()
         .unwrap()
-        .game
+        .game()
         .paras
         .keys()
         .cloned()
@@ -269,7 +269,7 @@ async fn choose_locale(
 #[command]
 async fn info(storage: State<'_, Storage>) -> CommandResult<Option<GameInfo>> {
     let ctx = storage.context.lock().await;
-    Ok(Some(GameInfo::new(&ctx.as_ref().unwrap().game)))
+    Ok(Some(GameInfo::new(ctx.as_ref().unwrap().game())))
 }
 
 #[command]
@@ -305,7 +305,7 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
         if let Some(raw_ctx) = context.next_run() {
             debug!("Next action: {:?}", raw_ctx);
             let is_empty = {
-                let action = context.get_action(&context.game.config.base_lang, &raw_ctx)?;
+                let action = context.get_action(&context.game().config.base_lang, &raw_ctx)?;
                 if let Action::Empty = action {
                     true
                 } else if let Action::Custom(vars) = action {
@@ -426,7 +426,7 @@ async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<(Action, Opti
     let settings = storage.settings.lock().await;
     let settings = settings.as_ref().unwrap();
     let mut hs = context
-        .record
+        .record()
         .history
         .iter()
         .map(|raw_ctx| get_actions(context, settings, raw_ctx))
