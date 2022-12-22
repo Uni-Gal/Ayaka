@@ -43,6 +43,15 @@ pub enum OpenStatus {
     LoadParagraph,
 }
 
+impl From<LoadStatus> for OpenStatus {
+    fn from(value: LoadStatus) -> Self {
+        match value {
+            LoadStatus::CreateEngine => Self::CreateRuntime,
+            LoadStatus::LoadPlugin(name, i, len) => Self::LoadPlugin(name, i, len),
+        }
+    }
+}
+
 const MAGIC_NUMBER_START: MagicNumber = *b"AYAPACK";
 const MAGIC_NUMBER_END: MagicNumber = *b"PACKEND";
 
@@ -94,12 +103,7 @@ impl Context {
             let runtime = Runtime::load(&config.plugins.dir, &root_path, &config.plugins.modules);
             pin_mut!(runtime);
             while let Some(load_status) = runtime.next().await {
-                match load_status {
-                    LoadStatus::CreateEngine => yield OpenStatus::CreateRuntime,
-                    LoadStatus::LoadPlugin(name, i, len) => {
-                        yield OpenStatus::LoadPlugin(name, i, len)
-                    }
-                };
+                yield load_status.into();
             }
             runtime.await?
         };

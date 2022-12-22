@@ -14,6 +14,7 @@ mod context;
 mod locale;
 pub mod plugin;
 pub mod settings;
+mod view_model;
 
 #[doc(no_inline)]
 pub use anyhow;
@@ -31,6 +32,7 @@ pub use locale::*;
 pub use log;
 #[doc(no_inline)]
 pub use vfs;
+pub use view_model::*;
 
 /// Get the version of Ayaka runtime.
 /// This version string is exacted from `CARGO_PKG_VERSION`.
