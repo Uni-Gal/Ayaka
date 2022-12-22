@@ -1,7 +1,7 @@
 use crate::{settings::*, *};
 use anyhow::Result;
 use serde::Serialize;
-use std::path::Path;
+use std::{collections::HashSet, path::Path};
 use stream_future::stream;
 use trylog::macros::*;
 
@@ -144,6 +144,11 @@ impl<M: SettingsManager> GameViewModel<M> {
         self.global_record.as_ref().unwrap()
     }
 
+    /// Get the avaliable locales from paragraphs.
+    pub fn avaliable_locale(&self) -> HashSet<Locale> {
+        self.context().game().paras.keys().cloned().collect()
+    }
+
     /// Start a new game.
     pub fn init_new(&mut self) {
         self.init_context(ActionRecord { history: vec![] })
@@ -209,6 +214,31 @@ impl<M: SettingsManager> GameViewModel<M> {
         self.current_raw_context.as_ref()
     }
 
+    /// Get the current paragraph title.
+    pub fn current_title(&self) -> Option<&String> {
+        self.context()
+            .current_paragraph_title(&self.settings().lang)
+    }
+
+    /// Get the current action by language and secondary language.
+    pub fn current_action(&self) -> Option<(Action, Option<Action>)> {
+        self.current_run().map(|raw_ctx| self.get_actions(raw_ctx))
+    }
+
+    fn get_actions(&self, raw_ctx: &RawContext) -> (Action, Option<Action>) {
+        let action = unwrap_or_default_log!(
+            self.context().get_action(&self.settings().lang, raw_ctx),
+            "Cannot get action"
+        );
+        let base_action = self.settings().sub_lang.as_ref().map(|sub_lang| {
+            unwrap_or_default_log!(
+                self.context().get_action(sub_lang, raw_ctx),
+                "Cannot get sub action"
+            )
+        });
+        (action, base_action)
+    }
+
     /// Choose a switch item by index.
     pub fn switch(&mut self, i: usize) {
         log::debug!("Switch {}", i);
@@ -240,5 +270,30 @@ impl<M: SettingsManager> GameViewModel<M> {
         self.current_run()
             .map(|ctx| self.global_record().visited(ctx))
             .unwrap_or_default()
+    }
+
+    /// Get the last action text from each record.
+    pub fn records_text(&self) -> Result<Vec<ActionText>> {
+        let mut res = vec![];
+        for record in self.records() {
+            let raw_ctx = record.history.last().unwrap();
+            let action = self.context().get_action(&self.settings().lang, raw_ctx)?;
+            if let Action::Text(action) = action {
+                res.push(action);
+            } else {
+                unreachable!()
+            }
+        }
+        Ok(res)
+    }
+
+    /// Get the current history by language and secondary language.
+    pub fn current_history(&self) -> Vec<(Action, Option<Action>)> {
+        self.record()
+            .history
+            .iter()
+            .rev()
+            .map(|raw_ctx| self.get_actions(raw_ctx))
+            .collect()
     }
 }
