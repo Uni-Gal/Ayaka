@@ -45,7 +45,7 @@ async fn main() -> Result<()> {
             output.command0("maketitle").await?;
             output.command0("tableofcontents").await?;
 
-            ctx.init_new();
+            ctx.set_start_context();
             let loc = opts.locale.unwrap_or_else(Locale::current);
 
             let mut current_para = None;
