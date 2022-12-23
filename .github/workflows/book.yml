@@ -19,6 +19,10 @@ jobs:
         uses: baptiste0928/cargo-install@v1
         with:
           crate: mdbook-graphviz
+      - name: Setup mdbook-i18n
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: mdbook-i18n
       - name: Build book
         run: make book
       - name: Deploy
