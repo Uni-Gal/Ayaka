@@ -13,7 +13,6 @@ icu_locid = { version = "1.0.0", features = ["std"] }
 sys-locale = "0.2"
 serde = { workspace = true, features = ["derive"] }
 serde_yaml = { workspace = true }
-serde_json = { workspace = true }
 anyhow = { workspace = true }
 stream-future = { workspace = true }
 futures-util = "0.3"
