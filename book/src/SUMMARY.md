@@ -1,7 +1,7 @@
 # Summary
 
 - [Introduction](./intro.md)
-- [Quick start](./quick_start.md)
+- [Start from source](./quick_start.md)
 - [Config](./config/summary.md)
     - [File structure](./config/structure.md)
     - [Specify character](./config/character.md)
