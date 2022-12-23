@@ -19,4 +19,4 @@ run:
 run-gui:
 	cd ayaka-gui && $(MAKE) run FILE=$(FILE)
 run-latex:
-	cargo run --package ayaka-latex -- $(FILE) -o $(basename $(FILE)).tex
+	cargo run --package ayaka-latex -- $(FILE) -o $(TEXOUT)

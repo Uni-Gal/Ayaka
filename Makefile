@@ -35,8 +35,9 @@ example-$(1): examples/$(1)/config.yaml plugins
 	cd bins && $$(MAKE) run FILE=$$(realpath $$<)
 example-$(1)-gui: examples/$(1).ayapack plugins
 	cd bins && $$(MAKE) run-gui FILE=$$(realpath $$<)
-examples/$(1)/config.tex: examples/$(1)/config.yaml plugins
-	cd bins && $$(MAKE) run-latex FILE=$$(realpath $$<)
+examples/$(1)/latex/config.tex: examples/$(1).ayapack plugins
+	mkdir -p $$(@D)
+	cd bins && $$(MAKE) run-latex FILE=$$(realpath $$<) TEXOUT=$$(abspath $$@)
 examples/$(1).ayapack:
 	frfs pack examples/$(1)/ examples/$(1).ayapack --magic-number-start AYAPACK --magic-number-end PACKEND
 
