@@ -1,7 +1,7 @@
 [book]
 authors = ["Berrysoft"]
 language = "en"
-multilingual = false
+multilingual = true
 src = "src"
 title = "Ayaka Book"
 
@@ -10,3 +10,7 @@ edition = "2021"
 
 [preprocessor.graphviz]
 command = "mdbook-graphviz"
+
+[[output.i18n.translations]]
+language = "zh-Hans"
+title = "Ayaka Book"
