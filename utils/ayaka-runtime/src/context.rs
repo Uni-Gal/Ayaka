@@ -1,6 +1,5 @@
 use crate::{
     plugin::{LoadStatus, Runtime},
-    settings::*,
     *,
 };
 use anyhow::{anyhow, bail, Result};
@@ -176,7 +175,7 @@ impl Context {
 
     /// Initialize the [`RawContext`] at the start of the game.
     pub fn set_start_context(&mut self) {
-        self.set_context(ActionRecord { history: vec![] }.last_ctx_with_game(self.game()))
+        self.set_context(self.game().start_context())
     }
 
     /// Initialize the [`RawContext`] with given record.

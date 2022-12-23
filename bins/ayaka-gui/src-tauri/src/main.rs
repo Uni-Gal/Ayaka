@@ -9,10 +9,8 @@
 mod asset_resolver;
 mod settings;
 
-use ayaka_runtime::{
+use ayaka_model::{
     anyhow::{self, Result},
-    log::debug,
-    settings::*,
     *,
 };
 use flexi_logger::{FileSpec, LogSpecification, Logger};
@@ -51,7 +49,7 @@ impl Display for CommandError {
 
 #[command]
 fn ayaka_version() -> &'static str {
-    ayaka_runtime::version()
+    ayaka_model::version()
 }
 
 struct Storage {
@@ -168,7 +166,7 @@ async fn choose_locale(
 ) -> CommandResult<Option<Locale>> {
     let locales = avaliable_locale(storage, locales).await?;
     let current = Locale::current();
-    debug!("Choose {} from {:?}", current, locales);
+    log::debug!("Choose {} from {:?}", current, locales);
     Ok(current.choose_from(&locales).cloned())
 }
 

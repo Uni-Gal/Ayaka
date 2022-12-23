@@ -9,6 +9,7 @@ members = [
     "ayaka-plugin-wasmtime",
     "ayaka-plugin-wasmi",
     "ayaka-runtime",
+    "ayaka-model",
 ]
 
 resolver = "2"
@@ -22,6 +23,7 @@ ayaka-plugin-nop = { path = "ayaka-plugin-nop" }
 ayaka-plugin-wasmer = { path = "ayaka-plugin-wasmer" }
 ayaka-plugin-wasmtime = { path = "ayaka-plugin-wasmtime" }
 ayaka-plugin-wasmi = { path = "ayaka-plugin-wasmi" }
+ayaka-runtime = { path = "ayaka-runtime" }
 
 anyhow = "1.0"
 
@@ -29,6 +31,10 @@ fallback = "0.1"
 
 log = "0.4"
 trylog = "0.3"
+
+tryiterator = { git = "https://github.com/Pernosco/tryiterator.git" }
+
+stream-future = "0.3"
 
 rmp-serde = "1.1"
 serde = "1.0"
