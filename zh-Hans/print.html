@@ -1,0 +1,280 @@
+<!DOCTYPE HTML>
+<html lang="zh-Hans" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Ayaka Book</title>
+        <meta name="robots" content="noindex" />
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="highlight.css">
+        <link rel="stylesheet" href="tomorrow-night.css">
+        <link rel="stylesheet" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+    </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="intro.html"><strong aria-hidden="true">1.</strong> 介绍</a></li><li class="chapter-item expanded "><a href="cook/summary.html"><strong aria-hidden="true">2.</strong> 开始</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="cook/01-install-rust.html"><strong aria-hidden="true">2.1.</strong> 安装 Rust</a></li><li class="chapter-item expanded "><a href="cook/02-install-msys2.html"><strong aria-hidden="true">2.2.</strong> 安装 MSYS2</a></li></ol></li><li class="chapter-item expanded "><a href="quick_start.html"><strong aria-hidden="true">3.</strong> 从源代码开始</a></li><li class="chapter-item expanded "><a href="config/summary.html"><strong aria-hidden="true">4.</strong> 配置</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="config/structure.html"><strong aria-hidden="true">4.1.</strong> 文件结构</a></li><li class="chapter-item expanded "><a href="config/character.html"><strong aria-hidden="true">4.2.</strong> 指定角色</a></li><li class="chapter-item expanded "><a href="config/resources.html"><strong aria-hidden="true">4.3.</strong> 资源</a></li><li class="chapter-item expanded "><a href="config/i18n.html"><strong aria-hidden="true">4.4.</strong> 国际化</a></li><li class="chapter-item expanded "><a href="config/switches.html"><strong aria-hidden="true">4.5.</strong> 分支</a></li><li class="chapter-item expanded "><a href="config/script.html"><strong aria-hidden="true">4.6.</strong> 脚本</a></li></ol></li><li class="chapter-item expanded "><a href="runtime/summary.html"><strong aria-hidden="true">5.</strong> 运行时</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="runtime/run.html"><strong aria-hidden="true">5.1.</strong> 运行一个游戏</a></li></ol></li><li class="chapter-item expanded "><a href="plugin/summary.html"><strong aria-hidden="true">6.</strong> 插件</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="plugin/script_plugin.html"><strong aria-hidden="true">6.1.</strong> Script 插件</a></li><li class="chapter-item expanded "><a href="plugin/text_plugin.html"><strong aria-hidden="true">6.2.</strong> Text 插件</a></li><li class="chapter-item expanded "><a href="plugin/line_plugin.html"><strong aria-hidden="true">6.3.</strong> Line 插件</a></li><li class="chapter-item expanded "><a href="plugin/action_plugin.html"><strong aria-hidden="true">6.4.</strong> Action 插件</a></li><li class="chapter-item expanded "><a href="plugin/game_plugin.html"><strong aria-hidden="true">6.5.</strong> Game 插件</a></li></ol></li><li class="chapter-item expanded "><a href="gui/summary.html"><strong aria-hidden="true">7.</strong> GUI</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="gui/live2d.html"><strong aria-hidden="true">7.1.</strong> Live2D</a></li></ol></li><li class="chapter-item expanded "><a href="platforms.html"><strong aria-hidden="true">8.</strong> 支持的平台</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Ayaka Book</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="介绍"><a class="header" href="#介绍">介绍</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="start"><a class="header" href="#start">Start</a></h1>
+<p>我们假设读者是没有计算机背景的游戏制作人或视觉小说剧本家，在此基础上完成后续操作，成功运行本游戏引擎的游戏。</p>
+<p>你将会学习安装 Rust 与 MSYS2，之后就可以<a href="cook/../quick_start.html">从源代码开始</a>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="安装rust环境"><a class="header" href="#安装rust环境">安装Rust环境</a></h1>
+<p>Rust是一门现代化的编程语言，且为编译执行，这就意味着并不需要特别的运行环境或解释器才能运行。我们需要安装的是Rust的开发环境。</p>
+<p>首先，我们找到Rust语言的<a href="https://www.rust-lang.org/">官网</a>，官网提供了多种语言的本地化，因此您可以切换点击“English”切换到简体中文界面方便阅读。随后我们依照官网的<a href="https://www.rust-lang.org/zh-CN/tools/install">安装指南</a>下载。</p>
+<p>Rust可在Windows、Linux、macOS、FreeBSD和NetBSD上运行。</p>
+<h2 id="如果您正在运行windows"><a class="header" href="#如果您正在运行windows">如果您正在运行Windows</a></h2>
+<p>则根据自己电脑的实际情况选择下载<a href="https://static.rust-lang.org/rustup/dist/i686-pc-windows-msvc/rustup-init.exe">32位</a>或<a href="https://static.rust-lang.org/rustup/dist/x86_64-pc-windows-msvc/rustup-init.exe">64位</a>的Rustup安装器。</p>
+<h2 id="如果您正在运行unix"><a class="header" href="#如果您正在运行unix">如果您正在运行Unix</a></h2>
+<p>在终端中运行如下指令，然后按照提示交互安装。</p>
+<pre><code>curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+</code></pre>
+<p>下载部分组件可能需要较长的时间，推荐在网络条件（尤其是访问境外服务器）良好的情况下进行。</p>
+<p>一切完成后，在终端内输入<code>rustc --version</code>，<code>cargo --version</code>和<code>rustup --version</code>以确认安装正常。</p>
+<h2 id="换源tuna"><a class="header" href="#换源tuna">换源tuna</a></h2>
+<p>https://mirrors.tuna.tsinghua.edu.cn/help/crates.io-index.git/</p>
+<h2 id="切换到-nightly"><a class="header" href="#切换到-nightly">切换到 nightly</a></h2>
+<pre><code>rustup install nightly
+rustup default nightly
+</code></pre>
+<h2 id="设定交叉编译目标"><a class="header" href="#设定交叉编译目标">设定交叉编译目标</a></h2>
+<pre><code>rustup target add 123
+456
+789
+</code></pre>
+<h2 id="每次在运行前的操作"><a class="header" href="#每次在运行前的操作">每次在运行前的操作</a></h2>
+<p>因为是nightly，所以每天更新</p>
+<pre><code>rustup update
+</code></pre>
+<p>此外还有</p>
+<pre><code>git pull
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="安装-msys2"><a class="header" href="#安装-msys2">安装 MSYS2</a></h1>
+<ul>
+<li>https://packages.msys2.org/package/make</li>
+<li>https://segmentfault.com/q/1010000016064839</li>
+</ul>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="从源代码开始"><a class="header" href="#从源代码开始">从源代码开始</a></h1>
+<h2 id="先决条件"><a class="header" href="#先决条件">先决条件</a></h2>
+<p>所有平台都需要安装有<a href="https://www.rust-lang.org/">Rust</a>和<a href="https://nodejs.org/">Nodejs</a>。</p>
+<ul>
+<li>Rust: nightly toolchain.</li>
+<li>Nodejs: <a href="https://vitejs.dev/">Vite</a>需要14.18+/16+。</li>
+</ul>
+<h3 id="windows"><a class="header" href="#windows">Windows</a></h3>
+<p>建议使用Windows 10+，但Rust支持的任何Windows版本皆可。</p>
+<p><a href="https://tauri.app/">Tauri</a>需要<a href="https://developer.microsoft.com/en-us/microsoft-edge/webview2/">WebView2</a>。最新的Edge浏览器已包含它。</p>
+<p>要运行Makefile工具链，您需要来自<a href="https://www.msys2.org/">MSYS2</a>项目的GNU Make，Msys2(<code>make</code>)或Mingw64(<code>mingw32-make</code>)皆可。</p>
+<p>请注意，如果在您的PATH中来自WSL的<code>bash.exe</code>位于MSYS2之前，则<code>npm</code>命令可能会失败。</p>
+<h3 id="linux"><a class="header" href="#linux">Linux</a></h3>
+<p>需要<code>webkit2gtk</code>。我们仅支持<a href="https://tauri.app/">Tauri</a>锁依赖的<code>webkit2gtk-4.0</code>。</p>
+<h3 id="macos"><a class="header" href="#macos">macOS</a></h3>
+<p>通常我们不需要更多依赖，但你应该确保至少有<code>make</code>。</p>
+<h2 id="从源代码clone"><a class="header" href="#从源代码clone">从源代码Clone</a></h2>
+<pre><code class="language-bash">$ git clone https://github.com/Uni-Gal/Ayaka.git
+$ cd Ayaka
+</code></pre>
+<h2 id="为webassembly添加target"><a class="header" href="#为webassembly添加target">为WebAssembly添加target</a></h2>
+<pre><code class="language-bash">$ rustup target add wasm32-unknown-unknown
+</code></pre>
+<h2 id="进行基础测试"><a class="header" href="#进行基础测试">进行基础测试</a></h2>
+<pre><code class="language-bash">$ make test
+</code></pre>
+<h2 id="运行实例"><a class="header" href="#运行实例">运行实例</a></h2>
+<pre><code class="language-bash">$ # Run Fibonacci2
+$ make example-Fibonacci2
+$ # Run Orga in GUI
+$ make example-Orga-gui
+</code></pre>
+<h2 id="构建前端"><a class="header" href="#构建前端">构建前端</a></h2>
+<pre><code class="language-bash">$ make release
+</code></pre>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="配置"><a class="header" href="#配置">配置</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="文件结构"><a class="header" href="#文件结构">文件结构</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="指定角色"><a class="header" href="#指定角色">指定角色</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="资源"><a class="header" href="#资源">资源</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="国际化"><a class="header" href="#国际化">国际化</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="分支"><a class="header" href="#分支">分支</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="脚本"><a class="header" href="#脚本">脚本</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="运行时"><a class="header" href="#运行时">运行时</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="运行一个游戏"><a class="header" href="#运行一个游戏">运行一个游戏</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="插件"><a class="header" href="#插件">插件</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="script-插件"><a class="header" href="#script-插件">Script 插件</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="text-插件"><a class="header" href="#text-插件">Text 插件</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="line-插件"><a class="header" href="#line-插件">Line 插件</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="action-插件"><a class="header" href="#action-插件">Action 插件</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="game-插件"><a class="header" href="#game-插件">Game 插件</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="gui"><a class="header" href="#gui">GUI</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="live2d"><a class="header" href="#live2d">Live2D</a></h1>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="支持的平台"><a class="header" href="#支持的平台">支持的平台</a></h1>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+        <script>
+        window.addEventListener('load', function() {
+            window.setTimeout(window.print, 100);
+        });
+        </script>
+
+    </body>
+</html>
