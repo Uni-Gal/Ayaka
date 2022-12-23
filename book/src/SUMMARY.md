@@ -1,6 +1,9 @@
 # Summary
 
 - [Introduction](./intro.md)
+- [Start](./cook/summary.md)
+  - [Install Rust](./cook/01-install-rust.md)
+  - [Install MSYS2](./cook/02-install-msys2.md)
 - [Start from source](./quick_start.md)
 - [Config](./config/summary.md)
     - [File structure](./config/structure.md)
