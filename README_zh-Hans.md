@@ -19,7 +19,7 @@ Ayaka目前是[OSPP 2022](https://summer-ospp.ac.cn/)的一个项目。
 * 从配置直接生成PDF的LaTeX前端原型。
 
 ## 文档
-参见[Ayaka Book](https://uni-gal.github.io/Ayaka/).
+参见[Ayaka Book](https://uni-gal.github.io/Ayaka/zh-Hans).
 
 API文档需要在`utils/target/doc`内构建：
 ``` bash
