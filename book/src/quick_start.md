@@ -1,4 +1,4 @@
-# Quick start
+# Start from source
 
 ## Prerequisites
 All platforms need [Rust](https://www.rust-lang.org/) and [Nodejs](https://nodejs.org/) installed.

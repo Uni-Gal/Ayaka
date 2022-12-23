@@ -19,10 +19,14 @@ jobs:
         uses: baptiste0928/cargo-install@v1
         with:
           crate: mdbook-graphviz
+      - name: Setup mdbook-i18n
+        uses: baptiste0928/cargo-install@v1
+        with:
+          crate: mdbook-i18n
       - name: Build book
         run: make book
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./book/book
+          publish_dir: ./book/book/i18n

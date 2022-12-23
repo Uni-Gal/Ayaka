@@ -1,4 +1,4 @@
-# 快速开始
+# 从源代码开始
 
 ## 先决条件
 所有平台都需要安装有[Rust](https://www.rust-lang.org/)和[Nodejs](https://nodejs.org/)。

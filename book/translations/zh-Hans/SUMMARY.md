@@ -1,7 +1,10 @@
 # Summary
 
 - [介绍](./intro.md)
-- [快速开始](./quick_start.md)
+- [开始](./cook/summary.md)
+  - [安装 Rust](./cook/01-install-rust.md)
+  - [安装 MSYS2](./cook/02-install-msys2.md)
+- [从源代码开始](./quick_start.md)
 - [配置](./config/summary.md)
     - [文件结构](./config/structure.md)
     - [指定角色](./config/character.md)

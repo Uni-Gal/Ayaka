@@ -21,9 +21,7 @@ The frontend is Ayaka. The runtime is Ayaka. The script is Ayaka. [Just Ayaka.](
 * A prototype LaTeX frontend to generate PDF from the config.
 
 ## Docs
-For authors with little experience of programming, see [Ayaka cookbook](https://github.com/Uni-Gal/Ayaka/tree/master/book/cookbook).
-
-For developers, see [Ayaka Book](https://uni-gal.github.io/Ayaka/).
+[Ayaka Book](https://uni-gal.github.io/Ayaka/en/).
 
 For API docs, build into `utils/target/doc`:
 ``` bash
