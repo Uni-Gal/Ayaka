@@ -18,7 +18,7 @@ export default {
     methods: {
         async on_record_click(index: number) {
             if (this.op == "load") {
-                await start_record(this.$i18n.locale, index)
+                await start_record(index)
                 await this.$router.replace("/game")
             } else if (this.op == "save") {
                 await save_record_to(index)

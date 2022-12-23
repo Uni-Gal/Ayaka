@@ -198,7 +198,7 @@ name = "ayaka-gui"
 version = "0.1.0"
 dependencies = [
  "axum",
- "ayaka-runtime",
+ "ayaka-model",
  "flexi_logger",
  "mime_guess",
  "serde",
@@ -209,7 +209,6 @@ dependencies = [
  "tauri-plugin-window-state",
  "tower-http",
  "tryiterator",
- "trylog",
 ]
 
 [[package]]
@@ -220,6 +219,17 @@ dependencies = [
  "clap 4.0.30",
  "flexi_logger",
  "tokio",
+]
+
+[[package]]
+name = "ayaka-model"
+version = "0.1.0"
+dependencies = [
+ "ayaka-runtime",
+ "serde",
+ "stream-future",
+ "tryiterator",
+ "trylog",
 ]
 
 [[package]]
@@ -275,7 +285,6 @@ dependencies = [
  "log",
  "rand 0.8.5",
  "serde",
- "serde_json",
  "serde_yaml",
  "stream-future",
  "sys-locale",

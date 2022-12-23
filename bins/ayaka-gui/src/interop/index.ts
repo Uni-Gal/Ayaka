@@ -103,7 +103,7 @@ export function open_game(): Promise<void> {
     return invoke("open_game")
 }
 
-export function get_settings(): Promise<Settings | undefined> {
+export function get_settings(): Promise<Settings> {
     return invoke("get_settings")
 }
 
@@ -120,13 +120,13 @@ export function save_record_to(index: number): Promise<void> {
 }
 
 export async function set_locale(loc: Locale): Promise<void> {
-    let settings = await get_settings() ?? { lang: "" };
+    let settings = await get_settings()
     settings.lang = loc
     await set_settings(settings)
 }
 
 export async function set_sub_locale(loc?: Locale): Promise<void> {
-    let settings = await get_settings() ?? { lang: "" };
+    let settings = await get_settings()
     settings.sub_lang = loc
     await set_settings(settings)
 }
@@ -148,12 +148,12 @@ export async function info(): Promise<GameInfo> {
     return res ?? { title: "", author: "", props: {} }
 }
 
-export function start_new(locale: Locale): Promise<void> {
-    return invoke("start_new", { locale: locale })
+export function start_new(): Promise<void> {
+    return invoke("start_new", {})
 }
 
-export function start_record(locale: Locale, index: number): Promise<void> {
-    return invoke("start_record", { locale: locale, index: index })
+export function start_record(index: number): Promise<void> {
+    return invoke("start_record", { index: index })
 }
 
 export function next_run(): Promise<boolean> {

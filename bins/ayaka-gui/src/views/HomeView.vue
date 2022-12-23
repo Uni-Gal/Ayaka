@@ -18,7 +18,7 @@ export default {
     },
     methods: {
         async new_game() {
-            await start_new(this.$i18n.locale)
+            await start_new()
             if (await next_run()) {
                 this.$router.replace("/game")
             }

@@ -92,7 +92,7 @@ export default {
         async process_settings() {
             const settings = await get_settings()
             console.log(settings)
-            let loc = settings?.lang
+            let loc: string | undefined = settings.lang
             if (!loc || !this.$i18n.availableLocales.includes(loc)) {
                 loc = await choose_locale(this.$i18n.availableLocales)
             }

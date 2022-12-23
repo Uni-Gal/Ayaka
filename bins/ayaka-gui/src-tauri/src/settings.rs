@@ -1,6 +1,6 @@
-use ayaka_runtime::{
+use ayaka_model::{
     anyhow::{self, Result},
-    settings::*,
+    *,
 };
 use serde::{de::DeserializeOwned, Serialize};
 use std::path::{Path, PathBuf};

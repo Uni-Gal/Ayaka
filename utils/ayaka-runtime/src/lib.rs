@@ -13,7 +13,6 @@ mod config;
 mod context;
 mod locale;
 pub mod plugin;
-pub mod settings;
 
 #[doc(no_inline)]
 pub use anyhow;

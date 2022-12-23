@@ -1,6 +1,5 @@
 use crate::{
     plugin::{LoadStatus, Runtime},
-    settings::*,
     *,
 };
 use anyhow::{anyhow, bail, Result};
@@ -16,16 +15,11 @@ use vfs::*;
 
 /// The game running context.
 pub struct Context {
-    /// The inner [`Game`] object.
-    pub game: Game,
-    /// The root path of config.
-    pub root_path: VfsPath,
+    game: Game,
+    root_path: VfsPath,
     frontend: FrontendType,
     runtime: Arc<Runtime>,
-    /// The inner raw context.
-    pub ctx: RawContext,
-    /// The inner record.
-    pub record: ActionRecord,
+    ctx: RawContext,
     switches: Vec<bool>,
     vars: VarMap,
 }
@@ -45,6 +39,15 @@ pub enum OpenStatus {
     LoadResource,
     /// Loading the paragraphs.
     LoadParagraph,
+}
+
+impl From<LoadStatus> for OpenStatus {
+    fn from(value: LoadStatus) -> Self {
+        match value {
+            LoadStatus::CreateEngine => Self::CreateRuntime,
+            LoadStatus::LoadPlugin(name, i, len) => Self::LoadPlugin(name, i, len),
+        }
+    }
 }
 
 const MAGIC_NUMBER_START: MagicNumber = *b"AYAPACK";
@@ -98,12 +101,7 @@ impl Context {
             let runtime = Runtime::load(&config.plugins.dir, &root_path, &config.plugins.modules);
             pin_mut!(runtime);
             while let Some(load_status) = runtime.next().await {
-                match load_status {
-                    LoadStatus::CreateEngine => yield OpenStatus::CreateRuntime,
-                    LoadStatus::LoadPlugin(name, i, len) => {
-                        yield OpenStatus::LoadPlugin(name, i, len)
-                    }
-                };
+                yield load_status.into();
             }
             runtime.await?
         };
@@ -170,27 +168,19 @@ impl Context {
             frontend,
             runtime,
             ctx: RawContext::default(),
-            record: ActionRecord::default(),
             switches: vec![],
             vars: VarMap::default(),
         })
     }
 
-    /// Initialize the [`RawContext`] to the start of the game.
-    pub fn init_new(&mut self) {
-        self.init_context(ActionRecord { history: vec![] })
+    /// Initialize the [`RawContext`] at the start of the game.
+    pub fn set_start_context(&mut self) {
+        self.set_context(self.game().start_context())
     }
 
-    /// Initialize the [`ActionRecord`] with given record.
-    pub fn init_context(&mut self, record: ActionRecord) {
-        self.ctx = record.last_ctx_with_game(&self.game);
-        log::debug!("Context: {:?}", self.ctx);
-        self.record = record;
-        if !self.record.history.is_empty() {
-            // If the record is not empty,
-            // we need to set current context to the next one.
-            self.ctx.cur_act += 1;
-        }
+    /// Initialize the [`RawContext`] with given record.
+    pub fn set_context(&mut self, ctx: RawContext) {
+        self.ctx = ctx;
     }
 
     fn current_paragraph(&self, loc: &Locale) -> Option<&Paragraph> {
@@ -212,6 +202,16 @@ impl Context {
         self.game
             .find_res_fallback(loc)
             .and_then(|map| map.get(key))
+    }
+
+    /// The inner [`Game`] object.
+    pub fn game(&self) -> &Game {
+        &self.game
+    }
+
+    /// The root path of config.
+    pub fn root_path(&self) -> &VfsPath {
+        &self.root_path
     }
 
     /// Call the part of script with this context.
@@ -251,7 +251,7 @@ impl Context {
         }
     }
 
-    fn parse_text(&self, loc: &Locale, text: &Text) -> Result<ActionText> {
+    fn parse_text(&self, loc: &Locale, text: &Text, ctx: &RawContext) -> Result<ActionText> {
         let mut action = ActionText::default();
         for subtext in &text.0 {
             match subtext {
@@ -272,7 +272,7 @@ impl Context {
                         }
                     }
                     Command::Ctx(n) => {
-                        if let Some(value) = self.ctx.locals.get(n) {
+                        if let Some(value) = ctx.locals.get(n) {
                             action.push_back_block(value.get_str())
                         } else {
                             log::warn!("Cannot find variable {}", n)
@@ -414,7 +414,7 @@ impl Context {
 
         let action = cur_text
             .map(|t| match t {
-                Line::Text(t) => self.parse_text(loc, t).map(Action::Text).ok(),
+                Line::Text(t) => self.parse_text(loc, t, ctx).map(Action::Text).ok(),
                 Line::Switch { switches } => Some(Action::Switches(self.parse_switches(switches))),
                 // The real vars will be filled in `merge_action`.
                 Line::Custom(_) => Some(Action::Custom(self.vars.clone())),
@@ -427,24 +427,6 @@ impl Context {
             self.process_action_text(ctx, act)?;
         }
         Ok(act)
-    }
-
-    fn push_history(&mut self) {
-        let ctx = &self.ctx;
-        let cur_text = self
-            .game
-            .find_para(
-                &self.game.config.base_lang,
-                &ctx.cur_base_para,
-                &ctx.cur_para,
-            )
-            .and_then(|p| p.texts.get(ctx.cur_act));
-        let is_text = cur_text
-            .map(|line| matches!(line, Line::Text(_)))
-            .unwrap_or_default();
-        if is_text {
-            self.record.history.push(ctx.clone());
-        }
     }
 
     /// Step to next line.
@@ -479,28 +461,10 @@ impl Context {
 
         let ctx = cur_text_base.cloned().map(|t| {
             unwrap_or_default_log!(self.process_line(t), "Parse line error");
-            self.push_history();
             self.ctx.clone()
         });
         self.ctx.cur_act += 1;
         ctx
-    }
-
-    /// Step back to the last run.
-    pub fn next_back_run(&mut self) -> Option<&RawContext> {
-        if self.record.history.len() <= 1 {
-            None
-        } else {
-            if let Some(ctx) = self.record.history.pop() {
-                self.ctx = ctx;
-                log::debug!(
-                    "Back to para {}, act {}",
-                    self.ctx.cur_para,
-                    self.ctx.cur_act
-                );
-            }
-            self.record.history.last()
-        }
     }
 
     /// Get current paragraph title.

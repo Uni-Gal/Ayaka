@@ -1,0 +1,11 @@
+[package]
+name = "ayaka-model"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ayaka-runtime = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+stream-future = { workspace = true }
+trylog = { workspace = true }
+tryiterator = { workspace = true }

@@ -71,6 +71,15 @@ pub struct Game {
 }
 
 impl Game {
+    /// Create a [`RawContext`] at the start of the game.
+    pub fn start_context(&self) -> RawContext {
+        RawContext {
+            cur_base_para: self.config.start.clone(),
+            cur_para: self.config.start.clone(),
+            ..Default::default()
+        }
+    }
+
     fn choose_from_keys<'a, V>(&'a self, loc: &Locale, map: &'a HashMap<Locale, V>) -> &'a Locale {
         loc.choose_from(map.keys())
             .unwrap_or(&self.config.base_lang)
