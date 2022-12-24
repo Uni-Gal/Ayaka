@@ -1,6 +1,12 @@
 use ayaka_plugin::RawModule;
 use ayaka_runtime::{plugin::*, *};
-use std::{collections::HashMap, path::Path};
+use std::{
+    collections::HashMap,
+    path::Path,
+    sync::atomic::{AtomicUsize, Ordering},
+};
+
+static CUR_ACT: AtomicUsize = AtomicUsize::new(0);
 
 struct ModuleWrapper<'a, M: RawModule> {
     module: &'a Module<M>,
@@ -10,7 +16,10 @@ impl<'a, M: RawModule> ModuleWrapper<'a, M> {
     pub fn call(&self, script: &str) -> VarMap {
         let game_props = HashMap::default();
         let frontend = FrontendType::Text;
-        let ctx = RawContext::default();
+        let mut ctx = RawContext::default();
+        // Update cur_act to avoid ayacript cache.
+        let cur_act = CUR_ACT.fetch_add(1, Ordering::SeqCst);
+        ctx.cur_act = cur_act;
         let props = VarMap::from([("exec".to_string(), RawValue::Str(script.to_string()))]);
         let ctx = LineProcessContextRef {
             game_props: &game_props,
