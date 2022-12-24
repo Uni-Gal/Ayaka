@@ -39,7 +39,7 @@ mod runtime_tests {
     use super::*;
     use ayaka_plugin::RawModule;
     use ayaka_plugin_wasmer::WasmerModule;
-    // use ayaka_plugin_wasmi::WasmiModule;
+    use ayaka_plugin_wasmi::WasmiModule;
     use ayaka_plugin_wasmtime::WasmtimeModule;
 
     #[tokio::test]
@@ -111,8 +111,8 @@ mod runtime_tests {
         .await;
     }
 
-    // #[instantiate_tests(<WasmiModule>)]
-    // mod inst_wasmi {}
+    #[instantiate_tests(<WasmiModule>)]
+    mod inst_wasmi {}
     #[instantiate_tests(<WasmtimeModule>)]
     mod inst_wasmtime {}
     #[instantiate_tests(<WasmerModule>)]

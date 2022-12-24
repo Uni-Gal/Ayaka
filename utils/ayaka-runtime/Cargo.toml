@@ -34,7 +34,7 @@ tokio = { version = "1", features = ["macros", "parking_lot", "rt"] }
 generic-tests = "0.1"
 
 [features]
-default = ["wasmtime"]
+default = ["wasmi"]
 wasmi = ["ayaka-plugin-wasmi"]
 wasmtime = ["ayaka-plugin-wasmtime"]
 wasmer = ["ayaka-plugin-wasmer"]
