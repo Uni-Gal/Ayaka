@@ -72,7 +72,7 @@ impl WasmtimeModule {
     ) -> Result<T> {
         let func = self
             .instance
-            .get_typed_func::<(i32, i32), u64, _>(&mut store, name)?;
+            .get_typed_func::<(i32, i32), u64>(&mut store, name)?;
 
         let ptr = self.abi_alloc.call(&mut store, data.len() as i32)?;
         unsafe {
@@ -164,7 +164,7 @@ impl ayaka_plugin::Linker<WasmtimeModule> for WasmtimeLinker {
                     .unwrap()
                     .into_func()
                     .unwrap()
-                    .typed::<i32, i32, _>(store.as_context())?;
+                    .typed::<i32, i32>(store.as_context())?;
                 let ptr = abi_alloc.call(store.as_context_mut(), data.len() as i32)?;
                 mem_slice_mut(store.as_context_mut(), &memory, ptr, data.len() as i32)
                     .copy_from_slice(&data);
