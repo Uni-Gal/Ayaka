@@ -1851,16 +1851,16 @@ dependencies = [
 
 [[package]]
 name = "language-matcher"
-version = "0.1.2"
+version = "0.1.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c78539eb72a4116bdffdc5a679b6b6bab4546ab20e1b43fdf1245e6b5b633fac"
+checksum = "7d5800c7a834797135787630e66f81873ff2c164cb9bd96a1e174b42049218a7"
 dependencies = [
  "icu_locid",
  "icu_locid_transform",
  "icu_provider",
  "icu_provider_blob",
+ "quick-xml",
  "serde",
- "serde-xml-rs",
 ]
 
 [[package]]
@@ -2510,6 +2510,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "quick-xml"
+version = "0.27.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ffc053f057dd768a56f62cd7e434c42c831d296968997e9ac1f76ea7c2d14c41"
+dependencies = [
+ "memchr",
+ "serde",
+]
+
+[[package]]
 name = "quote"
 version = "1.0.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2816,18 +2826,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb7d1f0d3021d347a83e556fc4683dea2ea09d87bccdf88ff5c12545d89d5efb"
 dependencies = [
  "serde_derive",
-]
-
-[[package]]
-name = "serde-xml-rs"
-version = "0.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb3aa78ecda1ebc9ec9847d5d3aba7d618823446a049ba2491940506da6e2782"
-dependencies = [
- "log",
- "serde",
- "thiserror",
- "xml-rs",
 ]
 
 [[package]]
@@ -3941,8 +3939,8 @@ checksum = "1c38c045535d93ec4f0b4defec448e4291638ee608530863b1e2ba115d4fff7f"
 
 [[package]]
 name = "wasmi"
-version = "0.20.0"
-source = "git+https://github.com/paritytech/wasmi.git#3c62031d096a73c59edb05ea5cc508e5bc65b0f6"
+version = "0.21.0"
+source = "git+https://github.com/paritytech/wasmi.git#9e228e8a253074bf25cfcfeff11b07ff2033170e"
 dependencies = [
  "spin",
  "wasmi_arena",
@@ -3952,13 +3950,13 @@ dependencies = [
 
 [[package]]
 name = "wasmi_arena"
-version = "0.1.0"
-source = "git+https://github.com/paritytech/wasmi.git#3c62031d096a73c59edb05ea5cc508e5bc65b0f6"
+version = "0.2.0"
+source = "git+https://github.com/paritytech/wasmi.git#9e228e8a253074bf25cfcfeff11b07ff2033170e"
 
 [[package]]
 name = "wasmi_core"
-version = "0.5.0"
-source = "git+https://github.com/paritytech/wasmi.git#3c62031d096a73c59edb05ea5cc508e5bc65b0f6"
+version = "0.6.0"
+source = "git+https://github.com/paritytech/wasmi.git#9e228e8a253074bf25cfcfeff11b07ff2033170e"
 dependencies = [
  "downcast-rs",
  "libm",
