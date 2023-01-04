@@ -19,6 +19,10 @@ jobs:
             os: windows-latest
             target: x86_64-pc-windows-msvc
             postfix: .exe
+          - name: windows-arm64
+            os: windows-latest
+            target: aarch64-pc-windows-msvc
+            postfix: .exe
           - name: macos-x64
             os: macos-latest
             target: x86_64-apple-darwin
