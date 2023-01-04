@@ -19,9 +19,11 @@ book:
 serve-book:
 	cd book && $(MAKE) serve
 
-.PHONY: plugins release release-cross
+.PHONY: plugins debug-cross release release-cross
 plugins:
 	cd plugins && $(MAKE) plugins
+debug-cross:
+	cd bins && $(MAKE) debug-cross TARGET=$(TARGET)
 release:
 	cd bins && $(MAKE) release
 release-cross:
