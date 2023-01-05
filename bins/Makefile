@@ -5,9 +5,11 @@ clean:
 update:
 	cargo update
 
-.PHONY: dist release release-cross
+.PHONY: dist debug-cross release release-cross
 dist:
 	cd ayaka-gui && $(MAKE) dist
+debug-cross: dist
+	STATIC_VCRUNTIME=false PKG_CONFIG_ALLOW_CROSS=1 cargo build --target=$(TARGET)
 release: dist
 	STATIC_VCRUNTIME=false cargo build --release
 release-cross: dist
