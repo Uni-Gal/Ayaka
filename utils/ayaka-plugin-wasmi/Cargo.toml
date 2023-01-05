@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 ayaka-plugin = { workspace = true }
-wasmi = { git = "https://github.com/paritytech/wasmi.git" }
+wasmi = "0.21"
