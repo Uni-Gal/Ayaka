@@ -5,6 +5,9 @@ mod log_interop;
 mod plugin_interop;
 mod rand_interop;
 
+#[cfg(test)]
+mod test;
+
 use crate::*;
 use anyhow::Result;
 use ayaka_plugin::*;

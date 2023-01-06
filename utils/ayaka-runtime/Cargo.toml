@@ -38,8 +38,3 @@ default = ["wasmi"]
 wasmi = ["ayaka-plugin-wasmi"]
 wasmtime = ["ayaka-plugin-wasmtime"]
 wasmer = ["ayaka-plugin-wasmer"]
-
-[[test]]
-name = "runtime"
-path = "tests/runtime.rs"
-required-features = ["wasmi", "wasmtime", "wasmer"]

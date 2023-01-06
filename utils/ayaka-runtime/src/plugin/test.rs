@@ -1,5 +1,5 @@
+use crate::{plugin::*, *};
 use ayaka_plugin::RawModule;
-use ayaka_runtime::{plugin::*, *};
 use std::{
     collections::HashMap,
     path::Path,
@@ -47,9 +47,6 @@ async fn with_ctx<M: RawModule + Send + Sync + 'static>(f: impl FnOnce(&ModuleWr
 mod runtime_tests {
     use super::*;
     use ayaka_plugin::RawModule;
-    use ayaka_plugin_wasmer::WasmerModule;
-    use ayaka_plugin_wasmi::WasmiModule;
-    use ayaka_plugin_wasmtime::WasmtimeModule;
 
     #[tokio::test]
     async fn vars<M: RawModule + Send + Sync + 'static>() {
@@ -120,10 +117,13 @@ mod runtime_tests {
         .await;
     }
 
-    #[instantiate_tests(<WasmiModule>)]
+    #[cfg(feature = "wasmi")]
+    #[instantiate_tests(<ayaka_plugin_wasmi::WasmiModule>)]
     mod inst_wasmi {}
-    #[instantiate_tests(<WasmtimeModule>)]
+    #[cfg(feature = "wasmtime")]
+    #[instantiate_tests(<ayaka_plugin_wasmtime::WasmtimeModule>)]
     mod inst_wasmtime {}
-    #[instantiate_tests(<WasmerModule>)]
+    #[cfg(feature = "wasmer")]
+    #[instantiate_tests(<ayaka_plugin_wasmer::WasmerModule>)]
     mod inst_wasmer {}
 }
