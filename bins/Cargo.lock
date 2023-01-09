@@ -3866,9 +3866,9 @@ checksum = "ded573c92d7b32013bdab82676be59f56106895e837504568f32804980ec7868"
 
 [[package]]
 name = "vfs-tar"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "854e9f226bc75770b17add4b36f2ea861599b102905a7b7141fb35bb96de2fde"
+checksum = "552612aa55557fff1334b0719e44223fa989388093d622478548d13bef45f56e"
 dependencies = [
  "memmap2",
  "nom",
