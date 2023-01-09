@@ -252,7 +252,6 @@ dependencies = [
  "ayaka-primitive",
  "cfg-if",
  "fallback",
- "frfs",
  "futures-util",
  "icu_locid",
  "language-matcher",
@@ -265,6 +264,7 @@ dependencies = [
  "tryiterator",
  "trylog",
  "vfs",
+ "vfs-tar",
 ]
 
 [[package]]
@@ -1053,17 +1053,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a9c384f161156f5260c24a097c56119f9be8c798586aecc13afbcbe7b7e26bf8"
 dependencies = [
  "percent-encoding",
-]
-
-[[package]]
-name = "frfs"
-version = "0.2.0"
-source = "git+https://github.com/Tim-Paik/frfs.git#70a3f07e7e7edee536e8c9161bd6e3416ac9228b"
-dependencies = [
- "bincode",
- "serde",
- "thiserror",
- "vfs",
 ]
 
 [[package]]
@@ -2003,6 +1992,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
 
 [[package]]
+name = "memmap2"
+version = "0.5.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4b182332558b18d807c4ce1ca8ca983b34c3ee32765e47b3f0f69b90355cc1dc"
+dependencies = [
+ "libc",
+]
+
+[[package]]
 name = "memoffset"
 version = "0.6.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2026,6 +2024,12 @@ dependencies = [
  "mime",
  "unicase",
 ]
+
+[[package]]
+name = "minimal-lexical"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "68354c5c6bd36d73ff3feceb05efa59b6acb7626617f4962be322a825e61f79a"
 
 [[package]]
 name = "miniz_oxide"
@@ -2087,6 +2091,16 @@ name = "nodrop"
 version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72ef4a56884ca558e5ddb05a1d1e7e1bfd9a68d9ed024c21704cc98872dae1bb"
+
+[[package]]
+name = "nom"
+version = "7.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5507769c4919c998e69e49c839d9dc6e693ede4cc4290d6ad8b41d4f09c548c"
+dependencies = [
+ "memchr",
+ "minimal-lexical",
+]
 
 [[package]]
 name = "nu-ansi-term"
@@ -3849,6 +3863,16 @@ name = "vfs"
 version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ded573c92d7b32013bdab82676be59f56106895e837504568f32804980ec7868"
+
+[[package]]
+name = "vfs-tar"
+version = "0.1.0"
+source = "git+https://github.com/Berrysoft/vfs-tar.git#fa063cbb25d7677b6f37354aa03f255d6ebe779a"
+dependencies = [
+ "memmap2",
+ "nom",
+ "vfs",
+]
 
 [[package]]
 name = "walkdir"

@@ -21,7 +21,7 @@ log = { workspace = true }
 trylog = { workspace = true }
 cfg-if = "1.0"
 vfs = { workspace = true }
-frfs = { git = "https://github.com/Tim-Paik/frfs.git", features = ["vfs"] }
+vfs-tar = { git = "https://github.com/Berrysoft/vfs-tar.git" }
 rand = "0.8"
 
 ayaka-plugin-nop = { path = "../ayaka-plugin-nop" }

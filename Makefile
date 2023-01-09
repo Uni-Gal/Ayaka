@@ -1,3 +1,10 @@
+msys_version:=$(if $(findstring Msys, $(shell uname -o)),$(word 1, $(subst ., ,$(shell uname -r))),0)
+ifeq ($(msys_version),0)
+TAR:=tar
+else
+TAR:=/usr/bin/tar
+endif
+
 .PHONY: test nextest clean update doc book serve-book
 test: plugins
 	cd utils && $(MAKE) test
@@ -41,7 +48,7 @@ examples/$(1)/latex/config.tex: examples/$(1).ayapack plugins
 	mkdir -p $$(@D)
 	cd bins && $$(MAKE) run-latex FILE=$$(realpath $$<) TEXOUT=$$(abspath $$@)
 examples/$(1).ayapack:
-	frfs pack examples/$(1)/ examples/$(1).ayapack --magic-number-start AYAPACK --magic-number-end PACKEND
+	(cd -P examples/$(1) && $(TAR) -chf $$(abspath $$@) -- *)
 
 endef
 

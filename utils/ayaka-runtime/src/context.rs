@@ -5,13 +5,13 @@ use crate::{
 use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::*;
 use fallback::Fallback;
-use frfs::{MagicNumber, FRFS};
 use log::error;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use stream_future::stream;
 use tryiterator::TryIteratorExt;
 use trylog::macros::*;
 use vfs::*;
+use vfs_tar::TarFS;
 
 /// The game running context.
 pub struct Context {
@@ -50,9 +50,6 @@ impl From<LoadStatus> for OpenStatus {
     }
 }
 
-const MAGIC_NUMBER_START: MagicNumber = *b"AYAPACK";
-const MAGIC_NUMBER_END: MagicNumber = *b"PACKEND";
-
 impl Context {
     /// Open a config file with frontend type.
     ///
@@ -77,10 +74,7 @@ impl Context {
                     path.file_name().unwrap_or_default().to_string_lossy(),
                 )
             } else if ext == "ayapack" {
-                (
-                    FRFS::new_with_header(path, MAGIC_NUMBER_START, MAGIC_NUMBER_END)?.into(),
-                    "config.yaml".into(),
-                )
+                (TarFS::new(path)?.into(), "config.yaml".into())
             } else {
                 bail!("Cannot determine filesystem.")
             }
@@ -88,9 +82,7 @@ impl Context {
             let files = paths
                 .iter()
                 .rev()
-                .map(|path| {
-                    FRFS::new_with_header(path.as_ref(), MAGIC_NUMBER_START, MAGIC_NUMBER_END)
-                })
+                .map(|path| TarFS::new(path.as_ref()))
                 .try_filter_map(|fs| Ok(Some(VfsPath::from(fs))))
                 .try_collect::<Vec<_>>()?;
             (OverlayFS::new(&files).into(), "config.yaml".into())
