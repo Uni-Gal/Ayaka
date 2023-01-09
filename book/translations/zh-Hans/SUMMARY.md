@@ -22,4 +22,5 @@
     - [Game 插件](./plugin/game_plugin.md)
 - [GUI](./gui/summary.md)
     - [Live2D](./gui/live2d.md)
+- [打包](./packaging.md)
 - [支持的平台](./platforms.md)
