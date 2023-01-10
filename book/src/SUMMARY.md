@@ -22,4 +22,5 @@
     - [Game plugin](./plugin/game_plugin.md)
 - [GUI](./gui/summary.md)
     - [Live2D](./gui/live2d.md)
+- [Packaging](./packaging.md)
 - [Support platforms](./platforms.md)

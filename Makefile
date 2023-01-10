@@ -41,7 +41,7 @@ examples/$(1)/latex/config.tex: examples/$(1).ayapack plugins
 	mkdir -p $$(@D)
 	cd bins && $$(MAKE) run-latex FILE=$$(realpath $$<) TEXOUT=$$(abspath $$@)
 examples/$(1).ayapack:
-	frfs pack examples/$(1)/ examples/$(1).ayapack --magic-number-start AYAPACK --magic-number-end PACKEND
+	(cd -P examples/$(1) && tar -chf $$(abspath $$@) -- *)
 
 endef
 
