@@ -4,7 +4,10 @@ version = "0.1.0"
 edition = "2021"
 
 [build-dependencies]
-tauri-build = { version = "1.0", features = [] }
+# TODO: remove this
+# Avoid 0.13.3, because we use workspace dependencies.
+cargo_toml = "=0.13.2"
+tauri-build = { version = "1.2", features = [] }
 
 [dependencies]
 ayaka-model = { workspace = true }

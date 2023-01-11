@@ -173,6 +173,7 @@ version = "0.1.0"
 dependencies = [
  "axum",
  "ayaka-model",
+ "cargo_toml",
  "flexi_logger",
  "mime_guess",
  "serde",
@@ -384,9 +385,9 @@ dependencies = [
 
 [[package]]
 name = "cargo_toml"
-version = "0.13.3"
+version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "497049e9477329f8f6a559972ee42e117487d01d1e8c2cc9f836ea6fa23a9e1a"
+checksum = "864033604b7f5813cc5367da430a304a2a9084aa44aaac61cafe7c71366a8aa5"
 dependencies = [
  "serde",
  "toml",
@@ -2154,18 +2155,18 @@ dependencies = [
 
 [[package]]
 name = "num_enum"
-version = "0.5.8"
+version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5826b7f970b71559e98460aafa900837a3ea29d533cb4d319f4968c1baec2d75"
+checksum = "cf5395665662ef45796a4ff5486c5d41d29e0c09640af4c5f17fd94ee2c119c9"
 dependencies = [
  "num_enum_derive",
 ]
 
 [[package]]
 name = "num_enum_derive"
-version = "0.5.8"
+version = "0.5.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bcf29f406cea75713169aeadb41f34a4d2afd2de46e8cd6c0120ac235a255ac3"
+checksum = "3b0498641e53dd6ac1a4f22547548caa6864cc4933784319cd1775271c5a46ce"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -3194,9 +3195,9 @@ dependencies = [
 
 [[package]]
 name = "tao"
-version = "0.15.8"
+version = "0.15.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac8e6399427c8494f9849b58694754d7cc741293348a6836b6c8d2c5aa82d8e6"
+checksum = "65aba6ab43add1001b3851e53b0b270d5047aa75d8217055e1635c7915c750d0"
 dependencies = [
  "bitflags",
  "cairo-rs",
@@ -3226,16 +3227,27 @@ dependencies = [
  "objc",
  "once_cell",
  "parking_lot",
- "paste",
  "png",
  "raw-window-handle",
  "scopeguard",
  "serde",
+ "tao-macros",
  "unicode-segmentation",
  "uuid 1.2.2",
  "windows",
  "windows-implement",
  "x11-dl",
+]
+
+[[package]]
+name = "tao-macros"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3b6fcd8245d45a39ffc8715183d92ae242750eb57b285eb3bcd63dfd512afd09"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
@@ -3866,9 +3878,9 @@ checksum = "ded573c92d7b32013bdab82676be59f56106895e837504568f32804980ec7868"
 
 [[package]]
 name = "vfs-tar"
-version = "0.2.0"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "552612aa55557fff1334b0719e44223fa989388093d622478548d13bef45f56e"
+checksum = "f4ad014158324902070be7b6e30803a084dce778f96e9cb60d3fa984b29d13c2"
 dependencies = [
  "memmap2",
  "nom",
