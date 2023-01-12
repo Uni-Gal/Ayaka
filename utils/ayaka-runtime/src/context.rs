@@ -207,28 +207,13 @@ impl Context {
     }
 
     /// Call the part of script with this context.
-    pub fn call(&self, text: &Text) -> String {
+    pub fn call(&self, text: &Text) -> Result<String> {
         let mut str = String::new();
-        for line in &text.0 {
-            match line {
-                SubText::Str(s) => str.push_str(s),
-                SubText::Cmd(c) => {
-                    let value = match c {
-                        Command::Character(_, _) => RawValue::Unit,
-                        Command::Res(_) | Command::Other(_, _) => {
-                            log::warn!("Unsupported command in text.");
-                            RawValue::Unit
-                        }
-                        Command::Ctx(n) => unwrap_or_default_log!(
-                            self.ctx.locals.get(n).cloned(),
-                            format!("Cannot find variable {}", n)
-                        ),
-                    };
-                    str.push_str(&value.get_str());
-                }
-            }
+        for sub_text in &text.sub_texts {
+            let sub_action = self.parse_sub_text(sub_text, None, &self.ctx.locals)?;
+            str.push_str(&sub_action.to_string());
         }
-        str.trim().to_string()
+        Ok(str.trim().to_string())
     }
 
     /// Choose a switch item by index, start by 0.
@@ -245,43 +230,76 @@ impl Context {
 
     fn parse_text(&self, loc: &Locale, text: &Text, ctx: &RawContext) -> Result<ActionText> {
         let mut action = ActionText::default();
-        for subtext in &text.0 {
-            match subtext {
-                SubText::Str(s) => action.push_back_chars(s),
-                SubText::Cmd(cmd) => match cmd {
-                    Command::Character(key, alias) => {
-                        action.ch_key = Some(key.clone());
-                        action.character = if alias.is_empty() {
-                            self.find_res(loc, &format!("ch_{}", key))
-                                .map(|value| value.get_str().into_owned())
-                        } else {
-                            Some(alias.clone())
+        action.ch_key = text.ch_tag.clone();
+        action.character = text.ch_alias.clone().or_else(|| {
+            self.find_res(
+                loc,
+                &format!("ch_{}", action.ch_key.as_deref().unwrap_or_default()),
+            )
+            .map(|value| value.get_str().into_owned())
+        });
+        for sub_text in &text.sub_texts {
+            let mut sub_action = self.parse_sub_text(sub_text, Some(loc), &ctx.locals)?;
+            action.text.append(&mut sub_action.text);
+        }
+        Ok(action)
+    }
+
+    fn parse_sub_text(
+        &self,
+        sub_text: &SubText,
+        loc: Option<&Locale>,
+        locals: &VarMap,
+    ) -> Result<ActionText> {
+        let mut action = ActionText::default();
+        match sub_text {
+            SubText::Char(c) => action.push_back_chars(c.to_string()),
+            SubText::Str(s) => action.push_back_chars(s),
+            SubText::Cmd(cmd, args) => {
+                let mut arg_strings = vec![];
+                for arg in args {
+                    let sub_action = self.parse_sub_text(arg, loc, locals)?;
+                    arg_strings.push(sub_action.to_string());
+                }
+                match cmd.as_str() {
+                    "res" => {
+                        if let Some(loc) = loc {
+                            if arg_strings.len() != 1 {
+                                log::warn!("Invalid parameter count for `res`: {}", args.len())
+                            }
+                            if let Some(n) = arg_strings.get(0) {
+                                if let Some(value) = self.find_res(loc, n) {
+                                    action.push_back_block(value.get_str())
+                                } else {
+                                    log::warn!("Cannot find resource {}", n);
+                                }
+                            }
                         }
                     }
-                    Command::Res(n) => {
-                        if let Some(value) = self.find_res(loc, n) {
-                            action.push_back_block(value.get_str())
+                    "var" => {
+                        if arg_strings.len() != 1 {
+                            log::warn!("Invalid parameter count for `var`: {}", args.len())
+                        }
+                        if let Some(n) = arg_strings.get(0) {
+                            if let Some(value) = locals.get(n) {
+                                action.push_back_block(value.get_str())
+                            } else {
+                                log::warn!("Cannot find variable {}", n)
+                            }
                         }
                     }
-                    Command::Ctx(n) => {
-                        if let Some(value) = ctx.locals.get(n) {
-                            action.push_back_block(value.get_str())
-                        } else {
-                            log::warn!("Cannot find variable {}", n)
-                        }
-                    }
-                    Command::Other(cmd, args) => {
+                    _ => {
                         if let Some(module) = self.runtime.text_module(cmd) {
                             let ctx = TextProcessContextRef {
                                 game_props: &self.game.config.props,
                                 frontend: self.frontend,
                             };
-                            let res = module.dispatch_text(cmd, args, ctx)?;
-                            action.text.extend(res.text.text);
+                            let mut res = module.dispatch_text(cmd, &arg_strings, ctx)?;
+                            action.text.append(&mut res.text.text);
                             action.vars.extend(res.text.vars);
                         }
                     }
-                },
+                }
             }
         }
         Ok(action)
@@ -431,7 +449,7 @@ impl Context {
                 (true, false) => {
                     self.ctx.cur_para = cur_para
                         .and_then(|p| p.next.as_ref())
-                        .map(|text| self.call(text))
+                        .map(|text| unwrap_or_default_log!(self.call(text), "Cannot get next para"))
                         .unwrap_or_default();
                     self.ctx.cur_act = 0;
                 }

@@ -115,6 +115,15 @@ impl ActionText {
     }
 }
 
+impl std::fmt::Display for ActionText {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for text in &self.text {
+            write!(f, "{}", text.as_str())?;
+        }
+        Ok(())
+    }
+}
+
 /// The full action information in one line of config.
 /// It provides the full texts and other properties exacted from [`ayaka_script::Text`].
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]

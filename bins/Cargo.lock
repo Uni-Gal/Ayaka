@@ -236,7 +236,7 @@ dependencies = [
 name = "ayaka-primitive"
 version = "0.1.0"
 dependencies = [
- "regex",
+ "nom",
  "serde",
  "serde_with 2.2.0",
 ]
