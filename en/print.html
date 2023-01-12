@@ -304,7 +304,7 @@ and it jumps to <code>para2</code> after <code>para1</code> ends.
 The game exits after <code>para2</code> ends, because it doesn't specify the next paragraph.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="specify-character"><a class="header" href="#specify-character">Specify character</a></h1>
 <p>The dialogues should be marked with the speaking character.
-We specify a character with <code>\ch{}{}</code> command.</p>
+We specify a character with <code>///</code> prefix.</p>
 <h2 id="add-the-character-names"><a class="header" href="#add-the-character-names">Add the character names</a></h2>
 <p>The character names should be placed in <code>res</code> at the front of the game.
 Not only because the character name is too long to type again and again, but also to make i18n easy.</p>
@@ -313,30 +313,23 @@ Not only because the character name is too long to type again and again, but als
 ch_bar: B. Bar
 </code></pre>
 <p>You can then specify the character with the command:</p>
-<pre><code class="language-yaml">- \ch{foo}This is the first line.
-- \ch{bar}This is the second line.
+<pre><code class="language-yaml">- /foo//This is the first line.
+- /bar//This is the second line.
 </code></pre>
 <p>These two lines will output as:</p>
 <pre><code class="language-ignore">_A. Foo_This is the first line.
 _B. Bar_This is the second line.
 </code></pre>
+<p>Note the double slashes in <code>/foo//</code> could not be simplified.</p>
 <h2 id="specify-the-alias-of-the-character"><a class="header" href="#specify-the-alias-of-the-character">Specify the alias of the character</a></h2>
 <p>Sometimes we need a temporary alias of the current character:</p>
-<pre><code class="language-yaml">- \ch{foo}{Person 1st}This is the first line.
-- \ch{bar}{Person 2nd}This is the second line.
+<pre><code class="language-yaml">- /foo/Person 1st/This is the first line.
+- /bar/Person 2nd/This is the second line.
 </code></pre>
 <p>The output will be</p>
 <pre><code class="language-ignore">_Person 1st_This is the first line.
 _Person 2nd_This is the second line.
 </code></pre>
-<h2 id="simple-grammar"><a class="header" href="#simple-grammar">Simple grammar</a></h2>
-<p>We provide an easier grammar to specify the character:</p>
-<pre><code class="language-yaml">- /foo//This is the first line.
-- /bar/Person 2nd/This is the second line.
-</code></pre>
-<p>Note the double slashes in <code>/foo//</code> could not be simplified.</p>
-<h2 id="warning"><a class="header" href="#warning">Warning</a></h2>
-<p>The <code>\ch{}{}</code> command could be called many times, but only the last one affects.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="resources"><a class="header" href="#resources">Resources</a></h1>
 <p>The resources are indexed by locale:</p>
 <pre><code class="language-ignore">config.yaml
@@ -368,7 +361,7 @@ We use CLDR to choose the best fit locale for current system.</p>
 <p>The translation of the texts is always a difficult job. You don't need to copy all commands as is.
 For example, the original text (<code>ja</code>)</p>
 <pre><code class="language-ignore">- bg: 0
-- \ch{rd}団長！車の用意できました！
+- /rd//団長！車の用意できました！
 - switches:
   - おう！
   - 止まるんじゃねぇぞ！
