@@ -3,9 +3,9 @@
 use crate::*;
 use nom::{
     branch::alt,
-    bytes::complete::{take_till, take_till1, take_until, take_while},
+    bytes::complete::{take_till, take_till1, take_until, take_while, take_while1},
     character::complete::{char, one_of},
-    combinator::{all_consuming, iterator},
+    combinator::{all_consuming, iterator, map},
     multi::many0,
     sequence::{delimited, terminated},
     *,
@@ -35,14 +35,26 @@ pub enum SubText {
     Cmd(String, Vec<SubText>),
 }
 
+fn take_space(i: &str) -> IResult<&str, &str> {
+    take_while(|c: char| c.is_whitespace())(i)
+}
+
+fn take_cmd(i: &str) -> IResult<&str, &str> {
+    take_while1(|c: char| c.is_ascii_alphabetic())(i)
+}
+
+fn is_str_end(c: char) -> bool {
+    c.is_whitespace() || c == '\\' || c == '{' || c == '}'
+}
+
 fn parse_arg(i: &str) -> IResult<&str, SubText> {
-    let (i, _) = take_while(|c: char| c.is_whitespace())(i)?;
+    let (i, _) = take_space(i)?;
     let (i, sub_text) = delimited(char('{'), parse_sub_text, char('}'))(i)?;
     Ok((i, sub_text))
 }
 
 fn parse_escape_command(i: &str) -> IResult<&str, SubText> {
-    let (i, cmd) = take_while(|c: char| c.is_ascii_alphabetic())(i)?;
+    let (i, cmd) = take_cmd(i)?;
     let (i, args) = many0(parse_arg)(i)?;
     Ok((i, SubText::Cmd(cmd.to_string(), args)))
 }
@@ -58,13 +70,13 @@ fn parse_sub_text_escape(i: &str) -> IResult<&str, SubText> {
 }
 
 fn parse_sub_text_str(i: &str) -> IResult<&str, SubText> {
-    let (i, pre_space) = take_while(|c: char| c.is_whitespace())(i)?;
+    let (i, pre_space) = take_space(i)?;
     let (i, str) = if pre_space.is_empty() {
-        take_till1(|c: char| c.is_whitespace() || c == '\\' || c == '{' || c == '}')(i)
+        take_till1(is_str_end)(i)
     } else {
-        take_till(|c: char| c.is_whitespace() || c == '\\' || c == '{' || c == '}')(i)
+        take_till(is_str_end)(i)
     }?;
-    let (i, post_space) = take_while(|c: char| c.is_whitespace())(i)?;
+    let (i, post_space) = take_space(i)?;
     let str = format!(
         "{}{}{}",
         if !pre_space.is_empty() { " " } else { "" },
@@ -97,19 +109,15 @@ fn parse_text_without_ch(i: &str) -> IResult<&str, Text> {
 
 fn parse_text_with_ch(i: &str) -> IResult<&str, Text> {
     let (i, _) = char('/')(i)?;
-    let (i, ch_tag) = terminated(take_until("/"), char('/'))(i)?;
-    let (i, ch_alias) = terminated(take_until("/"), char('/'))(i)?;
+    let (i, ch_tag) = map(terminated(take_until("/"), char('/')), str::trim)(i)?;
+    let (i, ch_alias) = map(terminated(take_until("/"), char('/')), str::trim)(i)?;
     let (i, mut text) = parse_text_without_ch(i)?;
-    text.ch_tag = if ch_tag.is_empty() {
-        None
-    } else {
-        Some(ch_tag.to_string())
-    };
-    text.ch_alias = if ch_alias.is_empty() {
-        None
-    } else {
-        Some(ch_alias.to_string())
-    };
+    if !ch_tag.is_empty() {
+        text.ch_tag = Some(ch_tag.to_string());
+    }
+    if !ch_alias.is_empty() {
+        text.ch_alias = Some(ch_alias.to_string());
+    }
     Ok((i, text))
 }
 
@@ -174,6 +182,14 @@ pub mod test {
                 cmd("cmd", vec![str("123")]),
             ])
         );
+        assert_eq!(
+            parse_text("\\par \\cmd{123}").unwrap().1,
+            text(vec![
+                cmd("par", vec![]),
+                str(" "),
+                cmd("cmd", vec![str("123")])
+            ])
+        );
     }
 
     #[test]
@@ -204,6 +220,6 @@ pub mod test {
             parse_text("/ch/alias/").unwrap().1,
             text_ch(Some("ch"), Some("alias"), vec![])
         );
-        assert_eq!(parse_text("///").unwrap().1, text_ch(None, None, vec![]));
+        assert_eq!(parse_text("/ / /").unwrap().1, text_ch(None, None, vec![]));
     }
 }
