@@ -12,11 +12,9 @@ use nom::{
     *,
 };
 use serde::Deserialize;
-use trylog::macros::*;
 
 /// A collection of [`SubText`].
-#[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
-#[serde(from = "RawValue")]
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Text {
     /// The tag of current character.
     pub ch_tag: Option<String>,
@@ -129,19 +127,33 @@ fn parse_text(i: &str) -> Res<&str, Text> {
     all_consuming(alt((parse_text_with_ch, parse_text_without_ch)))(i)
 }
 
-impl From<RawValue> for Text {
-    fn from(value: RawValue) -> Self {
-        let (_, text) = unwrap_or_default_log!(
-            parse_text(&value.get_str()),
-            "Text parse error, fallback to default"
-        );
-        text
+impl<'a> TryFrom<&'a str> for Text {
+    type Error = VerboseError<&'a str>;
+
+    fn try_from(value: &'a str) -> Result<Self, Self::Error> {
+        parse_text(&value).finish().map(|(_, text)| text)
+    }
+}
+
+impl<'de> Deserialize<'de> for Text {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let raw_value = RawValue::deserialize(deserializer)?;
+        let text = Text::try_from(raw_value.get_str().as_ref())
+            .map_err(|e| <D::Error as serde::de::Error>::custom(e))?;
+        Ok(text)
     }
 }
 
 #[cfg(test)]
 pub mod test {
-    use crate::text::{parse_text, SubText, Text};
+    use crate::text::{SubText, Text};
+
+    pub fn parse(s: &str) -> Text {
+        Text::try_from(s).unwrap()
+    }
 
     pub fn text(sub_texts: Vec<SubText>) -> Text {
         Text {
@@ -173,14 +185,14 @@ pub mod test {
 
     #[test]
     fn basic() {
-        assert_eq!(parse_text("\\\\").unwrap().1, text(vec![char('\\')]));
-        assert_eq!(parse_text("\\{").unwrap().1, text(vec![char('{')]));
+        assert_eq!(parse("\\\\"), text(vec![char('\\')]));
+        assert_eq!(parse("\\{"), text(vec![char('{')]));
     }
 
     #[test]
     fn space() {
         assert_eq!(
-            parse_text("\\cmd{123} \\cmd{123}").unwrap().1,
+            parse("\\cmd{123} \\cmd{123}"),
             text(vec![
                 cmd("cmd", vec![str("123")]),
                 str(" "),
@@ -188,7 +200,7 @@ pub mod test {
             ])
         );
         assert_eq!(
-            parse_text("\\par \\cmd{123}").unwrap().1,
+            parse("\\par \\cmd{123}"),
             text(vec![
                 cmd("par", vec![]),
                 str(" "),
@@ -200,31 +212,28 @@ pub mod test {
     #[test]
     fn embedded() {
         assert_eq!(
-            parse_text(r##"\switch{\exec{114514}}"##).unwrap().1,
+            parse(r##"\switch{\exec{114514}}"##),
             text(vec![cmd("switch", vec![cmd("exec", vec![str("114514")])])])
         );
     }
 
     #[test]
     fn lf() {
-        assert_eq!(parse_text(" ").unwrap().1, text(vec![str(" ")]));
-        assert_eq!(parse_text("  ").unwrap().1, text(vec![str(" ")]));
-        assert_eq!(parse_text(" \n ").unwrap().1, text(vec![str(" ")]));
-        assert_eq!(parse_text(" 123 ").unwrap().1, text(vec![str(" 123 ")]));
-        assert_eq!(parse_text(" \n123\t ").unwrap().1, text(vec![str(" 123 ")]));
-        assert_eq!(parse_text("123").unwrap().1, text(vec![str("123")]));
+        assert_eq!(parse(" "), text(vec![str(" ")]));
+        assert_eq!(parse("  "), text(vec![str(" ")]));
+        assert_eq!(parse(" \n "), text(vec![str(" ")]));
+        assert_eq!(parse(" 123 "), text(vec![str(" 123 ")]));
+        assert_eq!(parse(" \n123\t "), text(vec![str(" 123 ")]));
+        assert_eq!(parse("123"), text(vec![str("123")]));
     }
 
     #[test]
     fn character() {
+        assert_eq!(parse("/ch//"), text_ch(Some("ch"), None, vec![]));
         assert_eq!(
-            parse_text("/ch//").unwrap().1,
-            text_ch(Some("ch"), None, vec![])
-        );
-        assert_eq!(
-            parse_text("/ch/alias/").unwrap().1,
+            parse("/ch/alias/"),
             text_ch(Some("ch"), Some("alias"), vec![])
         );
-        assert_eq!(parse_text("/ / /").unwrap().1, text_ch(None, None, vec![]));
+        assert_eq!(parse("/ / /"), text_ch(None, None, vec![]));
     }
 }

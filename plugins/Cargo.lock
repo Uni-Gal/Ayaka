@@ -113,7 +113,6 @@ dependencies = [
  "nom",
  "serde",
  "serde_with",
- "trylog",
 ]
 
 [[package]]
