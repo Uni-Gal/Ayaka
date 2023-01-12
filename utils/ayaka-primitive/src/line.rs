@@ -23,9 +23,11 @@ pub enum Line {
 
 #[cfg(test)]
 mod test {
+    use crate::{
+        text::test::{str, text},
+        *,
+    };
     use std::collections::HashMap;
-
-    use crate::*;
 
     #[test]
     fn parse() {
@@ -40,10 +42,7 @@ mod test {
         "#;
         let lines: Vec<Line> = serde_yaml::from_str(lines).unwrap();
         assert_eq!(lines.len(), 5);
-        assert_eq!(
-            lines[0],
-            Line::Text(Text(vec![SubText::Str("abc".to_string())]))
-        );
+        assert_eq!(lines[0], Line::Text(text(vec![str("abc")])));
         assert_eq!(
             lines[1],
             Line::Custom(HashMap::from([(

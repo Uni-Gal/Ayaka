@@ -6,7 +6,7 @@ edition = "2021"
 [dependencies]
 serde = { workspace = true, features = ["derive"] }
 serde_with = { workspace = true }
-regex = "1"
+nom = "7"
 
 [dev-dependencies]
 serde_yaml = { workspace = true }
