@@ -239,6 +239,7 @@ dependencies = [
  "nom",
  "serde",
  "serde_with 2.2.0",
+ "trylog",
 ]
 
 [[package]]

@@ -6,15 +6,17 @@ use nom::{
     bytes::complete::{take_till, take_till1, take_until, take_while, take_while1},
     character::complete::{char, one_of},
     combinator::{all_consuming, iterator, map},
+    error::VerboseError,
     multi::many0,
     sequence::{delimited, terminated},
     *,
 };
 use serde::Deserialize;
+use trylog::macros::*;
 
 /// A collection of [`SubText`].
 #[derive(Debug, Clone, Default, PartialEq, Eq, Deserialize)]
-#[serde(try_from = "RawValue")]
+#[serde(from = "RawValue")]
 pub struct Text {
     /// The tag of current character.
     pub ch_tag: Option<String>,
@@ -35,11 +37,13 @@ pub enum SubText {
     Cmd(String, Vec<SubText>),
 }
 
-fn take_space(i: &str) -> IResult<&str, &str> {
+type Res<I, O> = IResult<I, O, VerboseError<I>>;
+
+fn take_space(i: &str) -> Res<&str, &str> {
     take_while(|c: char| c.is_whitespace())(i)
 }
 
-fn take_cmd(i: &str) -> IResult<&str, &str> {
+fn take_cmd(i: &str) -> Res<&str, &str> {
     take_while1(|c: char| c.is_ascii_alphabetic())(i)
 }
 
@@ -47,29 +51,29 @@ fn is_str_end(c: char) -> bool {
     c.is_whitespace() || c == '\\' || c == '{' || c == '}'
 }
 
-fn parse_arg(i: &str) -> IResult<&str, SubText> {
+fn parse_arg(i: &str) -> Res<&str, SubText> {
     let (i, _) = take_space(i)?;
     let (i, sub_text) = delimited(char('{'), parse_sub_text, char('}'))(i)?;
     Ok((i, sub_text))
 }
 
-fn parse_escape_command(i: &str) -> IResult<&str, SubText> {
+fn parse_escape_command(i: &str) -> Res<&str, SubText> {
     let (i, cmd) = take_cmd(i)?;
     let (i, args) = many0(parse_arg)(i)?;
     Ok((i, SubText::Cmd(cmd.to_string(), args)))
 }
 
-fn parse_escape_char(i: &str) -> IResult<&str, SubText> {
+fn parse_escape_char(i: &str) -> Res<&str, SubText> {
     let (i, c) = one_of("\\{}/")(i)?;
     Ok((i, SubText::Char(c)))
 }
 
-fn parse_sub_text_escape(i: &str) -> IResult<&str, SubText> {
+fn parse_sub_text_escape(i: &str) -> Res<&str, SubText> {
     let (i, _) = char('\\')(i)?;
     alt((parse_escape_char, parse_escape_command))(i)
 }
 
-fn parse_sub_text_str(i: &str) -> IResult<&str, SubText> {
+fn parse_sub_text_str(i: &str) -> Res<&str, SubText> {
     let (i, pre_space) = take_space(i)?;
     let (i, str) = if pre_space.is_empty() {
         take_till1(is_str_end)(i)
@@ -86,18 +90,18 @@ fn parse_sub_text_str(i: &str) -> IResult<&str, SubText> {
     Ok((i, SubText::Str(str)))
 }
 
-fn parse_sub_text(i: &str) -> IResult<&str, SubText> {
+fn parse_sub_text(i: &str) -> Res<&str, SubText> {
     alt((parse_sub_text_escape, parse_sub_text_str))(i)
 }
 
-fn parse_sub_texts(i: &str) -> IResult<&str, Vec<SubText>> {
+fn parse_sub_texts(i: &str) -> Res<&str, Vec<SubText>> {
     let mut it = iterator(i, parse_sub_text);
     let sub_texts = it.collect();
     let (i, ()) = it.finish()?;
     Ok((i, sub_texts))
 }
 
-fn parse_text_without_ch(i: &str) -> IResult<&str, Text> {
+fn parse_text_without_ch(i: &str) -> Res<&str, Text> {
     let (i, sub_texts) = parse_sub_texts(i)?;
     let text = Text {
         ch_tag: None,
@@ -107,7 +111,7 @@ fn parse_text_without_ch(i: &str) -> IResult<&str, Text> {
     Ok((i, text))
 }
 
-fn parse_text_with_ch(i: &str) -> IResult<&str, Text> {
+fn parse_text_with_ch(i: &str) -> Res<&str, Text> {
     let (i, _) = char('/')(i)?;
     let (i, ch_tag) = map(terminated(take_until("/"), char('/')), str::trim)(i)?;
     let (i, ch_alias) = map(terminated(take_until("/"), char('/')), str::trim)(i)?;
@@ -121,16 +125,17 @@ fn parse_text_with_ch(i: &str) -> IResult<&str, Text> {
     Ok((i, text))
 }
 
-fn parse_text(i: &str) -> IResult<&str, Text> {
+fn parse_text(i: &str) -> Res<&str, Text> {
     all_consuming(alt((parse_text_with_ch, parse_text_without_ch)))(i)
 }
 
-impl TryFrom<RawValue> for Text {
-    type Error = String;
-
-    fn try_from(value: RawValue) -> Result<Self, Self::Error> {
-        let (_, text) = parse_text(&value.get_str()).map_err(|e| e.to_string())?;
-        Ok(text)
+impl From<RawValue> for Text {
+    fn from(value: RawValue) -> Self {
+        let (_, text) = unwrap_or_default_log!(
+            parse_text(&value.get_str()),
+            "Text parse error, fallback to default"
+        );
+        text
     }
 }
 

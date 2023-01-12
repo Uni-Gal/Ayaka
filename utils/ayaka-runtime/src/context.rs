@@ -449,9 +449,7 @@ impl Context {
                 (true, false) => {
                     self.ctx.cur_para = cur_para
                         .and_then(|p| p.next.as_ref())
-                        .map(|text| {
-                            unwrap_or_default_log!(self.call(text), "Cannot get next para.")
-                        })
+                        .map(|text| unwrap_or_default_log!(self.call(text), "Cannot get next para"))
                         .unwrap_or_default();
                     self.ctx.cur_act = 0;
                 }
