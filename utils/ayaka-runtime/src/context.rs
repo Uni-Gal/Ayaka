@@ -294,8 +294,8 @@ impl Context {
                                 game_props: &self.game.config.props,
                                 frontend: self.frontend,
                             };
-                            let res = module.dispatch_text(cmd, &arg_strings, ctx)?;
-                            action.text.extend(res.text.text);
+                            let mut res = module.dispatch_text(cmd, &arg_strings, ctx)?;
+                            action.text.append(&mut res.text.text);
                             action.vars.extend(res.text.vars);
                         }
                     }
