@@ -5,4 +5,4 @@ edition = "2021"
 
 [dependencies]
 ayaka-plugin = { workspace = true }
-wasmi = "0.21"
+wasmi = "0.23"
