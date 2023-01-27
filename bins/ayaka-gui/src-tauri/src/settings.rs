@@ -59,9 +59,7 @@ impl SettingsManager for FileSettingsManager {
         Ok(self.records_path_root(game).join("global.json"))
     }
 
-    type RecordsPathIter = impl Iterator<Item = Result<PathBuf>>;
-
-    fn records_path(&self, game: &str) -> Result<Self::RecordsPathIter> {
+    fn records_path(&self, game: &str) -> Result<impl Iterator<Item = Result<PathBuf>>> {
         let ctx_path = self.records_path_root(game);
         Ok(std::fs::read_dir(ctx_path)?
             .map_err(anyhow::Error::from)

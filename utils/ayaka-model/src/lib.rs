@@ -8,6 +8,8 @@
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
 #![feature(generators)]
+#![feature(return_position_impl_trait_in_trait)]
+#![allow(incomplete_features)]
 
 mod settings;
 pub use settings::*;

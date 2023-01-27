@@ -107,11 +107,8 @@ pub trait SettingsManager {
         self.save_file(self.global_record_path(game)?, data, false)
     }
 
-    #[doc(hidden)]
-    type RecordsPathIter: Iterator<Item = Result<PathBuf>>;
-
     /// Get an iterator of record paths.
-    fn records_path(&self, game: &str) -> Result<Self::RecordsPathIter>;
+    fn records_path(&self, game: &str) -> Result<impl Iterator<Item = Result<PathBuf>>>;
 
     /// Get the record path from index.
     fn record_path(&self, game: &str, i: usize) -> Result<PathBuf>;
