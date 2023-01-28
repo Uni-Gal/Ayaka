@@ -20,7 +20,6 @@ tryiterator = { git = "https://github.com/Pernosco/tryiterator.git" }
 axum = { version = "0.6", default-features = false, features = ["http1", "tokio"] }
 tower-http = { version = "0.3", features = ["cors"] }
 mime_guess = "2.0"
-stream-future = "0.3"
 
 [features]
 default = [ "custom-protocol" ]

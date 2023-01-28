@@ -1,18 +1,16 @@
 use axum::{
-    body::{Body, Bytes, StreamBody},
+    body::Body,
     extract::Path,
     http::{header::CONTENT_TYPE, Request, StatusCode},
     response::{IntoResponse, Response},
     routing::get,
     Router, Server,
 };
-use ayaka_model::{log, vfs::*};
-use std::{
-    io::{Read, Result},
-    net::TcpListener,
-    sync::OnceLock,
+use ayaka_model::{
+    log,
+    vfs::{error::VfsErrorKind, *},
 };
-use stream_future::try_stream;
+use std::{io::Read, net::TcpListener, sync::OnceLock};
 use tauri::{
     plugin::{Builder, TauriPlugin},
     AppHandle, Runtime,
@@ -20,41 +18,43 @@ use tauri::{
 use tower_http::cors::{Any, CorsLayer};
 
 pub(crate) static ROOT_PATH: OnceLock<VfsPath> = OnceLock::new();
-const BUFFER_LEN: usize = 65536;
 
-#[try_stream(Bytes)]
-fn file_stream(mut file: Box<dyn SeekAndRead + Send>, length: usize) -> Result<()> {
-    let length = length.min(BUFFER_LEN);
-    loop {
-        let mut buffer = vec![0; length];
-        let read_bytes = file.read(&mut buffer)?;
-        buffer.truncate(read_bytes);
-        if read_bytes > 0 {
-            yield Bytes::from(buffer);
-        } else {
-            break;
-        }
-    }
-    Ok(())
+fn vfs_error_response(err: VfsError) -> (StatusCode, String) {
+    let msg = err.to_string();
+    let code = match err.kind() {
+        VfsErrorKind::IoError(_) | VfsErrorKind::Other(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        VfsErrorKind::FileNotFound => StatusCode::NOT_FOUND,
+        VfsErrorKind::InvalidPath => StatusCode::BAD_REQUEST,
+        VfsErrorKind::DirectoryExists | VfsErrorKind::FileExists => StatusCode::CONFLICT,
+        VfsErrorKind::NotSupported => StatusCode::NOT_IMPLEMENTED,
+    };
+    (code, msg)
 }
 
 async fn fs_resolver(Path(path): Path<String>) -> Response {
     let path = ROOT_PATH.get().unwrap().join(path).unwrap();
-    if let Ok(file) = path.open_file() {
-        log::debug!("Get FS {} 200", path.as_str());
-        let length = path
-            .metadata()
-            .map(|meta| meta.len as usize)
-            .unwrap_or(BUFFER_LEN);
-        let mime = mime_guess::from_path(path.as_str()).first_or_octet_stream();
-        (
-            [(CONTENT_TYPE, mime.to_string())],
-            StreamBody::new(file_stream(file, length)),
-        )
-            .into_response()
-    } else {
-        log::debug!("Get FS {} 404", path.as_str());
-        (StatusCode::NOT_FOUND, ()).into_response()
+    match path.open_file() {
+        Ok(mut file) => {
+            log::debug!("Get FS {} 200", path.as_str());
+            let mime = mime_guess::from_path(path.as_str()).first_or_octet_stream();
+            // We choose to read_to_end, because in most release cases, the files should be in a TAR.
+            // In that case, we use mmap and the file is simply a byte slice.
+            // It is a simple copy from the source to buffer.
+            let length = path
+                .metadata()
+                .map(|meta| meta.len as usize)
+                .unwrap_or(65536);
+            let mut buffer = Vec::with_capacity(length);
+            match file.read_to_end(&mut buffer) {
+                Ok(_) => ([(CONTENT_TYPE, mime.to_string())], buffer).into_response(),
+                Err(e) => (StatusCode::INTERNAL_SERVER_ERROR, e.to_string()).into_response(),
+            }
+        }
+        Err(err) => {
+            let (code, msg) = vfs_error_response(err);
+            log::debug!("Get FS {} {}", path.as_str(), code.as_u16());
+            (code, msg).into_response()
+        }
     }
 }
 
