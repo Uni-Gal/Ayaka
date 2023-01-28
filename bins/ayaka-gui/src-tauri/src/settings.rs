@@ -28,8 +28,8 @@ impl FileSettingsManager {
 
 impl SettingsManager for FileSettingsManager {
     fn load_file<T: DeserializeOwned>(&self, path: impl AsRef<Path>) -> Result<T> {
-        let buffer = std::fs::read(path)?;
-        Ok(serde_json::from_slice(&buffer)?)
+        let file = std::fs::File::open(path)?;
+        Ok(serde_json::from_reader(file)?)
     }
 
     fn save_file<T: Serialize>(
@@ -42,12 +42,12 @@ impl SettingsManager for FileSettingsManager {
         if let Some(parent) = path.parent() {
             std::fs::create_dir_all(parent)?;
         }
-        let buffer = if pretty {
-            serde_json::to_vec_pretty(data)
+        let output = std::fs::File::create(path)?;
+        if pretty {
+            serde_json::to_writer_pretty(output, data)
         } else {
-            serde_json::to_vec(data)
+            serde_json::to_writer(output, data)
         }?;
-        std::fs::write(path, buffer)?;
         Ok(())
     }
 

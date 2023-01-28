@@ -87,8 +87,8 @@ impl Context {
                 .try_collect::<Vec<_>>()?;
             (OverlayFS::new(&files).into(), "config.yaml".into())
         };
-        let file = root_path.join(&filename)?.read_to_string()?;
-        let mut config: GameConfig = serde_yaml::from_str(&file)?;
+        let file = root_path.join(&filename)?.open_file()?;
+        let mut config: GameConfig = serde_yaml::from_reader(file)?;
         let runtime = {
             let runtime = Runtime::load(&config.plugins.dir, &root_path, &config.plugins.modules);
             pin_mut!(runtime);
@@ -123,8 +123,8 @@ impl Context {
                         .unwrap_or_default()
                         .parse::<Locale>()
                     {
-                        let r = p.read_to_string()?;
-                        let r = serde_yaml::from_str(&r)?;
+                        let r = p.open_file()?;
+                        let r = serde_yaml::from_reader(r)?;
                         res.insert(loc, r);
                     }
                 }
@@ -145,8 +145,8 @@ impl Context {
                                 .strip_suffix(".yaml")
                                 .unwrap_or_default()
                                 .to_string();
-                            let para = p.read_to_string()?;
-                            let para = serde_yaml::from_str(&para)?;
+                            let para = p.open_file()?;
+                            let para = serde_yaml::from_reader(para)?;
                             paras_map.insert(key, para);
                         }
                     }
