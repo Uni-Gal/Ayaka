@@ -155,16 +155,28 @@ impl<M: SettingsManager> GameViewModel<M> {
     }
 
     /// Start a new game.
+    /// The state of the model after this call is actually invalid.
+    /// You should call `next_run` immediately after this call,
+    /// to ensure there's content in the game, and switch to the
+    /// first line of the first paragraph.
     pub fn init_new(&mut self) {
-        self.init_context(ActionRecord { history: vec![] })
+        let ctx = self.context().game().start_context();
+        self.current_record = ActionRecord::default();
+        // This is the start.
+        self.current_raw_context = None;
+        self.context_mut().set_context(ctx);
     }
 
     /// Start a game with record.
     pub fn init_context(&mut self, record: ActionRecord) {
-        let ctx = record.last_ctx_with_game(self.context().game());
+        let mut ctx = record.last_ctx_with_game(self.context().game());
         self.current_record = record;
-        log::debug!("Context: {:?}", ctx);
-        self.context_mut().set_context(ctx)
+        // Update current raw context.
+        self.current_raw_context = self.current_record.history.last().cloned();
+        log::debug!("Context: {:?}", self.current_raw_context);
+        // `ctx` points to the next raw context.
+        ctx.cur_act += 1;
+        self.context_mut().set_context(ctx);
     }
 
     /// Start a game with the index of records.
