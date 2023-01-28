@@ -1,0 +1,10 @@
+title: 压力测试
+author: Berrysoft
+props:
+  bg: 0
+  bgs: bgs
+plugins:
+  dir: plugins
+base_lang: zh-Hans
+paras: paras
+start: start
