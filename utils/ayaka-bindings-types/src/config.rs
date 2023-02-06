@@ -124,9 +124,18 @@ impl std::fmt::Display for ActionText {
     }
 }
 
+impl PartialEq for ActionText {
+    fn eq(&self, other: &Self) -> bool {
+        self.to_string() == other.to_string()
+            && self.ch_key == other.ch_key
+            && self.character == other.character
+            && self.vars == other.vars
+    }
+}
+
 /// The full action information in one line of config.
 /// It provides the full texts and other properties exacted from [`ayaka_script::Text`].
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data")]
 pub enum Action {
     /// An empty action usually means an `exec` or custom action.
@@ -141,7 +150,7 @@ pub enum Action {
 }
 
 /// One switch in the switches of an [`Action`].
-#[derive(Debug, Default, Clone, Serialize, Deserialize, FallbackSpec)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize, FallbackSpec)]
 pub struct Switch {
     /// The switch text.
     pub text: String,

@@ -6,7 +6,7 @@ use stream_future::stream;
 use trylog::macros::*;
 
 /// The status when calling [`open_game`].
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "t", content = "data")]
 pub enum OpenGameStatus {
     /// Start loading config file.
@@ -84,13 +84,11 @@ impl<M: SettingsManager> GameViewModel<M> {
         }
         let context = context.await?;
 
-        let settings = {
-            yield OpenGameStatus::LoadSettings;
-            unwrap_or_default_log!(
-                self.settings_manager.load_settings(),
-                "Load settings failed"
-            )
-        };
+        yield OpenGameStatus::LoadSettings;
+        let settings = unwrap_or_default_log!(
+            self.settings_manager.load_settings(),
+            "Load settings failed"
+        );
         self.settings = Some(settings);
 
         yield OpenGameStatus::LoadGlobalRecords;

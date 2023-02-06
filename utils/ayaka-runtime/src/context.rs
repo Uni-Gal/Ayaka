@@ -25,7 +25,7 @@ pub struct Context {
 }
 
 /// The open status when creating [`Context`].
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum OpenStatus {
     /// Start loading config file.
     LoadProfile,
