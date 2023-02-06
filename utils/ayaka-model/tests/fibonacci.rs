@@ -1,6 +1,5 @@
-use std::collections::HashMap;
-
 use ayaka_model::{locale, Action, ActionText, Context, FrontendType, RawValue};
+use std::collections::HashMap;
 
 const CONFIG_PATH: &str = "tests/fibonacci/config.yaml";
 
@@ -12,6 +11,10 @@ fn text_chars(s: impl Into<String>) -> Action {
 
 fn custom(c: i64) -> Action {
     Action::Custom(HashMap::from([("c".to_string(), RawValue::Num(c))]))
+}
+
+fn custom_default() -> Action {
+    Action::Custom(HashMap::default())
 }
 
 #[tokio::test(flavor = "current_thread")]
@@ -27,11 +30,7 @@ async fn calculate() {
     })
     .collect::<Vec<_>>();
 
-    let mut expected_actions = vec![
-        text_chars("1"),
-        Action::Custom(Default::default()),
-        text_chars("1"),
-    ];
+    let mut expected_actions = vec![text_chars("1"), custom_default(), text_chars("1")];
     let mut a = 1i64;
     let mut b = 1i64;
     for _i in 0..49 {
@@ -40,7 +39,7 @@ async fn calculate() {
         a = c;
         expected_actions.push(custom(c));
         expected_actions.push(text_chars(b.to_string()));
-        expected_actions.push(Action::Custom(Default::default()));
+        expected_actions.push(custom_default());
     }
 
     for (i, (left, right)) in actions.into_iter().zip(expected_actions).enumerate() {
