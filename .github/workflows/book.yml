@@ -4,6 +4,7 @@ on:
     branches: ["master"]
     paths:
       - 'book/**'
+      - 'utils/**'
 jobs:
   Book:
     runs-on: ubuntu-latest
