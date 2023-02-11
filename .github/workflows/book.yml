@@ -24,6 +24,7 @@ jobs:
         uses: baptiste0928/cargo-install@v1
         with:
           crate: mdbook-i18n
+          locked: true
       - name: Build book
         run: make book
       - name: Build doc
