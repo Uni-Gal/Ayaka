@@ -3,6 +3,7 @@
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
 
+#[doc(no_inline)]
 pub use ayaka_primitive::{RawValue, ValueType};
 
 use lalrpop_util::lalrpop_mod;

@@ -7,6 +7,7 @@
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
 
+#[doc(no_inline)]
 pub use anyhow::Result;
 
 use serde::{de::DeserializeOwned, Serialize};
