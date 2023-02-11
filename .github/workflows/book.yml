@@ -25,6 +25,10 @@ jobs:
           crate: mdbook-i18n
       - name: Build book
         run: make book
+      - name: Build doc
+        run: make doc
+      - name: Copy doc
+        run: cp -r utils/target/doc book/book/i18n/
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:

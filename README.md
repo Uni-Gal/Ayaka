@@ -2,7 +2,7 @@
 
 # Ayaka
 
-Ayaka is currently a project for [OSPP 2022](https://summer-ospp.ac.cn/).
+Ayaka was initially a project for [OSPP 2022](https://summer-ospp.ac.cn/).
 
 For Simplified Chinese version README, see [简体中文](https://github.com/Uni-Gal/Ayaka/blob/master/README_zh-Hans.md)
 
@@ -23,10 +23,7 @@ The frontend is Ayaka. The runtime is Ayaka. The script is Ayaka. [Just Ayaka.](
 ## Docs
 [Ayaka Book](https://uni-gal.github.io/Ayaka/en/).
 
-For API docs, build into `utils/target/doc`:
-``` bash
-$ make doc
-```
+[API docs](https://uni-gal.github.io/Ayaka/doc/ayaka_model/index.html)
 
 ## Screenshot
 ![Orga](assets/galgui.png)
