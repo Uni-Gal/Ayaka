@@ -128,6 +128,7 @@
 <a href="#128" id="128">128</a>
 <a href="#129" id="129">129</a>
 <a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Base crate for plugin runtimes.
 //!
 //! This crate provides abstract types and traits
@@ -137,6 +138,7 @@
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
 
+#[doc(no_inline)]
 </span><span class="kw">pub use </span>anyhow::Result;
 
 <span class="kw">use </span>serde::{de::DeserializeOwned, Serialize};
