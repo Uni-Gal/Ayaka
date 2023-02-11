@@ -1,4 +1,4 @@
-<img width=100 src="assets/logo.png"/>
+<img style="display: block; margin-left: auto; margin-right: auto;" width=200 src="assets/logo.png"/>
 
 # Ayaka
 
@@ -21,7 +21,7 @@ The frontend is Ayaka. The runtime is Ayaka. The script is Ayaka. [Just Ayaka.](
 * A prototype LaTeX frontend to generate PDF from the config.
 
 ## Docs
-[Ayaka Book](https://uni-gal.github.io/Ayaka/en/).
+[Ayaka Book](https://uni-gal.github.io/Ayaka/en/)
 
 [API docs](https://uni-gal.github.io/Ayaka/doc/ayaka_model/index.html)
 

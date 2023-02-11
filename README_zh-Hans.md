@@ -1,8 +1,8 @@
-<img width=100 src="assets/logo.png"/>
+<img style="display: block; margin-left: auto; margin-right: auto;" width=200 src="assets/logo.png"/>
 
 # Ayaka
 
-Ayaka目前是[OSPP 2022](https://summer-ospp.ac.cn/)的一个项目。
+Ayaka一开始是[OSPP 2022](https://summer-ospp.ac.cn/)的一个项目。
 
 ## 关于名字
 前端是Ayaka。运行时是Ayaka。脚本是Ayaka。[Just Ayaka.](https://bbs.mihoyo.com/ys/article/21828380)
@@ -19,12 +19,9 @@ Ayaka目前是[OSPP 2022](https://summer-ospp.ac.cn/)的一个项目。
 * 从配置直接生成PDF的LaTeX前端原型。
 
 ## 文档
-参见[Ayaka Book](https://uni-gal.github.io/Ayaka/zh-Hans/).
+[Ayaka Book](https://uni-gal.github.io/Ayaka/zh-Hans/)
 
-API文档需要在`utils/target/doc`内构建：
-``` bash
-$ make doc
-```
+[API文档](https://uni-gal.github.io/Ayaka/doc/ayaka_model/index.html)
 
 ## 运行截屏
 ![奥尔加](assets/galgui.png)
