@@ -1,7 +1,7 @@
 # Summary
 
 - [Introduction](./intro.md)
-- [Start](./cook/summary.md)
+- [Start from zero](./cook/summary.md)
   - [Install Rust](./cook/01-install-rust.md)
   - [Install Makefile](./cook/02-install-makefile.md)
 - [Start from source](./quick_start.md)
