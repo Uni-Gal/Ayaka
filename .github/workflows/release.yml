@@ -6,6 +6,7 @@ on:
       - 'utils/**'
       - 'bins/**'
       - 'plugins/**'
+      - '.github/workflows/release.yml'
 jobs:
   Build:
     strategy:

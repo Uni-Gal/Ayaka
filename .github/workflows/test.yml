@@ -5,6 +5,7 @@ on:
     paths:
       - 'utils/**'
       - 'plugins/**'
+      - '.github/workflows/test.yml'
   pull_request:
     branches: ["master"]
 jobs:

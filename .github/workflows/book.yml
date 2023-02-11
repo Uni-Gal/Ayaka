@@ -5,6 +5,7 @@ on:
     paths:
       - 'book/**'
       - 'utils/**'
+      - '.github/workflows/book.yml'
 jobs:
   Book:
     runs-on: ubuntu-latest

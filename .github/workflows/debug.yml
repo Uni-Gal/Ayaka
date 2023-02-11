@@ -5,6 +5,7 @@ on:
     paths:
       - 'utils/**'
       - 'bins/**'
+      - '.github/workflows/debug.yml'
 jobs:
   Build:
     strategy:
