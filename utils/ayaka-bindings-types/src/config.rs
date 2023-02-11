@@ -9,8 +9,8 @@ use std::{
 /// The unit of one line in an action.
 ///
 /// If a frontend supports animation,
-/// the characters in [`ActionLine::Chars`] should be printed one by one,
-/// while the characters in [`ActionLine::Block`] should be printed together.
+/// the characters in [`ActionSubText::Chars`] should be printed one by one,
+/// while the characters in [`ActionSubText::Block`] should be printed together.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data")]
 pub enum ActionSubText {
@@ -23,12 +23,12 @@ pub enum ActionSubText {
 }
 
 impl ActionSubText {
-    /// Creates [`ActionLine::Chars`].
+    /// Creates [`ActionSubText::Chars`].
     pub fn chars(s: impl Into<String>) -> Self {
         Self::Chars(s.into())
     }
 
-    /// Creates [`ActionLine::Block`].
+    /// Creates [`ActionSubText::Block`].
     pub fn block(s: impl Into<String>) -> Self {
         Self::Block(s.into())
     }
@@ -92,8 +92,8 @@ pub struct ActionText {
 }
 
 impl ActionText {
-    /// Push the string as [`ActionLine::Chars`] to the back.
-    /// If the back element is also [`ActionLine::Chars`], the string is appended.
+    /// Push the string as [`ActionSubText::Chars`] to the back.
+    /// If the back element is also [`ActionSubText::Chars`], the string is appended.
     pub fn push_back_chars<'a>(&mut self, s: impl Into<Cow<'a, str>>) {
         let s = s.into();
         if let Some(ActionSubText::Chars(text)) = self.text.back_mut() {
@@ -103,8 +103,8 @@ impl ActionText {
         }
     }
 
-    /// Push the string as [`ActionLine::Block`] to the back.
-    /// If the back element is also [`ActionLine::Block`], the string is appended.
+    /// Push the string as [`ActionSubText::Block`] to the back.
+    /// If the back element is also [`ActionSubText::Block`], the string is appended.
     pub fn push_back_block<'a>(&mut self, s: impl Into<Cow<'a, str>>) {
         let s = s.into();
         if let Some(ActionSubText::Block(text)) = self.text.back_mut() {
@@ -134,7 +134,7 @@ impl PartialEq for ActionText {
 }
 
 /// The full action information in one line of config.
-/// It provides the full texts and other properties exacted from [`ayaka_script::Text`].
+/// It provides the full texts and other properties exacted from [`ayaka_primitive::Text`].
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data")]
 pub enum Action {

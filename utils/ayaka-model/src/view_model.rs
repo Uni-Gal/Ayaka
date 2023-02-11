@@ -5,7 +5,7 @@ use std::path::Path;
 use stream_future::stream;
 use trylog::macros::*;
 
-/// The status when calling [`open_game`].
+/// The status when calling [`GameViewModel::open_game`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "t", content = "data")]
 pub enum OpenGameStatus {
@@ -112,12 +112,12 @@ impl<M: SettingsManager> GameViewModel<M> {
         Ok(())
     }
 
-    /// The [`Context`], should be called after [`open_game`].
+    /// The [`Context`], should be called after [`Self::open_game`].
     pub fn context(&self) -> &Context {
         self.context.as_ref().unwrap()
     }
 
-    /// The [`Context`], should be called after [`open_game`].
+    /// The [`Context`], should be called after [`Self::open_game`].
     pub fn context_mut(&mut self) -> &mut Context {
         self.context.as_mut().unwrap()
     }

@@ -27,7 +27,7 @@ pub struct GlobalRecord {
 }
 
 impl GlobalRecord {
-    /// Determine if an [`ActionParams`] has been visited,
+    /// Determine if an [`RawContext`] has been visited,
     /// by the paragraph tag and action index.
     pub fn visited(&self, ctx: &RawContext) -> bool {
         if let Some(max_act) = self.record.get(&ctx.cur_para) {
@@ -38,7 +38,7 @@ impl GlobalRecord {
         }
     }
 
-    /// Update the global record with the latest [`ActionParams`].
+    /// Update the global record with the latest [`RawContext`].
     pub fn update(&mut self, ctx: &RawContext) {
         self.record
             .entry(ctx.cur_para.clone())

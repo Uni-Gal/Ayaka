@@ -414,7 +414,7 @@ impl Context {
         Ok(())
     }
 
-    /// Get the [`Action`] from [`Locale`] and [`ActionParams`].
+    /// Get the [`Action`] from [`Locale`] and [`RawContext`].
     pub fn get_action(&self, loc: &Locale, ctx: &RawContext) -> Result<Action> {
         let cur_text = self
             .game

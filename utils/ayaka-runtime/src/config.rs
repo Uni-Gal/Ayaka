@@ -14,7 +14,7 @@ pub struct Paragraph {
     /// It can be [`None`], but better with a human-readable one.
     pub title: Option<String>,
     /// The texts.
-    /// They will be parsed into [`ayaka_script::Text`] later.
+    /// They will be parsed into [`ayaka_primitive::Text`] later.
     pub texts: Vec<Line>,
     /// The next paragraph.
     /// If [`None`], the game meets the end.
