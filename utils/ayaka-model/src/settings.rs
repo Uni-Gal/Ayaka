@@ -1,5 +1,3 @@
-//! Settings of the runtime.
-
 use crate::*;
 use anyhow::Result;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
