@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["WasmiLinker","A Wasmi [`Store`] with [`Linker`]."],["WasmiLinkerHandle","A Wasmi [`StoreContextMut`]."],["WasmiModule","A Wasmi [`Instance`]."]]};

@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["NopLinker","A no-operation store & linker."],["NopModule","A no-operation WASM module."]]};

@@ -1,0 +1,1 @@
+window.ALL_CRATES = ["ayaka_bindings_types","ayaka_model","ayaka_plugin","ayaka_plugin_nop","ayaka_plugin_wasmer","ayaka_plugin_wasmi","ayaka_plugin_wasmtime","ayaka_primitive","ayaka_runtime","ayaka_script"];

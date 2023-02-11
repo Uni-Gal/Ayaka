@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["WasmtimeLinker","A Wasmtime [`Store`] with [`Linker`]."],["WasmtimeLinkerHandle","A Wasmtime [`StoreContextMut`]."],["WasmtimeModule","A Wasmtime [`Instance`]."]]};

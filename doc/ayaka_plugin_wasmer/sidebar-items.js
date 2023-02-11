@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"struct":[["WasmerFunction","Represents a wrapped wasmer function."],["WasmerLinker","A Wasmer [`Store`] with some imports."],["WasmerLinkerHandle","A Wasmer [`StoreMut`]."],["WasmerModule","A Wasmer [`Instance`]."]]};
