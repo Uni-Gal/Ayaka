@@ -31,17 +31,9 @@ rustup install nightly
 rustup default nightly
 ```
 
-## 设定交叉编译目标
-
-```
-rustup target add 123
-456
-789
-```
-
 ## 每次在运行前的操作
 
-因为是nightly，所以每天更新
+因为是nightly，所以经常更新
 ```
 rustup update
 ```
