@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["BinaryOp","Binary operations."],["Expr","An expression."],["LogicBinaryOp","Logical operations."],["Ref","Reference of a variable."],["UnaryOp","Unary operations."],["ValBinaryOp","Value binary operations."]],"struct":[["ConstParser",""],["ExprParser",""],["Program","A full script, a collection of expressions."],["ProgramParser",""],["RefParser",""]]};
+window.SIDEBAR_ITEMS = {"enum":["BinaryOp","Expr","LogicBinaryOp","Ref","UnaryOp","ValBinaryOp"],"struct":["ConstParser","ExprParser","Program","ProgramParser","RefParser"]};

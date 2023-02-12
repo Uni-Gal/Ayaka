@@ -264,6 +264,29 @@ $ make example-Orga-gui
 <div style="break-before: page; page-break-before: always;"></div><h1 id="live2d"><a class="header" href="#live2d">Live2D</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="打包"><a class="header" href="#打包">打包</a></h1>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="支持的平台"><a class="header" href="#支持的平台">支持的平台</a></h1>
+<p>Ayaka 跨平台，并将支持的平台（三元组）分为三级。</p>
+<h2 id="第一级"><a class="header" href="#第一级">第一级</a></h2>
+<p>保证工作：</p>
+<ul>
+<li>x86_64-pc-windows-msvc</li>
+<li>x86_64-unknown-linux-gnu</li>
+<li>x86_64-apple-darwin</li>
+</ul>
+<h2 id="第二级"><a class="header" href="#第二级">第二级</a></h2>
+<p>应当正常工作，但是没有测试过：</p>
+<ul>
+<li>i686-pc-windows-msvc</li>
+<li>aarch64-pc-windows-msvc</li>
+<li>i686-pc-windows-gnu</li>
+<li>x86_64-pc-windows-gnu</li>
+<li>aarch64-unknown-linux-gnu</li>
+<li>aarch64-apple-darwin</li>
+</ul>
+<h2 id="第三级"><a class="header" href="#第三级">第三级</a></h2>
+<p>由于依赖可能存在问题，不一定正确编译运行：</p>
+<ul>
+<li>s390x-unknown-linux-gnu</li>
+</ul>
 
                     </main>
 

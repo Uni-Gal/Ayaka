@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["Line","Represents a line in a prograph."],["RawValue","The basic and only type used in scripts."],["SubText","A part of a line, either some texts or a command."],["ValueType","Represents the type of [`RawValue`]."]],"struct":[["Text","A collection of [`SubText`]."]]};
+window.SIDEBAR_ITEMS = {"enum":["Line","RawValue","SubText","ValueType"],"struct":["Text"]};

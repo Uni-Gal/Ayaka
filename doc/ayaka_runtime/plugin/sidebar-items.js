@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":[["LoadStatus","The load status of [`Runtime`]."]],"struct":[["Module","The plugin module with high-level interfaces."],["Runtime","The plugin runtime."]]};
+window.SIDEBAR_ITEMS = {"enum":["LoadStatus"],"struct":["Module","Runtime"]};
