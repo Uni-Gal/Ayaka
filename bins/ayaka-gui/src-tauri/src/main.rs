@@ -301,8 +301,7 @@ fn main() -> Result<()> {
                     if data.exists() {
                         paths.push(data);
                         paths.extend(
-                            ('a'..'z')
-                                .into_iter()
+                            ('a'..='z')
                                 .map(|c| current.join(format!("data.{}.ayapack", c)))
                                 .filter(|p| p.exists()),
                         );

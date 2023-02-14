@@ -131,7 +131,7 @@ impl<'a> TryFrom<&'a str> for Text {
     type Error = VerboseError<&'a str>;
 
     fn try_from(value: &'a str) -> Result<Self, Self::Error> {
-        parse_text(&value).finish().map(|(_, text)| text)
+        parse_text(value).finish().map(|(_, text)| text)
     }
 }
 
@@ -142,7 +142,7 @@ impl<'de> Deserialize<'de> for Text {
     {
         let raw_value = RawValue::deserialize(deserializer)?;
         let text = Text::try_from(raw_value.get_str().as_ref())
-            .map_err(|e| <D::Error as serde::de::Error>::custom(e))?;
+            .map_err(<D::Error as serde::de::Error>::custom)?;
         Ok(text)
     }
 }
