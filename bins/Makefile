@@ -9,11 +9,11 @@ update:
 dist:
 	cd ayaka-gui && $(MAKE) dist
 debug-cross: dist
-	STATIC_VCRUNTIME=false PKG_CONFIG_ALLOW_CROSS=1 cargo build --target=$(TARGET)
+	cargo build --target=$(TARGET)
 release: dist
-	STATIC_VCRUNTIME=false cargo build --release
+	cargo build --release
 release-cross: dist
-	STATIC_VCRUNTIME=false PKG_CONFIG_ALLOW_CROSS=1 cargo build --release --target=$(TARGET)
+	cargo build --release --target=$(TARGET)
 
 .PHONY: run run-gui run-latex
 run:
