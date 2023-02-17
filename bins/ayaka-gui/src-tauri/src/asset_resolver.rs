@@ -6,16 +6,16 @@ use axum::{
     routing::get,
     Router, Server,
 };
-use ayaka_model::{
-    log,
-    vfs::{error::VfsErrorKind, *},
-};
+use ayaka_model::vfs::{error::VfsErrorKind, *};
 use std::{fmt::Display, io::Read, net::TcpListener, sync::OnceLock};
 use tauri::{
     plugin::{Builder, TauriPlugin},
     AppHandle, Runtime,
 };
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::{
+    cors::{Any, CorsLayer},
+    trace::TraceLayer,
+};
 
 pub(crate) static ROOT_PATH: OnceLock<VfsPath> = OnceLock::new();
 
@@ -32,7 +32,6 @@ impl std::error::Error for ResolverError {}
 
 impl IntoResponse for ResolverError {
     fn into_response(self) -> Response {
-        log::error!("{}", self);
         (self.0, self.1).into_response()
     }
 }
@@ -87,11 +86,17 @@ pub fn init<R: Runtime>(listener: TcpListener) -> TauriPlugin<R> {
         .setup(move |app| {
             let app = app.clone();
             tauri::async_runtime::spawn(async {
-                let cors = CorsLayer::new().allow_methods(Any).allow_origin(Any);
                 let app = Router::new()
                     .route("/fs/*path", get(fs_resolver))
                     .fallback(move |req| resolver(app, req))
-                    .layer(cors);
+                    .layer(
+                        TraceLayer::new_for_http()
+                            .on_request(())
+                            .on_response(())
+                            .on_body_chunk(())
+                            .on_eos(()),
+                    )
+                    .layer(CorsLayer::new().allow_methods(Any).allow_origin(Any));
                 Server::from_tcp(listener)
                     .unwrap()
                     .serve(app.into_make_service())

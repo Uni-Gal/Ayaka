@@ -258,7 +258,7 @@ fn main() -> Result<()> {
         .plugin(tauri_plugin_window_state::Builder::default().build())
         .setup(move |app| {
             let resolver = app.path_resolver();
-            let spec = LogSpecification::parse("warn,ayaka=debug")?;
+            let spec = LogSpecification::parse("warn,ayaka=debug,tower_http=debug")?;
             let log_handle = if cfg!(debug_assertions) {
                 Logger::with(spec)
                     .log_to_stdout()

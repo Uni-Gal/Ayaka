@@ -18,7 +18,7 @@ tauri = { version = "1.2", features = ["cli", "window-all"] }
 tauri-plugin-window-state = "0.1"
 tryiterator = { git = "https://github.com/Pernosco/tryiterator.git" }
 axum = { version = "0.6", default-features = false, features = ["http1", "tokio"] }
-tower-http = { version = "0.3", features = ["cors"] }
+tower-http = { version = "0.3", features = ["cors", "trace"] }
 mime_guess = "2.0"
 
 [features]
