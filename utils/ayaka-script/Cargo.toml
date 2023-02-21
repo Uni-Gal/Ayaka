@@ -7,9 +7,12 @@ edition = "2021"
 ayaka-primitive = { workspace = true }
 anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
-log = { workspace = true }
-trylog = { workspace = true }
-lalrpop-util = { version = "0.19", features = ["lexer"] }
+trylog = { workspace = true, optional = true }
+lalrpop-util = { version = "0.19", features = ["lexer"], optional = true }
 
 [build-dependencies]
-lalrpop = "0.19"
+lalrpop = { version = "0.19", optional = true }
+
+[features]
+default = []
+parser = ["lalrpop-util", "lalrpop", "trylog"]

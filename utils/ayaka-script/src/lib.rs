@@ -3,24 +3,26 @@
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
 
+#[cfg(feature = "parser")]
+mod parser;
+#[cfg(feature = "parser")]
+pub use parser::*;
+
 #[doc(no_inline)]
 pub use ayaka_primitive::{RawValue, ValueType};
 
-use lalrpop_util::lalrpop_mod;
-use serde::Deserialize;
-use std::str::FromStr;
+use serde::{Deserialize, Serialize};
 
 /// A full script, a collection of expressions.
 ///
 /// The last expression is the final value of the script.
-#[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize)]
-#[serde(try_from = "String")]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Program(pub Vec<Expr>);
 
 /// An expression.
 ///
 /// Two expressions should be splited with `;`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Expr {
     /// A reference to a variable.
     Ref(Ref),
@@ -35,7 +37,7 @@ pub enum Expr {
 }
 
 /// Unary operations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UnaryOp {
     /// `+`
     Positive,
@@ -46,7 +48,7 @@ pub enum UnaryOp {
 }
 
 /// Binary operations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BinaryOp {
     /// Value operations.
     Val(ValBinaryOp),
@@ -59,7 +61,7 @@ pub enum BinaryOp {
 }
 
 /// Value binary operations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ValBinaryOp {
     /// `+`
     Add,
@@ -80,7 +82,7 @@ pub enum ValBinaryOp {
 }
 
 /// Logical operations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LogicBinaryOp {
     /// `&&`
     And,
@@ -101,7 +103,7 @@ pub enum LogicBinaryOp {
 }
 
 /// Reference of a variable.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Ref {
     /// A local variable.
     /// It is only accessible in current program.
@@ -110,130 +112,4 @@ pub enum Ref {
     /// It is stored in the context.
     /// The variable name is prefixed with `$`.
     Ctx(String),
-}
-
-lalrpop_mod!(
-    #[allow(missing_docs)]
-    #[allow(dead_code)]
-    #[allow(clippy::all)]
-    grammer
-);
-
-pub use grammer::{ConstParser, ExprParser, ProgramParser, RefParser};
-
-impl FromStr for Program {
-    type Err = anyhow::Error;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        ProgramParser::new()
-            .parse(s)
-            .map_err(|e| anyhow::anyhow!("{}", e))
-    }
-}
-
-impl TryFrom<String> for Program {
-    type Error = anyhow::Error;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        value.parse()
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use crate::*;
-
-    fn var(s: &str) -> Expr {
-        Expr::Ref(Ref::Var(s.into()))
-    }
-
-    #[test]
-    fn program() {
-        assert_eq!(
-            ProgramParser::new()
-                .parse(
-                    "foo(a);
-                    foo.bar(a, b)"
-                )
-                .unwrap(),
-            Program(vec![
-                Expr::Call(String::default(), "foo".into(), vec![var("a")]),
-                Expr::Call("foo".into(), "bar".into(), vec![var("a"), var("b")])
-            ])
-        );
-    }
-
-    #[test]
-    fn expr() {
-        assert_eq!(ExprParser::new().parse("a").unwrap(), var("a"));
-        assert_eq!(
-            ExprParser::new().parse("!(a && b || c)").unwrap(),
-            Expr::Unary(
-                UnaryOp::Not,
-                Box::new(Expr::Binary(
-                    Box::new(Expr::Binary(
-                        Box::new(var("a")),
-                        BinaryOp::Logic(LogicBinaryOp::And),
-                        Box::new(var("b"))
-                    )),
-                    BinaryOp::Logic(LogicBinaryOp::Or),
-                    Box::new(var("c"))
-                ))
-            )
-        );
-        assert_eq!(
-            ExprParser::new().parse("foo(a)").unwrap(),
-            Expr::Call(String::default(), "foo".into(), vec![var("a")])
-        );
-        assert_eq!(
-            ExprParser::new().parse("foo.bar(a, b)").unwrap(),
-            Expr::Call("foo".into(), "bar".into(), vec![var("a"), var("b")])
-        );
-        assert_eq!(
-            ExprParser::new().parse("a + (b * (c & d))").unwrap(),
-            Expr::Binary(
-                Box::new(var("a")),
-                BinaryOp::Val(ValBinaryOp::Add),
-                Box::new(Expr::Binary(
-                    Box::new(var("b")),
-                    BinaryOp::Val(ValBinaryOp::Mul),
-                    Box::new(Expr::Binary(
-                        Box::new(var("c")),
-                        BinaryOp::Val(ValBinaryOp::And),
-                        Box::new(var("d"))
-                    ))
-                ))
-            )
-        );
-    }
-
-    #[test]
-    fn r#const() {
-        assert_eq!(ConstParser::new().parse("~").unwrap(), RawValue::Unit);
-
-        assert_eq!(
-            ConstParser::new().parse("true").unwrap(),
-            RawValue::Bool(true)
-        );
-        assert_eq!(
-            ConstParser::new().parse("false").unwrap(),
-            RawValue::Bool(false)
-        );
-
-        assert_eq!(
-            ConstParser::new().parse("114514").unwrap(),
-            RawValue::Num(114514.into())
-        );
-
-        assert_eq!(
-            ConstParser::new().parse("\"Hello world!\"").unwrap(),
-            RawValue::Str("Hello world!".into())
-        );
-    }
-
-    #[test]
-    fn r#ref() {
-        assert_eq!(RefParser::new().parse("a").unwrap(), Ref::Var("a".into()));
-        assert_eq!(RefParser::new().parse("$a").unwrap(), Ref::Ctx("a".into()));
-    }
 }

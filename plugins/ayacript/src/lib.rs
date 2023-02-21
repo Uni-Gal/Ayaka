@@ -13,11 +13,15 @@ use std::{
     collections::HashMap,
     sync::{LazyLock, Mutex},
 };
-use trylog::macros::*;
 
 #[export]
 fn plugin_type() -> PluginType {
     PluginType::builder().line(["exec"]).build()
+}
+
+#[import("script")]
+extern "C" {
+    fn __parse(program: &str) -> Program;
 }
 
 static RUNTIME: LazyLock<Runtime> = LazyLock::new(Runtime::new);
@@ -39,10 +43,9 @@ fn exec(mut ctx: LineProcessContext) -> LineProcessResult {
         cur_act: ctx.ctx.cur_act,
     };
     let mut cache = PROGRAM_CACHE.lock().unwrap();
-    let exec = cache.entry(key).or_insert_with(|| {
-        let program = ctx.props["exec"].get_str();
-        unwrap_or_default_log!(program.parse::<Program>(), "Cannot parse program")
-    });
+    let exec = cache
+        .entry(key)
+        .or_insert_with(|| __parse(&ctx.props["exec"].get_str()));
     let mut table = VarTable::new(&RUNTIME, &mut ctx.ctx.locals);
     table.call(exec);
     let vars = table.vars;

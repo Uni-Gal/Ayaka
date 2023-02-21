@@ -4,6 +4,7 @@ mod fs_interop;
 mod log_interop;
 mod plugin_interop;
 mod rand_interop;
+mod script_interop;
 
 #[cfg(test)]
 mod test;
@@ -136,6 +137,7 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
         plugin_interop::register(&mut store, handle.clone())?;
         fs_interop::register(&mut store, root_path)?;
         rand_interop::register(&mut store)?;
+        script_interop::register(&mut store)?;
         let mut runtime = Self::new();
 
         let total_len = paths.len();
