@@ -136,8 +136,9 @@ impl ayaka_plugin::Linker<WasmtimeModule> for WasmtimeLinker {
 
     fn import(&mut self, ns: impl Into<String>, funcs: HashMap<String, Func>) -> Result<()> {
         let ns = ns.into();
+        let store = self.store.lock().unwrap();
         for (name, func) in funcs {
-            self.linker.define(&ns, &name, func)?;
+            self.linker.define(store.as_context(), &ns, &name, func)?;
         }
         Ok(())
     }
