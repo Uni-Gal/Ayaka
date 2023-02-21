@@ -7,7 +7,7 @@ var sourcesIndex = JSON.parse('{\
 "ayaka_plugin_wasmi":["",[],["lib.rs"]],\
 "ayaka_plugin_wasmtime":["",[],["lib.rs"]],\
 "ayaka_primitive":["",[],["lib.rs","line.rs","raw_value.rs","text.rs"]],\
-"ayaka_runtime":["",[["plugin",[],["fs_interop.rs","log_interop.rs","plugin_interop.rs","rand_interop.rs"]]],["config.rs","context.rs","lib.rs","locale.rs","plugin.rs"]],\
-"ayaka_script":["",[],["lib.rs"]]\
+"ayaka_runtime":["",[["plugin",[],["fs_interop.rs","log_interop.rs","plugin_interop.rs","rand_interop.rs","script_interop.rs"]]],["config.rs","context.rs","lib.rs","locale.rs","plugin.rs"]],\
+"ayaka_script":["",[],["lib.rs","parser.rs"]]\
 }');
 createSourceSidebar();

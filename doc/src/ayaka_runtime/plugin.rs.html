@@ -243,12 +243,15 @@
 <a href="#243" id="243">243</a>
 <a href="#244" id="244">244</a>
 <a href="#245" id="245">245</a>
+<a href="#246" id="246">246</a>
+<a href="#247" id="247">247</a>
 </pre><pre class="rust"><code><span class="doccomment">//! The plugin utilities.
 
 </span><span class="kw">mod </span>fs_interop;
 <span class="kw">mod </span>log_interop;
 <span class="kw">mod </span>plugin_interop;
 <span class="kw">mod </span>rand_interop;
+<span class="kw">mod </span>script_interop;
 
 <span class="attr">#[cfg(test)]
 </span><span class="kw">mod </span>test;
@@ -381,6 +384,7 @@
         plugin_interop::register(<span class="kw-2">&amp;mut </span>store, handle.clone())<span class="question-mark">?</span>;
         fs_interop::register(<span class="kw-2">&amp;mut </span>store, root_path)<span class="question-mark">?</span>;
         rand_interop::register(<span class="kw-2">&amp;mut </span>store)<span class="question-mark">?</span>;
+        script_interop::register(<span class="kw-2">&amp;mut </span>store)<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>runtime = <span class="self">Self</span>::new();
 
         <span class="kw">let </span>total_len = paths.len();
