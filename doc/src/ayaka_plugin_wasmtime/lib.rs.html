@@ -199,6 +199,7 @@
 <a href="#199" id="199">199</a>
 <a href="#200" id="200">200</a>
 <a href="#201" id="201">201</a>
+<a href="#202" id="202">202</a>
 </pre><pre class="rust"><code><span class="doccomment">//! Wasmtime-based plugin backend.
 
 </span><span class="attr">#![warn(missing_docs)]
@@ -337,8 +338,9 @@
 
     <span class="kw">fn </span>import(<span class="kw-2">&amp;mut </span><span class="self">self</span>, ns: <span class="kw">impl </span>Into&lt;String&gt;, funcs: HashMap&lt;String, Func&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>ns = ns.into();
+        <span class="kw">let </span>store = <span class="self">self</span>.store.lock().unwrap();
         <span class="kw">for </span>(name, func) <span class="kw">in </span>funcs {
-            <span class="self">self</span>.linker.define(<span class="kw-2">&amp;</span>ns, <span class="kw-2">&amp;</span>name, func)<span class="question-mark">?</span>;
+            <span class="self">self</span>.linker.define(store.as_context(), <span class="kw-2">&amp;</span>ns, <span class="kw-2">&amp;</span>name, func)<span class="question-mark">?</span>;
         }
         <span class="prelude-val">Ok</span>(())
     }
