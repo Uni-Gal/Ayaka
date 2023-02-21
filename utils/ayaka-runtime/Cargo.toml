@@ -7,6 +7,7 @@ edition = "2021"
 ayaka-primitive = { workspace = true }
 ayaka-bindings-types = { workspace = true }
 ayaka-plugin = { workspace = true }
+ayaka-script = { workspace = true, features = ["parser"] }
 fallback = { workspace = true }
 language-matcher = "0.1"
 icu_locid = { version = "1.0.0", features = ["std"] }

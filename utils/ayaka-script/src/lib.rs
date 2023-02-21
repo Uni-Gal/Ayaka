@@ -6,21 +6,18 @@
 #[doc(no_inline)]
 pub use ayaka_primitive::{RawValue, ValueType};
 
-use lalrpop_util::lalrpop_mod;
-use serde::Deserialize;
-use std::str::FromStr;
+use serde::{Deserialize, Serialize};
 
 /// A full script, a collection of expressions.
 ///
 /// The last expression is the final value of the script.
-#[derive(Debug, Default, Clone, PartialEq, Eq, Deserialize)]
-#[serde(try_from = "String")]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Program(pub Vec<Expr>);
 
 /// An expression.
 ///
 /// Two expressions should be splited with `;`.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Expr {
     /// A reference to a variable.
     Ref(Ref),
@@ -35,7 +32,7 @@ pub enum Expr {
 }
 
 /// Unary operations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UnaryOp {
     /// `+`
     Positive,
@@ -46,7 +43,7 @@ pub enum UnaryOp {
 }
 
 /// Binary operations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum BinaryOp {
     /// Value operations.
     Val(ValBinaryOp),
@@ -59,7 +56,7 @@ pub enum BinaryOp {
 }
 
 /// Value binary operations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ValBinaryOp {
     /// `+`
     Add,
@@ -80,7 +77,7 @@ pub enum ValBinaryOp {
 }
 
 /// Logical operations.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum LogicBinaryOp {
     /// `&&`
     And,
@@ -101,7 +98,7 @@ pub enum LogicBinaryOp {
 }
 
 /// Reference of a variable.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum Ref {
     /// A local variable.
     /// It is only accessible in current program.
@@ -112,6 +109,10 @@ pub enum Ref {
     Ctx(String),
 }
 
+#[cfg(feature = "parser")]
+use lalrpop_util::lalrpop_mod;
+
+#[cfg(feature = "parser")]
 lalrpop_mod!(
     #[allow(missing_docs)]
     #[allow(dead_code)]
@@ -119,9 +120,11 @@ lalrpop_mod!(
     grammer
 );
 
+#[cfg(feature = "parser")]
 pub use grammer::{ConstParser, ExprParser, ProgramParser, RefParser};
 
-impl FromStr for Program {
+#[cfg(feature = "parser")]
+impl std::str::FromStr for Program {
     type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
@@ -131,15 +134,7 @@ impl FromStr for Program {
     }
 }
 
-impl TryFrom<String> for Program {
-    type Error = anyhow::Error;
-
-    fn try_from(value: String) -> Result<Self, Self::Error> {
-        value.parse()
-    }
-}
-
-#[cfg(test)]
+#[cfg(all(test, feature = "parser"))]
 mod test {
     use crate::*;
 

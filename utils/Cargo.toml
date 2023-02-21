@@ -23,6 +23,7 @@ ayaka-plugin-nop = { path = "ayaka-plugin-nop" }
 ayaka-plugin-wasmer = { path = "ayaka-plugin-wasmer" }
 ayaka-plugin-wasmtime = { path = "ayaka-plugin-wasmtime" }
 ayaka-plugin-wasmi = { path = "ayaka-plugin-wasmi" }
+ayaka-script = { path = "ayaka-script" }
 ayaka-runtime = { path = "ayaka-runtime" }
 
 anyhow = "1.0"
