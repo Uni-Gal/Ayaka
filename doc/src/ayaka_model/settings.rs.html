@@ -125,7 +125,6 @@
 <a href="#125" id="125">125</a>
 <a href="#126" id="126">126</a>
 <a href="#127" id="127">127</a>
-<a href="#128" id="128">128</a>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::<span class="kw-2">*</span>;
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -133,7 +132,6 @@
     collections::HashMap,
     path::{Path, PathBuf},
 };
-<span class="kw">use </span>tryiterator::TryIteratorExt;
 
 <span class="doccomment">/// The settings of the game.
 </span><span class="attr">#[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -242,8 +240,8 @@
     <span class="doccomment">/// Load all [`ActionRecord`].
     </span><span class="kw">fn </span>load_records(<span class="kw-2">&amp;</span><span class="self">self</span>, game: <span class="kw-2">&amp;</span>str) -&gt; <span class="prelude-ty">Result</span>&lt;Vec&lt;ActionRecord&gt;&gt; {
         <span class="self">self</span>.records_path(game)<span class="question-mark">?
-            </span>.try_filter_map(|path| <span class="prelude-val">Ok</span>(<span class="prelude-val">Some</span>(<span class="self">self</span>.load_file(path)<span class="question-mark">?</span>)))
-            .try_collect()
+            </span>.map(|path| path.and_then(|path| <span class="self">self</span>.load_file(path)))
+            .collect()
     }
 
     <span class="doccomment">/// Save all [`ActionRecord`].
@@ -255,4 +253,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_model" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (5243ea5c2 2023-02-20)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_model" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (07c993eba 2023-02-23)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
