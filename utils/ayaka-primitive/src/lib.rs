@@ -2,8 +2,6 @@
 
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
-#![feature(iterator_try_collect)]
-#![feature(once_cell)]
 
 mod line;
 mod raw_value;
