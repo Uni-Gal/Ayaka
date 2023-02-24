@@ -8,7 +8,6 @@ use fallback::Fallback;
 use log::error;
 use std::{collections::HashMap, path::Path, sync::Arc};
 use stream_future::stream;
-use tryiterator::TryIteratorExt;
 use trylog::macros::*;
 use vfs::*;
 use vfs_tar::TarFS;
@@ -83,8 +82,8 @@ impl Context {
                 .iter()
                 .rev()
                 .map(|path| TarFS::new(path.as_ref()))
-                .try_filter_map(|fs| Ok(Some(VfsPath::from(fs))))
-                .try_collect::<Vec<_>>()?;
+                .map(|fs| fs.map(|fs| VfsPath::from(fs)))
+                .collect::<Result<Vec<_>, _>>()?;
             (OverlayFS::new(&files).into(), "config.yaml".into())
         };
         let file = root_path.join(&filename)?.open_file()?;

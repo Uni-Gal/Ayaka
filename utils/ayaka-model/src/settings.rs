@@ -5,7 +5,6 @@ use std::{
     collections::HashMap,
     path::{Path, PathBuf},
 };
-use tryiterator::TryIteratorExt;
 
 /// The settings of the game.
 #[derive(Debug, Default, Clone, Deserialize, Serialize)]
@@ -114,8 +113,8 @@ pub trait SettingsManager {
     /// Load all [`ActionRecord`].
     fn load_records(&self, game: &str) -> Result<Vec<ActionRecord>> {
         self.records_path(game)?
-            .try_filter_map(|path| Ok(Some(self.load_file(path)?)))
-            .try_collect()
+            .map(|path| path.and_then(|path| self.load_file(path)))
+            .collect()
     }
 
     /// Save all [`ActionRecord`].

@@ -17,7 +17,6 @@ serde_yaml = { workspace = true }
 anyhow = { workspace = true }
 stream-future = { workspace = true }
 futures-util = "0.3"
-tryiterator = { workspace = true }
 log = { workspace = true }
 trylog = { workspace = true }
 cfg-if = "1.0"

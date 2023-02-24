@@ -33,8 +33,6 @@ fallback = "0.1"
 log = "0.4"
 trylog = "0.3"
 
-tryiterator = { git = "https://github.com/Pernosco/tryiterator.git" }
-
 stream-future = "0.3"
 
 rmp-serde = "1.1"

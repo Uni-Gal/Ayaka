@@ -8,7 +8,6 @@ ayaka-runtime = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 stream-future = { workspace = true }
 trylog = { workspace = true }
-tryiterator = { workspace = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt"] }

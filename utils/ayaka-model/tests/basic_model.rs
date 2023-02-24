@@ -12,7 +12,6 @@ use std::{
     pin::Pin,
 };
 use tempfile::{tempdir, TempDir};
-use tryiterator::TryIteratorExt;
 
 struct NopSettingsManager {
     dir: TempDir,
@@ -63,16 +62,19 @@ impl SettingsManager for NopSettingsManager {
 
     fn records_path(&self, game: &str) -> Result<impl Iterator<Item = Result<PathBuf>>> {
         let ctx_path = self.records_path_root(game);
-        Ok(std::fs::read_dir(ctx_path)?
-            .map_err(Error::from)
-            .try_filter_map(|entry| {
-                let p = entry.path();
-                if p.is_file() && p.file_name().unwrap_or_default() != "global.json" {
-                    Ok(Some(p))
-                } else {
-                    Ok(None)
-                }
-            }))
+        Ok(std::fs::read_dir(ctx_path)?.filter_map(|entry| {
+            entry
+                .map_err(Error::from)
+                .map(|entry| {
+                    let p = entry.path();
+                    if p.is_file() && p.file_name().unwrap_or_default() != "global.json" {
+                        Some(p)
+                    } else {
+                        None
+                    }
+                })
+                .transpose()
+        }))
     }
 
     fn record_path(&self, game: &str, i: usize) -> Result<PathBuf> {
