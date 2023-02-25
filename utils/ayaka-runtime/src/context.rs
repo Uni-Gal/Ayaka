@@ -81,8 +81,7 @@ impl Context {
             let files = paths
                 .iter()
                 .rev()
-                .map(|path| TarFS::new(path.as_ref()))
-                .map(|fs| fs.map(|fs| VfsPath::from(fs)))
+                .map(|path| TarFS::new(path.as_ref()).map(VfsPath::from))
                 .collect::<Result<Vec<_>, _>>()?;
             (OverlayFS::new(&files).into(), "config.yaml".into())
         };
