@@ -1,5 +1,5 @@
 use axum::{
-    body::Body,
+    body::{Body, Bytes, StreamBody},
     extract::Path,
     http::{header::CONTENT_TYPE, Request, StatusCode},
     response::{IntoResponse, Response},
@@ -7,7 +7,13 @@ use axum::{
     Router, Server,
 };
 use ayaka_model::vfs::{error::VfsErrorKind, *};
-use std::{fmt::Display, io::Read, net::TcpListener, sync::OnceLock};
+use std::{
+    fmt::Display,
+    io::{BorrowedBuf, Read},
+    net::TcpListener,
+    sync::OnceLock,
+};
+use stream_future::try_stream;
 use tauri::{
     plugin::{Builder, TauriPlugin},
     AppHandle, Runtime,
@@ -57,20 +63,47 @@ impl From<std::io::Error> for ResolverError {
     }
 }
 
+const BUFFER_LEN: usize = 1048576;
+
+fn read_buf_vec(mut file: impl Read, vec: &mut Vec<u8>) -> std::io::Result<usize> {
+    let old_len = vec.len();
+    let mut read_buf = BorrowedBuf::from(vec.spare_capacity_mut());
+    let mut cursor = read_buf.unfilled();
+    file.read_buf(cursor.reborrow())?;
+    let written = cursor.written();
+    unsafe {
+        vec.set_len(old_len + written);
+    }
+    Ok(written)
+}
+
+#[try_stream(Bytes)]
+fn file_stream(mut file: Box<dyn SeekAndRead + Send>, length: usize) -> std::io::Result<()> {
+    let length = length.min(BUFFER_LEN);
+    loop {
+        let mut buffer = Vec::with_capacity(length);
+        let read_bytes = read_buf_vec(&mut file, &mut buffer)?;
+        if read_bytes > 0 {
+            yield Bytes::from(buffer);
+        } else {
+            break;
+        }
+    }
+    Ok(())
+}
+
 async fn fs_resolver(Path(path): Path<String>) -> Result<impl IntoResponse, ResolverError> {
     let path = ROOT_PATH.get().unwrap().join(path)?;
-    let mut file = path.open_file()?;
+    let file = path.open_file()?;
     let mime = mime_guess::from_path(path.as_str()).first_or_octet_stream();
-    // We choose to read_to_end, because in most release cases, the files should be in a TAR.
-    // In that case, we use mmap and the file is simply a byte slice.
-    // It is a simple copy from the source to buffer.
     let length = path
         .metadata()
         .map(|meta| meta.len as usize)
-        .unwrap_or(65536);
-    let mut buffer = Vec::with_capacity(length);
-    file.read_to_end(&mut buffer)?;
-    Ok(([(CONTENT_TYPE, mime.to_string())], buffer))
+        .unwrap_or(BUFFER_LEN);
+    Ok((
+        [(CONTENT_TYPE, mime.to_string())],
+        StreamBody::new(file_stream(file, length)),
+    ))
 }
 
 async fn resolver<R: Runtime>(app: AppHandle<R>, req: Request<Body>) -> impl IntoResponse {
