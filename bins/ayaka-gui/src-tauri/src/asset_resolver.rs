@@ -78,12 +78,12 @@ fn read_buf_vec(mut file: impl Read, vec: &mut Vec<u8>) -> std::io::Result<usize
 }
 
 #[try_stream(Bytes)]
-fn file_stream(mut file: Box<dyn SeekAndRead + Send>, mut length: usize) -> std::io::Result<()> {
+fn file_stream(mut file: Box<dyn SeekAndRead + Send>, length: usize) -> std::io::Result<()> {
+    let length = length.min(BUFFER_LEN);
     loop {
-        let mut buffer = Vec::with_capacity(length.min(BUFFER_LEN));
+        let mut buffer = Vec::with_capacity(length);
         let read_bytes = read_buf_vec(&mut file, &mut buffer)?;
         if read_bytes > 0 {
-            length -= read_bytes;
             yield Bytes::from(buffer);
         } else {
             break;
@@ -96,9 +96,6 @@ async fn fs_resolver(Path(path): Path<String>) -> Result<impl IntoResponse, Reso
     let path = ROOT_PATH.get().unwrap().join(path)?;
     let file = path.open_file()?;
     let mime = mime_guess::from_path(path.as_str()).first_or_octet_stream();
-    // We choose to read_to_end, because in most release cases, the files should be in a TAR.
-    // In that case, we use mmap and the file is simply a byte slice.
-    // It is a simple copy from the source to buffer.
     let length = path
         .metadata()
         .map(|meta| meta.len as usize)
