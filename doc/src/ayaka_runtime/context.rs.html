@@ -481,7 +481,6 @@
 <a href="#481" id="481">481</a>
 <a href="#482" id="482">482</a>
 <a href="#483" id="483">483</a>
-<a href="#484" id="484">484</a>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     plugin::{LoadStatus, Runtime},
     <span class="kw-2">*</span>,
@@ -565,8 +564,7 @@
             <span class="kw">let </span>files = paths
                 .iter()
                 .rev()
-                .map(|path| TarFS::new(path.as_ref()))
-                .map(|fs| fs.map(|fs| VfsPath::from(fs)))
+                .map(|path| TarFS::new(path.as_ref()).map(VfsPath::from))
                 .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
             (OverlayFS::new(<span class="kw-2">&amp;</span>files).into(), <span class="string">&quot;config.yaml&quot;</span>.into())
         };
@@ -967,4 +965,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (07c993eba 2023-02-23)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (c5c7d2b37 2023-02-24)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
