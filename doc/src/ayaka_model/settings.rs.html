@@ -125,6 +125,24 @@
 <a href="#125" id="125">125</a>
 <a href="#126" id="126">126</a>
 <a href="#127" id="127">127</a>
+<a href="#128" id="128">128</a>
+<a href="#129" id="129">129</a>
+<a href="#130" id="130">130</a>
+<a href="#131" id="131">131</a>
+<a href="#132" id="132">132</a>
+<a href="#133" id="133">133</a>
+<a href="#134" id="134">134</a>
+<a href="#135" id="135">135</a>
+<a href="#136" id="136">136</a>
+<a href="#137" id="137">137</a>
+<a href="#138" id="138">138</a>
+<a href="#139" id="139">139</a>
+<a href="#140" id="140">140</a>
+<a href="#141" id="141">141</a>
+<a href="#142" id="142">142</a>
+<a href="#143" id="143">143</a>
+<a href="#144" id="144">144</a>
+<a href="#145" id="145">145</a>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::<span class="kw-2">*</span>;
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>serde::{de::DeserializeOwned, Deserialize, Serialize};
@@ -134,12 +152,30 @@
 };
 
 <span class="doccomment">/// The settings of the game.
-</span><span class="attr">#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+</span><span class="attr">#[derive(Debug, Clone, Deserialize, Serialize)]
 </span><span class="kw">pub struct </span>Settings {
     <span class="doccomment">/// The display language.
     </span><span class="kw">pub </span>lang: Locale,
     <span class="doccomment">/// The secondary display language.
     </span><span class="kw">pub </span>sub_lang: <span class="prelude-ty">Option</span>&lt;Locale&gt;,
+    <span class="doccomment">/// Volume of background music.
+    </span><span class="kw">pub </span>bgm_volume: u8,
+    <span class="doccomment">/// Volume of voices.
+    </span><span class="kw">pub </span>voice_volume: u8,
+    <span class="doccomment">/// Volume of videos.
+    </span><span class="kw">pub </span>video_volume: u8,
+}
+
+<span class="kw">impl </span>Default <span class="kw">for </span>Settings {
+    <span class="kw">fn </span>default() -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{
+            lang: Locale::default(),
+            sub_lang: <span class="prelude-val">None</span>,
+            bgm_volume: <span class="number">100</span>,
+            voice_volume: <span class="number">100</span>,
+            video_volume: <span class="number">100</span>,
+        }
+    }
 }
 
 <span class="doccomment">/// The global record.
