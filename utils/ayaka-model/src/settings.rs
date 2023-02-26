@@ -7,12 +7,30 @@ use std::{
 };
 
 /// The settings of the game.
-#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Settings {
     /// The display language.
     pub lang: Locale,
     /// The secondary display language.
     pub sub_lang: Option<Locale>,
+    /// Volume of background music.
+    pub bgm_volume: u8,
+    /// Volume of voices.
+    pub voice_volume: u8,
+    /// Volume of videos.
+    pub video_volume: u8,
+}
+
+impl Default for Settings {
+    fn default() -> Self {
+        Self {
+            lang: Locale::default(),
+            sub_lang: None,
+            bgm_volume: 100,
+            voice_volume: 100,
+            video_volume: 100,
+        }
+    }
 }
 
 /// The global record.

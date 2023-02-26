@@ -123,6 +123,7 @@ async fn paras() {
         let settings = Settings {
             lang: locale!("en"),
             sub_lang: Some(locale!("zh")),
+            ..Default::default()
         };
         let manager = NopSettingsManager::new().unwrap();
         manager.save_settings(&settings).unwrap();

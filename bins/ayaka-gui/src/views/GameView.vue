@@ -3,7 +3,7 @@ import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import ActionCard from '../components/ActionCard.vue'
 import IconButton from '../components/IconButton.vue'
-import { conv_src, current_run, current_action, current_title, next_run, next_back_run, switch_, merge_lines, RawContext, ActionType, ActionText, CustomVars, Switch, ActionLineType, ActionLine, current_visited } from '../interop'
+import { conv_src, current_run, current_action, current_title, next_run, next_back_run, switch_, merge_lines, RawContext, ActionType, ActionText, CustomVars, Switch, ActionLineType, ActionLine, current_visited, get_settings } from '../interop'
 import { cloneDeep } from 'lodash'
 import Live2D from '../components/Live2D.vue'
 import { Modal } from 'bootstrap'
@@ -46,10 +46,17 @@ export default {
             type_sub_text_buffer: [] as ActionLine[],
             play_state: PlayState.Manual,
             mutex: new Mutex(),
+            bgm_volume: 100,
+            voice_volume: 100,
+            video_volume: 100,
         }
     },
     async mounted() {
         document.addEventListener('keydown', this.onkeydown)
+        const settings = await get_settings()
+        this.bgm_volume = settings.bgm_volume
+        this.voice_volume = settings.voice_volume
+        this.video_volume = settings.video_volume
         await this.mutex.runExclusive(this.fetch_current_run)
         this.start_type_anime()
     },
@@ -245,8 +252,10 @@ export default {
 </script>
 
 <template>
-    <audio ref="bgm" :src="conv_src(raw_ctx?.locals.bgm)" type="audio/mpeg" autoplay hidden loop></audio>
-    <audio ref="voice" :src="conv_src(action.vars.voice)" type="audio/mpeg" autoplay hidden></audio>
+    <audio ref="bgm" :src="conv_src(raw_ctx?.locals.bgm)" type="audio/mpeg" :volume="bgm_volume / 100" autoplay hidden
+        loop></audio>
+    <audio ref="voice" :src="conv_src(action.vars.voice)" type="audio/mpeg" :volume="voice_volume / 100" autoplay
+        hidden></audio>
     <img class="background" :src="conv_src(raw_ctx?.locals.bg)">
     <Live2D :names="live2d_names(raw_ctx.locals)"></Live2D>
     <div class="card-lines">
@@ -260,7 +269,7 @@ export default {
     </div>
     <div class="content-full bg-body" :hidden="!vars.video">
         <video ref="video" class="background" @ended="onvideoended" :src="conv_src(vars.video)" type="video/mp4"
-            autoplay></video>
+            :volume="video_volume / 100" autoplay></video>
     </div>
     <div class="backboard" @click="next"></div>
     <div class="commands">
@@ -269,8 +278,8 @@ export default {
             <IconButton icon="file-arrow-up" @click='on_records_click("load")'></IconButton>
             <IconButton icon="list" @click="on_history_click"></IconButton>
             <IconButton icon="backward-step" @click="next_back"></IconButton>
-            <IconButton icon="play" :btnclass='play_state == PlayState.Auto ? "active" : ""'
-                @click="on_auto_play_click"></IconButton>
+            <IconButton icon="play" :btnclass='play_state == PlayState.Auto ? "active" : ""' @click="on_auto_play_click">
+            </IconButton>
             <IconButton icon="forward-step" @click="next"></IconButton>
             <IconButton icon="forward" :btnclass='play_state == PlayState.FastForward ? "active" : ""'
                 @click="on_fast_forward_click"></IconButton>

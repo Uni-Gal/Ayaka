@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Locale } from 'vue-i18n'
-import { set_locale, set_sub_locale, avaliable_locale, get_settings } from '../interop'
+import { set_locale, set_sub_locale, set_volumes, avaliable_locale, get_settings } from '../interop'
 import IconButton from '../components/IconButton.vue';
 </script>
 
@@ -14,15 +14,22 @@ export default {
     data() {
         return {
             locales: [] as Locale[],
-            sub_locale: "none"
+            sub_locale: "none",
+            bgm_volume: "100",
+            voice_volume: "100",
+            video_volume: "100"
         }
     },
     async created() {
         this.locales = await avaliable_locale(this.$i18n.availableLocales)
-        let sub_locale = (await get_settings()).sub_lang
+        const settings = await get_settings()
+        let sub_locale = settings.sub_lang
         if (sub_locale && this.$i18n.locale != sub_locale) {
             this.sub_locale = sub_locale
         }
+        this.bgm_volume = settings.bgm_volume.toString()
+        this.voice_volume = settings.voice_volume.toString()
+        this.video_volume = settings.video_volume.toString()
     },
     methods: {
         async on_locale_select(e: Event) {
@@ -38,6 +45,9 @@ export default {
                 this.sub_locale = loc = "none"
             }
             await set_sub_locale(loc == "none" ? undefined : loc)
+        },
+        async on_volume_change() {
+            await set_volumes(parseInt(this.bgm_volume), parseInt(this.voice_volume), parseInt(this.video_volume))
         }
     }
 }
@@ -60,6 +70,21 @@ export default {
                     {{ locale_native_name(locale) }}
                 </option>
             </select>
+            <h2>BGM volume: {{ bgm_volume }}</h2>
+            <div class="range">
+                <input type="range" class="form-range" min="0" max="100" step="1" v-model="bgm_volume"
+                    @input="on_volume_change">
+            </div>
+            <h2>Voice volume: {{ voice_volume }}</h2>
+            <div class="range">
+                <input type="range" class="form-range" min="0" max="100" step="1" v-model="voice_volume"
+                    @input="on_volume_change">
+            </div>
+            <h2>Video volume: {{ video_volume }}</h2>
+            <div class="range">
+                <input type="range" class="form-range" min="0" max="100" step="1" v-model="video_volume"
+                    @input="on_volume_change">
+            </div>
         </div>
     </div>
     <div>

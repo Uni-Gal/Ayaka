@@ -35,6 +35,9 @@ export enum OpenGameStatusType {
 export interface Settings {
     lang: Locale,
     sub_lang?: Locale,
+    bgm_volume: number,
+    voice_volume: number,
+    video_volume: number,
 }
 
 export interface RawContext {
@@ -128,6 +131,14 @@ export async function set_locale(loc: Locale): Promise<void> {
 export async function set_sub_locale(loc?: Locale): Promise<void> {
     let settings = await get_settings()
     settings.sub_lang = loc
+    await set_settings(settings)
+}
+
+export async function set_volumes(bgm: number, voice: number, video: number): Promise<void> {
+    let settings = await get_settings()
+    settings.bgm_volume = bgm
+    settings.voice_volume = voice
+    settings.video_volume = video
     await set_settings(settings)
 }
 
