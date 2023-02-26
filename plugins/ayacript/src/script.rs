@@ -138,7 +138,7 @@ fn bin_str_val(lhs: RawValue, op: &ValBinaryOp, rhs: RawValue) -> RawValue {
             lhs.get_type().max(ValueType::Num),
             rhs.get_type().max(ValueType::Num),
         ) {
-            (ValueType::Str, ValueType::Str) => unimplemented!(),
+            (ValueType::Str, ValueType::Str) => RawValue::Unit,
             (ValueType::Num, ValueType::Str) => {
                 RawValue::Str(rhs.get_str().repeat(lhs.get_num() as usize))
             }
@@ -147,7 +147,7 @@ fn bin_str_val(lhs: RawValue, op: &ValBinaryOp, rhs: RawValue) -> RawValue {
             }
             _ => unreachable!(),
         },
-        _ => unimplemented!(),
+        _ => RawValue::Unit,
     }
 }
 

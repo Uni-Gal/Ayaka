@@ -339,7 +339,7 @@ impl<M: SettingsManager> GameViewModel<M> {
             if let Action::Text(action) = action {
                 action
             } else {
-                unreachable!()
+                panic!("action in the record should be text action")
             }
         })
     }
