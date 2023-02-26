@@ -93,7 +93,7 @@ fn file_stream(mut file: Box<dyn SeekAndRead + Send>, length: usize) -> std::io:
 }
 
 async fn fs_resolver(Path(path): Path<String>) -> Result<impl IntoResponse, ResolverError> {
-    let path = ROOT_PATH.get().unwrap().join(path)?;
+    let path = ROOT_PATH.get().expect("cannot get ROOT_PATH").join(path)?;
     let file = path.open_file()?;
     let mime = mime_guess::from_path(path.as_str()).first_or_octet_stream();
     let length = path
@@ -131,10 +131,10 @@ pub fn init<R: Runtime>(listener: TcpListener) -> TauriPlugin<R> {
                     )
                     .layer(CorsLayer::new().allow_methods(Any).allow_origin(Any));
                 Server::from_tcp(listener)
-                    .unwrap()
+                    .expect("cannot create server")
                     .serve(app.into_make_service())
                     .await
-                    .unwrap()
+                    .expect("cannot serve server")
             });
             Ok(())
         })

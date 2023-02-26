@@ -8,7 +8,7 @@
 #![deny(unsafe_code)]
 
 #[doc(no_inline)]
-pub use anyhow::Result;
+pub use anyhow::{anyhow, Result};
 
 use serde::{de::DeserializeOwned, Serialize};
 use std::{collections::HashMap, marker::Tuple};

@@ -35,7 +35,7 @@ fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
 
 fn escape_html(s: &str) -> String {
     let mut buffer = String::new();
-    pulldown_cmark::escape::escape_html(&mut buffer, s).unwrap();
+    pulldown_cmark::escape::escape_html(&mut buffer, s).expect("cannot write escaped HTML");
     buffer
 }
 
@@ -190,7 +190,7 @@ where
             Tag::BlockQuote => self.write_block("<blockquote>"),
             Tag::CodeBlock(info) => match info {
                 CodeBlockKind::Fenced(info) => {
-                    let lang = info.split(' ').next().unwrap();
+                    let lang = info.split(' ').next().unwrap_or_default();
                     if lang.is_empty() {
                         self.write_block("<pre><code>")
                     } else {

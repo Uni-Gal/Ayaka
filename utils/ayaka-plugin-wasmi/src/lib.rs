@@ -52,20 +52,20 @@ impl WasmiModule {
             .start(inner_store.as_context_mut())?;
         let memory = instance
             .get_export(inner_store.as_context(), MEMORY_NAME)
-            .unwrap()
+            .ok_or_else(|| anyhow!("cannot get memory"))?
             .into_memory()
-            .unwrap();
+            .ok_or_else(|| anyhow!("memory is not Memory"))?;
         let abi_free = instance
             .get_export(inner_store.as_context(), ABI_FREE_NAME)
-            .unwrap()
+            .ok_or_else(|| anyhow!("cannot get abi_free"))?
             .into_func()
-            .unwrap()
+            .ok_or_else(|| anyhow!("abi_free is not Func"))?
             .typed(inner_store.as_context())?;
         let abi_alloc = instance
             .get_export(inner_store.as_context_mut(), ABI_ALLOC_NAME)
-            .unwrap()
+            .ok_or_else(|| anyhow!("cannot get abi_alloc"))?
             .into_func()
-            .unwrap()
+            .ok_or_else(|| anyhow!("abi_alloc is not Func"))?
             .typed(inner_store.as_context())?;
         drop(inner_store);
         Ok(Self {
@@ -87,9 +87,9 @@ impl WasmiModule {
         let func = self
             .instance
             .get_export(&store, name)
-            .unwrap()
+            .ok_or_else(|| anyhow!("cannot get export {}", name))?
             .into_func()
-            .unwrap()
+            .ok_or_else(|| anyhow!("{} is not Func", name))?
             .typed::<(i32, i32), u64>(&store)?;
 
         let ptr = self.abi_alloc.call(&mut store, data.len() as i32)?;
@@ -169,9 +169,9 @@ impl ayaka_plugin::Linker<WasmiModule> for WasmiLinker {
             move |mut store: Caller<()>, len: i32, data: i32| unsafe {
                 let memory = store
                     .get_export(MEMORY_NAME)
-                    .unwrap()
+                    .ok_or_else(|| Trap::new("cannot get memory"))?
                     .into_memory()
-                    .unwrap();
+                    .ok_or_else(|| Trap::new("memory is not Memory"))?;
                 let data = {
                     let store = store.as_context_mut();
                     let handle = WasmiLinkerHandle { store, memory };
@@ -179,9 +179,9 @@ impl ayaka_plugin::Linker<WasmiModule> for WasmiLinker {
                 };
                 let abi_alloc = store
                     .get_export(ABI_ALLOC_NAME)
-                    .unwrap()
+                    .ok_or_else(|| Trap::new("cannot get abi_alloc"))?
                     .into_func()
-                    .unwrap()
+                    .ok_or_else(|| Trap::new("abi_alloc is not Func"))?
                     .typed::<i32, i32>(store.as_context())
                     .map_err(|e| Trap::new(e.to_string()))?;
                 let ptr = abi_alloc.call(store.as_context_mut(), data.len() as i32)?;

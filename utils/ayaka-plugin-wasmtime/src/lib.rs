@@ -50,7 +50,7 @@ impl WasmtimeModule {
         let instance = linker.instantiate(inner_store.as_context_mut(), module)?;
         let memory = instance
             .get_memory(inner_store.as_context_mut(), MEMORY_NAME)
-            .unwrap();
+            .ok_or_else(|| anyhow!("cannot get memory"))?;
         let abi_free = instance.get_typed_func(inner_store.as_context_mut(), ABI_FREE_NAME)?;
         let abi_alloc = instance.get_typed_func(inner_store.as_context_mut(), ABI_ALLOC_NAME)?;
         drop(inner_store);
@@ -152,9 +152,9 @@ impl ayaka_plugin::Linker<WasmtimeModule> for WasmtimeLinker {
             move |mut store: Caller<()>, len: i32, data: i32| unsafe {
                 let memory = store
                     .get_export(MEMORY_NAME)
-                    .unwrap()
+                    .ok_or_else(|| anyhow!("cannot get memory"))?
                     .into_memory()
-                    .unwrap();
+                    .ok_or_else(|| anyhow!("memory is not Memory"))?;
                 let data = {
                     let store = store.as_context_mut();
                     let handle = WasmtimeLinkerHandle { store, memory };
@@ -162,9 +162,9 @@ impl ayaka_plugin::Linker<WasmtimeModule> for WasmtimeLinker {
                 };
                 let abi_alloc = store
                     .get_export(ABI_ALLOC_NAME)
-                    .unwrap()
+                    .ok_or_else(|| anyhow!("cannot get abi_alloc"))?
                     .into_func()
-                    .unwrap()
+                    .ok_or_else(|| anyhow!("abi_alloc is not Func"))?
                     .typed::<i32, i32>(store.as_context())?;
                 let ptr = abi_alloc.call(store.as_context_mut(), data.len() as i32)?;
                 mem_slice_mut(store.as_context_mut(), &memory, ptr, data.len() as i32)

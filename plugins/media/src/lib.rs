@@ -14,7 +14,7 @@ fn plugin_type() -> PluginType {
 fn find_exists(name: &str, base_dir: Option<&VfsPath>, exs: &[&str]) -> Option<VfsPath> {
     base_dir.and_then(|base_dir| {
         exs.iter()
-            .map(|ex| base_dir.join(format!("{}.{}", name, ex)).unwrap())
+            .filter_map(|ex| base_dir.join(format!("{}.{}", name, ex)).ok())
             .find(|p| p.exists().unwrap_or_default())
     })
 }
@@ -49,7 +49,10 @@ fn file_ctx(
     temp: bool,
 ) -> LineProcessResult {
     let root: VfsPath = HostFS::default().into();
-    let base_dir = ctx.game_props.get(game_prop).map(|p| root.join(p).unwrap());
+    let base_dir = ctx
+        .game_props
+        .get(game_prop)
+        .and_then(|p| root.join(p).ok());
     file(
         &ctx.props[prop].get_str(),
         base_dir.as_ref(),
@@ -82,7 +85,7 @@ fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
         &voice_id,
         ctx.game_props
             .get("voices")
-            .map(|p| root.join(p).unwrap().join(&ctx.ctx.cur_para).unwrap())
+            .and_then(|p| root.join(p).ok()?.join(&ctx.ctx.cur_para).ok())
             .as_ref(),
         "voice",
         &["mp3"],
@@ -95,11 +98,10 @@ fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
 #[export]
 fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {
     let root: VfsPath = HostFS::default().into();
-    if ctx.props.contains_key("bg") {
-        let base_dir = ctx.props.get("bgs").map(|p| root.join(p).unwrap());
-        if let Some(path) = find_exists(&ctx.props["bg"], base_dir.as_ref(), &["png", "jpg", "gif"])
-        {
-            *ctx.props.get_mut("bg").unwrap() = path.as_str().to_string();
+    let base_dir = ctx.props.get("bgs").and_then(|p| root.join(p).ok());
+    if let Some(bg) = ctx.props.get_mut("bg") {
+        if let Some(path) = find_exists(bg, base_dir.as_ref(), &["png", "jpg", "gif"]) {
+            *bg = path.as_str().to_string();
         }
     }
     GameProcessResult { props: ctx.props }

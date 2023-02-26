@@ -120,7 +120,7 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
                 .iter()
                 .filter_map(|name| {
                     let name = name.as_ref();
-                    let p = path.join(format!("{}.wasm", name)).unwrap();
+                    let p = path.join(format!("{}.wasm", name)).ok()?;
                     if p.exists().unwrap_or_default() {
                         Some((name.to_string(), p))
                     } else {
@@ -207,7 +207,7 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
     pub fn action_modules(&self) -> impl Iterator<Item = &Module<M>> {
         self.action_modules
             .iter()
-            .map(|key| self.module(key).unwrap())
+            .filter_map(|key| self.module(key))
     }
 
     /// Gets text module from command.
@@ -222,9 +222,7 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
 
     /// Iterates game modules.
     pub fn game_modules(&self) -> impl Iterator<Item = &Module<M>> {
-        self.game_modules
-            .iter()
-            .map(|key| self.module(key).unwrap())
+        self.game_modules.iter().filter_map(|key| self.module(key))
     }
 }
 

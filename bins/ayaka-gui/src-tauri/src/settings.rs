@@ -15,8 +15,12 @@ pub struct FileSettingsManager {
 impl FileSettingsManager {
     pub fn new(resolver: &PathResolver) -> Self {
         Self {
-            local_data_dir: resolver.app_local_data_dir().unwrap(),
-            config_dir: resolver.app_config_dir().unwrap(),
+            local_data_dir: resolver
+                .app_local_data_dir()
+                .expect("cannot get app local data dir"),
+            config_dir: resolver
+                .app_config_dir()
+                .expect("cannot get app config dir"),
         }
     }
 

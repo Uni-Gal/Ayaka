@@ -114,12 +114,16 @@ impl<M: SettingsManager> GameViewModel<M> {
 
     /// The [`Context`], should be called after [`Self::open_game`].
     pub fn context(&self) -> &Context {
-        self.context.as_ref().unwrap()
+        self.context
+            .as_ref()
+            .expect("should be called after open_game")
     }
 
     /// The [`Context`], should be called after [`Self::open_game`].
     pub fn context_mut(&mut self) -> &mut Context {
-        self.context.as_mut().unwrap()
+        self.context
+            .as_mut()
+            .expect("should be called after open_game")
     }
 
     /// The current [`ActionRecord`].
@@ -129,7 +133,9 @@ impl<M: SettingsManager> GameViewModel<M> {
 
     /// The loaded [`Settings`].
     pub fn settings(&self) -> &Settings {
-        self.settings.as_ref().unwrap()
+        self.settings
+            .as_ref()
+            .expect("should be called after open_game")
     }
 
     /// Set the [`Settings`].
@@ -144,7 +150,16 @@ impl<M: SettingsManager> GameViewModel<M> {
 
     /// The loaded [`GlobalRecord`].
     pub fn global_record(&self) -> &GlobalRecord {
-        self.global_record.as_ref().unwrap()
+        self.global_record
+            .as_ref()
+            .expect("should be called after open_game")
+    }
+
+    /// The loaded [`GlobalRecord`].
+    pub fn global_record_mut(&mut self) -> &mut GlobalRecord {
+        self.global_record
+            .as_mut()
+            .expect("should be called after open_game")
     }
 
     /// Get the avaliable locales from paragraphs.
@@ -205,7 +220,7 @@ impl<M: SettingsManager> GameViewModel<M> {
         let ctx = self.context_mut().next_run();
         if let Some(ctx) = &ctx {
             self.push_history(ctx);
-            self.global_record.as_mut().unwrap().update(ctx);
+            self.global_record_mut().update(ctx);
             log::debug!("{:?}", ctx);
         }
         self.current_raw_context = ctx;
@@ -228,7 +243,10 @@ impl<M: SettingsManager> GameViewModel<M> {
             // We clone the (new) current run to set the "next" raw context.
             // We don't use the popped run to set the raw context,
             // because the empty runs are not recorded.
-            let mut ctx = self.current_raw_context.clone().unwrap();
+            let mut ctx = self
+                .current_raw_context
+                .clone()
+                .expect("current raw context cannot be None");
             ctx.cur_act += 1;
             self.context_mut().set_context(ctx);
             true
@@ -311,7 +329,9 @@ impl<M: SettingsManager> GameViewModel<M> {
     /// Get the last action text from each record.
     pub fn records_text(&self) -> impl Iterator<Item = ActionText> + '_ {
         self.records().iter().map(|record| {
-            let raw_ctx = record.history.last().unwrap();
+            let raw_ctx = record
+                .last_ctx()
+                .expect("there should be at least one RawContext in the ActionRecord");
             let action = unwrap_or_default_log!(
                 self.context().get_action(&self.settings().lang, raw_ctx),
                 "Cannot get action"
@@ -319,7 +339,7 @@ impl<M: SettingsManager> GameViewModel<M> {
             if let Action::Text(action) = action {
                 action
             } else {
-                unreachable!()
+                panic!("action in the record should be text action")
             }
         })
     }
