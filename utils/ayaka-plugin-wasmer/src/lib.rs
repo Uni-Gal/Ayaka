@@ -141,7 +141,7 @@ impl RuntimeInstanceData {
     }
 
     pub fn memory(&self) -> &Memory {
-        self.memory.as_ref().unwrap()
+        self.memory.as_ref().expect("memory should be set first")
     }
 
     pub fn set_abi_alloc(&mut self, func: TypedFunction<i32, i32>) {
@@ -149,6 +149,7 @@ impl RuntimeInstanceData {
     }
 
     pub fn call(mut this: FunctionEnvMut<Self>, len: i32, ptr: i32) -> u64 {
+        // TODO: should we unwrap here?
         unsafe {
             let memory = this.data().memory().clone();
             let data = {

@@ -33,11 +33,11 @@ impl FDMap {
     }
 
     pub fn read(&mut self, fd: u64, buf: &mut [u8]) -> std::io::Result<usize> {
-        self.map.get_mut(&fd).unwrap().read(buf)
+        self.map.get_mut(&fd).expect("invalid fd").read(buf)
     }
 
     pub fn seek(&mut self, fd: u64, pos: SeekFrom) -> std::io::Result<u64> {
-        self.map.get_mut(&fd).unwrap().seek(pos)
+        self.map.get_mut(&fd).expect("invalid fd").seek(pos)
     }
 }
 

@@ -59,9 +59,9 @@ pub fn __export<Params: DeserializeOwned + Tuple, Res: Serialize>(
 ) -> u64 {
     logger::PluginLogger::init();
     let data = unsafe { std::slice::from_raw_parts(data, len) };
-    let data = rmp_serde::from_slice(data).unwrap();
+    let data = rmp_serde::from_slice(data).expect("cannot deserialize input args");
     let res = f.call_once(data);
-    let data = rmp_serde::to_vec(&res).unwrap();
+    let data = rmp_serde::to_vec(&res).expect("cannot serialize result");
     let (ptr, len) = unsafe { __abi_alloc_from(&data) };
     ((len as u64) << 32) | (ptr as u64)
 }
@@ -71,13 +71,13 @@ pub fn __import<Params: Serialize, Res: DeserializeOwned>(
     f: unsafe extern "C" fn(len: usize, data: *const u8) -> u64,
     args: Params,
 ) -> Res {
-    let data = rmp_serde::to_vec(&args).unwrap();
+    let data = rmp_serde::to_vec(&args).expect("cannot serialize input args");
     let res = unsafe { f(data.len(), data.as_ptr()) };
     let (len, res) = ((res >> 32) as usize, (res & 0xFFFFFFFF) as *mut u8);
     let data = unsafe { std::slice::from_raw_parts_mut(res, len) };
     let data = rmp_serde::from_slice(data);
     unsafe { __abi_free(res, len) };
-    data.unwrap()
+    data.expect("cannot deseriaize result")
 }
 
 pub use ayaka_bindings_impl::{export, import};

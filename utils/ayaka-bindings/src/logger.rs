@@ -15,11 +15,8 @@ impl PluginLogger {
         static INIT: Once = Once::new();
 
         INIT.call_once(|| {
-            let r = log::set_logger(&PluginLogger);
-            if r.is_ok() {
-                log::set_max_level(log::LevelFilter::Trace);
-            }
-            r.unwrap();
+            log::set_logger(&PluginLogger).expect("cannot set logger");
+            log::set_max_level(log::LevelFilter::Trace);
         });
     }
 }

@@ -11,16 +11,10 @@ fn plugin_type() -> PluginType {
 fn find_model(ch: &str, game_props: &HashMap<String, String>) -> Option<VfsPath> {
     let root: VfsPath = HostFS::default().into();
     game_props.get("ch_models").and_then(|ch_models| {
-        let base_dir = root.join(ch_models).unwrap();
+        let base_dir = root.join(ch_models).ok()?;
         ["model.json", "model3.json"]
             .iter()
-            .map(|ex| {
-                base_dir
-                    .join(ch)
-                    .unwrap()
-                    .join(format!("{}.{}", ch, ex))
-                    .unwrap()
-            })
+            .filter_map(|ex| base_dir.join(ch).ok()?.join(format!("{}.{}", ch, ex)).ok())
             .find(|p| p.exists().unwrap_or_default())
     })
 }

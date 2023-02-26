@@ -108,9 +108,9 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
 
     asset_resolver::ROOT_PATH
         .set(model.context().root_path().clone())
-        .unwrap();
+        .expect("cannot set ROOT_PATH");
 
-    let window = handle.get_window("main").unwrap();
+    let window = handle.get_window("main").expect("cannot get main window");
     window.set_title(&model.context().game().config.title)?;
 
     Ok(())
@@ -197,7 +197,9 @@ async fn next_run(storage: State<'_, Storage>) -> CommandResult<bool> {
         let mut model = storage.model.write().await;
         if model.next_run() {
             let is_empty = {
-                let action = model.current_action().unwrap();
+                let action = model
+                    .current_action()
+                    .expect("current action cannot be None because next_run succeeds");
                 match action {
                     Action::Empty => true,
                     Action::Custom(vars) => !vars.contains_key("video"),
@@ -270,7 +272,7 @@ fn main() -> Result<()> {
                 Logger::with(spec)
                     .log_to_file(
                         FileSpec::default()
-                            .directory(resolver.app_log_dir().unwrap())
+                            .directory(resolver.app_log_dir().expect("cannot get app log dir"))
                             .basename("ayaka-gui"),
                     )
                     .use_utc()
@@ -279,7 +281,7 @@ fn main() -> Result<()> {
             app.manage(log_handle);
             #[cfg(debug_assertions)]
             {
-                let window = app.get_window("main").unwrap();
+                let window = app.get_window("main").expect("cannot get main window");
                 window.open_devtools();
             }
 
@@ -294,8 +296,10 @@ fn main() -> Result<()> {
                     .map(|s| s.to_string())
                     .collect::<Vec<_>>(),
                 _ => {
-                    let current = std::env::current_exe().unwrap();
-                    let current = current.parent().unwrap();
+                    let current = std::env::current_exe()?;
+                    let current = current
+                        .parent()
+                        .expect("cannot get parent dir of current exe");
                     let mut paths = vec![];
 
                     let data = current.join("data.ayapack");
@@ -345,7 +349,9 @@ fn main() -> Result<()> {
         .run({
             let mut context = tauri::generate_context!();
             context.config_mut().build.dist_dir = AppUrl::Url(WindowUrl::External(
-                format!("http://127.0.0.1:{port}").parse().unwrap(),
+                format!("http://127.0.0.1:{port}")
+                    .parse()
+                    .expect("cannot parse url"),
             ));
             context
         })?;

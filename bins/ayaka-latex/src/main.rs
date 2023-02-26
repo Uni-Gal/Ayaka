@@ -23,7 +23,7 @@ pub struct Options {
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     let opts = Options::parse();
-    let opt_root_path = opts.output.parent().unwrap();
+    let opt_root_path = opts.output.parent().expect("cannot get output parent dir");
     let spec = LogSpecification::parse("warn")?;
     let _log_handle = Logger::with(spec)
         .log_to_stdout()
@@ -74,11 +74,7 @@ async fn main() -> Result<()> {
                 if current_bg != bg {
                     current_bg = bg;
                     if let Some(bg) = &current_bg {
-                        let bg = if bg.starts_with('/') {
-                            bg.strip_prefix('/').unwrap()
-                        } else {
-                            bg
-                        };
+                        let bg = bg.strip_prefix('/').unwrap_or(bg);
                         let bg_file = ctx.root_path().join(bg)?;
                         let out_bg = opt_root_path.join(bg);
                         copy_vfs(&bg_file, &out_bg).await?;
@@ -135,7 +131,7 @@ async fn main() -> Result<()> {
 async fn copy_vfs(source: &VfsPath, target: &Path) -> Result<()> {
     use tokio::io::AsyncWriteExt;
     let mut source = source.open_file()?;
-    tokio::fs::create_dir_all(target.parent().unwrap()).await?;
+    tokio::fs::create_dir_all(target.parent().expect("cannot get target parent dir")).await?;
     let mut target = tokio::fs::File::create(target).await?;
     let mut buffer = [0u8; 65536];
     loop {
