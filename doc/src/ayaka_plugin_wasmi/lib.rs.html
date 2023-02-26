@@ -272,21 +272,21 @@
             </span>.start(inner_store.as_context_mut())<span class="question-mark">?</span>;
         <span class="kw">let </span>memory = instance
             .get_export(inner_store.as_context(), MEMORY_NAME)
-            .unwrap()
-            .into_memory()
-            .unwrap();
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;cannot get memory&quot;</span>))<span class="question-mark">?
+            </span>.into_memory()
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;memory is not Memory&quot;</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span>abi_free = instance
             .get_export(inner_store.as_context(), ABI_FREE_NAME)
-            .unwrap()
-            .into_func()
-            .unwrap()
-            .typed(inner_store.as_context())<span class="question-mark">?</span>;
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;cannot get abi_free&quot;</span>))<span class="question-mark">?
+            </span>.into_func()
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;abi_free is not Func&quot;</span>))<span class="question-mark">?
+            </span>.typed(inner_store.as_context())<span class="question-mark">?</span>;
         <span class="kw">let </span>abi_alloc = instance
             .get_export(inner_store.as_context_mut(), ABI_ALLOC_NAME)
-            .unwrap()
-            .into_func()
-            .unwrap()
-            .typed(inner_store.as_context())<span class="question-mark">?</span>;
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;cannot get abi_alloc&quot;</span>))<span class="question-mark">?
+            </span>.into_func()
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;abi_alloc is not Func&quot;</span>))<span class="question-mark">?
+            </span>.typed(inner_store.as_context())<span class="question-mark">?</span>;
         drop(inner_store);
         <span class="prelude-val">Ok</span>(<span class="self">Self </span>{
             store,
@@ -307,10 +307,10 @@
         <span class="kw">let </span>func = <span class="self">self
             </span>.instance
             .get_export(<span class="kw-2">&amp;</span>store, name)
-            .unwrap()
-            .into_func()
-            .unwrap()
-            .typed::&lt;(i32, i32), u64&gt;(<span class="kw-2">&amp;</span>store)<span class="question-mark">?</span>;
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;cannot get export {}&quot;</span>, name))<span class="question-mark">?
+            </span>.into_func()
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;{} is not Func&quot;</span>, name))<span class="question-mark">?
+            </span>.typed::&lt;(i32, i32), u64&gt;(<span class="kw-2">&amp;</span>store)<span class="question-mark">?</span>;
 
         <span class="kw">let </span>ptr = <span class="self">self</span>.abi_alloc.call(<span class="kw-2">&amp;mut </span>store, data.len() <span class="kw">as </span>i32)<span class="question-mark">?</span>;
         <span class="kw">unsafe </span>{
@@ -389,9 +389,9 @@
             <span class="kw">move </span>|<span class="kw-2">mut </span>store: Caller&lt;()&gt;, len: i32, data: i32| <span class="kw">unsafe </span>{
                 <span class="kw">let </span>memory = store
                     .get_export(MEMORY_NAME)
-                    .unwrap()
-                    .into_memory()
-                    .unwrap();
+                    .ok_or_else(|| Trap::new(<span class="string">&quot;cannot get memory&quot;</span>))<span class="question-mark">?
+                    </span>.into_memory()
+                    .ok_or_else(|| Trap::new(<span class="string">&quot;memory is not Memory&quot;</span>))<span class="question-mark">?</span>;
                 <span class="kw">let </span>data = {
                     <span class="kw">let </span>store = store.as_context_mut();
                     <span class="kw">let </span>handle = WasmiLinkerHandle { store, memory };
@@ -399,10 +399,10 @@
                 </span>};
                 <span class="kw">let </span>abi_alloc = store
                     .get_export(ABI_ALLOC_NAME)
-                    .unwrap()
-                    .into_func()
-                    .unwrap()
-                    .typed::&lt;i32, i32&gt;(store.as_context())
+                    .ok_or_else(|| Trap::new(<span class="string">&quot;cannot get abi_alloc&quot;</span>))<span class="question-mark">?
+                    </span>.into_func()
+                    .ok_or_else(|| Trap::new(<span class="string">&quot;abi_alloc is not Func&quot;</span>))<span class="question-mark">?
+                    </span>.typed::&lt;i32, i32&gt;(store.as_context())
                     .map_err(|e| Trap::new(e.to_string()))<span class="question-mark">?</span>;
                 <span class="kw">let </span>ptr = abi_alloc.call(store.as_context_mut(), data.len() <span class="kw">as </span>i32)<span class="question-mark">?</span>;
                 mem_slice_mut(store.as_context_mut(), <span class="kw-2">&amp;</span>memory, ptr, data.len() <span class="kw">as </span>i32)
@@ -439,4 +439,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_plugin_wasmi" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (c5c7d2b37 2023-02-24)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_plugin_wasmi" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (34e6673a0 2023-02-25)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>

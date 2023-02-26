@@ -334,6 +334,26 @@
 <a href="#334" id="334">334</a>
 <a href="#335" id="335">335</a>
 <a href="#336" id="336">336</a>
+<a href="#337" id="337">337</a>
+<a href="#338" id="338">338</a>
+<a href="#339" id="339">339</a>
+<a href="#340" id="340">340</a>
+<a href="#341" id="341">341</a>
+<a href="#342" id="342">342</a>
+<a href="#343" id="343">343</a>
+<a href="#344" id="344">344</a>
+<a href="#345" id="345">345</a>
+<a href="#346" id="346">346</a>
+<a href="#347" id="347">347</a>
+<a href="#348" id="348">348</a>
+<a href="#349" id="349">349</a>
+<a href="#350" id="350">350</a>
+<a href="#351" id="351">351</a>
+<a href="#352" id="352">352</a>
+<a href="#353" id="353">353</a>
+<a href="#354" id="354">354</a>
+<a href="#355" id="355">355</a>
+<a href="#356" id="356">356</a>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::<span class="kw-2">*</span>;
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>serde::Serialize;
@@ -450,12 +470,16 @@
 
     <span class="doccomment">/// The [`Context`], should be called after [`Self::open_game`].
     </span><span class="kw">pub fn </span>context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Context {
-        <span class="self">self</span>.context.as_ref().unwrap()
+        <span class="self">self</span>.context
+            .as_ref()
+            .expect(<span class="string">&quot;should be called after open_game&quot;</span>)
     }
 
     <span class="doccomment">/// The [`Context`], should be called after [`Self::open_game`].
     </span><span class="kw">pub fn </span>context_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>Context {
-        <span class="self">self</span>.context.as_mut().unwrap()
+        <span class="self">self</span>.context
+            .as_mut()
+            .expect(<span class="string">&quot;should be called after open_game&quot;</span>)
     }
 
     <span class="doccomment">/// The current [`ActionRecord`].
@@ -465,7 +489,9 @@
 
     <span class="doccomment">/// The loaded [`Settings`].
     </span><span class="kw">pub fn </span>settings(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Settings {
-        <span class="self">self</span>.settings.as_ref().unwrap()
+        <span class="self">self</span>.settings
+            .as_ref()
+            .expect(<span class="string">&quot;should be called after open_game&quot;</span>)
     }
 
     <span class="doccomment">/// Set the [`Settings`].
@@ -480,7 +506,16 @@
 
     <span class="doccomment">/// The loaded [`GlobalRecord`].
     </span><span class="kw">pub fn </span>global_record(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>GlobalRecord {
-        <span class="self">self</span>.global_record.as_ref().unwrap()
+        <span class="self">self</span>.global_record
+            .as_ref()
+            .expect(<span class="string">&quot;should be called after open_game&quot;</span>)
+    }
+
+    <span class="doccomment">/// The loaded [`GlobalRecord`].
+    </span><span class="kw">pub fn </span>global_record_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>GlobalRecord {
+        <span class="self">self</span>.global_record
+            .as_mut()
+            .expect(<span class="string">&quot;should be called after open_game&quot;</span>)
     }
 
     <span class="doccomment">/// Get the avaliable locales from paragraphs.
@@ -541,7 +576,7 @@
         <span class="kw">let </span>ctx = <span class="self">self</span>.context_mut().next_run();
         <span class="kw">if let </span><span class="prelude-val">Some</span>(ctx) = <span class="kw-2">&amp;</span>ctx {
             <span class="self">self</span>.push_history(ctx);
-            <span class="self">self</span>.global_record.as_mut().unwrap().update(ctx);
+            <span class="self">self</span>.global_record_mut().update(ctx);
             <span class="macro">log::debug!</span>(<span class="string">&quot;{:?}&quot;</span>, ctx);
         }
         <span class="self">self</span>.current_raw_context = ctx;
@@ -564,7 +599,10 @@
             <span class="comment">// We clone the (new) current run to set the &quot;next&quot; raw context.
             // We don&#39;t use the popped run to set the raw context,
             // because the empty runs are not recorded.
-            </span><span class="kw">let </span><span class="kw-2">mut </span>ctx = <span class="self">self</span>.current_raw_context.clone().unwrap();
+            </span><span class="kw">let </span><span class="kw-2">mut </span>ctx = <span class="self">self
+                </span>.current_raw_context
+                .clone()
+                .expect(<span class="string">&quot;current raw context cannot be None&quot;</span>);
             ctx.cur_act += <span class="number">1</span>;
             <span class="self">self</span>.context_mut().set_context(ctx);
             <span class="bool-val">true
@@ -647,7 +685,9 @@
     <span class="doccomment">/// Get the last action text from each record.
     </span><span class="kw">pub fn </span>records_text(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = ActionText&gt; + <span class="lifetime">&#39;_ </span>{
         <span class="self">self</span>.records().iter().map(|record| {
-            <span class="kw">let </span>raw_ctx = record.history.last().unwrap();
+            <span class="kw">let </span>raw_ctx = record
+                .last_ctx()
+                .expect(<span class="string">&quot;there should be at least one RawContext in the ActionRecord&quot;</span>);
             <span class="kw">let </span>action = <span class="macro">unwrap_or_default_log!</span>(
                 <span class="self">self</span>.context().get_action(<span class="kw-2">&amp;</span><span class="self">self</span>.settings().lang, raw_ctx),
                 <span class="string">&quot;Cannot get action&quot;
@@ -655,7 +695,7 @@
             <span class="kw">if let </span>Action::Text(action) = action {
                 action
             } <span class="kw">else </span>{
-                <span class="macro">unreachable!</span>()
+                <span class="macro">panic!</span>(<span class="string">&quot;action in the record should be text action&quot;</span>)
             }
         })
     }
@@ -671,4 +711,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_model" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (c5c7d2b37 2023-02-24)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_model" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (34e6673a0 2023-02-25)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>

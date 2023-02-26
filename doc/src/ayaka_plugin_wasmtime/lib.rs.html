@@ -252,7 +252,7 @@
         <span class="kw">let </span>instance = linker.instantiate(inner_store.as_context_mut(), module)<span class="question-mark">?</span>;
         <span class="kw">let </span>memory = instance
             .get_memory(inner_store.as_context_mut(), MEMORY_NAME)
-            .unwrap();
+            .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;cannot get memory&quot;</span>))<span class="question-mark">?</span>;
         <span class="kw">let </span>abi_free = instance.get_typed_func(inner_store.as_context_mut(), ABI_FREE_NAME)<span class="question-mark">?</span>;
         <span class="kw">let </span>abi_alloc = instance.get_typed_func(inner_store.as_context_mut(), ABI_ALLOC_NAME)<span class="question-mark">?</span>;
         drop(inner_store);
@@ -354,9 +354,9 @@
             <span class="kw">move </span>|<span class="kw-2">mut </span>store: Caller&lt;()&gt;, len: i32, data: i32| <span class="kw">unsafe </span>{
                 <span class="kw">let </span>memory = store
                     .get_export(MEMORY_NAME)
-                    .unwrap()
-                    .into_memory()
-                    .unwrap();
+                    .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;cannot get memory&quot;</span>))<span class="question-mark">?
+                    </span>.into_memory()
+                    .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;memory is not Memory&quot;</span>))<span class="question-mark">?</span>;
                 <span class="kw">let </span>data = {
                     <span class="kw">let </span>store = store.as_context_mut();
                     <span class="kw">let </span>handle = WasmtimeLinkerHandle { store, memory };
@@ -364,10 +364,10 @@
                 </span>};
                 <span class="kw">let </span>abi_alloc = store
                     .get_export(ABI_ALLOC_NAME)
-                    .unwrap()
-                    .into_func()
-                    .unwrap()
-                    .typed::&lt;i32, i32&gt;(store.as_context())<span class="question-mark">?</span>;
+                    .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;cannot get abi_alloc&quot;</span>))<span class="question-mark">?
+                    </span>.into_func()
+                    .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;abi_alloc is not Func&quot;</span>))<span class="question-mark">?
+                    </span>.typed::&lt;i32, i32&gt;(store.as_context())<span class="question-mark">?</span>;
                 <span class="kw">let </span>ptr = abi_alloc.call(store.as_context_mut(), data.len() <span class="kw">as </span>i32)<span class="question-mark">?</span>;
                 mem_slice_mut(store.as_context_mut(), <span class="kw-2">&amp;</span>memory, ptr, data.len() <span class="kw">as </span>i32)
                     .copy_from_slice(<span class="kw-2">&amp;</span>data);
@@ -403,4 +403,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_plugin_wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (c5c7d2b37 2023-02-24)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_plugin_wasmtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (34e6673a0 2023-02-25)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>

@@ -243,8 +243,6 @@
 <a href="#243" id="243">243</a>
 <a href="#244" id="244">244</a>
 <a href="#245" id="245">245</a>
-<a href="#246" id="246">246</a>
-<a href="#247" id="247">247</a>
 </pre><pre class="rust"><code><span class="doccomment">//! The plugin utilities.
 
 </span><span class="kw">mod </span>fs_interop;
@@ -367,7 +365,7 @@
                 .iter()
                 .filter_map(|name| {
                     <span class="kw">let </span>name = name.as_ref();
-                    <span class="kw">let </span>p = path.join(<span class="macro">format!</span>(<span class="string">&quot;{}.wasm&quot;</span>, name)).unwrap();
+                    <span class="kw">let </span>p = path.join(<span class="macro">format!</span>(<span class="string">&quot;{}.wasm&quot;</span>, name)).ok()<span class="question-mark">?</span>;
                     <span class="kw">if </span>p.exists().unwrap_or_default() {
                         <span class="prelude-val">Some</span>((name.to_string(), p))
                     } <span class="kw">else </span>{
@@ -454,7 +452,7 @@
     </span><span class="kw">pub fn </span>action_modules(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span>Module&lt;M&gt;&gt; {
         <span class="self">self</span>.action_modules
             .iter()
-            .map(|key| <span class="self">self</span>.module(key).unwrap())
+            .filter_map(|key| <span class="self">self</span>.module(key))
     }
 
     <span class="doccomment">/// Gets text module from command.
@@ -469,9 +467,7 @@
 
     <span class="doccomment">/// Iterates game modules.
     </span><span class="kw">pub fn </span>game_modules(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = <span class="kw-2">&amp;</span>Module&lt;M&gt;&gt; {
-        <span class="self">self</span>.game_modules
-            .iter()
-            .map(|key| <span class="self">self</span>.module(key).unwrap())
+        <span class="self">self</span>.game_modules.iter().filter_map(|key| <span class="self">self</span>.module(key))
     }
 }
 
@@ -493,4 +489,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (c5c7d2b37 2023-02-24)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (34e6673a0 2023-02-25)" data-search-js="search-14421e1532aead08.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
