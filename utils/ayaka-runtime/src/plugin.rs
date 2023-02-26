@@ -120,9 +120,7 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
                 .iter()
                 .filter_map(|name| {
                     let name = name.as_ref();
-                    let p = path
-                        .join(format!("{}.wasm", name))
-                        .expect("invalid module name");
+                    let p = path.join(format!("{}.wasm", name)).ok()?;
                     if p.exists().unwrap_or_default() {
                         Some((name.to_string(), p))
                     } else {
