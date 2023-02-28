@@ -16,5 +16,5 @@ opt-level = "z"
 ayaka-runtime = { path = "../utils/ayaka-runtime" }
 ayaka-model = { path = "../utils/ayaka-model" }
 tokio = { version = "1" }
-clap = { version = "4.0" }
-flexi_logger = { version = "0.24", default-features = false, features = ["colors"] }
+clap = { version = "4" }
+flexi_logger = { version = "0.25", default-features = false, features = ["colors"] }

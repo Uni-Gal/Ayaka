@@ -10,7 +10,7 @@ ayaka-plugin = { workspace = true }
 ayaka-script = { workspace = true, features = ["parser"] }
 fallback = { workspace = true }
 language-matcher = "0.1"
-icu_locid = { version = "1.0.0", features = ["std"] }
+icu_locid = { version = "1.1", features = ["std"] }
 sys-locale = "0.2"
 serde = { workspace = true, features = ["derive"] }
 serde_yaml = { workspace = true }

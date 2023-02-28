@@ -37,7 +37,7 @@ stream-future = "0.3"
 
 rmp-serde = "1.1"
 serde = "1.0"
-serde_with = "2.0"
+serde_with = "2.2"
 serde_yaml = "0.9"
 
 vfs = "0.9"
