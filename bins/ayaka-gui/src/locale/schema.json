@@ -36,6 +36,18 @@
             "description": "The secondary language caption in the SettingsView",
             "type": "string"
         },
+        "bgmVolume": {
+            "description": "BGM volume caption in the SettingsView",
+            "type": "string"
+        },
+        "voiceVolume": {
+            "description": "Voice volume caption in the SettingsView",
+            "type": "string"
+        },
+        "videoVolume": {
+            "description": "Video volume caption in the SettingsView",
+            "type": "string"
+        },
         "none": {
             "description": "The choice none",
             "type": "string"

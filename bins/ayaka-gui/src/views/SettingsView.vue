@@ -70,17 +70,17 @@ export default {
                     {{ locale_native_name(locale) }}
                 </option>
             </select>
-            <h2>BGM volume: {{ bgm_volume }}</h2>
+            <h2>{{ $t("bgmVolume") + bgm_volume }}</h2>
             <div class="range">
                 <input type="range" class="form-range" min="0" max="100" step="1" v-model="bgm_volume"
                     @input="on_volume_change">
             </div>
-            <h2>Voice volume: {{ voice_volume }}</h2>
+            <h2>{{ $t("voiceVolume") + voice_volume }}</h2>
             <div class="range">
                 <input type="range" class="form-range" min="0" max="100" step="1" v-model="voice_volume"
                     @input="on_volume_change">
             </div>
-            <h2>Video volume: {{ video_volume }}</h2>
+            <h2>{{ $t("videoVolume") + video_volume }}</h2>
             <div class="range">
                 <input type="range" class="form-range" min="0" max="100" step="1" v-model="video_volume"
                     @input="on_volume_change">
