@@ -1,8 +1,9 @@
 use anyhow::Result;
 use ayaka_bindings_types::{FileMetadata, FileSeekFrom};
 use ayaka_plugin::{Linker, LinkerHandle, RawModule};
+use slab::Slab;
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::HashMap,
     io::SeekFrom,
     sync::{Arc, Mutex},
 };
@@ -10,38 +11,28 @@ use vfs::*;
 
 #[derive(Default)]
 struct FDMap {
-    map: BTreeMap<u64, Box<dyn SeekAndRead + Send>>,
-    remain: BTreeSet<u64>,
+    map: Slab<Box<dyn SeekAndRead + Send>>,
 }
 
 impl FDMap {
     pub fn open(&mut self, file: Box<dyn SeekAndRead + Send>) -> u64 {
-        let new_fd = match self.remain.pop_first() {
-            Some(fd) => fd,
-            None => match self.map.last_key_value() {
-                Some((fd, _)) => fd + 1,
-                None => 1,
-            },
-        };
-        self.map.insert(new_fd, file);
-        new_fd
+        self.map.insert(file) as u64
     }
 
     pub fn close(&mut self, fd: u64) {
-        self.map.remove(&fd);
-        self.remain.insert(fd);
+        self.map.remove(fd as usize);
     }
 
     pub fn read(&mut self, fd: u64, buf: &mut [u8]) -> std::io::Result<usize> {
         self.map
-            .get_mut(&fd)
+            .get_mut(fd as usize)
             .ok_or(std::io::ErrorKind::NotFound)?
             .read(buf)
     }
 
     pub fn seek(&mut self, fd: u64, pos: SeekFrom) -> std::io::Result<u64> {
         self.map
-            .get_mut(&fd)
+            .get_mut(fd as usize)
             .ok_or(std::io::ErrorKind::NotFound)?
             .seek(pos)
     }
