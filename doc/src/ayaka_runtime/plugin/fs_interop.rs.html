@@ -89,20 +89,12 @@
 <a href="#89" id="89">89</a>
 <a href="#90" id="90">90</a>
 <a href="#91" id="91">91</a>
-<a href="#92" id="92">92</a>
-<a href="#93" id="93">93</a>
-<a href="#94" id="94">94</a>
-<a href="#95" id="95">95</a>
-<a href="#96" id="96">96</a>
-<a href="#97" id="97">97</a>
-<a href="#98" id="98">98</a>
-<a href="#99" id="99">99</a>
-<a href="#100" id="100">100</a>
 </pre><pre class="rust"><code><span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>ayaka_bindings_types::{FileMetadata, FileSeekFrom};
 <span class="kw">use </span>ayaka_plugin::{Linker, LinkerHandle, RawModule};
+<span class="kw">use </span>slab::Slab;
 <span class="kw">use </span>std::{
-    collections::{BTreeMap, BTreeSet, HashMap},
+    collections::HashMap,
     io::SeekFrom,
     sync::{Arc, Mutex},
 };
@@ -110,38 +102,28 @@
 
 <span class="attr">#[derive(Default)]
 </span><span class="kw">struct </span>FDMap {
-    map: BTreeMap&lt;u64, Box&lt;<span class="kw">dyn </span>SeekAndRead + Send&gt;&gt;,
-    remain: BTreeSet&lt;u64&gt;,
+    map: Slab&lt;Box&lt;<span class="kw">dyn </span>SeekAndRead + Send&gt;&gt;,
 }
 
 <span class="kw">impl </span>FDMap {
     <span class="kw">pub fn </span>open(<span class="kw-2">&amp;mut </span><span class="self">self</span>, file: Box&lt;<span class="kw">dyn </span>SeekAndRead + Send&gt;) -&gt; u64 {
-        <span class="kw">let </span>new_fd = <span class="kw">match </span><span class="self">self</span>.remain.pop_first() {
-            <span class="prelude-val">Some</span>(fd) =&gt; fd,
-            <span class="prelude-val">None </span>=&gt; <span class="kw">match </span><span class="self">self</span>.map.last_key_value() {
-                <span class="prelude-val">Some</span>((fd, <span class="kw">_</span>)) =&gt; fd + <span class="number">1</span>,
-                <span class="prelude-val">None </span>=&gt; <span class="number">1</span>,
-            },
-        };
-        <span class="self">self</span>.map.insert(new_fd, file);
-        new_fd
+        <span class="self">self</span>.map.insert(file) <span class="kw">as </span>u64
     }
 
     <span class="kw">pub fn </span>close(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fd: u64) {
-        <span class="self">self</span>.map.remove(<span class="kw-2">&amp;</span>fd);
-        <span class="self">self</span>.remain.insert(fd);
+        <span class="self">self</span>.map.remove(fd <span class="kw">as </span>usize);
     }
 
     <span class="kw">pub fn </span>read(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fd: u64, buf: <span class="kw-2">&amp;mut </span>[u8]) -&gt; std::io::Result&lt;usize&gt; {
         <span class="self">self</span>.map
-            .get_mut(<span class="kw-2">&amp;</span>fd)
+            .get_mut(fd <span class="kw">as </span>usize)
             .ok_or(std::io::ErrorKind::NotFound)<span class="question-mark">?
             </span>.read(buf)
     }
 
     <span class="kw">pub fn </span>seek(<span class="kw-2">&amp;mut </span><span class="self">self</span>, fd: u64, pos: SeekFrom) -&gt; std::io::Result&lt;u64&gt; {
         <span class="self">self</span>.map
-            .get_mut(<span class="kw-2">&amp;</span>fd)
+            .get_mut(fd <span class="kw">as </span>usize)
             .ok_or(std::io::ErrorKind::NotFound)<span class="question-mark">?
             </span>.seek(pos)
     }
@@ -199,4 +181,4 @@
     <span class="prelude-val">Ok</span>(())
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="ayaka_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (7281249a1 2023-02-27)" data-search-js="search-d5a6cd8418084717.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../../" data-static-root-path="../../../static.files/" data-current-crate="ayaka_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.69.0-nightly (f77bfb733 2023-03-01)" data-search-js="search-2cde8914278f97ed.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
