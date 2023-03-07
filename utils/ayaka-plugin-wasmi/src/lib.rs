@@ -138,7 +138,7 @@ impl ayaka_plugin::Linker<WasmiModule> for WasmiLinker {
     fn new() -> Result<Self> {
         let engine = Engine::default();
         let store = Store::new(&engine, ());
-        let linker = wasmi::Linker::new();
+        let linker = wasmi::Linker::new(&engine);
         Ok(Self {
             engine,
             store: Arc::new(Mutex::new(store)),
