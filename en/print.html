@@ -502,7 +502,7 @@ let mut context = Context::open(&quot;../../../examples/Fibonacci/config.yaml&qu
 The <code>OpenStatus</code> could be iterated before the future awaited.</p>
 <pre><code class="language-rust ignore">use ayaka_runtime::*;
 let context = Context::open(&quot;../../../examples/Fibonacci/config.yaml&quot;, FrontendType::Text);
-pin_mut!(context);
+let mut context = std::pin::pin!(context);
 while let Some(status) = context.next().await {
     println!(&quot;{:?}&quot;, status);
 }

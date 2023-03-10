@@ -357,7 +357,7 @@
 </pre><pre class="rust"><code><span class="kw">use crate</span>::<span class="kw-2">*</span>;
 <span class="kw">use </span>anyhow::Result;
 <span class="kw">use </span>serde::Serialize;
-<span class="kw">use </span>std::path::Path;
+<span class="kw">use </span>std::{path::Path, pin::pin};
 <span class="kw">use </span>stream_future::stream;
 <span class="kw">use </span>trylog::macros::<span class="kw-2">*</span>;
 
@@ -434,7 +434,7 @@
         frontend_type: FrontendType,
     ) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">let </span>context = Context::open(paths, frontend_type);
-        <span class="macro">pin_mut!</span>(context);
+        <span class="kw">let </span><span class="kw-2">mut </span>context = <span class="macro">pin!</span>(context);
         <span class="kw">while let </span><span class="prelude-val">Some</span>(status) = context.next().<span class="kw">await </span>{
             <span class="kw">yield </span>status.into();
         }
@@ -711,4 +711,4 @@
     }
 }
 </code></pre></div>
-</section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_model" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0-nightly (f63ccaf25 2023-03-06)" data-search-js="search-8a59a8356673ec1f.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
+</section></main><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_model" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0-nightly (39f2657d1 2023-03-09)" data-search-js="search-8a59a8356673ec1f.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" ></div></body></html>
