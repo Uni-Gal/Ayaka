@@ -9,6 +9,6 @@ clean:
 
 .PHONY: run dist
 run: node_modules
-	npm run tauri dev -- -- --no-default-features -- $(FILE)
+	cargo tauri dev -- -- $(FILE)
 dist: node_modules
 	npm run build
