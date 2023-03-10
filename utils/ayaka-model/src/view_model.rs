@@ -1,7 +1,7 @@
 use crate::*;
 use anyhow::Result;
 use serde::Serialize;
-use std::path::Path;
+use std::{path::Path, pin::pin};
 use stream_future::stream;
 use trylog::macros::*;
 
@@ -78,7 +78,7 @@ impl<M: SettingsManager> GameViewModel<M> {
         frontend_type: FrontendType,
     ) -> Result<()> {
         let context = Context::open(paths, frontend_type);
-        pin_mut!(context);
+        let mut context = pin!(context);
         while let Some(status) = context.next().await {
             yield status.into();
         }

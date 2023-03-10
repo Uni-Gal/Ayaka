@@ -23,7 +23,7 @@ The `OpenStatus` could be iterated before the future awaited.
 ``` rust,ignore
 use ayaka_runtime::*;
 let context = Context::open("../../../examples/Fibonacci/config.yaml", FrontendType::Text);
-pin_mut!(context);
+let mut context = std::pin::pin!(context);
 while let Some(status) = context.next().await {
     println!("{:?}", status);
 }

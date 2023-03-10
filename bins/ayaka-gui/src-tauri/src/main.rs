@@ -22,6 +22,7 @@ use std::{
     collections::{HashMap, HashSet},
     fmt::Display,
     net::TcpListener,
+    pin::pin,
 };
 use tauri::{
     async_runtime::RwLock, command, utils::config::AppUrl, AppHandle, Manager, PathResolver, State,
@@ -99,7 +100,7 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
     let mut model = storage.model.write().await;
     {
         let context = model.open_game(config, FrontendType::Html);
-        pin_mut!(context);
+        let mut context = pin!(context);
         while let Some(status) = context.next().await {
             handle.emit_all("ayaka://open_status", status)?;
         }

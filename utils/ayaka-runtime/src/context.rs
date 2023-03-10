@@ -6,7 +6,7 @@ use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::*;
 use fallback::Fallback;
 use log::error;
-use std::{collections::HashMap, path::Path, sync::Arc};
+use std::{collections::HashMap, path::Path, pin::pin, sync::Arc};
 use stream_future::stream;
 use trylog::macros::*;
 use vfs::*;
@@ -89,7 +89,7 @@ impl Context {
         let mut config: GameConfig = serde_yaml::from_reader(file)?;
         let runtime = {
             let runtime = Runtime::load(&config.plugins.dir, &root_path, &config.plugins.modules);
-            pin_mut!(runtime);
+            let mut runtime = pin!(runtime);
             while let Some(load_status) = runtime.next().await {
                 yield load_status.into();
             }

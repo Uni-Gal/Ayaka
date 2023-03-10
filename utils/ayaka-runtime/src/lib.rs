@@ -23,7 +23,7 @@ pub use ayaka_primitive::*;
 pub use config::*;
 pub use context::*;
 #[doc(no_inline)]
-pub use futures_util::{pin_mut, StreamExt, TryStreamExt};
+pub use futures_util::{StreamExt, TryStreamExt};
 #[doc(no_inline)]
 pub use locale::*;
 #[doc(no_inline)]

@@ -4,6 +4,7 @@ use flexi_logger::{LogSpecification, Logger};
 use std::{
     ffi::OsString,
     io::{stdin, stdout, Write},
+    pin::pin,
 };
 
 #[derive(Debug, Parser)]
@@ -43,7 +44,7 @@ async fn main() -> Result<()> {
         .use_utc()
         .start()?;
     let context = Context::open(&opts.input, FrontendType::Text);
-    pin_mut!(context);
+    let mut context = pin!(context);
     while let Some(status) = context.next().await {
         match status {
             OpenStatus::LoadProfile => println!("Loading profile..."),
