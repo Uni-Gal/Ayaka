@@ -1,11 +1,8 @@
 use axum::{
     body::Body,
     extract::{Path, TypedHeader},
-    headers::Range,
-    http::{
-        header::{CONTENT_RANGE, CONTENT_TYPE},
-        Request, StatusCode,
-    },
+    headers::{ContentRange, ContentType, HeaderMapExt, Range},
+    http::{header::CONTENT_TYPE, HeaderMap, Request, StatusCode},
     response::{IntoResponse, Response},
     routing::get,
     Router, Server,
@@ -67,28 +64,43 @@ impl From<std::io::Error> for ResolverError {
     }
 }
 
+fn get_first_range(range: Range, length: u64) -> Option<(u64, u64)> {
+    let mut iter = range.iter();
+    let (start, end) = iter.next()?;
+    // We don't support multiple ranges.
+    if let Some(_) = iter.next() {
+        return None;
+    }
+    let start = match start {
+        Bound::Included(i) => i,
+        Bound::Excluded(i) => i - 1,
+        Bound::Unbounded => 0,
+    };
+    let end = match end {
+        Bound::Included(i) => i + 1,
+        Bound::Excluded(i) => i,
+        Bound::Unbounded => length,
+    }
+    .min(length);
+    Some((start, end))
+}
+
 async fn fs_resolver(
     Path(path): Path<String>,
     range: Option<TypedHeader<Range>>,
 ) -> Result<Response, ResolverError> {
     let path = ROOT_PATH.get().expect("cannot get ROOT_PATH").join(path)?;
     let mime = mime_guess::from_path(path.as_str()).first_or_octet_stream();
-    let mime_header = (CONTENT_TYPE, mime.to_string());
+    let mut header_map = HeaderMap::new();
+    header_map.typed_insert(ContentType::from(mime));
     let mut file = path.open_file()?;
-    let range = range.and_then(|TypedHeader(range)| range.iter().next());
-    if let Some((start, end)) = range {
+    if let Some(TypedHeader(range)) = range {
         let length = path.metadata()?.len;
-        let start = match start {
-            Bound::Included(i) => i,
-            Bound::Excluded(i) => i - 1,
-            Bound::Unbounded => 0,
+        let (start, end) = if let Some(range) = get_first_range(range, length) {
+            range
+        } else {
+            return Ok(StatusCode::RANGE_NOT_SATISFIABLE.into_response());
         };
-        let end = match end {
-            Bound::Included(i) => i + 1,
-            Bound::Excluded(i) => i,
-            Bound::Unbounded => length,
-        }
-        .min(length);
         let read_length = end - start;
         let mut buffer = vec![0; read_length as usize];
         file.seek(SeekFrom::Start(start))?;
@@ -98,22 +110,12 @@ async fn fs_resolver(
         } else {
             StatusCode::OK
         };
-        Ok((
-            code,
-            [
-                mime_header,
-                (
-                    CONTENT_RANGE,
-                    format!("bytes {}-{}/{}", start, end - 1, length),
-                ),
-            ],
-            buffer,
-        )
-            .into_response())
+        header_map.typed_insert(ContentRange::bytes(start..end, length).unwrap());
+        Ok((code, header_map, buffer).into_response())
     } else {
         let mut buffer = vec![];
         file.read_to_end(&mut buffer)?;
-        Ok(([mime_header], buffer).into_response())
+        Ok((header_map, buffer).into_response())
     }
 }
 
