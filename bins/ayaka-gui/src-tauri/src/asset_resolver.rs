@@ -74,10 +74,10 @@ async fn fs_resolver(
     let path = ROOT_PATH.get().expect("cannot get ROOT_PATH").join(path)?;
     let mime = mime_guess::from_path(path.as_str()).first_or_octet_stream();
     let mime_header = (CONTENT_TYPE, mime.to_string());
-    let length = path.metadata()?.len;
     let mut file = path.open_file()?;
     let range = range.and_then(|TypedHeader(range)| range.iter().next());
     if let Some((start, end)) = range {
+        let length = path.metadata()?.len;
         let start = match start {
             Bound::Included(i) => i,
             Bound::Excluded(i) => i - 1,
