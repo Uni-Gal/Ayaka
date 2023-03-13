@@ -1,7 +1,11 @@
 use axum::{
     body::{Body, Bytes, StreamBody},
-    extract::Path,
-    http::{header::CONTENT_TYPE, Request, StatusCode},
+    extract::{Path, TypedHeader},
+    headers::Range,
+    http::{
+        header::{CONTENT_RANGE, CONTENT_TYPE},
+        Request, StatusCode,
+    },
     response::{IntoResponse, Response},
     routing::get,
     Router, Server,
@@ -11,6 +15,7 @@ use std::{
     fmt::Display,
     io::{BorrowedBuf, Read},
     net::TcpListener,
+    ops::Bound,
     sync::OnceLock,
 };
 use stream_future::try_stream;
@@ -92,18 +97,48 @@ fn file_stream(mut file: Box<dyn SeekAndRead + Send>, length: usize) -> std::io:
     Ok(())
 }
 
-async fn fs_resolver(Path(path): Path<String>) -> Result<impl IntoResponse, ResolverError> {
+async fn fs_resolver(
+    Path(path): Path<String>,
+    TypedHeader(range): TypedHeader<Range>,
+) -> Result<impl IntoResponse, ResolverError> {
     let path = ROOT_PATH.get().expect("cannot get ROOT_PATH").join(path)?;
-    let file = path.open_file()?;
+    let mut file = path.open_file()?;
     let mime = mime_guess::from_path(path.as_str()).first_or_octet_stream();
-    let length = path
-        .metadata()
-        .map(|meta| meta.len as usize)
-        .unwrap_or(BUFFER_LEN);
-    Ok((
-        [(CONTENT_TYPE, mime.to_string())],
-        StreamBody::new(file_stream(file, length)),
-    ))
+    let mime_header = (CONTENT_TYPE, mime.to_string());
+    let length = path.metadata()?.len;
+    let range = range.iter().next();
+    if let Some((start, end)) = range {
+        let start = match start {
+            Bound::Included(i) => i,
+            Bound::Excluded(i) => i - 1,
+            Bound::Unbounded => 0,
+        };
+        let end = match end {
+            Bound::Included(i) => i + 1,
+            Bound::Excluded(i) => i,
+            Bound::Unbounded => length,
+        };
+        let read_length = end - start;
+        let mut buffer = vec![0; read_length as usize];
+        file.read_exact(&mut buffer)?;
+        Ok((
+            [
+                mime_header,
+                (
+                    CONTENT_RANGE,
+                    format!("bytes {}-{}/{}", start, end - 1, length),
+                ),
+            ],
+            buffer,
+        ))
+    } else {
+        let mut buffer = vec![];
+        file.read_to_end(&mut buffer)?;
+        Ok((
+            [mime_header, (CONTENT_RANGE, format!("bytes */{}", length))],
+            buffer,
+        ))
+    }
 }
 
 async fn resolver<R: Runtime>(app: AppHandle<R>, req: Request<Body>) -> impl IntoResponse {
