@@ -1,5 +1,5 @@
 use axum::{
-    body::{Body, Bytes, StreamBody},
+    body::Body,
     extract::{Path, TypedHeader},
     headers::Range,
     http::{
@@ -13,12 +13,11 @@ use axum::{
 use ayaka_model::vfs::{error::VfsErrorKind, *};
 use std::{
     fmt::Display,
-    io::{BorrowedBuf, Read},
+    io::{Read, SeekFrom},
     net::TcpListener,
     ops::Bound,
     sync::OnceLock,
 };
-use stream_future::try_stream;
 use tauri::{
     plugin::{Builder, TauriPlugin},
     AppHandle, Runtime,
@@ -68,45 +67,16 @@ impl From<std::io::Error> for ResolverError {
     }
 }
 
-const BUFFER_LEN: usize = 1048576;
-
-fn read_buf_vec(mut file: impl Read, vec: &mut Vec<u8>) -> std::io::Result<usize> {
-    let old_len = vec.len();
-    let mut read_buf = BorrowedBuf::from(vec.spare_capacity_mut());
-    let mut cursor = read_buf.unfilled();
-    file.read_buf(cursor.reborrow())?;
-    let written = cursor.written();
-    unsafe {
-        vec.set_len(old_len + written);
-    }
-    Ok(written)
-}
-
-#[try_stream(Bytes)]
-fn file_stream(mut file: Box<dyn SeekAndRead + Send>, length: usize) -> std::io::Result<()> {
-    let length = length.min(BUFFER_LEN);
-    loop {
-        let mut buffer = Vec::with_capacity(length);
-        let read_bytes = read_buf_vec(&mut file, &mut buffer)?;
-        if read_bytes > 0 {
-            yield Bytes::from(buffer);
-        } else {
-            break;
-        }
-    }
-    Ok(())
-}
-
 async fn fs_resolver(
     Path(path): Path<String>,
-    TypedHeader(range): TypedHeader<Range>,
-) -> Result<impl IntoResponse, ResolverError> {
+    range: Option<TypedHeader<Range>>,
+) -> Result<Response, ResolverError> {
     let path = ROOT_PATH.get().expect("cannot get ROOT_PATH").join(path)?;
-    let mut file = path.open_file()?;
     let mime = mime_guess::from_path(path.as_str()).first_or_octet_stream();
     let mime_header = (CONTENT_TYPE, mime.to_string());
     let length = path.metadata()?.len;
-    let range = range.iter().next();
+    let mut file = path.open_file()?;
+    let range = range.and_then(|TypedHeader(range)| range.iter().next());
     if let Some((start, end)) = range {
         let start = match start {
             Bound::Included(i) => i,
@@ -117,11 +87,19 @@ async fn fs_resolver(
             Bound::Included(i) => i + 1,
             Bound::Excluded(i) => i,
             Bound::Unbounded => length,
-        };
+        }
+        .min(length);
         let read_length = end - start;
         let mut buffer = vec![0; read_length as usize];
+        file.seek(SeekFrom::Start(start))?;
         file.read_exact(&mut buffer)?;
+        let code = if read_length < length {
+            StatusCode::PARTIAL_CONTENT
+        } else {
+            StatusCode::OK
+        };
         Ok((
+            code,
             [
                 mime_header,
                 (
@@ -130,14 +108,12 @@ async fn fs_resolver(
                 ),
             ],
             buffer,
-        ))
+        )
+            .into_response())
     } else {
         let mut buffer = vec![];
         file.read_to_end(&mut buffer)?;
-        Ok((
-            [mime_header, (CONTENT_RANGE, format!("bytes */{}", length))],
-            buffer,
-        ))
+        Ok(([mime_header], buffer).into_response())
     }
 }
 

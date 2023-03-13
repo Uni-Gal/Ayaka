@@ -19,7 +19,6 @@ tauri-plugin-window-state = "0.1"
 axum = { version = "0.6", default-features = false, features = ["http1", "tokio", "headers"] }
 tower-http = { version = "0.4", features = ["cors", "trace"] }
 mime_guess = "2.0"
-stream-future = "0.3"
 
 [features]
 default = [ "custom-protocol" ]

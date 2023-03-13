@@ -188,7 +188,6 @@ dependencies = [
  "mime_guess",
  "serde",
  "serde_json",
- "stream-future",
  "tauri",
  "tauri-build",
  "tauri-plugin-window-state",
