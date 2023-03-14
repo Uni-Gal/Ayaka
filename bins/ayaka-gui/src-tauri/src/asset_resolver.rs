@@ -10,7 +10,7 @@ use axum::{
 use ayaka_model::vfs::{error::VfsErrorKind, *};
 use std::{
     fmt::Display,
-    io::{Read, SeekFrom},
+    io::{BorrowedBuf, Read, SeekFrom},
     net::TcpListener,
     ops::Bound,
     sync::OnceLock,
@@ -96,6 +96,21 @@ fn get_first_range(range: Range, length: u64) -> Option<(u64, u64)> {
     }
 }
 
+fn read_buf_exact(mut file: impl Read, buffer: &mut Vec<u8>, length: usize) -> std::io::Result<()> {
+    let old_len = buffer.len();
+    buffer.reserve_exact(length);
+    // SAFETY: reserved
+    let mut read_buf =
+        BorrowedBuf::from(unsafe { buffer.spare_capacity_mut().get_unchecked_mut(..length) });
+    let cursor = read_buf.unfilled();
+    file.read_buf_exact(cursor)?;
+    // SAFETY: read exact
+    unsafe {
+        buffer.set_len(old_len + length);
+    }
+    Ok(())
+}
+
 async fn fs_resolver(
     Path(path): Path<String>,
     range: Option<TypedHeader<Range>>,
@@ -109,9 +124,9 @@ async fn fs_resolver(
         let length = path.metadata()?.len;
         let (start, end) = get_first_range(range, length).ok_or(RangeNotSatisfiableError)?;
         let read_length = end - start;
-        let mut buffer = vec![0; read_length as usize];
+        let mut buffer = vec![];
         file.seek(SeekFrom::Start(start))?;
-        file.read_exact(&mut buffer)?;
+        read_buf_exact(file, &mut buffer, read_length as usize)?;
         header_map.typed_insert(ContentRange::bytes(start..end, length).unwrap());
         Ok((StatusCode::PARTIAL_CONTENT, header_map, buffer))
     } else {
