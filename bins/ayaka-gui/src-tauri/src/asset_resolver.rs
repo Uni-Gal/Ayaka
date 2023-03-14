@@ -64,6 +64,14 @@ impl From<std::io::Error> for ResolverError {
     }
 }
 
+struct RangeNotSatisfiableError;
+
+impl From<RangeNotSatisfiableError> for ResolverError {
+    fn from(_: RangeNotSatisfiableError) -> Self {
+        Self(StatusCode::RANGE_NOT_SATISFIABLE, String::new())
+    }
+}
+
 fn get_first_range(range: Range, length: u64) -> Option<(u64, u64)> {
     let mut iter = range.iter();
     let (start, end) = iter.next()?;
@@ -80,15 +88,18 @@ fn get_first_range(range: Range, length: u64) -> Option<(u64, u64)> {
         Bound::Included(i) => i + 1,
         Bound::Excluded(i) => i,
         Bound::Unbounded => length,
+    };
+    if end > length {
+        None
+    } else {
+        Some((start, end))
     }
-    .min(length);
-    Some((start, end))
 }
 
 async fn fs_resolver(
     Path(path): Path<String>,
     range: Option<TypedHeader<Range>>,
-) -> Result<Response, ResolverError> {
+) -> Result<impl IntoResponse, ResolverError> {
     let path = ROOT_PATH.get().expect("cannot get ROOT_PATH").join(path)?;
     let mime = mime_guess::from_path(path.as_str()).first_or_octet_stream();
     let mut header_map = HeaderMap::new();
@@ -96,26 +107,17 @@ async fn fs_resolver(
     let mut file = path.open_file()?;
     if let Some(TypedHeader(range)) = range {
         let length = path.metadata()?.len;
-        let (start, end) = if let Some(range) = get_first_range(range, length) {
-            range
-        } else {
-            return Ok(StatusCode::RANGE_NOT_SATISFIABLE.into_response());
-        };
+        let (start, end) = get_first_range(range, length).ok_or(RangeNotSatisfiableError)?;
         let read_length = end - start;
         let mut buffer = vec![0; read_length as usize];
         file.seek(SeekFrom::Start(start))?;
         file.read_exact(&mut buffer)?;
-        let code = if read_length < length {
-            StatusCode::PARTIAL_CONTENT
-        } else {
-            StatusCode::OK
-        };
         header_map.typed_insert(ContentRange::bytes(start..end, length).unwrap());
-        Ok((code, header_map, buffer).into_response())
+        Ok((StatusCode::PARTIAL_CONTENT, header_map, buffer))
     } else {
         let mut buffer = vec![];
         file.read_to_end(&mut buffer)?;
-        Ok((header_map, buffer).into_response())
+        Ok((StatusCode::OK, header_map, buffer))
     }
 }
 
