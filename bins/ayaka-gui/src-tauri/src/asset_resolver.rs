@@ -1,7 +1,8 @@
 use axum::{
-    body::{Body, Bytes, StreamBody},
-    extract::Path,
-    http::{header::CONTENT_TYPE, Request, StatusCode},
+    body::Body,
+    extract::{Path, TypedHeader},
+    headers::{ContentRange, ContentType, HeaderMapExt, Range},
+    http::{header::CONTENT_TYPE, HeaderMap, Request, StatusCode},
     response::{IntoResponse, Response},
     routing::get,
     Router, Server,
@@ -9,11 +10,11 @@ use axum::{
 use ayaka_model::vfs::{error::VfsErrorKind, *};
 use std::{
     fmt::Display,
-    io::{BorrowedBuf, Read},
+    io::{BorrowedBuf, Read, SeekFrom},
     net::TcpListener,
+    ops::Bound,
     sync::OnceLock,
 };
-use stream_future::try_stream;
 use tauri::{
     plugin::{Builder, TauriPlugin},
     AppHandle, Runtime,
@@ -63,47 +64,76 @@ impl From<std::io::Error> for ResolverError {
     }
 }
 
-const BUFFER_LEN: usize = 1048576;
+struct RangeNotSatisfiableError;
 
-fn read_buf_vec(mut file: impl Read, vec: &mut Vec<u8>) -> std::io::Result<usize> {
-    let old_len = vec.len();
-    let mut read_buf = BorrowedBuf::from(vec.spare_capacity_mut());
-    let mut cursor = read_buf.unfilled();
-    file.read_buf(cursor.reborrow())?;
-    let written = cursor.written();
-    unsafe {
-        vec.set_len(old_len + written);
+impl From<RangeNotSatisfiableError> for ResolverError {
+    fn from(_: RangeNotSatisfiableError) -> Self {
+        Self(StatusCode::RANGE_NOT_SATISFIABLE, String::new())
     }
-    Ok(written)
 }
 
-#[try_stream(Bytes)]
-fn file_stream(mut file: Box<dyn SeekAndRead + Send>, length: usize) -> std::io::Result<()> {
-    let length = length.min(BUFFER_LEN);
-    loop {
-        let mut buffer = Vec::with_capacity(length);
-        let read_bytes = read_buf_vec(&mut file, &mut buffer)?;
-        if read_bytes > 0 {
-            yield Bytes::from(buffer);
-        } else {
-            break;
-        }
+fn get_first_range(range: Range, length: u64) -> Option<(u64, u64)> {
+    let mut iter = range.iter();
+    let (start, end) = iter.next()?;
+    // We don't support multiple ranges.
+    if let Some(_) = iter.next() {
+        return None;
+    }
+    let start = match start {
+        Bound::Included(i) => i,
+        Bound::Excluded(i) => i - 1,
+        Bound::Unbounded => 0,
+    };
+    let end = match end {
+        Bound::Included(i) => i + 1,
+        Bound::Excluded(i) => i,
+        Bound::Unbounded => length,
+    };
+    if end > length {
+        None
+    } else {
+        Some((start, end))
+    }
+}
+
+fn read_buf_exact(mut file: impl Read, buffer: &mut Vec<u8>, length: usize) -> std::io::Result<()> {
+    let old_len = buffer.len();
+    buffer.reserve_exact(length);
+    // SAFETY: reserved
+    let mut read_buf =
+        BorrowedBuf::from(unsafe { buffer.spare_capacity_mut().get_unchecked_mut(..length) });
+    let cursor = read_buf.unfilled();
+    file.read_buf_exact(cursor)?;
+    // SAFETY: read exact
+    unsafe {
+        buffer.set_len(old_len + length);
     }
     Ok(())
 }
 
-async fn fs_resolver(Path(path): Path<String>) -> Result<impl IntoResponse, ResolverError> {
+async fn fs_resolver(
+    Path(path): Path<String>,
+    range: Option<TypedHeader<Range>>,
+) -> Result<impl IntoResponse, ResolverError> {
     let path = ROOT_PATH.get().expect("cannot get ROOT_PATH").join(path)?;
-    let file = path.open_file()?;
     let mime = mime_guess::from_path(path.as_str()).first_or_octet_stream();
-    let length = path
-        .metadata()
-        .map(|meta| meta.len as usize)
-        .unwrap_or(BUFFER_LEN);
-    Ok((
-        [(CONTENT_TYPE, mime.to_string())],
-        StreamBody::new(file_stream(file, length)),
-    ))
+    let mut header_map = HeaderMap::new();
+    header_map.typed_insert(ContentType::from(mime));
+    let mut file = path.open_file()?;
+    if let Some(TypedHeader(range)) = range {
+        let length = path.metadata()?.len;
+        let (start, end) = get_first_range(range, length).ok_or(RangeNotSatisfiableError)?;
+        let read_length = end - start;
+        let mut buffer = vec![];
+        file.seek(SeekFrom::Start(start))?;
+        read_buf_exact(file, &mut buffer, read_length as usize)?;
+        header_map.typed_insert(ContentRange::bytes(start..end, length).unwrap());
+        Ok((StatusCode::PARTIAL_CONTENT, header_map, buffer))
+    } else {
+        let mut buffer = vec![];
+        file.read_to_end(&mut buffer)?;
+        Ok((StatusCode::OK, header_map, buffer))
+    }
 }
 
 async fn resolver<R: Runtime>(app: AppHandle<R>, req: Request<Body>) -> impl IntoResponse {

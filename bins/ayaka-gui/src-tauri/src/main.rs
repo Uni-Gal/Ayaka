@@ -2,7 +2,6 @@
     all(not(debug_assertions), target_os = "windows"),
     windows_subsystem = "windows"
 )]
-#![feature(generators)]
 #![feature(once_cell)]
 #![feature(read_buf)]
 #![feature(return_position_impl_trait_in_trait)]
