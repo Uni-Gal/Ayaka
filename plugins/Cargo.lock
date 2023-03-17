@@ -36,7 +36,7 @@ dependencies = [
 
 [[package]]
 name = "ayaka-bindings"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ayaka-bindings-impl",
  "ayaka-bindings-types",
@@ -49,7 +49,7 @@ dependencies = [
 
 [[package]]
 name = "ayaka-bindings-impl"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -59,7 +59,7 @@ dependencies = [
 
 [[package]]
 name = "ayaka-bindings-types"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ayaka-primitive",
  "fallback",
@@ -70,7 +70,7 @@ dependencies = [
 
 [[package]]
 name = "ayaka-plugin"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "rmp-serde",
@@ -79,7 +79,7 @@ dependencies = [
 
 [[package]]
 name = "ayaka-primitive"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "nom",
  "serde",
@@ -88,7 +88,7 @@ dependencies = [
 
 [[package]]
 name = "ayaka-script"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "ayaka-primitive",

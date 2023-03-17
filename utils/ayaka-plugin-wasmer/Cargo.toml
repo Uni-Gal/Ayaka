@@ -1,7 +1,13 @@
 [package]
 name = "ayaka-plugin-wasmer"
-version = "0.1.0"
-edition = "2021"
+description = "A plugin runtime for Ayaka, based on Wasmer."
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+categories.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 ayaka-plugin = { workspace = true }
