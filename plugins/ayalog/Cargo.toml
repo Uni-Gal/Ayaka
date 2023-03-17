@@ -1,7 +1,13 @@
 [package]
 name = "ayalog"
-version = "0.1.0"
-edition = "2021"
+description = "Plugin for Ayaka. Logger."
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+categories.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [lib]
 crate-type = ["cdylib"]
