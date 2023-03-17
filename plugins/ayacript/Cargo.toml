@@ -1,5 +1,5 @@
 [package]
-name = "ayacript"
+name = "ayaka-plugin-script"
 description = "Plugin for Ayaka. Ayaka script runtime."
 version.workspace = true
 edition.workspace = true
@@ -10,6 +10,7 @@ license.workspace = true
 repository.workspace = true
 
 [lib]
+name = "ayacript"
 crate-type = ["cdylib"]
 
 [dependencies]

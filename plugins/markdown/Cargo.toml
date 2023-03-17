@@ -1,5 +1,5 @@
 [package]
-name = "markdown"
+name = "ayaka-plugin-markdown"
 description = "Plugin for Ayaka. Markdown parser."
 version.workspace = true
 edition.workspace = true
@@ -10,6 +10,7 @@ license.workspace = true
 repository.workspace = true
 
 [lib]
+name = "markdown"
 crate-type = ["cdylib"]
 
 [dependencies]

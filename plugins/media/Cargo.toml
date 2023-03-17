@@ -1,5 +1,5 @@
 [package]
-name = "media"
+name = "ayaka-plugin-media"
 description = "Plugin for Ayaka. Multimedia resource resolver."
 version.workspace = true
 edition.workspace = true
@@ -10,6 +10,7 @@ license.workspace = true
 repository.workspace = true
 
 [lib]
+name = "media"
 crate-type = ["cdylib"]
 
 [dependencies]

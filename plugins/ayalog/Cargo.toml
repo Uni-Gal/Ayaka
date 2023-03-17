@@ -1,5 +1,5 @@
 [package]
-name = "ayalog"
+name = "ayaka-plugin-log"
 description = "Plugin for Ayaka. Logger."
 version.workspace = true
 edition.workspace = true
@@ -10,6 +10,7 @@ license.workspace = true
 repository.workspace = true
 
 [lib]
+name = "ayalog"
 crate-type = ["cdylib"]
 
 [dependencies]

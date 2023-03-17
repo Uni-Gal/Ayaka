@@ -1,5 +1,5 @@
 [package]
-name = "basictex"
+name = "ayaka-plugin-basictex"
 description = "Plugin for Ayaka. Basic TeX commands."
 version.workspace = true
 edition.workspace = true
@@ -10,6 +10,7 @@ license.workspace = true
 repository.workspace = true
 
 [lib]
+name = "basictex"
 crate-type = ["cdylib"]
 
 [dependencies]
