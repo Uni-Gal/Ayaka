@@ -169,7 +169,7 @@ dependencies = [
 
 [[package]]
 name = "ayaka-check"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ayaka-runtime",
  "clap 4.1.8",
@@ -179,7 +179,7 @@ dependencies = [
 
 [[package]]
 name = "ayaka-gui"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "axum",
  "ayaka-model",
@@ -196,7 +196,7 @@ dependencies = [
 
 [[package]]
 name = "ayaka-latex"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ayaka-runtime",
  "clap 4.1.8",
@@ -3770,9 +3770,9 @@ checksum = "3ab8ed2edee10b50132aed5f331333428b011c99402b5a534154ed15746f9622"
 
 [[package]]
 name = "toml_edit"
-version = "0.19.4"
+version = "0.19.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9a1eb0622d28f4b9c90adc4ea4b2b46b47663fde9ac5fafcb14a1369d5508825"
+checksum = "dc18466501acd8ac6a3f615dd29a3438f8ca6bb3b19537138b3106e575621274"
 dependencies = [
  "indexmap",
  "toml_datetime",
