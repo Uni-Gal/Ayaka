@@ -24,16 +24,16 @@ license = "MIT"
 repository = "https://github.com/Uni-Gal/Ayaka"
 
 [workspace.dependencies]
-ayaka-primitive = { path = "ayaka-primitive" }
-ayaka-bindings-types = { path = "ayaka-bindings-types" }
-ayaka-bindings-impl = { path = "ayaka-bindings-impl" }
-ayaka-plugin = { path = "ayaka-plugin" }
-ayaka-plugin-nop = { path = "ayaka-plugin-nop" }
-ayaka-plugin-wasmer = { path = "ayaka-plugin-wasmer" }
-ayaka-plugin-wasmtime = { path = "ayaka-plugin-wasmtime" }
-ayaka-plugin-wasmi = { path = "ayaka-plugin-wasmi" }
-ayaka-script = { path = "ayaka-script" }
-ayaka-runtime = { path = "ayaka-runtime" }
+ayaka-primitive = { path = "ayaka-primitive", version = "0.2.0" }
+ayaka-bindings-types = { path = "ayaka-bindings-types", version = "0.2.0" }
+ayaka-bindings-impl = { path = "ayaka-bindings-impl", version = "0.2.0" }
+ayaka-plugin = { path = "ayaka-plugin", version = "0.2.0" }
+ayaka-plugin-nop = { path = "ayaka-plugin-nop", version = "0.2.0" }
+ayaka-plugin-wasmer = { path = "ayaka-plugin-wasmer", version = "0.2.0" }
+ayaka-plugin-wasmtime = { path = "ayaka-plugin-wasmtime", version = "0.2.0" }
+ayaka-plugin-wasmi = { path = "ayaka-plugin-wasmi", version = "0.2.0" }
+ayaka-script = { path = "ayaka-script", version = "0.2.0" }
+ayaka-runtime = { path = "ayaka-runtime", version = "0.2.0" }
 
 anyhow = "1.0"
 
