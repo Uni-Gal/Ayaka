@@ -110,8 +110,11 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
         .set(model.context().root_path().clone())
         .expect("cannot set ROOT_PATH");
 
-    let window = handle.get_window("main").expect("cannot get main window");
-    window.set_title(&model.context().game().config.title)?;
+    #[cfg(desktop)]
+    {
+        let window = handle.get_window("main").expect("cannot get main window");
+        window.set_title(&model.context().game().config.title)?;
+    }
 
     Ok(())
 }
@@ -256,9 +259,10 @@ async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<(Action, Opti
 fn main() -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:0")?;
     let port = listener.local_addr()?.port();
-    tauri::Builder::default()
-        .plugin(asset_resolver::init(listener))
-        .plugin(tauri_plugin_window_state::Builder::default().build())
+    let builder = tauri::Builder::default().plugin(asset_resolver::init(listener));
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_window_state::Builder::default().build());
+    builder
         .setup(move |app| {
             let resolver = app.path_resolver();
             let spec = LogSpecification::parse("warn,ayaka=debug,tower_http=debug")?;
