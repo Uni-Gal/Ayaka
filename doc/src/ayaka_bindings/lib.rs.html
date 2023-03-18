@@ -81,6 +81,7 @@
 <a href="#81" id="81">81</a>
 <a href="#82" id="82">82</a>
 <a href="#83" id="83">83</a>
+<a href="#84" id="84">84</a>
 </pre><pre class="rust"><code><span class="attr">#![feature(fn_traits)]
 #![feature(tuple_trait)]
 #![feature(unboxed_closures)]
@@ -115,7 +116,7 @@
     <span class="kw">if </span>ptr.is_null() {
         alloc::handle_alloc_error(layout);
     }
-    <span class="kw">return </span>ptr;
+    ptr
 }
 
 <span class="attr">#[no_mangle]
@@ -135,6 +136,7 @@
 }
 
 <span class="attr">#[doc(hidden)]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 </span><span class="kw">pub fn </span>__export&lt;Params: DeserializeOwned + Tuple, Res: Serialize&gt;(
     len: usize,
     data: <span class="kw-2">*const </span>u8,
