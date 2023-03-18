@@ -31,10 +31,10 @@ vfs-tar = "0.3"
 rand = "0.8"
 slab = "0.4"
 
-ayaka-plugin-nop = { path = "../ayaka-plugin-nop" }
-ayaka-plugin-wasmi = { path = "../ayaka-plugin-wasmi", optional = true }
-ayaka-plugin-wasmtime = { path = "../ayaka-plugin-wasmtime", optional = true }
-ayaka-plugin-wasmer = { path = "../ayaka-plugin-wasmer", optional = true }
+ayaka-plugin-nop = { workspace = true }
+ayaka-plugin-wasmi = { workspace = true, optional = true }
+ayaka-plugin-wasmtime = { workspace = true, optional = true }
+ayaka-plugin-wasmer = { workspace = true, optional = true }
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "parking_lot", "rt"] }
