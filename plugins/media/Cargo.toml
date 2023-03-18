@@ -1,9 +1,16 @@
 [package]
-name = "media"
-version = "0.1.0"
-edition = "2021"
+name = "ayaka-plugin-media"
+description = "Plugin for Ayaka. Multimedia resource resolver."
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+categories.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [lib]
+name = "media"
 crate-type = ["cdylib"]
 
 [dependencies]

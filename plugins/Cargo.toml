@@ -11,6 +11,15 @@ members = [
 
 resolver = "2"
 
+[workspace.package]
+version = "0.2.0"
+edition = "2021"
+authors = ["Berrysoft <Strawberry_Str@hotmail.com>"]
+categories = ["wasm"]
+keywords = ["wasm", "plugin"]
+license = "MIT"
+repository = "https://github.com/Uni-Gal/Ayaka"
+
 [profile.release]
 lto = true
 codegen-units = 1

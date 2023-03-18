@@ -1,9 +1,16 @@
 [package]
-name = "live2d"
-version = "0.1.0"
-edition = "2021"
+name = "ayaka-plugin-live2d"
+description = "Plugin for Ayaka. Live2D resource resolver."
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+categories.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [lib]
+name = "live2d"
 crate-type = ["cdylib"]
 
 [dependencies]

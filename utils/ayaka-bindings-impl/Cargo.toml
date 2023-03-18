@@ -1,8 +1,13 @@
 [package]
 name = "ayaka-bindings-impl"
-version = "0.1.0"
-authors = ["Berrysoft <Strawberry_Str@hotmail.com>"]
-edition = "2021"
+description = "Proc macro for ayaka-bindings."
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+categories.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [lib]
 proc-macro = true

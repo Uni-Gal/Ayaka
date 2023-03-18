@@ -1,7 +1,13 @@
 [package]
 name = "ayaka-runtime"
-version = "0.1.0"
-edition = "2021"
+description = "Ayaka low-level runtime."
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+categories.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [dependencies]
 ayaka-primitive = { workspace = true }

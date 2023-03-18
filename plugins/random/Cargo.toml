@@ -1,9 +1,16 @@
 [package]
-name = "random"
-version = "0.1.0"
-edition = "2021"
+name = "ayaka-plugin-random"
+description = "Plugin for Ayaka. Random number generator."
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+categories.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
 
 [lib]
+name = "random"
 crate-type = ["cdylib"]
 
 [dependencies]
