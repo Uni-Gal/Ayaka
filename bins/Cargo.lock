@@ -749,12 +749,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cty"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b365fabc795046672053e29c954733ec3b05e4be654ab130fe8f1f94d7051f35"
-
-[[package]]
 name = "cxx"
 version = "1.0.93"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1888,9 +1882,9 @@ checksum = "30e22bd8629359895450b59ea7a776c850561b96a3b1d31321c1949d9e6c9146"
 
 [[package]]
 name = "is-terminal"
-version = "0.4.4"
+version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21b6b32576413a8e69b90e952e4a026476040d81017b80445deda5f2d3921857"
+checksum = "8687c819457e979cc940d09cb16e42a1bf70aa6b60a549de6d3a62a0ee90c69e"
 dependencies = [
  "hermit-abi 0.3.1",
  "io-lifetimes",
@@ -2829,12 +2823,9 @@ dependencies = [
 
 [[package]]
 name = "raw-window-handle"
-version = "0.5.0"
+version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ed7e3d950b66e19e0c372f3fa3fbbcf85b1746b571f74e0c2af6042a5c93420a"
-dependencies = [
- "cty",
-]
+checksum = "4f851a03551ceefd30132e447f07f96cb7011d6b658374f3aed847333adb5559"
 
 [[package]]
 name = "redox_syscall"
@@ -3353,9 +3344,9 @@ checksum = "73473c0e59e6d5812c5dfe2a064a6444949f089e20eec9a2e5506596494e4623"
 
 [[package]]
 name = "swift-rs"
-version = "1.0.2"
+version = "1.0.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2706dd533c2a96dfdbe942221fe0d3bb24857257aac26f938537f197c543b27e"
+checksum = "2eab55f44d02ced20ffa22fd5b4bd083ab59c940c7637d37fec4426b1a01d769"
 dependencies = [
  "base64 0.21.0",
  "serde",
@@ -3499,9 +3490,9 @@ dependencies = [
 
 [[package]]
 name = "tar-parser2"
-version = "0.8.0"
+version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cad3aa5dba56b36f477d4952f1b6be22eff15aa3bb2be3c59cb83a22fad46dbe"
+checksum = "7262f48c9ef16eb92e4ba069d4992dd27b793f816fb82012a860190d93ec882d"
 dependencies = [
  "nom",
 ]
@@ -3509,7 +3500,7 @@ dependencies = [
 [[package]]
 name = "tauri"
 version = "2.0.0-alpha.3"
-source = "git+https://github.com/tauri-apps/tauri.git?branch=next#aefc5bcb08c0785b7120906a4ec00206caac8f3a"
+source = "git+https://github.com/tauri-apps/tauri.git?branch=next#6669f1659af2e6f1a1b81fb9f6524a9c688a887c"
 dependencies = [
  "anyhow",
  "bytes",
@@ -3561,7 +3552,7 @@ dependencies = [
 [[package]]
 name = "tauri-build"
 version = "2.0.0-alpha.1"
-source = "git+https://github.com/tauri-apps/tauri.git?branch=next#aefc5bcb08c0785b7120906a4ec00206caac8f3a"
+source = "git+https://github.com/tauri-apps/tauri.git?branch=next#6669f1659af2e6f1a1b81fb9f6524a9c688a887c"
 dependencies = [
  "anyhow",
  "cargo_toml",
@@ -3580,7 +3571,7 @@ dependencies = [
 [[package]]
 name = "tauri-codegen"
 version = "2.0.0-alpha.1"
-source = "git+https://github.com/tauri-apps/tauri.git?branch=next#aefc5bcb08c0785b7120906a4ec00206caac8f3a"
+source = "git+https://github.com/tauri-apps/tauri.git?branch=next#6669f1659af2e6f1a1b81fb9f6524a9c688a887c"
 dependencies = [
  "base64 0.21.0",
  "brotli",
@@ -3605,7 +3596,7 @@ dependencies = [
 [[package]]
 name = "tauri-macros"
 version = "2.0.0-alpha.1"
-source = "git+https://github.com/tauri-apps/tauri.git?branch=next#aefc5bcb08c0785b7120906a4ec00206caac8f3a"
+source = "git+https://github.com/tauri-apps/tauri.git?branch=next#6669f1659af2e6f1a1b81fb9f6524a9c688a887c"
 dependencies = [
  "heck",
  "proc-macro2",
@@ -3618,7 +3609,7 @@ dependencies = [
 [[package]]
 name = "tauri-plugin-window-state"
 version = "0.1.0"
-source = "git+https://github.com/tauri-apps/plugins-workspace.git?branch=next#539c38a692ebf3b80331d21f9f38cc570892c02e"
+source = "git+https://github.com/tauri-apps/plugins-workspace.git?branch=next#9330e0539839ae065f8f62ba89c1f30e33d8f4e3"
 dependencies = [
  "bincode",
  "bitflags",
@@ -3632,7 +3623,7 @@ dependencies = [
 [[package]]
 name = "tauri-runtime"
 version = "0.13.0-alpha.1"
-source = "git+https://github.com/tauri-apps/tauri.git?branch=next#aefc5bcb08c0785b7120906a4ec00206caac8f3a"
+source = "git+https://github.com/tauri-apps/tauri.git?branch=next#6669f1659af2e6f1a1b81fb9f6524a9c688a887c"
 dependencies = [
  "gtk",
  "http",
@@ -3653,7 +3644,7 @@ dependencies = [
 [[package]]
 name = "tauri-runtime-wry"
 version = "0.13.0-alpha.1"
-source = "git+https://github.com/tauri-apps/tauri.git?branch=next#aefc5bcb08c0785b7120906a4ec00206caac8f3a"
+source = "git+https://github.com/tauri-apps/tauri.git?branch=next#6669f1659af2e6f1a1b81fb9f6524a9c688a887c"
 dependencies = [
  "cocoa",
  "gtk",
@@ -3673,7 +3664,7 @@ dependencies = [
 [[package]]
 name = "tauri-utils"
 version = "2.0.0-alpha.1"
-source = "git+https://github.com/tauri-apps/tauri.git?branch=next#aefc5bcb08c0785b7120906a4ec00206caac8f3a"
+source = "git+https://github.com/tauri-apps/tauri.git?branch=next#6669f1659af2e6f1a1b81fb9f6524a9c688a887c"
 dependencies = [
  "brotli",
  "ctor",
@@ -4154,9 +4145,9 @@ checksum = "ded573c92d7b32013bdab82676be59f56106895e837504568f32804980ec7868"
 
 [[package]]
 name = "vfs-tar"
-version = "0.3.1"
+version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f60083a075d34d560c0a52fdaad0cad45fd0b0813990b6e5f0242fde0a9ef1f"
+checksum = "fbc4b6f04e3d6f22a7899b3ee07df9a71e3bb0b068e4544961de221a9f851dce"
 dependencies = [
  "memmap2",
  "tar-parser2",
