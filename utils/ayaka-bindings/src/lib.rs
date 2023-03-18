@@ -32,7 +32,7 @@ unsafe extern "C" fn __abi_alloc(len: usize) -> *mut u8 {
     if ptr.is_null() {
         alloc::handle_alloc_error(layout);
     }
-    return ptr;
+    ptr
 }
 
 #[no_mangle]
@@ -52,6 +52,7 @@ unsafe fn __abi_alloc_from(data: &[u8]) -> (*mut u8, usize) {
 }
 
 #[doc(hidden)]
+#[allow(clippy::not_unsafe_ptr_arg_deref)]
 pub fn __export<Params: DeserializeOwned + Tuple, Res: Serialize>(
     len: usize,
     data: *const u8,
