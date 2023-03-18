@@ -2,6 +2,8 @@
 members = [
     "ayaka-primitive",
     "ayaka-bindings-types",
+    "ayaka-bindings-impl",
+    "ayaka-bindings",
     "ayaka-script",
     "ayaka-plugin",
     "ayaka-plugin-nop",
