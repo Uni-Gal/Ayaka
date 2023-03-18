@@ -76,7 +76,7 @@ fn get_first_range(range: Range, length: u64) -> Option<(u64, u64)> {
     let mut iter = range.iter();
     let (start, end) = iter.next()?;
     // We don't support multiple ranges.
-    if let Some(_) = iter.next() {
+    if iter.next().is_some() {
         return None;
     }
     let start = match start {
@@ -146,7 +146,7 @@ async fn resolver<R: Runtime>(app: AppHandle<R>, req: Request<Body>) -> impl Int
 
 pub fn init<R: Runtime>(listener: TcpListener) -> TauriPlugin<R> {
     Builder::new("asset_resolver")
-        .setup(move |app| {
+        .setup(move |app, _| {
             let app = app.clone();
             tauri::async_runtime::spawn(async {
                 let app = Router::new()
