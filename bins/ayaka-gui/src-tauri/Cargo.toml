@@ -9,6 +9,10 @@ keywords.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[lib]
+name = "ayaka_gui_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
 [build-dependencies]
 tauri-build = { git = "https://github.com/tauri-apps/tauri.git", branch = "next", features = [] }
 
