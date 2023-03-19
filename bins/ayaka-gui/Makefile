@@ -12,3 +12,7 @@ run: node_modules
 	cargo tauri dev -- -- $(FILE)
 dist: node_modules
 	npm run build
+
+build_android: dist
+	cargo tauri android build
+	rm -r src-tauri/.cargo
