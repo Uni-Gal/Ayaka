@@ -11,4 +11,4 @@ repository.workspace = true
 
 [dependencies]
 ayaka-plugin = { workspace = true }
-wasmtime = "6.0"
+wasmtime = "7.0"
