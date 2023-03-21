@@ -76,7 +76,7 @@ fn get_first_range(range: Range, length: u64) -> Option<(u64, u64)> {
     let mut iter = range.iter();
     let (start, end) = iter.next()?;
     // We don't support multiple ranges.
-    if let Some(_) = iter.next() {
+    if iter.next().is_some() {
         return None;
     }
     let start = match start {
