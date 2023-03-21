@@ -9,7 +9,6 @@
 
         <!-- Custom HTML head -->
         
-        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
@@ -34,14 +33,15 @@
 
     </head>
     <body>
+    <div id="body-container">
         <!-- Provide site root to javascript -->
-        <script type="text/javascript">
+        <script>
             var path_to_root = "";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
-        <script type="text/javascript">
+        <script>
             try {
                 var theme = localStorage.getItem('mdbook-theme');
                 var sidebar = localStorage.getItem('mdbook-sidebar');
@@ -57,7 +57,7 @@
         </script>
 
         <!-- Set the theme before any content is loaded, prevents flash -->
-        <script type="text/javascript">
+        <script>
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
@@ -69,12 +69,14 @@
         </script>
 
         <!-- Hide / unhide sidebar before it is displayed -->
-        <script type="text/javascript">
+        <script>
             var html = document.querySelector('html');
-            var sidebar = 'hidden';
+            var sidebar = null;
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
             }
             html.classList.remove('sidebar-visible');
             html.classList.add("sidebar-" + sidebar);
@@ -100,7 +102,7 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
@@ -133,7 +135,7 @@
                 </div>
 
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
-                <script type="text/javascript">
+                <script>
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
                     document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
                     Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
@@ -450,8 +452,7 @@ The only supported types are unit <code>~</code>, boolean, integer, and string.<
     Num(i64),
     Str(String),
 }
-<span class="boring">}
-</span></code></pre></pre>
+<span class="boring">}</span></code></pre></pre>
 <h2 id="using-ayacript"><a class="header" href="#using-ayacript">Using <code>ayacript</code></a></h2>
 <p><code>ayacript</code> is the plugin that provides Ayaka script functionalities.
 You need to add <code>ayascript</code> to the config file. See <a href="config/../plugin/summary.html">Plugin</a>.</p>
@@ -487,16 +488,13 @@ It provides functionality to load config, settings, plugins, and control the ful
 <p>The CLI tool in <code>bins/ayaka-check</code> is a full example to run a game.</p>
 <h2 id="open-a-config-file"><a class="header" href="#open-a-config-file">Open a config file</a></h2>
 <pre><code class="language-rust ignore">use ayaka_runtime::*;
-let mut context = Context::open(&quot;../../../examples/Fibonacci/config.yaml&quot;, FrontendType::Text).await?;
-</code></pre>
+let mut context = Context::open(&quot;../../../examples/Fibonacci/config.yaml&quot;, FrontendType::Text).await?;</code></pre>
 <p>The context object should be initialized first to start from an initial record.</p>
-<pre><code class="language-rust ignore">context.init_new();
-</code></pre>
+<pre><code class="language-rust ignore">context.init_new();</code></pre>
 <p>Then you can iterate the actions:</p>
 <pre><code class="language-rust ignore">while let Some(action) = context.next_run() {
     //...
-}
-</code></pre>
+}</code></pre>
 <h2 id="get-the-open-status"><a class="header" href="#get-the-open-status">Get the open status</a></h2>
 <p>The <code>context</code> also implements <code>Stream</code>.
 The <code>OpenStatus</code> could be iterated before the future awaited.</p>
@@ -506,8 +504,7 @@ let mut context = std::pin::pin!(context);
 while let Some(status) = context.next().await {
     println!(&quot;{:?}&quot;, status);
 }
-let mut context = context.await?;
-</code></pre>
+let mut context = context.await?;</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="plugin"><a class="header" href="#plugin">Plugin</a></h1>
 <p>All plugins should target WebAssembly.
 We now support <code>wasm32-unknown-unknown</code> target.</p>
@@ -574,8 +571,7 @@ fn plugin_type() -&gt; PluginType {
 #[export]
 fn hello(_args: Vec&lt;RawValue&gt;) -&gt; RawValue {
     RawValue::Str(&quot;Hello&quot;.to_string())
-}
-</code></pre>
+}</code></pre>
 <p>And call the function:</p>
 <pre><code class="language-yaml">- exec: $hello = meet.hello()
 - \var{hello} from plugin!
@@ -606,8 +602,7 @@ fn hello(_args: Vec&lt;String&gt;, _ctx: TextProcessContext) -&gt; TextProcessRe
     let mut res = TextProcessResult::default();
     res.line.push_back_chars(&quot;Hello&quot;);
     res
-}
-</code></pre>
+}</code></pre>
 <p>Call the command in the config file:</p>
 <pre><code class="language-yaml">- \hello world!
 </code></pre>
@@ -638,8 +633,7 @@ fn hello(_ctx: LineProcessContext) -&gt; LineProcessResult {
     let mut res = LineProcessResult::default();
     res.locals.insert(&quot;hello&quot;.to_string(), RawValue::Str(&quot;Hello&quot;.to_string()));
     res
-}
-</code></pre>
+}</code></pre>
 <p>Call the command in the config file:</p>
 <pre><code class="language-yaml">- hello:
 - \var{hello} world!
@@ -683,8 +677,7 @@ fn process_action(mut ctx: ActionProcessContext) -&gt; ActionProcessResult {
     ctx.action.clear();
     ctx.action.push_back_chars(html_output);
     ActionProcessResult { action: ctx.action }
-}
-</code></pre>
+}</code></pre>
 <p>Add the plugin to the <code>modules</code> list, and all markdown text will be translated to HTML.</p>
 <p>You may notice that the HTML tags are treated as <code>ActionLine::Chars</code>, which means they will be displayed one by one on GUI frontends. Our existing <code>markdown</code> plugin resolves this problem by providing a custom writer.</p>
 <h2 id="existing-plugins-3"><a class="header" href="#existing-plugins-3">Existing plugins</a></h2>
@@ -707,8 +700,7 @@ fn plugin_type() -&gt; PluginType {
 fn process_game(mut ctx: GameProcessContext) -&gt; GameProcessResult {
     ctx.props.insert(&quot;hello&quot;.to_string(), &quot;Hello world!&quot;.to_string());
     GameProcessResult { props: ctx.props }
-}
-</code></pre>
+}</code></pre>
 <h2 id="existing-plugins-4"><a class="header" href="#existing-plugins-4">Existing plugins</a></h2>
 <div class="table-wrapper"><table><thead><tr><th>Plugin</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>live2d</code></td><td>Get correct path of Live2D models.</td></tr>
@@ -777,26 +769,27 @@ $ tar -cf foo.ayapack *
 
 
 
-        <script type="text/javascript">
+        <script>
             window.playground_copyable = true;
         </script>
 
 
-        <script src="elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="searcher.js" type="text/javascript" charset="utf-8"></script>
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
 
-        <script src="clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="book.js" type="text/javascript" charset="utf-8"></script>
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
 
         <!-- Custom JS scripts -->
 
-        <script type="text/javascript">
+        <script>
         window.addEventListener('load', function() {
             window.setTimeout(window.print, 100);
         });
         </script>
 
+    </div>
     </body>
 </html>
