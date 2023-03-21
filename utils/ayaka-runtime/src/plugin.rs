@@ -91,7 +91,7 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
     /// The actual load folder will be `rel_to.join(dir)`.
     ///
     /// If `names` is empty, all WASM files will be loaded.
-    #[stream(LoadStatus, lifetime = "'a")]
+    #[stream(LoadStatus, lifetime = 'a)]
     pub async fn load<'a>(
         dir: impl AsRef<str> + 'a,
         root_path: &'a VfsPath,

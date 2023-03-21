@@ -55,7 +55,7 @@ impl Context {
     /// If the input `paths` contains only one element, it may be a YAML or an FRFS file.
     /// If the input `paths` contains many element, they should all be FRFS files,
     /// and the latter one will override the former one.
-    #[stream(OpenStatus, lifetime = "'a")]
+    #[stream(OpenStatus, lifetime = 'a)]
     pub async fn open<'a>(paths: &'a [impl AsRef<Path>], frontend: FrontendType) -> Result<Self> {
         if paths.is_empty() {
             bail!("At least one path should be input.");
