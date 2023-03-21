@@ -16,3 +16,7 @@ dist: node_modules
 build_android: dist
 	cargo tauri android build
 	rm -r src-tauri/.cargo
+
+build_ios: dist
+	cargo tauri ios build
+	rm -r src-tauri/.cargo
