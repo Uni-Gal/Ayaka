@@ -3290,9 +3290,9 @@ dependencies = [
 
 [[package]]
 name = "stream-future"
-version = "0.3.1"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a6ff8745feb72cb274a8dbf0275d9780d760696efd172c188cb57d52f9453a75"
+checksum = "7e1f3c61a434b44a14083fa14117da19d89cc417c6a2ff71eef4f2a7e8a3f0da"
 dependencies = [
  "futures-core",
  "pin-project",
@@ -3301,13 +3301,13 @@ dependencies = [
 
 [[package]]
 name = "stream-future-impl"
-version = "0.3.1"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d28b390dc3e238afbe1485ce0b314e4d895957061668c01cb23126d77f36c9b6"
+checksum = "70833300018c3ee1f99d54ab1292d4e8d16d232d860be85fce9faef784d82a80"
 dependencies = [
  "proc-macro2",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.0",
 ]
 
 [[package]]
@@ -4267,10 +4267,11 @@ dependencies = [
 
 [[package]]
 name = "wasmi"
-version = "0.28.0"
+version = "0.29.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8e61a7006b0fdf24f6bbe8dcfdad5ca1b350de80061fb2827f31c82fbbb9565a"
+checksum = "677160b1166881badada1137afc6457777126f328ae63a18058b504f546f0828"
 dependencies = [
+ "smallvec",
  "spin",
  "wasmi_arena",
  "wasmi_core",

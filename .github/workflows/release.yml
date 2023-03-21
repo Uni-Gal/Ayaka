@@ -44,13 +44,17 @@ jobs:
         run: |
           rustup target add ${{ matrix.platform.target }}
           rustup target add wasm32-unknown-unknown
+      - name: Build plugins
+        run: make examples/plugins.ayapack
+        if: matrix.platform.name == 'linux-x64'
       - name: Build
-        run: make plugins release-cross TARGET=${{ matrix.platform.target }}
+        run: make release-cross TARGET=${{ matrix.platform.target }}
       - name: Publish plugins
         uses: actions/upload-artifact@v3
+        if: matrix.platform.name == 'linux-x64'
         with:
           name: plugins
-          path: examples/plugins/
+          path: examples/plugins.ayapack
       - name: Publish binaries
         uses: actions/upload-artifact@v3
         with:

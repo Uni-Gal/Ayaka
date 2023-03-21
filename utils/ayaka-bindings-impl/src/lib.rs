@@ -1,10 +1,7 @@
 use proc_macro::TokenStream;
 use proc_macro_crate::{crate_name, FoundCrate};
 use quote::{quote, TokenStreamExt};
-use syn::{
-    parse_macro_input, parse_str, AttributeArgs, FnArg, ForeignItem, Ident, ItemFn, ItemForeignMod,
-    Lit, NestedMeta,
-};
+use syn::{parse_macro_input, parse_str, FnArg, ForeignItem, Ident, ItemFn, ItemForeignMod, Lit};
 
 #[proc_macro_attribute]
 pub fn export(_attr: TokenStream, input: TokenStream) -> TokenStream {
@@ -27,14 +24,11 @@ pub fn export(_attr: TokenStream, input: TokenStream) -> TokenStream {
 
 #[proc_macro_attribute]
 pub fn import(attr: TokenStream, input: TokenStream) -> TokenStream {
-    let attr = parse_macro_input!(attr as AttributeArgs);
-    let mut module = String::new();
-    for a in attr {
-        match a {
-            NestedMeta::Lit(Lit::Str(s)) => module = s.value(),
-            _ => unimplemented!(),
-        }
-    }
+    let attr = parse_macro_input!(attr as Lit);
+    let module = match attr {
+        Lit::Str(str) => str.value(),
+        _ => unimplemented!(),
+    };
     let input = parse_macro_input!(input as ItemForeignMod);
     let mut imports = quote! {};
     for func in input.items {

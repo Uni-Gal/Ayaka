@@ -19,6 +19,6 @@ release-cross: dist
 run:
 	cargo run --package ayaka-check -- $(FILE) --auto
 run-gui:
-	cd ayaka-gui && $(MAKE) run FILE=$(FILE)
+	cd ayaka-gui && $(MAKE) run FILE='$(FILE)'
 run-latex:
 	cargo run --package ayaka-latex -- $(FILE) -o $(TEXOUT)

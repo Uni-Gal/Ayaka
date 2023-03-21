@@ -13,4 +13,5 @@ command = "mdbook-graphviz"
 
 [[output.i18n.translations]]
 language = "zh-Hans"
+src = "translations/zh-Hans"
 title = "Ayaka Book"

@@ -71,7 +71,7 @@ impl<M: SettingsManager> GameViewModel<M> {
     }
 
     /// Open the game with paths and frontend type.
-    #[stream(OpenGameStatus, lifetime = "'a")]
+    #[stream(OpenGameStatus, lifetime = 'a)]
     pub async fn open_game<'a>(
         &'a mut self,
         paths: &'a [impl AsRef<Path>],
