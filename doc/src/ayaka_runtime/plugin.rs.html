@@ -336,7 +336,7 @@
     /// The actual load folder will be `rel_to.join(dir)`.
     ///
     /// If `names` is empty, all WASM files will be loaded.
-    </span><span class="attr">#[stream(LoadStatus, lifetime = <span class="string">&quot;&#39;a&quot;</span>)]
+    </span><span class="attr">#[stream(LoadStatus, lifetime = <span class="lifetime">&#39;a</span>)]
     </span><span class="kw">pub async fn </span>load&lt;<span class="lifetime">&#39;a</span>&gt;(
         dir: <span class="kw">impl </span>AsRef&lt;str&gt; + <span class="lifetime">&#39;a</span>,
         root_path: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>VfsPath,
