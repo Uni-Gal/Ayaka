@@ -4,9 +4,10 @@
 #![allow(incomplete_features)]
 
 mod asset_resolver;
+mod settings;
+
 #[cfg(mobile)]
 mod mobile;
-mod settings;
 
 use ayaka_model::{
     anyhow::{self, Result},
@@ -24,8 +25,8 @@ use std::{
     pin::pin,
 };
 use tauri::{
-    api::dialog::blocking::FileDialogBuilder, async_runtime::RwLock, command,
-    utils::config::AppUrl, AppHandle, Manager, PathResolver, State, WindowUrl,
+    async_runtime::RwLock, command, utils::config::AppUrl, AppHandle, Manager, PathResolver, State,
+    WindowUrl,
 };
 
 type CommandResult<T> = Result<T, CommandError>;
@@ -93,15 +94,23 @@ fn dist_port(storage: State<Storage>) -> u16 {
     storage.dist_port
 }
 
+#[cfg(desktop)]
+fn show_pick_files() -> Vec<PathBuf> {
+    tauri::api::dialog::blocking::FileDialogBuilder::new()
+        .add_filter("Ayaka package", &["ayapack"])
+        .pick_files()
+        .unwrap_or_default()
+}
+
+#[cfg(mobile)]
+fn show_pick_files() -> Vec<PathBuf> {
+    vec![]
+}
+
 #[command]
 async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
     let config = if storage.config.is_empty() {
-        Cow::Owned(
-            FileDialogBuilder::new()
-                .add_filter("Ayaka package", &["ayapack"])
-                .pick_files()
-                .unwrap_or_default(),
-        )
+        Cow::Owned(show_pick_files())
     } else {
         Cow::Borrowed(&storage.config)
     };
