@@ -95,22 +95,23 @@ fn dist_port(storage: State<Storage>) -> u16 {
 }
 
 #[cfg(desktop)]
-fn show_pick_files() -> Vec<PathBuf> {
+fn show_pick_files(handle: &AppHandle) -> Vec<PathBuf> {
     tauri::api::dialog::blocking::FileDialogBuilder::new()
         .add_filter("Ayaka package", &["ayapack"])
+        .set_parent(&handle.get_window("main").expect("cannot get main window"))
         .pick_files()
         .unwrap_or_default()
 }
 
 #[cfg(mobile)]
-fn show_pick_files() -> Vec<PathBuf> {
+fn show_pick_files(_handle: &AppHandle) -> Vec<PathBuf> {
     vec![]
 }
 
 #[command]
 async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
     let config = if storage.config.is_empty() {
-        Cow::Owned(show_pick_files())
+        Cow::Owned(show_pick_files(&handle))
     } else {
         Cow::Borrowed(&storage.config)
     };
