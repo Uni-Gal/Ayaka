@@ -14,6 +14,10 @@
       "all": false,
       "window": {
         "all": true
+      },
+      "dialog": {
+        "all": false,
+        "open": true
       }
     },
     "bundle": {

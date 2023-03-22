@@ -16,14 +16,16 @@ use flexi_logger::{FileSpec, LogSpecification, Logger};
 use serde::{Deserialize, Serialize};
 use settings::*;
 use std::{
+    borrow::Cow,
     collections::{HashMap, HashSet},
     fmt::Display,
     net::TcpListener,
+    path::PathBuf,
     pin::pin,
 };
 use tauri::{
-    async_runtime::RwLock, command, utils::config::AppUrl, AppHandle, Manager, PathResolver, State,
-    WindowUrl,
+    api::dialog::blocking::FileDialogBuilder, async_runtime::RwLock, command,
+    utils::config::AppUrl, AppHandle, Manager, PathResolver, State, WindowUrl,
 };
 
 type CommandResult<T> = Result<T, CommandError>;
@@ -53,13 +55,13 @@ fn ayaka_version() -> &'static str {
 }
 
 struct Storage {
-    config: Vec<String>,
+    config: Vec<PathBuf>,
     dist_port: u16,
     model: RwLock<GameViewModel<FileSettingsManager>>,
 }
 
 impl Storage {
-    pub fn new(resolver: &PathResolver, config: Vec<String>, dist_port: u16) -> Self {
+    pub fn new(resolver: &PathResolver, config: Vec<PathBuf>, dist_port: u16) -> Self {
         let manager = FileSettingsManager::new(resolver);
         Self {
             config,
@@ -93,10 +95,19 @@ fn dist_port(storage: State<Storage>) -> u16 {
 
 #[command]
 async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
-    let config = &storage.config;
+    let config = if storage.config.is_empty() {
+        Cow::Owned(
+            FileDialogBuilder::new()
+                .add_filter("Ayaka package", &["ayapack"])
+                .pick_files()
+                .unwrap_or_default(),
+        )
+    } else {
+        Cow::Borrowed(&storage.config)
+    };
     let mut model = storage.model.write().await;
     {
-        let context = model.open_game(config, FrontendType::Html);
+        let context = model.open_game(&config, FrontendType::Html);
         let mut context = pin!(context);
         while let Some(status) = context.next().await {
             handle.emit_all("ayaka://open_status", status)?;
@@ -291,11 +302,11 @@ pub fn run() -> Result<()> {
 
             let matches = app.get_cli_matches()?;
             let config = match &matches.args["config"].value {
-                Value::String(s) => vec![s.to_string()],
+                Value::String(s) => vec![PathBuf::from(s)],
                 Value::Array(arr) => arr
                     .iter()
                     .filter_map(|v| v.as_str())
-                    .map(|s| s.to_string())
+                    .map(PathBuf::from)
                     .collect::<Vec<_>>(),
                 _ => {
                     let current = std::env::current_exe()?;
@@ -313,13 +324,13 @@ pub fn run() -> Result<()> {
                                 .filter(|p| p.exists()),
                         );
                     } else {
-                        paths.push(current.join("config.yaml"));
+                        let current_config = current.join("config.yaml");
+                        if current_config.exists() {
+                            paths.push(current_config);
+                        }
                     }
 
                     paths
-                        .into_iter()
-                        .map(|p| p.to_string_lossy().into_owned())
-                        .collect()
                 }
             };
             app.manage(Storage::new(&resolver, config, port));
