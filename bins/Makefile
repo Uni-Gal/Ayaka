@@ -22,3 +22,9 @@ run-gui:
 	cd ayaka-gui && $(MAKE) run FILE='$(FILE)'
 run-latex:
 	cargo run --package ayaka-latex -- $(FILE) -o $(TEXOUT)
+
+.PHONY: run-android run-ios
+run-android:
+	cd ayaka-gui && $(MAKE) run-android
+run-ios:
+	cd ayaka-gui && $(MAKE) run-ios

@@ -13,10 +13,18 @@ run: node_modules
 dist: node_modules
 	npm run build
 
-build_android: dist
+build-android: dist
 	cargo tauri android build
 	rm -r src-tauri/.cargo
 
-build_ios: dist
+build-ios: dist
 	cargo tauri ios build
+	rm -r src-tauri/.cargo
+
+run-android: node_modules
+	cargo tauri android dev
+	rm -r src-tauri/.cargo
+
+run-ios: node_modules
+	cargo tauri ios dev
 	rm -r src-tauri/.cargo
