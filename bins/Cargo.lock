@@ -1059,6 +1059,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "file-picker-ios"
+version = "0.1.0"
+dependencies = [
+ "cc",
+ "objc",
+ "stable_deref_trait",
+ "tokio",
+ "tokio-stream",
+]
+
+[[package]]
 name = "filetime"
 version = "0.2.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3924,6 +3935,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "tokio-stream"
+version = "0.1.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8fb52b74f05dbf495a8fba459fdc331812b96aa086d9eb78101fa0d4569c3313"
+dependencies = [
+ "futures-core",
+ "pin-project-lite",
+ "tokio",
+ "tokio-util",
 ]
 
 [[package]]

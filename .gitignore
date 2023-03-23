@@ -4,5 +4,6 @@
 .vscode
 .cache
 .clangd
+compile_flags.txt
 .vs
 .DS_Store
