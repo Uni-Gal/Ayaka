@@ -53,4 +53,10 @@ $(eval $(foreach ex,$(EXAMPLES),$(call example-tpl,$(ex))))
 %.pdf: %.tex
 	cd $(dir $<) && latexmk -lualatex $(notdir $<)
 
+.PHONY: example-android example-ios
+example-android:
+	cd bins && $(MAKE) run-android
+example-ios:
+	cd bins && $(MAKE) run-ios
+
 .SECONDARY:

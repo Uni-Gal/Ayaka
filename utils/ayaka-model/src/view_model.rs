@@ -77,23 +77,23 @@ impl<M: SettingsManager> GameViewModel<M> {
         frontend_type: FrontendType,
     ) -> impl Future<Output = Result<()>> + Stream<Item = OpenGameStatus> + 'a {
         let context = Context::open(paths, frontend_type);
-        self.open_game_impl(context, frontend_type)
+        self.open_game_impl(context)
     }
 
+    /// Open the game with paths and frontend type.
     pub fn open_game_vfs<'a>(
         &'a mut self,
         paths: &'a [VfsPath],
         frontend_type: FrontendType,
     ) -> impl Future<Output = Result<()>> + Stream<Item = OpenGameStatus> + 'a {
         let context = Context::open_vfs(paths, frontend_type);
-        self.open_game_impl(context, frontend_type)
+        self.open_game_impl(context)
     }
 
     #[stream(OpenGameStatus, lifetime = 'a)]
     async fn open_game_impl<'a>(
         &'a mut self,
         context: impl Future<Output = Result<Context>> + Stream<Item = OpenStatus> + 'a,
-        frontend_type: FrontendType,
     ) -> Result<()> {
         let mut context = pin!(context);
         while let Some(status) = context.next().await {

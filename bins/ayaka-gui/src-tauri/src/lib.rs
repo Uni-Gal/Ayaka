@@ -11,7 +11,7 @@ mod mobile;
 
 use ayaka_model::{
     anyhow::{self, Result},
-    vfs::{VfsPath, VfsResult},
+    vfs::VfsPath,
     *,
 };
 use flexi_logger::{FileSpec, LogSpecification, Logger};
@@ -96,30 +96,33 @@ fn dist_port(storage: State<Storage>) -> u16 {
 }
 
 #[cfg(desktop)]
-async fn show_pick_files(window: &Window) -> VfsResult<Vec<VfsPath>> {
+async fn show_pick_files(window: &Window) -> Result<Vec<VfsPath>> {
     tauri::api::dialog::blocking::FileDialogBuilder::new()
         .add_filter("Ayaka package", &["ayapack"])
         .set_parent(&window)
         .pick_files()
         .unwrap_or_default()
         .into_iter()
-        .map(|p| TarFS::new_mmap(p).map(VfsPath::from))
+        .map(|p| {
+            TarFS::new_mmap(p)
+                .map(VfsPath::from)
+                .map_err(anyhow::Error::from)
+        })
         .collect()
 }
 
 #[cfg(target_os = "ios")]
-async fn show_pick_files(window: &Window) -> VfsResult<Vec<VfsPath>> {
-    let (tx, rx) = tauri::async_runtime::channel(1);
-    window.with_webview(|webview| {
-        tauri::async_runtime::spawn(async {
-            let picked = file_picker_ios::pick_files(window.view_controller(), &["ayapack"]);
+async fn show_pick_files(window: &Window) -> Result<Vec<VfsPath>> {
+    let (tx, mut rx) = tauri::async_runtime::channel(1);
+    window.with_webview(move |webview| {
+        let picked = file_picker_ios::pick_files(webview.view_controller(), &["ayapack"]);
+        tauri::async_runtime::spawn(async move {
             let mut picked = pin!(picked);
             while let Some(file) = picked.next().await {
-                tx.send(file).await?;
+                tx.send(file).await.ok();
             }
-            Ok(())
         });
-    });
+    })?;
     let mut paths = vec![];
     while let Some(file) = rx.recv().await {
         paths.push(VfsPath::from(TarFS::new(file)?));
@@ -128,7 +131,7 @@ async fn show_pick_files(window: &Window) -> VfsResult<Vec<VfsPath>> {
 }
 
 #[cfg(target_os = "android")]
-async fn show_pick_files(_window: &Window) -> VfsResult<Vec<VfsPath>> {
+async fn show_pick_files(_window: &Window) -> Result<Vec<VfsPath>> {
     Ok(vec![])
 }
 

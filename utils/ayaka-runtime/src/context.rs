@@ -92,6 +92,7 @@ impl Context {
         context.await
     }
 
+    /// Open a config file with frontend type.
     pub fn open_vfs<'a>(
         paths: &'a [VfsPath],
         frontend: FrontendType,

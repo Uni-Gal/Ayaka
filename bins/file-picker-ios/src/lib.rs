@@ -2,6 +2,7 @@ use objc::{rc::StrongPtr, runtime::Object, *};
 use stable_deref_trait::{CloneStableDeref, StableDeref};
 use std::{
     ffi::{c_char, c_void, CString},
+    fmt::Debug,
     ops::Deref,
 };
 use tokio::sync::watch;
@@ -37,6 +38,14 @@ impl Deref for FileHandle {
     }
 }
 
+impl Debug for FileHandle {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("FileHandle")
+            .field(&(*self.0 as *mut ()))
+            .finish()
+    }
+}
+
 // SAFETY: Apple
 unsafe impl Send for FileHandle {}
 unsafe impl Sync for FileHandle {}
@@ -54,7 +63,10 @@ unsafe extern "C" fn pick_files_closure(data: *mut Object, closure_data: *mut c_
     }
 }
 
-pub fn pick_files(controller: *mut Object, extensions: &[&str]) -> impl Stream<Item = FileHandle> {
+pub fn pick_files(
+    controller: *mut Object,
+    extensions: &[&str],
+) -> impl Stream<Item = FileHandle> + Send + Sync {
     let extensions = extensions
         .iter()
         .map(|s| CString::new(*s).unwrap())
