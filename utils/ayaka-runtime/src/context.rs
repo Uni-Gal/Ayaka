@@ -6,8 +6,8 @@ use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::*;
 use fallback::Fallback;
 use log::error;
-use std::{collections::HashMap, future::Future, path::Path, pin::pin, sync::Arc};
-use stream_future::{stream, Stream};
+use std::{collections::HashMap, path::Path, pin::pin, sync::Arc};
+use stream_future::stream;
 use trylog::macros::*;
 use vfs::*;
 use vfs_tar::TarFS;
@@ -93,11 +93,17 @@ impl Context {
     }
 
     /// Open a config file with frontend type.
-    pub fn open_vfs<'a>(
-        paths: &'a [VfsPath],
-        frontend: FrontendType,
-    ) -> impl Future<Output = Result<Self>> + Stream<Item = OpenStatus> + 'a {
-        Self::open_impl(OverlayFS::new(paths).into(), "config.yaml", frontend)
+    #[stream(OpenStatus, lifetime = 'a)]
+    pub async fn open_vfs<'a>(paths: &'a [VfsPath], frontend: FrontendType) -> Result<Self> {
+        if paths.is_empty() {
+            bail!("At least one path should be input.");
+        }
+        let context = Self::open_impl(OverlayFS::new(paths).into(), "config.yaml", frontend);
+        let mut context = pin!(context);
+        while let Some(status) = context.next().await {
+            yield status;
+        }
+        context.await
     }
 
     #[stream(OpenStatus, lifetime = 'a)]

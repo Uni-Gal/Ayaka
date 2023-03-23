@@ -39,10 +39,12 @@
 }
 @end
 
-void show_browser(__unsafe_unretained UIViewController *controller,
-                  const char *const *const extensions, const size_t types_len,
-                  const bool allow_multiple, void (*closure)(id, void *),
-                  void *closure_data) {
+FilePickerDelegate *
+show_browser(UIViewController *__unsafe_unretained controller,
+             const char *const *const extensions, const size_t types_len,
+             const bool allow_multiple,
+             void (*closure)(NSData *__unsafe_unretained, void *),
+             void *closure_data) {
   NSMutableArray<UTType *> *types =
       [NSMutableArray arrayWithCapacity:types_len];
   for (size_t i = 0; i < types_len; i++) {
@@ -63,4 +65,6 @@ void show_browser(__unsafe_unretained UIViewController *controller,
   browser.delegate = delegate;
 
   [controller presentViewController:browser animated:YES completion:nil];
+
+  return delegate;
 }

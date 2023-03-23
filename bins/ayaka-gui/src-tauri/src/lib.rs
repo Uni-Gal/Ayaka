@@ -113,18 +113,14 @@ async fn show_pick_files(window: &Window) -> Result<Vec<VfsPath>> {
 
 #[cfg(target_os = "ios")]
 async fn show_pick_files(window: &Window) -> Result<Vec<VfsPath>> {
-    let (tx, mut rx) = tauri::async_runtime::channel(1);
+    let (tx, rx) = tokio::sync::oneshot::channel();
     window.with_webview(move |webview| {
         let picked = file_picker_ios::pick_files(webview.view_controller(), &["ayapack"]);
-        tauri::async_runtime::spawn(async move {
-            let mut picked = pin!(picked);
-            while let Some(file) = picked.next().await {
-                tx.send(file).await.ok();
-            }
-        });
+        tx.send(picked).ok();
     })?;
+    let mut picked = rx.await?;
     let mut paths = vec![];
-    while let Some(file) = rx.recv().await {
+    while let Some(file) = picked.next().await {
         paths.push(VfsPath::from(TarFS::new(file)?));
     }
     Ok(paths)

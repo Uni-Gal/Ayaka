@@ -190,6 +190,7 @@ dependencies = [
  "tauri",
  "tauri-build",
  "tauri-plugin-window-state",
+ "tokio",
  "tower-http",
  "vfs-tar",
 ]
@@ -1066,6 +1067,7 @@ version = "0.1.0"
 dependencies = [
  "cc",
  "objc",
+ "pin-project",
  "stable_deref_trait",
  "tokio",
  "tokio-stream",
