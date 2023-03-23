@@ -17,7 +17,7 @@
 
 - (instancetype)initWithClosure:(void (^)(NSData *))c {
   if ([self init]) {
-    self.closure = closure;
+    self.closure = c;
   }
   return self;
 }
