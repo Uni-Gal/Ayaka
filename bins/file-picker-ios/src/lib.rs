@@ -1,4 +1,4 @@
-use objc::{rc::StrongPtr, runtime::Object, *};
+use objc::{rc::StrongPtr, runtime::Object};
 use pin_project::pin_project;
 use stable_deref_trait::{CloneStableDeref, StableDeref};
 use std::{
@@ -19,46 +19,34 @@ extern "C" {
         extensions: *const *const c_char,
         types_len: usize,
         allow_multiple: bool,
-        closure: unsafe extern "C" fn(*mut Object, *mut c_void),
+        closure: unsafe extern "C" fn(*const c_void, usize, *mut c_void),
         closure_data: *mut c_void,
     ) -> *mut Object;
 }
 
-#[derive(Clone)]
-pub struct FileHandle(StrongPtr);
+#[derive(Debug, Clone)]
+pub struct FileHandle(Vec<u8>);
 
 impl Deref for FileHandle {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
-        unsafe {
-            let bytes: *const c_void = msg_send![*self.0, bytes];
-            let length: usize = msg_send![*self.0, length];
-            std::slice::from_raw_parts(bytes as *const u8, length)
-        }
+        self.0.deref()
     }
 }
 
-impl Debug for FileHandle {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("FileHandle")
-            .field(&(*self.0 as *mut ()))
-            .finish()
-    }
-}
-
-// SAFETY: Apple
-unsafe impl Send for FileHandle {}
-unsafe impl Sync for FileHandle {}
-
-// SAFETY: NSData
+// SAFETY: Vec
 unsafe impl StableDeref for FileHandle {}
 unsafe impl CloneStableDeref for FileHandle {}
 
-unsafe extern "C" fn pick_files_closure(data: *mut Object, closure_data: *mut c_void) {
+unsafe extern "C" fn pick_files_closure(
+    data: *const c_void,
+    len: usize,
+    closure_data: *mut c_void,
+) {
     let sender = Box::from_raw(closure_data as *mut watch::Sender<Option<FileHandle>>);
     if !data.is_null() {
-        let file_handle = FileHandle(StrongPtr::retain(data));
+        let file_handle = FileHandle(std::slice::from_raw_parts(data as *const u8, len).to_vec());
         sender.send(Some(file_handle)).ok();
         std::mem::forget(sender);
     }

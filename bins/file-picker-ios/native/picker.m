@@ -43,7 +43,7 @@ FilePickerDelegate *
 show_browser(UIViewController *__unsafe_unretained controller,
              const char *const *const extensions, const size_t types_len,
              const bool allow_multiple,
-             void (*closure)(NSData *__unsafe_unretained, void *),
+             void (*closure)(const void *, size_t, void *),
              void *closure_data) {
   NSMutableArray<UTType *> *types =
       [NSMutableArray arrayWithCapacity:types_len];
@@ -60,7 +60,11 @@ show_browser(UIViewController *__unsafe_unretained controller,
 
   FilePickerDelegate *delegate =
       [[FilePickerDelegate alloc] initWithClosure:^(NSData *data) {
-        closure(data, closure_data);
+        if (data) {
+          closure([data bytes], [data length], closure_data);
+        } else {
+          closure(NULL, 0, closure_data);
+        }
       }];
   browser.delegate = delegate;
 
