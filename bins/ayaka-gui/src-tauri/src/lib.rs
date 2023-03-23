@@ -118,11 +118,15 @@ async fn show_pick_files(window: &Window) -> Result<Vec<VfsPath>> {
         let picked = file_picker_ios::pick_files(webview.view_controller(), &["ayapack"]);
         tx.send(picked).ok();
     })?;
-    let mut picked = rx.await?;
-    let mut paths = vec![];
-    while let Some(file) = picked.next().await {
-        paths.push(VfsPath::from(TarFS::new(file)?));
-    }
+    let picked = rx.await?;
+    let paths = picked
+        .map(|file| {
+            TarFS::new(file)
+                .map(VfsPath::from)
+                .map_err(anyhow::Error::from)
+        })
+        .try_collect::<Vec<_>>()
+        .await?;
     Ok(paths)
 }
 
