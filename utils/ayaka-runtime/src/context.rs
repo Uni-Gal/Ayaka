@@ -6,8 +6,8 @@ use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::*;
 use fallback::Fallback;
 use log::error;
-use std::{collections::HashMap, path::Path, pin::pin, sync::Arc};
-use stream_future::stream;
+use std::{collections::HashMap, future::Future, path::Path, pin::pin, sync::Arc};
+use stream_future::{stream, Stream};
 use trylog::macros::*;
 use vfs::*;
 use vfs_tar::TarFS;
@@ -60,7 +60,6 @@ impl Context {
         if paths.is_empty() {
             bail!("At least one path should be input.");
         }
-        yield OpenStatus::LoadProfile;
         let (root_path, filename) = if paths.len() == 1 {
             let path = paths[0].as_ref();
             let ext = path.extension().unwrap_or_default();
@@ -73,7 +72,7 @@ impl Context {
                     path.file_name().unwrap_or_default().to_string_lossy(),
                 )
             } else if ext == "ayapack" {
-                (TarFS::new(path)?.into(), "config.yaml".into())
+                (TarFS::new_mmap(path)?.into(), "config.yaml".into())
             } else {
                 bail!("Cannot determine filesystem.")
             }
@@ -81,10 +80,32 @@ impl Context {
             let files = paths
                 .iter()
                 .rev()
-                .map(|path| TarFS::new(path.as_ref()).map(VfsPath::from))
+                .map(|path| TarFS::new_mmap(path.as_ref()).map(VfsPath::from))
                 .collect::<Result<Vec<_>, _>>()?;
             (OverlayFS::new(&files).into(), "config.yaml".into())
         };
+        let context = Self::open_impl(root_path, &filename, frontend);
+        let mut context = pin!(context);
+        while let Some(status) = context.next().await {
+            yield status;
+        }
+        context.await
+    }
+
+    pub fn open_vfs<'a>(
+        paths: &'a [VfsPath],
+        frontend: FrontendType,
+    ) -> impl Future<Output = Result<Self>> + Stream<Item = OpenStatus> + 'a {
+        Self::open_impl(OverlayFS::new(paths).into(), "config.yaml", frontend)
+    }
+
+    #[stream(OpenStatus, lifetime = 'a)]
+    async fn open_impl<'a>(
+        root_path: VfsPath,
+        filename: &'a str,
+        frontend: FrontendType,
+    ) -> Result<Self> {
+        yield OpenStatus::LoadProfile;
         let file = root_path.join(&filename)?.open_file()?;
         let mut config: GameConfig = serde_yaml::from_reader(file)?;
         let runtime = {

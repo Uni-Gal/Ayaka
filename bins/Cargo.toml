@@ -1,10 +1,5 @@
 [workspace]
-members = [
-    "ayaka-check",
-    "ayaka-gui/src-tauri",
-    "ayaka-latex",
-    "file-picker-ios",
-]
+members = ["ayaka-check", "ayaka-gui/src-tauri", "ayaka-latex"]
 
 resolver = "2"
 

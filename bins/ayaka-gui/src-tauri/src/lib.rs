@@ -11,13 +11,13 @@ mod mobile;
 
 use ayaka_model::{
     anyhow::{self, Result},
+    vfs::{VfsPath, VfsResult},
     *,
 };
 use flexi_logger::{FileSpec, LogSpecification, Logger};
 use serde::{Deserialize, Serialize};
 use settings::*;
 use std::{
-    borrow::Cow,
     collections::{HashMap, HashSet},
     fmt::Display,
     net::TcpListener,
@@ -26,8 +26,9 @@ use std::{
 };
 use tauri::{
     async_runtime::RwLock, command, utils::config::AppUrl, AppHandle, Manager, PathResolver, State,
-    WindowUrl,
+    Window, WindowUrl,
 };
+use vfs_tar::TarFS;
 
 type CommandResult<T> = Result<T, CommandError>;
 
@@ -95,35 +96,64 @@ fn dist_port(storage: State<Storage>) -> u16 {
 }
 
 #[cfg(desktop)]
-fn show_pick_files(handle: &AppHandle) -> Vec<PathBuf> {
+async fn show_pick_files(window: &Window) -> VfsResult<Vec<VfsPath>> {
     tauri::api::dialog::blocking::FileDialogBuilder::new()
         .add_filter("Ayaka package", &["ayapack"])
-        .set_parent(&handle.get_window("main").expect("cannot get main window"))
+        .set_parent(&window)
         .pick_files()
         .unwrap_or_default()
+        .into_iter()
+        .map(|p| TarFS::new_mmap(p).map(VfsPath::from))
+        .collect()
 }
 
-#[cfg(mobile)]
-fn show_pick_files(_handle: &AppHandle) -> Vec<PathBuf> {
-    vec![]
+#[cfg(target_os = "ios")]
+async fn show_pick_files(window: &Window) -> VfsResult<Vec<VfsPath>> {
+    let (tx, rx) = tauri::async_runtime::channel(1);
+    window.with_webview(|webview| {
+        tauri::async_runtime::spawn(async {
+            let picked = file_picker_ios::pick_files(window.view_controller(), &["ayapack"]);
+            let mut picked = pin!(picked);
+            while let Some(file) = picked.next().await {
+                tx.send(file).await?;
+            }
+            Ok(())
+        });
+    });
+    let mut paths = vec![];
+    while let Some(file) = rx.recv().await {
+        paths.push(VfsPath::from(TarFS::new(file)?));
+    }
+    Ok(paths)
+}
+
+#[cfg(target_os = "android")]
+async fn show_pick_files(_window: &Window) -> VfsResult<Vec<VfsPath>> {
+    Ok(vec![])
 }
 
 #[command]
 async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
-    let config = if storage.config.is_empty() {
-        Cow::Owned(show_pick_files(&handle))
-    } else {
-        Cow::Borrowed(&storage.config)
-    };
+    let window = handle.get_window("main").expect("cannot get main window");
+
+    const OPEN_STATUS_EVENT: &str = "ayaka://open_status";
     let mut model = storage.model.write().await;
-    {
-        let context = model.open_game(&config, FrontendType::Html);
+    if storage.config.is_empty() {
+        let files = show_pick_files(&window).await?;
+        let context = model.open_game_vfs(&files, FrontendType::Html);
         let mut context = pin!(context);
         while let Some(status) = context.next().await {
-            handle.emit_all("ayaka://open_status", status)?;
+            handle.emit_all(OPEN_STATUS_EVENT, status)?;
         }
         context.await?;
-    }
+    } else {
+        let context = model.open_game(&storage.config, FrontendType::Html);
+        let mut context = pin!(context);
+        while let Some(status) = context.next().await {
+            handle.emit_all(OPEN_STATUS_EVENT, status)?;
+        }
+        context.await?;
+    };
 
     asset_resolver::ROOT_PATH
         .set(model.context().root_path().clone())
@@ -131,7 +161,6 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
 
     #[cfg(desktop)]
     {
-        let window = handle.get_window("main").expect("cannot get main window");
         window.set_title(&model.context().game().config.title)?;
     }
 

@@ -1,8 +1,8 @@
-use crate::*;
+use crate::{vfs::VfsPath, *};
 use anyhow::Result;
 use serde::Serialize;
-use std::{path::Path, pin::pin};
-use stream_future::stream;
+use std::{future::Future, path::Path, pin::pin};
+use stream_future::{stream, Stream};
 use trylog::macros::*;
 
 /// The status when calling [`GameViewModel::open_game`].
@@ -71,13 +71,30 @@ impl<M: SettingsManager> GameViewModel<M> {
     }
 
     /// Open the game with paths and frontend type.
-    #[stream(OpenGameStatus, lifetime = 'a)]
-    pub async fn open_game<'a>(
+    pub fn open_game<'a>(
         &'a mut self,
         paths: &'a [impl AsRef<Path>],
         frontend_type: FrontendType,
-    ) -> Result<()> {
+    ) -> impl Future<Output = Result<()>> + Stream<Item = OpenGameStatus> + 'a {
         let context = Context::open(paths, frontend_type);
+        self.open_game_impl(context, frontend_type)
+    }
+
+    pub fn open_game_vfs<'a>(
+        &'a mut self,
+        paths: &'a [VfsPath],
+        frontend_type: FrontendType,
+    ) -> impl Future<Output = Result<()>> + Stream<Item = OpenGameStatus> + 'a {
+        let context = Context::open_vfs(paths, frontend_type);
+        self.open_game_impl(context, frontend_type)
+    }
+
+    #[stream(OpenGameStatus, lifetime = 'a)]
+    async fn open_game_impl<'a>(
+        &'a mut self,
+        context: impl Future<Output = Result<Context>> + Stream<Item = OpenStatus> + 'a,
+        frontend_type: FrontendType,
+    ) -> Result<()> {
         let mut context = pin!(context);
         while let Some(status) = context.next().await {
             yield status.into();
