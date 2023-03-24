@@ -6,6 +6,7 @@ use std::{
     fmt::Debug,
     ops::Deref,
     pin::{pin, Pin},
+    sync::Arc,
     task::{Context, Poll},
 };
 use tokio::sync::watch;
@@ -25,7 +26,7 @@ extern "C" {
 }
 
 #[derive(Debug, Clone)]
-pub struct FileHandle(Vec<u8>);
+pub struct FileHandle(Arc<[u8]>);
 
 impl Deref for FileHandle {
     type Target = [u8];
@@ -46,7 +47,7 @@ unsafe extern "C" fn pick_files_closure(
 ) {
     let sender = Box::from_raw(closure_data as *mut watch::Sender<Option<FileHandle>>);
     if !data.is_null() {
-        let file_handle = FileHandle(std::slice::from_raw_parts(data as *const u8, len).to_vec());
+        let file_handle = FileHandle(std::slice::from_raw_parts(data as *const u8, len).into());
         sender.send(Some(file_handle)).ok();
         std::mem::forget(sender);
     }
