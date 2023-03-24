@@ -1064,6 +1064,7 @@ dependencies = [
 [[package]]
 name = "file-picker-ios"
 version = "0.1.0"
+source = "git+https://github.com/Berrysoft/file-picker-ios.git#50b561ca8ff33c69b024d8fd33bd000f5e45e968"
 dependencies = [
  "cc",
  "objc",

@@ -1,6 +1,5 @@
 [workspace]
 members = ["ayaka-check", "ayaka-gui/src-tauri", "ayaka-latex"]
-exclude = ["file-picked-ios"]
 
 resolver = "2"
 

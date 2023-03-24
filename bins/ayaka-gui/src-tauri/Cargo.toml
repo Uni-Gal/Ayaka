@@ -36,7 +36,7 @@ vfs-tar = { version = "0.4", features = ["mmap"] }
 tauri-plugin-window-state = { git = "https://github.com/tauri-apps/plugins-workspace.git", branch = "next" }
 
 [target.'cfg(target_os = "ios")'.dependencies]
-file-picker-ios = { path = "../../file-picker-ios" }
+file-picker-ios = { git = "https://github.com/Berrysoft/file-picker-ios.git" }
 
 [features]
 default = ["custom-protocol"]
