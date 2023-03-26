@@ -9,7 +9,7 @@ export async function init(): Promise<void> {
 
 export function conv_src(path?: string): string | undefined {
     if (path) {
-        return decodeURIComponent(`//127.0.0.1:${DIST_PORT}/fs${path}`)
+        return decodeURIComponent(`http://127.0.0.1:${DIST_PORT}/fs${path}`)
     }
     return undefined
 }
