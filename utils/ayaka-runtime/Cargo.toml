@@ -27,7 +27,7 @@ log = { workspace = true }
 trylog = { workspace = true }
 cfg-if = "1.0"
 vfs = { workspace = true }
-vfs-tar = "0.3"
+vfs-tar = "0.4"
 rand = "0.8"
 slab = "0.4"
 
