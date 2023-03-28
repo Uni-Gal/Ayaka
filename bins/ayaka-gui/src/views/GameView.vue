@@ -3,7 +3,7 @@ import { setTimeout } from 'timers-promises'
 import { Mutex, tryAcquire } from 'async-mutex'
 import ActionCard from '../components/ActionCard.vue'
 import IconButton from '../components/IconButton.vue'
-import { conv_src, current_run, current_action, current_title, next_run, next_back_run, switch_, merge_lines, RawContext, ActionType, ActionText, CustomVars, Switch, ActionLineType, ActionLine, current_visited, get_settings } from '../interop'
+import { conv_src, current_run, current_action, current_title, next_run, next_back_run, switch_, merge_lines, RawContext, ActionType, ActionText, CustomVars, Switch, ActionLineType, ActionLine, current_visited, get_settings, save_all } from '../interop'
 import { cloneDeep } from 'lodash'
 import Live2D from '../components/Live2D.vue'
 import { Modal } from 'bootstrap'
@@ -69,6 +69,7 @@ export default {
             modal.show()
         },
         async go_home_direct() {
+            await save_all()
             await this.$router.replace("/home")
         },
         // Should be called in mutex
