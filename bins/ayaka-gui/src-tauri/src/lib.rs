@@ -97,7 +97,7 @@ fn dist_port(storage: State<Storage>) -> u16 {
 }
 
 #[cfg(desktop)]
-async fn show_pick_files(window: &Window) -> Result<Vec<VfsPath>> {
+async fn show_pick_files(_handle: &AppHandle, window: &Window) -> Result<Vec<VfsPath>> {
     tauri::api::dialog::blocking::FileDialogBuilder::new()
         .add_filter("Ayaka package", &["ayapack"])
         .set_parent(&window)
@@ -113,7 +113,7 @@ async fn show_pick_files(window: &Window) -> Result<Vec<VfsPath>> {
 }
 
 #[cfg(target_os = "ios")]
-async fn show_pick_files(window: &Window) -> Result<Vec<VfsPath>> {
+async fn show_pick_files(_handle: &AppHandle, window: &Window) -> Result<Vec<VfsPath>> {
     let (tx, rx) = tokio::sync::oneshot::channel();
     window.with_webview(move |webview| {
         let picked = file_picker_ios::pick_files(webview.view_controller(), &["ayapack"]);
@@ -132,8 +132,17 @@ async fn show_pick_files(window: &Window) -> Result<Vec<VfsPath>> {
 }
 
 #[cfg(target_os = "android")]
-async fn show_pick_files(_window: &Window) -> Result<Vec<VfsPath>> {
-    Ok(vec![])
+async fn show_pick_files(handle: &AppHandle, _window: &Window) -> Result<Vec<VfsPath>> {
+    handle
+        .state::<file_picker_android::PickerPlugin<tauri::Wry>>()
+        .pick_files()?
+        .into_iter()
+        .map(|p| {
+            TarFS::new_mmap(p)
+                .map(VfsPath::from)
+                .map_err(anyhow::Error::from)
+        })
+        .collect()
 }
 
 #[command]
@@ -143,7 +152,7 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
     const OPEN_STATUS_EVENT: &str = "ayaka://open_status";
     let mut model = storage.model.write().await;
     if storage.config.is_empty() {
-        let files = show_pick_files(&window).await?;
+        let files = show_pick_files(&handle, &window).await?;
         let context = model.open_game_vfs(&files, FrontendType::Html);
         let mut context = pin!(context);
         while let Some(status) = context.next().await {
@@ -314,6 +323,8 @@ pub fn run() -> Result<()> {
     let builder = tauri::Builder::default().plugin(asset_resolver::init(listener));
     #[cfg(desktop)]
     let builder = builder.plugin(tauri_plugin_window_state::Builder::default().build());
+    #[cfg(target_os = "android")]
+    let builder = builder.plugin(file_picker_android::init());
     builder
         .setup(move |app| {
             let resolver = DirResolver::new(app);

@@ -40,6 +40,7 @@ file-picker-ios = { git = "https://github.com/Berrysoft/file-picker-ios.git" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 android_logger = "0.13"
+file-picker-android = { git = "https://github.com/Berrysoft/file-picker-android.git" }
 
 [features]
 default = ["custom-protocol"]
