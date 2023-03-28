@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { conv_src, info, next_run, start_new } from '../interop'
+import { platform, Platform } from '@tauri-apps/api/os'
 </script>
 
 <script lang="ts">
@@ -9,12 +10,14 @@ export default {
         return {
             title: "",
             bg: undefined as string | undefined,
+            os: "win32" as Platform
         }
     },
     async created() {
         const res = await info()
         this.title = res.title
         this.bg = conv_src(res.props.bg)
+        this.os = await platform()
     },
     methods: {
         async new_game() {
@@ -37,7 +40,8 @@ export default {
             <router-link class="btn btn-primary" to="/records/load">{{ $t("loadRecords") }}</router-link>
             <router-link class="btn btn-primary" to="/settings">{{ $t("settings") }}</router-link>
             <router-link class="btn btn-primary" to="/about">{{ $t("about") }}</router-link>
-            <button class="btn btn-primary" @click="$emit('quit')">{{ $t("quit") }}</button>
+            <button v-if='os != "ios" && os != "android"' class="btn btn-primary" @click="$emit('quit')">{{
+                $t("quit") }}</button>
         </div>
     </div>
 </template>

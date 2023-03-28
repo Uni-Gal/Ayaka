@@ -18,6 +18,9 @@
       "dialog": {
         "all": false,
         "open": true
+      },
+      "os": {
+        "all": true
       }
     },
     "bundle": {
