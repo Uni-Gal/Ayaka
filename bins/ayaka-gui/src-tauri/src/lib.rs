@@ -4,6 +4,7 @@
 #![allow(incomplete_features)]
 
 mod asset_resolver;
+mod dir_resolver;
 mod settings;
 
 #[cfg(mobile)]
@@ -14,7 +15,7 @@ use ayaka_model::{
     vfs::VfsPath,
     *,
 };
-use flexi_logger::{FileSpec, LogSpecification, Logger};
+use dir_resolver::DirResolver;
 use serde::{Deserialize, Serialize};
 use settings::*;
 use std::{
@@ -25,8 +26,8 @@ use std::{
     pin::pin,
 };
 use tauri::{
-    async_runtime::RwLock, command, utils::config::AppUrl, AppHandle, Manager, PathResolver, State,
-    Window, WindowUrl,
+    async_runtime::RwLock, command, utils::config::AppUrl, AppHandle, Manager, State, Window,
+    WindowUrl,
 };
 use vfs_tar::TarFS;
 
@@ -63,7 +64,7 @@ struct Storage {
 }
 
 impl Storage {
-    pub fn new(resolver: &PathResolver, config: Vec<PathBuf>, dist_port: u16) -> Self {
+    pub fn new(resolver: &DirResolver, config: Vec<PathBuf>, dist_port: u16) -> Self {
         let manager = FileSettingsManager::new(resolver);
         Self {
             config,
@@ -315,25 +316,45 @@ pub fn run() -> Result<()> {
     let builder = builder.plugin(tauri_plugin_window_state::Builder::default().build());
     builder
         .setup(move |app| {
-            let resolver = app.path_resolver();
-            let spec = LogSpecification::parse("warn,ayaka=debug,tower_http=debug")?;
-            let log_handle = if cfg!(debug_assertions) {
-                Logger::with(spec)
-                    .log_to_stdout()
-                    .set_palette("b1;3;2;4;6".to_string())
-                    .use_utc()
-                    .start()?
-            } else {
-                Logger::with(spec)
-                    .log_to_file(
-                        FileSpec::default()
-                            .directory(resolver.app_log_dir().expect("cannot get app log dir"))
-                            .basename("ayaka-gui"),
-                    )
-                    .use_utc()
-                    .start()?
-            };
-            app.manage(log_handle);
+            let resolver = DirResolver::new(app);
+            #[cfg(target_os = "android")]
+            {
+                use android_logger::{Config, FilterBuilder};
+                use log::LevelFilter;
+
+                android_logger::init_once(
+                    Config::default().with_filter(
+                        FilterBuilder::new()
+                            .filter_module("ayaka", LevelFilter::Debug)
+                            .filter_module("tower_http", LevelFilter::Debug)
+                            .filter(None, LevelFilter::Warn)
+                            .build(),
+                    ),
+                );
+            }
+            #[cfg(desktop)]
+            {
+                use flexi_logger::{FileSpec, LogSpecification, Logger};
+
+                let spec = LogSpecification::parse("warn,ayaka=debug,tower_http=debug")?;
+                let log_handle = if cfg!(debug_assertions) {
+                    Logger::with(spec)
+                        .log_to_stdout()
+                        .set_palette("b1;3;2;4;6".to_string())
+                        .use_utc()
+                        .start()?
+                } else {
+                    Logger::with(spec)
+                        .log_to_file(
+                            FileSpec::default()
+                                .directory(resolver.app_log_dir().expect("cannot get app log dir"))
+                                .basename("ayaka-gui"),
+                        )
+                        .use_utc()
+                        .start()?
+                };
+                app.manage(log_handle);
+            }
             #[cfg(debug_assertions)]
             {
                 let window = app.get_window("main").expect("cannot get main window");
