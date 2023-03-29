@@ -15,6 +15,7 @@ use ayaka_model::{
     vfs::VfsPath,
     *,
 };
+use ayaka_plugin_wasmi::{WasmiLinker, WasmiModule};
 use dir_resolver::DirResolver;
 use serde::{Deserialize, Serialize};
 use settings::*;
@@ -60,7 +61,7 @@ fn ayaka_version() -> &'static str {
 struct Storage {
     config: Vec<PathBuf>,
     dist_port: u16,
-    model: RwLock<GameViewModel<FileSettingsManager>>,
+    model: RwLock<GameViewModel<FileSettingsManager, WasmiModule>>,
 }
 
 impl Storage {
@@ -151,16 +152,17 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
 
     const OPEN_STATUS_EVENT: &str = "ayaka://open_status";
     let mut model = storage.model.write().await;
+    let linker = WasmiLinker::new(())?;
     if storage.config.is_empty() {
         let files = show_pick_files(&handle, &window).await?;
-        let context = model.open_game_vfs(&files, FrontendType::Html);
+        let context = model.open_game_vfs(&files, FrontendType::Html, linker);
         let mut context = pin!(context);
         while let Some(status) = context.next().await {
             handle.emit_all(OPEN_STATUS_EVENT, status)?;
         }
         context.await?;
     } else {
-        let context = model.open_game(&storage.config, FrontendType::Html);
+        let context = model.open_game(&storage.config, FrontendType::Html, linker);
         let mut context = pin!(context);
         while let Some(status) = context.next().await {
             handle.emit_all(OPEN_STATUS_EVENT, status)?;
