@@ -51,12 +51,14 @@ impl From<LoadStatus> for OpenStatus {
     }
 }
 
+/// Builder of [`Context`].
 pub struct ContextBuilder<M: RawModule + Send + Sync + 'static> {
     frontend: FrontendType,
     linker: M::Linker,
 }
 
 impl<M: RawModule + Send + Sync + 'static> ContextBuilder<M> {
+    /// Create a new [`ContextBuilder`] with frontend type and plugin runtime linker.
     pub fn new(frontend: FrontendType, linker: M::Linker) -> Self {
         Self { frontend, linker }
     }
@@ -124,6 +126,7 @@ impl<M: RawModule + Send + Sync + 'static> ContextBuilder<M> {
     }
 }
 
+/// Builder of [`Context`].
 pub struct ContextBuilderWithPaths<'a, M: RawModule + Send + Sync + 'static> {
     root_path: VfsPath,
     filename: Cow<'a, str>,
@@ -132,6 +135,7 @@ pub struct ContextBuilderWithPaths<'a, M: RawModule + Send + Sync + 'static> {
 }
 
 impl<'a, M: RawModule + Send + Sync + 'static> ContextBuilderWithPaths<'a, M> {
+    /// Open the config and load the [`Context`].
     pub fn open(self) -> impl Future<Output = Result<Context<M>>> + Stream<Item = OpenStatus> + 'a {
         Context::<M>::open(self.root_path, self.filename, self.frontend, self.linker)
     }
