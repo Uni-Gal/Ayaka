@@ -4,20 +4,21 @@ use crate::{
 };
 use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::*;
+use ayaka_plugin::RawModule;
 use fallback::Fallback;
 use log::error;
-use std::{collections::HashMap, path::Path, pin::pin, sync::Arc};
+use std::{borrow::Cow, collections::HashMap, path::Path, pin::pin, sync::Arc};
 use stream_future::stream;
 use trylog::macros::*;
 use vfs::*;
 use vfs_tar::TarFS;
 
 /// The game running context.
-pub struct Context {
+pub struct Context<M: RawModule + Send + Sync + 'static> {
     game: Game,
     root_path: VfsPath,
     frontend: FrontendType,
-    runtime: Arc<Runtime>,
+    runtime: Arc<Runtime<M>>,
     ctx: RawContext,
     switches: Vec<bool>,
     vars: VarMap,
@@ -49,18 +50,60 @@ impl From<LoadStatus> for OpenStatus {
     }
 }
 
-impl Context {
+impl<M: RawModule + Send + Sync + 'static> Context<M> {
     /// Open a config file with frontend type.
     ///
     /// If the input `paths` contains only one element, it may be a YAML or an FRFS file.
     /// If the input `paths` contains many element, they should all be FRFS files,
     /// and the latter one will override the former one.
     #[stream(OpenStatus, lifetime = 'a)]
-    pub async fn open<'a>(paths: &'a [impl AsRef<Path>], frontend: FrontendType) -> Result<Self> {
+    pub async fn open<'a>(
+        paths: &'a [impl AsRef<Path>],
+        frontend: FrontendType,
+        linker: M::Linker,
+    ) -> Result<Self> {
         if paths.is_empty() {
             bail!("At least one path should be input.");
         }
         yield OpenStatus::LoadProfile;
+        let (root_path, filename) = Self::open_fs_from_paths(paths)?;
+        let file = root_path.join(&filename)?.open_file()?;
+        let mut config: GameConfig = serde_yaml::from_reader(file)?;
+        let runtime = {
+            let runtime = Runtime::load(
+                &config.plugins.dir,
+                &root_path,
+                &config.plugins.modules,
+                linker,
+            );
+            let mut runtime = pin!(runtime);
+            while let Some(load_status) = runtime.next().await {
+                yield load_status.into();
+            }
+            runtime.await?
+        };
+
+        yield OpenStatus::GamePlugin;
+        Self::preprocess_game(&mut config, &runtime)?;
+
+        yield OpenStatus::LoadResource;
+        let res = Self::load_resource(&config, &root_path)?;
+
+        yield OpenStatus::LoadParagraph;
+        let paras = Self::load_paragraph(&config, &root_path)?;
+
+        Ok(Self {
+            game: Game { config, paras, res },
+            root_path,
+            frontend,
+            runtime,
+            ctx: RawContext::default(),
+            switches: vec![],
+            vars: VarMap::default(),
+        })
+    }
+
+    fn open_fs_from_paths(paths: &[impl AsRef<Path>]) -> Result<(VfsPath, Cow<str>)> {
         let (root_path, filename) = if paths.len() == 1 {
             let path = paths[0].as_ref();
             let ext = path.extension().unwrap_or_default();
@@ -85,18 +128,10 @@ impl Context {
                 .collect::<Result<Vec<_>, _>>()?;
             (OverlayFS::new(&files).into(), "config.yaml".into())
         };
-        let file = root_path.join(&filename)?.open_file()?;
-        let mut config: GameConfig = serde_yaml::from_reader(file)?;
-        let runtime = {
-            let runtime = Runtime::load(&config.plugins.dir, &root_path, &config.plugins.modules);
-            let mut runtime = pin!(runtime);
-            while let Some(load_status) = runtime.next().await {
-                yield load_status.into();
-            }
-            runtime.await?
-        };
+        Ok((root_path, filename))
+    }
 
-        yield OpenStatus::GamePlugin;
+    fn preprocess_game(config: &mut GameConfig, runtime: &Runtime<M>) -> Result<()> {
         for module in runtime.game_modules() {
             let ctx = GameProcessContextRef {
                 title: &config.title,
@@ -108,8 +143,13 @@ impl Context {
                 config.props.insert(key, value);
             }
         }
+        Ok(())
+    }
 
-        yield OpenStatus::LoadResource;
+    fn load_resource(
+        config: &GameConfig,
+        root_path: &VfsPath,
+    ) -> Result<HashMap<Locale, HashMap<String, RawValue>>> {
         let mut res = HashMap::new();
         if let Some(res_path) = &config.res {
             let res_path = root_path.join(res_path)?;
@@ -128,8 +168,13 @@ impl Context {
                 }
             }
         }
+        Ok(res)
+    }
 
-        yield OpenStatus::LoadParagraph;
+    fn load_paragraph(
+        config: &GameConfig,
+        root_path: &VfsPath,
+    ) -> Result<HashMap<Locale, HashMap<String, Vec<Paragraph>>>> {
         let mut paras = HashMap::new();
         let paras_path = root_path.join(&config.paras)?;
         for p in paras_path.read_dir()? {
@@ -152,15 +197,7 @@ impl Context {
                 }
             }
         }
-        Ok(Self {
-            game: Game { config, paras, res },
-            root_path,
-            frontend,
-            runtime,
-            ctx: RawContext::default(),
-            switches: vec![],
-            vars: VarMap::default(),
-        })
+        Ok(paras)
     }
 
     /// Initialize the [`RawContext`] at the start of the game.
