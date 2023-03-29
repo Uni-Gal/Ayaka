@@ -2,26 +2,13 @@ use crate::*;
 use anyhow::Result;
 use ayaka_plugin::RawModule;
 use serde::Serialize;
-use std::{future::Future, pin::pin};
-use stream_future::{stream, Stream};
+use stream_future::stream;
 use trylog::macros::*;
 
 /// The status when calling [`GameViewModel::open_game`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 #[serde(tag = "t", content = "data")]
 pub enum OpenGameStatus {
-    /// Start loading config file.
-    LoadProfile,
-    /// Start creating plugin runtime.
-    CreateRuntime,
-    /// Loading the plugin.
-    LoadPlugin(String, usize, usize),
-    /// Executing game plugins.
-    GamePlugin,
-    /// Loading the resources.
-    LoadResource,
-    /// Loading the paragraphs.
-    LoadParagraph,
     /// Loading the settings.
     LoadSettings,
     /// Loading the global records.
@@ -30,19 +17,6 @@ pub enum OpenGameStatus {
     LoadRecords,
     /// The game is loaded.
     Loaded,
-}
-
-impl From<OpenStatus> for OpenGameStatus {
-    fn from(value: OpenStatus) -> Self {
-        match value {
-            OpenStatus::LoadProfile => Self::LoadProfile,
-            OpenStatus::CreateRuntime => Self::CreateRuntime,
-            OpenStatus::LoadPlugin(name, i, len) => Self::LoadPlugin(name, i, len),
-            OpenStatus::GamePlugin => Self::GamePlugin,
-            OpenStatus::LoadResource => Self::LoadResource,
-            OpenStatus::LoadParagraph => Self::LoadParagraph,
-        }
-    }
 }
 
 /// A view model of Ayaka.
@@ -73,16 +47,7 @@ impl<S: SettingsManager, M: RawModule + Send + Sync + 'static> GameViewModel<S, 
 
     /// Open the game with context.
     #[stream(OpenGameStatus, lifetime = 'a)]
-    pub async fn open_game<'a>(
-        &'a mut self,
-        context: impl Future<Output = Result<Context<M>>> + Stream<Item = OpenStatus> + 'a,
-    ) -> Result<()> {
-        let mut context = pin!(context);
-        while let Some(status) = context.next().await {
-            yield status.into();
-        }
-        let context = context.await?;
-
+    pub async fn open_game<'a>(&'a mut self, context: Context<M>) -> Result<()> {
         yield OpenGameStatus::LoadSettings;
         let settings = unwrap_or_default_log!(
             self.settings_manager.load_settings(),

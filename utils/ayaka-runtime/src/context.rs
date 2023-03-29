@@ -6,10 +6,10 @@ use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::*;
 use ayaka_plugin::RawModule;
 use fallback::Fallback;
-use futures_util::Stream;
 use log::error;
+use serde::Serialize;
 use std::{borrow::Cow, collections::HashMap, future::Future, path::Path, pin::pin, sync::Arc};
-use stream_future::stream;
+use stream_future::{stream, Stream};
 use trylog::macros::*;
 use vfs::*;
 use vfs_tar::TarFS;
@@ -26,7 +26,8 @@ pub struct Context<M: RawModule + Send + Sync + 'static> {
 }
 
 /// The open status when creating [`Context`].
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = "t", content = "data")]
 pub enum OpenStatus {
     /// Start loading config file.
     LoadProfile,

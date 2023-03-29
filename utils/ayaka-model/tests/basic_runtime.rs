@@ -7,7 +7,10 @@ const CONFIG_PATH: &str = "tests/basic/config.yaml";
 #[tokio::test(flavor = "current_thread")]
 async fn progress() {
     let linker = WasmiLinker::new(()).unwrap();
-    let mut context = Context::<WasmiModule>::open(&[CONFIG_PATH], FrontendType::Text, linker);
+    let mut context = ContextBuilder::<WasmiModule>::new(FrontendType::Text, linker)
+        .with_paths(&[CONFIG_PATH])
+        .unwrap()
+        .open();
     let progresses = unsafe { Pin::new_unchecked(&mut context) }
         .collect::<Vec<_>>()
         .await;
@@ -27,7 +30,10 @@ async fn progress() {
 #[tokio::test(flavor = "current_thread")]
 async fn config() {
     let linker = WasmiLinker::new(()).unwrap();
-    let context = Context::<WasmiModule>::open(&[CONFIG_PATH], FrontendType::Text, linker)
+    let context = ContextBuilder::<WasmiModule>::new(FrontendType::Text, linker)
+        .with_paths(&[CONFIG_PATH])
+        .unwrap()
+        .open()
         .await
         .unwrap();
     let config = &context.game().config;
@@ -57,7 +63,10 @@ fn paras(mut context: Context<WasmiModule>, loc: Locale, expected_actions: &[Act
 #[tokio::test(flavor = "current_thread")]
 async fn paras_en() {
     let linker = WasmiLinker::new(()).unwrap();
-    let context = Context::<WasmiModule>::open(&[CONFIG_PATH], FrontendType::Text, linker)
+    let context = ContextBuilder::<WasmiModule>::new(FrontendType::Text, linker)
+        .with_paths(&[CONFIG_PATH])
+        .unwrap()
+        .open()
         .await
         .unwrap();
     let loc = locale!("en");
@@ -76,7 +85,10 @@ async fn paras_en() {
 #[tokio::test(flavor = "current_thread")]
 async fn paras_zh() {
     let linker = WasmiLinker::new(()).unwrap();
-    let context = Context::<WasmiModule>::open(&[CONFIG_PATH], FrontendType::Text, linker)
+    let context = ContextBuilder::<WasmiModule>::new(FrontendType::Text, linker)
+        .with_paths(&[CONFIG_PATH])
+        .unwrap()
+        .open()
         .await
         .unwrap();
     let loc = locale!("zh");
