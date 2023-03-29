@@ -1,5 +1,6 @@
 mod writer;
 
+use ayaka_plugin_wasmi::{WasmiLinker, WasmiModule};
 use ayaka_runtime::{anyhow::Result, vfs::VfsPath, *};
 use clap::Parser;
 use flexi_logger::{LogSpecification, Logger};
@@ -30,7 +31,8 @@ async fn main() -> Result<()> {
         .set_palette("b1;3;2;4;6".to_string())
         .use_utc()
         .start()?;
-    let context = Context::open(&opts.input, FrontendType::Latex);
+    let linker = WasmiLinker::new(())?;
+    let context = Context::<WasmiModule>::open(&opts.input, FrontendType::Latex, linker);
     let mut ctx = context.await?;
 
     let output = tokio::fs::File::create(&opts.output).await?;

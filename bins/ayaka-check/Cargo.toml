@@ -10,6 +10,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
+ayaka-plugin-wasmi = { workspace = true }
 ayaka-runtime = { workspace = true }
 tokio = { workspace = true, features = ["macros", "rt"] }
 clap = { workspace = true, features = ["derive"] }

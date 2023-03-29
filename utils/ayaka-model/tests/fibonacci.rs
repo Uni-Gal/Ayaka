@@ -1,4 +1,5 @@
-use ayaka_model::{locale, Action, ActionText, Context, FrontendType, RawValue};
+use ayaka_model::*;
+use ayaka_plugin_wasmi::{WasmiLinker, WasmiModule};
 use std::collections::HashMap;
 
 const CONFIG_PATH: &str = "tests/fibonacci/config.yaml";
@@ -19,7 +20,8 @@ fn custom_default() -> Action {
 
 #[tokio::test(flavor = "current_thread")]
 async fn calculate() {
-    let mut context = Context::open(&[CONFIG_PATH], FrontendType::Text)
+    let linker = WasmiLinker::new(()).unwrap();
+    let mut context = Context::<WasmiModule>::open(&[CONFIG_PATH], FrontendType::Text, linker)
         .await
         .unwrap();
     context.set_start_context();

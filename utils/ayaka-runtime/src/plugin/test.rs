@@ -32,10 +32,14 @@ impl<'a, M: RawModule> ModuleWrapper<'a, M> {
     }
 }
 
-async fn with_ctx<M: RawModule + Send + Sync + 'static>(f: impl FnOnce(&ModuleWrapper<M>)) {
+async fn with_ctx<M: RawModule + Send + Sync + 'static>(f: impl FnOnce(&ModuleWrapper<M>))
+where
+    M::Linker: Linker<M, Config = ()>,
+{
     let root_path =
         vfs::PhysicalFS::new(Path::new(env!("CARGO_MANIFEST_DIR")).join("../../examples")).into();
-    let runtime = Runtime::load("plugins", &root_path, &["ayacript", "random"])
+    let linker = M::Linker::new(()).unwrap();
+    let runtime = Runtime::load("plugins", &root_path, &["ayacript", "random"], linker)
         .await
         .unwrap();
     let module = runtime.line_module("exec").unwrap();
@@ -49,7 +53,10 @@ mod runtime_tests {
     use ayaka_plugin::RawModule;
 
     #[tokio::test]
-    async fn vars<M: RawModule + Send + Sync + 'static>() {
+    async fn vars<M: RawModule + Send + Sync + 'static>()
+    where
+        M::Linker: Linker<M, Config = ()>,
+    {
         with_ctx::<M>(|ctx| {
             assert_eq!(
                 ctx.call(
@@ -78,7 +85,10 @@ mod runtime_tests {
     }
 
     #[tokio::test]
-    async fn if_test<M: RawModule + Send + Sync + 'static>() {
+    async fn if_test<M: RawModule + Send + Sync + 'static>()
+    where
+        M::Linker: Linker<M, Config = ()>,
+    {
         with_ctx::<M>(|ctx| {
             assert_eq!(
                 ctx.call(
@@ -103,7 +113,10 @@ mod runtime_tests {
     }
 
     #[tokio::test]
-    async fn random<M: RawModule + Send + Sync + 'static>() {
+    async fn random<M: RawModule + Send + Sync + 'static>()
+    where
+        M::Linker: Linker<M, Config = ()>,
+    {
         with_ctx::<M>(|ctx| {
             assert!((0..10).contains(
                 &ctx.call(
@@ -117,13 +130,10 @@ mod runtime_tests {
         .await;
     }
 
-    #[cfg(feature = "wasmi")]
     #[instantiate_tests(<ayaka_plugin_wasmi::WasmiModule>)]
     mod inst_wasmi {}
-    #[cfg(feature = "wasmtime")]
     #[instantiate_tests(<ayaka_plugin_wasmtime::WasmtimeModule>)]
     mod inst_wasmtime {}
-    #[cfg(feature = "wasmer")]
     #[instantiate_tests(<ayaka_plugin_wasmer::WasmerModule>)]
     mod inst_wasmer {}
 }
