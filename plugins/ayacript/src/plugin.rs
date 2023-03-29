@@ -29,7 +29,9 @@ impl RawModule for HostModule {
 pub struct HostLinker;
 
 impl Linker<HostModule> for HostLinker {
-    fn new() -> Result<Self> {
+    type Config = ();
+
+    fn new(_: ()) -> Result<Self> {
         unimplemented!()
     }
 

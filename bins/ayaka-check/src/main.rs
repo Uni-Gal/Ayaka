@@ -1,3 +1,4 @@
+use ayaka_plugin_wasmi::{WasmiLinker, WasmiModule};
 use ayaka_runtime::{anyhow::Result, *};
 use clap::Parser;
 use flexi_logger::{LogSpecification, Logger};
@@ -43,7 +44,8 @@ async fn main() -> Result<()> {
         .set_palette("b1;3;2;4;6".to_string())
         .use_utc()
         .start()?;
-    let context = Context::open(&opts.input, FrontendType::Text);
+    let linker = WasmiLinker::new(())?;
+    let context = Context::<WasmiModule>::open(&opts.input, FrontendType::Text, linker);
     let mut context = pin!(context);
     while let Some(status) = context.next().await {
         match status {

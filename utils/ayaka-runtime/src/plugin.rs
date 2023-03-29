@@ -21,7 +21,7 @@ use trylog::macros::*;
 use vfs::*;
 
 /// The plugin module with high-level interfaces.
-pub struct Module<M: RawModule = BackendModule> {
+pub struct Module<M: RawModule> {
     module: PluginModule<M>,
 }
 
@@ -68,7 +68,7 @@ impl<M: RawModule> Module<M> {
 }
 
 /// The plugin runtime.
-pub struct Runtime<M: RawModule + Send + Sync + 'static = BackendModule> {
+pub struct Runtime<M: RawModule + Send + Sync + 'static> {
     modules: HashMap<String, Module<M>>,
     action_modules: Vec<String>,
     text_modules: HashMap<String, String>,
@@ -96,8 +96,44 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
         dir: impl AsRef<str> + 'a,
         root_path: &'a VfsPath,
         names: &'a [impl AsRef<str>],
+        mut store: M::Linker,
     ) -> Result<Arc<Self>> {
         let path = root_path.join(dir)?;
+        let paths = Self::find_plugins(&path, names)?;
+
+        yield LoadStatus::CreateEngine;
+        let handle = Arc::new(RwLock::new(Weak::new()));
+        log_interop::register(&mut store)?;
+        plugin_interop::register(&mut store, handle.clone())?;
+        fs_interop::register(&mut store, root_path)?;
+        rand_interop::register(&mut store)?;
+        script_interop::register(&mut store)?;
+        let mut runtime = Self::new();
+
+        let total_len = paths.len();
+        for (i, (name, p)) in paths.into_iter().enumerate() {
+            yield LoadStatus::LoadPlugin(name.clone(), i, total_len);
+            let mut buf = vec![];
+            p.open_file()?.read_to_end(&mut buf)?;
+            let module = Module::new(store.create(&buf)?);
+            runtime.insert_module(name, module)?;
+        }
+        let runtime = Arc::new(runtime);
+        *handle.write().unwrap() = Arc::downgrade(&runtime);
+        Ok(runtime)
+    }
+
+    fn new() -> Self {
+        Self {
+            modules: HashMap::default(),
+            action_modules: vec![],
+            text_modules: HashMap::default(),
+            line_modules: HashMap::default(),
+            game_modules: vec![],
+        }
+    }
+
+    fn find_plugins(path: &VfsPath, names: &[impl AsRef<str>]) -> Result<Vec<(String, VfsPath)>> {
         let paths = if names.is_empty() {
             path.read_dir()?
                 .filter_map(|p| {
@@ -129,38 +165,7 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
                 })
                 .collect::<Vec<_>>()
         };
-
-        yield LoadStatus::CreateEngine;
-        let handle = Arc::new(RwLock::new(Weak::new()));
-        let mut store = M::Linker::new()?;
-        log_interop::register(&mut store)?;
-        plugin_interop::register(&mut store, handle.clone())?;
-        fs_interop::register(&mut store, root_path)?;
-        rand_interop::register(&mut store)?;
-        script_interop::register(&mut store)?;
-        let mut runtime = Self::new();
-
-        let total_len = paths.len();
-        for (i, (name, p)) in paths.into_iter().enumerate() {
-            yield LoadStatus::LoadPlugin(name.clone(), i, total_len);
-            let mut buf = vec![];
-            p.open_file()?.read_to_end(&mut buf)?;
-            let module = Module::new(store.create(&buf)?);
-            runtime.insert_module(name, module)?;
-        }
-        let runtime = Arc::new(runtime);
-        *handle.write().unwrap() = Arc::downgrade(&runtime);
-        Ok(runtime)
-    }
-
-    fn new() -> Self {
-        Self {
-            modules: HashMap::default(),
-            action_modules: vec![],
-            text_modules: HashMap::default(),
-            line_modules: HashMap::default(),
-            game_modules: vec![],
-        }
+        Ok(paths)
     }
 
     fn insert_module(&mut self, name: String, module: Module<M>) -> Result<()> {
@@ -223,23 +228,5 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
     /// Iterates game modules.
     pub fn game_modules(&self) -> impl Iterator<Item = &Module<M>> {
         self.game_modules.iter().filter_map(|key| self.module(key))
-    }
-}
-
-#[doc(hidden)]
-pub use backend::BackendModule;
-
-#[doc(hidden)]
-mod backend {
-    cfg_if::cfg_if! {
-        if #[cfg(feature = "wasmi")] {
-            pub use ayaka_plugin_wasmi::WasmiModule as BackendModule;
-        } else if #[cfg(feature = "wasmtime")] {
-            pub use ayaka_plugin_wasmtime::WasmtimeModule as BackendModule;
-        } else if #[cfg(feature = "wasmer")] {
-            pub use ayaka_plugin_wasmer::WasmerModule as BackendModule;
-        } else {
-            pub use ayaka_plugin_nop::NopModule as BackendModule;
-        }
     }
 }

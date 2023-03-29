@@ -189,7 +189,9 @@ impl WasmerLinker {
 }
 
 impl Linker<WasmerModule> for WasmerLinker {
-    fn new() -> Result<Self> {
+    type Config = ();
+
+    fn new(_: ()) -> Result<Self> {
         let store = Store::default();
         Ok(Self {
             store: Arc::new(Mutex::new(store)),

@@ -18,6 +18,7 @@ codegen-units = 1
 opt-level = "z"
 
 [workspace.dependencies]
+ayaka-plugin-wasmi = { path = "../utils/ayaka-plugin-wasmi" }
 ayaka-runtime = { path = "../utils/ayaka-runtime" }
 ayaka-model = { path = "../utils/ayaka-model" }
 tokio = { version = "1" }

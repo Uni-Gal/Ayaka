@@ -117,7 +117,9 @@ pub struct WasmtimeLinker {
 }
 
 impl ayaka_plugin::Linker<WasmtimeModule> for WasmtimeLinker {
-    fn new() -> Result<Self> {
+    type Config = ();
+
+    fn new(_: ()) -> Result<Self> {
         let engine = Engine::default();
         let store = Store::new(&engine, ());
         let linker = wasmtime::Linker::new(&engine);

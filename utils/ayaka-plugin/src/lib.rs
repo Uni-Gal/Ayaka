@@ -67,8 +67,11 @@ impl<M: RawModule> PluginModule<M> {
 
 /// Represents the linker of plugin modules.
 pub trait Linker<M: RawModule>: Sized {
+    /// Config type to create the linker.
+    type Config;
+
     /// Create the linker.
-    fn new() -> Result<Self>;
+    fn new(config: Self::Config) -> Result<Self>;
 
     /// Create a raw module from binary.
     fn create(&self, binary: &[u8]) -> Result<M>;

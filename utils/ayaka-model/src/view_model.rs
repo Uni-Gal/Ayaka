@@ -1,5 +1,6 @@
 use crate::*;
 use anyhow::Result;
+use ayaka_plugin::RawModule;
 use serde::Serialize;
 use std::{path::Path, pin::pin};
 use stream_future::stream;
@@ -46,19 +47,19 @@ impl From<OpenStatus> for OpenGameStatus {
 
 /// A view model of Ayaka.
 /// It manages all settings and provides high-level APIs.
-pub struct GameViewModel<M: SettingsManager> {
-    context: Option<Context>,
+pub struct GameViewModel<S: SettingsManager, M: RawModule + Send + Sync + 'static> {
+    context: Option<Context<M>>,
     current_record: ActionRecord,
     current_raw_context: Option<RawContext>,
-    settings_manager: M,
+    settings_manager: S,
     settings: Option<Settings>,
     records: Vec<ActionRecord>,
     global_record: Option<GlobalRecord>,
 }
 
-impl<M: SettingsManager> GameViewModel<M> {
+impl<S: SettingsManager, M: RawModule + Send + Sync + 'static> GameViewModel<S, M> {
     /// Create a [`GameViewModel`] with a settings manager.
-    pub fn new(settings_manager: M) -> Self {
+    pub fn new(settings_manager: S) -> Self {
         Self {
             settings_manager,
             context: None,
@@ -76,8 +77,9 @@ impl<M: SettingsManager> GameViewModel<M> {
         &'a mut self,
         paths: &'a [impl AsRef<Path>],
         frontend_type: FrontendType,
+        linker: M::Linker,
     ) -> Result<()> {
-        let context = Context::open(paths, frontend_type);
+        let context = Context::open(paths, frontend_type, linker);
         let mut context = pin!(context);
         while let Some(status) = context.next().await {
             yield status.into();
@@ -113,14 +115,14 @@ impl<M: SettingsManager> GameViewModel<M> {
     }
 
     /// The [`Context`], should be called after [`Self::open_game`].
-    pub fn context(&self) -> &Context {
+    pub fn context(&self) -> &Context<M> {
         self.context
             .as_ref()
             .expect("should be called after open_game")
     }
 
     /// The [`Context`], should be called after [`Self::open_game`].
-    pub fn context_mut(&mut self) -> &mut Context {
+    pub fn context_mut(&mut self) -> &mut Context<M> {
         self.context
             .as_mut()
             .expect("should be called after open_game")
