@@ -153,22 +153,21 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
     const OPEN_STATUS_EVENT: &str = "ayaka://open_status";
     let mut model = storage.model.write().await;
     let linker = WasmiLinker::new(())?;
-    if storage.config.is_empty() {
+    let builder = ContextBuilder::<WasmiModule>::new(FrontendType::Html, linker);
+    let builder = if storage.config.is_empty() {
         let files = show_pick_files(&handle, &window).await?;
-        let context = model.open_game_vfs(&files, FrontendType::Html, linker);
-        let mut context = pin!(context);
-        while let Some(status) = context.next().await {
-            handle.emit_all(OPEN_STATUS_EVENT, status)?;
-        }
-        context.await?;
+        builder.with_vfs(&files)?
     } else {
-        let context = model.open_game(&storage.config, FrontendType::Html, linker);
+        builder.with_paths(&storage.config)?
+    };
+    {
+        let context = model.open_game(builder.open());
         let mut context = pin!(context);
         while let Some(status) = context.next().await {
             handle.emit_all(OPEN_STATUS_EVENT, status)?;
         }
         context.await?;
-    };
+    }
 
     asset_resolver::ROOT_PATH
         .set(model.context().root_path().clone())

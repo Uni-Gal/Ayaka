@@ -1,8 +1,8 @@
-use crate::{vfs::VfsPath, *};
+use crate::*;
 use anyhow::Result;
 use ayaka_plugin::RawModule;
 use serde::Serialize;
-use std::{future::Future, path::Path, pin::pin};
+use std::{future::Future, pin::pin};
 use stream_future::{stream, Stream};
 use trylog::macros::*;
 
@@ -71,30 +71,9 @@ impl<S: SettingsManager, M: RawModule + Send + Sync + 'static> GameViewModel<S, 
         }
     }
 
-    /// Open the game with paths and frontend type.
-    pub fn open_game<'a>(
-        &'a mut self,
-        paths: &'a [impl AsRef<Path>],
-        frontend_type: FrontendType,
-        linker: M::Linker,
-    ) -> impl Future<Output = Result<()>> + Stream<Item = OpenGameStatus> + 'a {
-        let context = Context::open(paths, frontend_type, linker);
-        self.open_game_impl(context)
-    }
-
-    /// Open the game with paths and frontend type.
-    pub fn open_game_vfs<'a>(
-        &'a mut self,
-        paths: &'a [VfsPath],
-        frontend_type: FrontendType,
-        linker: M::Linker,
-    ) -> impl Future<Output = Result<()>> + Stream<Item = OpenGameStatus> + 'a {
-        let context = Context::open_vfs(paths, frontend_type, linker);
-        self.open_game_impl(context)
-    }
-
+    /// Open the game with context.
     #[stream(OpenGameStatus, lifetime = 'a)]
-    async fn open_game_impl<'a>(
+    pub async fn open_game<'a>(
         &'a mut self,
         context: impl Future<Output = Result<Context<M>>> + Stream<Item = OpenStatus> + 'a,
     ) -> Result<()> {

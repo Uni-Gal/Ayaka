@@ -45,7 +45,9 @@ async fn main() -> Result<()> {
         .use_utc()
         .start()?;
     let linker = WasmiLinker::new(())?;
-    let context = Context::<WasmiModule>::open(&opts.input, FrontendType::Text, linker);
+    let context = ContextBuilder::<WasmiModule>::new(FrontendType::Text, linker)
+        .with_paths(&opts.input)?
+        .open();
     let mut context = pin!(context);
     while let Some(status) = context.next().await {
         match status {

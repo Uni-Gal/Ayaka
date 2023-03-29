@@ -6,8 +6,9 @@ use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::*;
 use ayaka_plugin::RawModule;
 use fallback::Fallback;
+use futures_util::Stream;
 use log::error;
-use std::{borrow::Cow, collections::HashMap, path::Path, pin::pin, sync::Arc};
+use std::{borrow::Cow, collections::HashMap, future::Future, path::Path, pin::pin, sync::Arc};
 use stream_future::stream;
 use trylog::macros::*;
 use vfs::*;
@@ -50,62 +51,102 @@ impl From<LoadStatus> for OpenStatus {
     }
 }
 
-impl<M: RawModule + Send + Sync + 'static> Context<M> {
-    /// Open a config file with frontend type.
+pub struct ContextBuilder<M: RawModule + Send + Sync + 'static> {
+    frontend: FrontendType,
+    linker: M::Linker,
+}
+
+impl<M: RawModule + Send + Sync + 'static> ContextBuilder<M> {
+    pub fn new(frontend: FrontendType, linker: M::Linker) -> Self {
+        Self { frontend, linker }
+    }
+
+    fn open_fs_from_paths(paths: &[impl AsRef<Path>]) -> Result<(VfsPath, Cow<str>)> {
+        let (root_path, filename) = if paths.len() == 1 {
+            let path = paths[0].as_ref();
+            let ext = path.extension().unwrap_or_default();
+            if ext == "yaml" {
+                let root_path = path
+                    .parent()
+                    .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
+                (
+                    VfsPath::from(PhysicalFS::new(root_path)),
+                    path.file_name().unwrap_or_default().to_string_lossy(),
+                )
+            } else if ext == "ayapack" {
+                (TarFS::new_mmap(path)?.into(), "config.yaml".into())
+            } else {
+                bail!("Cannot determine filesystem.")
+            }
+        } else {
+            let files = paths
+                .iter()
+                .rev()
+                .map(|path| TarFS::new_mmap(path.as_ref()).map(VfsPath::from))
+                .collect::<Result<Vec<_>, _>>()?;
+            (OverlayFS::new(&files).into(), "config.yaml".into())
+        };
+        Ok((root_path, filename))
+    }
+
+    /// Open a context with config paths.
     ///
     /// If the input `paths` contains only one element, it may be a YAML or an FRFS file.
     /// If the input `paths` contains many element, they should all be FRFS files,
     /// and the latter one will override the former one.
-    #[stream(OpenStatus, lifetime = 'a)]
-    pub async fn open<'a>(
+    pub fn with_paths<'a>(
+        self,
         paths: &'a [impl AsRef<Path>],
-        frontend: FrontendType,
-        linker: M::Linker,
-    ) -> Result<Self> {
+    ) -> Result<ContextBuilderWithPaths<'a, M>> {
         if paths.is_empty() {
             bail!("At least one path should be input.");
         }
         let (root_path, filename) = Self::open_fs_from_paths(paths)?;
-        let context = Self::open_impl(root_path, &filename, frontend, linker);
-        let mut context = pin!(context);
-        while let Some(status) = context.next().await {
-            yield status;
-        }
-        context.await
+        Ok(ContextBuilderWithPaths {
+            root_path,
+            filename,
+            frontend: self.frontend,
+            linker: self.linker,
+        })
     }
 
-    /// Open a config file with frontend type.
-    #[stream(OpenStatus, lifetime = 'a)]
-    pub async fn open_vfs<'a>(
-        paths: &'a [VfsPath],
-        frontend: FrontendType,
-        linker: M::Linker,
-    ) -> Result<Self> {
+    /// Open a context with config paths.
+    pub fn with_vfs(self, paths: &[VfsPath]) -> Result<ContextBuilderWithPaths<'static, M>> {
         if paths.is_empty() {
             bail!("At least one path should be input.");
         }
-        let context = Self::open_impl(
-            OverlayFS::new(paths).into(),
-            "config.yaml",
-            frontend,
-            linker,
-        );
-        let mut context = pin!(context);
-        while let Some(status) = context.next().await {
-            yield status;
-        }
-        context.await
+        Ok(ContextBuilderWithPaths {
+            root_path: OverlayFS::new(paths).into(),
+            filename: "config.yaml".into(),
+            frontend: self.frontend,
+            linker: self.linker,
+        })
     }
+}
 
+pub struct ContextBuilderWithPaths<'a, M: RawModule + Send + Sync + 'static> {
+    root_path: VfsPath,
+    filename: Cow<'a, str>,
+    frontend: FrontendType,
+    linker: M::Linker,
+}
+
+impl<'a, M: RawModule + Send + Sync + 'static> ContextBuilderWithPaths<'a, M> {
+    pub fn open(self) -> impl Future<Output = Result<Context<M>>> + Stream<Item = OpenStatus> + 'a {
+        Context::<M>::open(self.root_path, self.filename, self.frontend, self.linker)
+    }
+}
+
+impl<M: RawModule + Send + Sync + 'static> Context<M> {
     #[stream(OpenStatus, lifetime = 'a)]
-    async fn open_impl<'a>(
+    async fn open<'a>(
         root_path: VfsPath,
-        filename: &'a str,
+        filename: impl AsRef<str> + 'a,
         frontend: FrontendType,
         linker: M::Linker,
     ) -> Result<Self> {
         yield OpenStatus::LoadProfile;
-        let file = root_path.join(filename)?.open_file()?;
+        let file = root_path.join(filename.as_ref())?.open_file()?;
         let mut config: GameConfig = serde_yaml::from_reader(file)?;
         let runtime = {
             let runtime = Runtime::load(
@@ -139,34 +180,6 @@ impl<M: RawModule + Send + Sync + 'static> Context<M> {
             switches: vec![],
             vars: VarMap::default(),
         })
-    }
-
-    fn open_fs_from_paths(paths: &[impl AsRef<Path>]) -> Result<(VfsPath, Cow<str>)> {
-        let (root_path, filename) = if paths.len() == 1 {
-            let path = paths[0].as_ref();
-            let ext = path.extension().unwrap_or_default();
-            if ext == "yaml" {
-                let root_path = path
-                    .parent()
-                    .ok_or_else(|| anyhow!("Cannot get parent from input path."))?;
-                (
-                    VfsPath::from(PhysicalFS::new(root_path)),
-                    path.file_name().unwrap_or_default().to_string_lossy(),
-                )
-            } else if ext == "ayapack" {
-                (TarFS::new_mmap(path)?.into(), "config.yaml".into())
-            } else {
-                bail!("Cannot determine filesystem.")
-            }
-        } else {
-            let files = paths
-                .iter()
-                .rev()
-                .map(|path| TarFS::new_mmap(path.as_ref()).map(VfsPath::from))
-                .collect::<Result<Vec<_>, _>>()?;
-            (OverlayFS::new(&files).into(), "config.yaml".into())
-        };
-        Ok((root_path, filename))
     }
 
     fn preprocess_game(config: &mut GameConfig, runtime: &Runtime<M>) -> Result<()> {
