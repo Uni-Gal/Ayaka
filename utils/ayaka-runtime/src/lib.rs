@@ -19,7 +19,7 @@ pub use anyhow;
 #[doc(no_inline)]
 pub use ayaka_bindings_types::*;
 #[doc(no_inline)]
-pub use ayaka_plugin::{Linker, LinkerHandle, PluginModule, RawModule};
+pub use ayaka_plugin::{Linker, RawModule};
 #[doc(no_inline)]
 pub use ayaka_primitive::*;
 pub use config::*;
