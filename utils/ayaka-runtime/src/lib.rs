@@ -19,6 +19,8 @@ pub use anyhow;
 #[doc(no_inline)]
 pub use ayaka_bindings_types::*;
 #[doc(no_inline)]
+pub use ayaka_plugin::{Linker, LinkerHandle, PluginModule, RawModule};
+#[doc(no_inline)]
 pub use ayaka_primitive::*;
 pub use config::*;
 pub use context::*;

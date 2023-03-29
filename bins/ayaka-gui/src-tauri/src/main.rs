@@ -14,6 +14,7 @@ use ayaka_model::{
     anyhow::{self, Result},
     *,
 };
+use ayaka_plugin_wasmi::{WasmiLinker, WasmiModule};
 use flexi_logger::{FileSpec, LogSpecification, Logger};
 use serde::{Deserialize, Serialize};
 use settings::*;
@@ -59,7 +60,7 @@ fn ayaka_version() -> &'static str {
 struct Storage {
     config: Vec<PathBuf>,
     dist_port: u16,
-    model: RwLock<GameViewModel<FileSettingsManager>>,
+    model: RwLock<GameViewModel<FileSettingsManager, WasmiModule>>,
 }
 
 impl Storage {
@@ -109,7 +110,8 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
     };
     let mut model = storage.model.write().await;
     {
-        let context = model.open_game(&config, FrontendType::Html);
+        let linker = WasmiLinker::new(())?;
+        let context = model.open_game(&config, FrontendType::Html, linker);
         let mut context = pin!(context);
         while let Some(status) = context.next().await {
             handle.emit_all("ayaka://open_status", status)?;
