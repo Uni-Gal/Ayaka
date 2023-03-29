@@ -32,5 +32,8 @@ rand = "0.8"
 slab = "0.4"
 
 [dev-dependencies]
+ayaka-plugin-wasmer = { workspace = true }
+ayaka-plugin-wasmtime = { workspace = true }
+ayaka-plugin-wasmi = { workspace = true }
 tokio = { version = "1", features = ["macros", "parking_lot", "rt"] }
 generic-tests = "0.1"

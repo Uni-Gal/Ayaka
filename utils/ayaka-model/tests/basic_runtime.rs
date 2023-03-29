@@ -1,13 +1,13 @@
-use ayaka_model::{
-    locale, Action, ActionText, Context, FrontendType, Locale, OpenStatus, StreamExt,
-};
+use ayaka_model::*;
+use ayaka_plugin_wasmi::{WasmiLinker, WasmiModule};
 use std::pin::Pin;
 
 const CONFIG_PATH: &str = "tests/basic/config.yaml";
 
 #[tokio::test(flavor = "current_thread")]
 async fn progress() {
-    let mut context = Context::open(&[CONFIG_PATH], FrontendType::Text);
+    let linker = WasmiLinker::new(()).unwrap();
+    let mut context = Context::<WasmiModule>::open(&[CONFIG_PATH], FrontendType::Text, linker);
     let progresses = unsafe { Pin::new_unchecked(&mut context) }
         .collect::<Vec<_>>()
         .await;
@@ -26,7 +26,8 @@ async fn progress() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn config() {
-    let context = Context::open(&[CONFIG_PATH], FrontendType::Text)
+    let linker = WasmiLinker::new(()).unwrap();
+    let context = Context::<WasmiModule>::open(&[CONFIG_PATH], FrontendType::Text, linker)
         .await
         .unwrap();
     let config = &context.game().config;
@@ -43,7 +44,7 @@ fn text_chars(s: impl Into<String>) -> Action {
     Action::Text(text)
 }
 
-fn paras(mut context: Context, loc: Locale, expected_actions: &[Action]) {
+fn paras(mut context: Context<WasmiModule>, loc: Locale, expected_actions: &[Action]) {
     context.set_start_context();
     let actions = std::iter::from_fn(|| {
         let raw_ctx = context.next_run();
@@ -55,7 +56,8 @@ fn paras(mut context: Context, loc: Locale, expected_actions: &[Action]) {
 
 #[tokio::test(flavor = "current_thread")]
 async fn paras_en() {
-    let context = Context::open(&[CONFIG_PATH], FrontendType::Text)
+    let linker = WasmiLinker::new(()).unwrap();
+    let context = Context::<WasmiModule>::open(&[CONFIG_PATH], FrontendType::Text, linker)
         .await
         .unwrap();
     let loc = locale!("en");
@@ -73,7 +75,8 @@ async fn paras_en() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn paras_zh() {
-    let context = Context::open(&[CONFIG_PATH], FrontendType::Text)
+    let linker = WasmiLinker::new(()).unwrap();
+    let context = Context::<WasmiModule>::open(&[CONFIG_PATH], FrontendType::Text, linker)
         .await
         .unwrap();
     let loc = locale!("zh");

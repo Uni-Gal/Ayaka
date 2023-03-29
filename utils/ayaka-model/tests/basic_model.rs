@@ -3,9 +3,9 @@
 
 use ayaka_model::{
     anyhow::{Error, Result},
-    locale, Action, ActionText, FrontendType, GameViewModel, OpenGameStatus, Settings,
-    SettingsManager, StreamExt,
+    *,
 };
+use ayaka_plugin_wasmi::{WasmiLinker, WasmiModule};
 use serde::{de::DeserializeOwned, Serialize};
 use std::{
     path::{Path, PathBuf},
@@ -89,8 +89,10 @@ const CONFIG_PATH: &str = "tests/basic/config.yaml";
 
 #[tokio::test(flavor = "current_thread")]
 async fn progress() {
-    let mut model = GameViewModel::<NopSettingsManager>::new(NopSettingsManager::new().unwrap());
-    let mut context = model.open_game(&[CONFIG_PATH], FrontendType::Text);
+    let mut model =
+        GameViewModel::<NopSettingsManager, WasmiModule>::new(NopSettingsManager::new().unwrap());
+    let linker = WasmiLinker::new(()).unwrap();
+    let mut context = model.open_game(&[CONFIG_PATH], FrontendType::Text, linker);
     let progresses = unsafe { Pin::new_unchecked(&mut context) }
         .collect::<Vec<_>>()
         .await;
@@ -129,9 +131,10 @@ async fn paras() {
         manager.save_settings(&settings).unwrap();
         manager
     };
-    let mut model = GameViewModel::<NopSettingsManager>::new(manager);
+    let mut model = GameViewModel::<NopSettingsManager, WasmiModule>::new(manager);
+    let linker = WasmiLinker::new(()).unwrap();
     model
-        .open_game(&[CONFIG_PATH], FrontendType::Text)
+        .open_game(&[CONFIG_PATH], FrontendType::Text, linker)
         .await
         .unwrap();
     model.init_new();
