@@ -26,6 +26,3 @@ coverage
 *.njsproj
 *.sln
 *.sw?
-
-# tauri-cli generated
-gen
