@@ -5,7 +5,7 @@ clean:
 update:
 	cargo update
 
-.PHONY: dist debug-cross release release-cross
+.PHONY: dist debug-cross release release-cross release-android
 dist:
 	cd ayaka-gui && $(MAKE) dist
 debug-cross: dist
@@ -14,6 +14,8 @@ release: dist
 	cargo build --release
 release-cross: dist
 	cargo build --release --target=$(TARGET)
+release-android:
+	cd ayaka-gui && $(MAKE) build-android
 
 .PHONY: run run-gui run-latex
 run:
