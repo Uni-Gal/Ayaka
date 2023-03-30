@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `ayaka-runtime/src/context.rs`."><title>context.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-fbd14db5c88ed452.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0-nightly (478cbb42b 2023-03-28)" data-search-js="search-bc5a112813b5d712.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" data-theme-light-css="light-db279b6232be9c13.css" data-theme-dark-css="dark-cf923f49f397b216.css" data-theme-ayu-css="ayu-be46fdc453a55015.css" ></div><script src="../../static.files/storage-d4a1a279bad1a0c0.js"></script><script defer src="../../static.files/source-script-1b95b7cca98b26e5.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-9ade54abd4bd73c8.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-db279b6232be9c13.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-cf923f49f397b216.css"><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../ayaka_runtime/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `ayaka-runtime/src/context.rs`."><title>context.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-fbd14db5c88ed452.css" id="mainThemeStyle"><div id="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_runtime" data-themes="" data-resource-suffix="" data-rustdoc-version="1.70.0-nightly (17c116721 2023-03-29)" data-search-js="search-bc5a112813b5d712.js" data-settings-js="settings-f0c5c39777a9a2f6.js" data-settings-css="settings-0bcba95ff279c1db.css" data-theme-light-css="light-db279b6232be9c13.css" data-theme-dark-css="dark-cf923f49f397b216.css" data-theme-ayu-css="ayu-be46fdc453a55015.css" ></div><script src="../../static.files/storage-d4a1a279bad1a0c0.js"></script><script defer src="../../static.files/source-script-1b95b7cca98b26e5.js"></script><script defer src="../../source-files.js"></script><script defer src="../../static.files/main-9ade54abd4bd73c8.js"></script><noscript><link rel="stylesheet" media="(prefers-color-scheme:light)" href="../../static.files/light-db279b6232be9c13.css"><link rel="stylesheet" media="(prefers-color-scheme:dark)" href="../../static.files/dark-cf923f49f397b216.css"><link rel="stylesheet" href="../../static.files/noscript-13285aec31fa243e.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><a class="sub-logo-container" href="../../ayaka_runtime/index.html"><img class="rust-logo" src="../../static.files/rust-logo-151179464ae7ed46.svg" alt="logo"></a><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -518,6 +518,62 @@
 <a href="#518" id="518">518</a>
 <a href="#519" id="519">519</a>
 <a href="#520" id="520">520</a>
+<a href="#521" id="521">521</a>
+<a href="#522" id="522">522</a>
+<a href="#523" id="523">523</a>
+<a href="#524" id="524">524</a>
+<a href="#525" id="525">525</a>
+<a href="#526" id="526">526</a>
+<a href="#527" id="527">527</a>
+<a href="#528" id="528">528</a>
+<a href="#529" id="529">529</a>
+<a href="#530" id="530">530</a>
+<a href="#531" id="531">531</a>
+<a href="#532" id="532">532</a>
+<a href="#533" id="533">533</a>
+<a href="#534" id="534">534</a>
+<a href="#535" id="535">535</a>
+<a href="#536" id="536">536</a>
+<a href="#537" id="537">537</a>
+<a href="#538" id="538">538</a>
+<a href="#539" id="539">539</a>
+<a href="#540" id="540">540</a>
+<a href="#541" id="541">541</a>
+<a href="#542" id="542">542</a>
+<a href="#543" id="543">543</a>
+<a href="#544" id="544">544</a>
+<a href="#545" id="545">545</a>
+<a href="#546" id="546">546</a>
+<a href="#547" id="547">547</a>
+<a href="#548" id="548">548</a>
+<a href="#549" id="549">549</a>
+<a href="#550" id="550">550</a>
+<a href="#551" id="551">551</a>
+<a href="#552" id="552">552</a>
+<a href="#553" id="553">553</a>
+<a href="#554" id="554">554</a>
+<a href="#555" id="555">555</a>
+<a href="#556" id="556">556</a>
+<a href="#557" id="557">557</a>
+<a href="#558" id="558">558</a>
+<a href="#559" id="559">559</a>
+<a href="#560" id="560">560</a>
+<a href="#561" id="561">561</a>
+<a href="#562" id="562">562</a>
+<a href="#563" id="563">563</a>
+<a href="#564" id="564">564</a>
+<a href="#565" id="565">565</a>
+<a href="#566" id="566">566</a>
+<a href="#567" id="567">567</a>
+<a href="#568" id="568">568</a>
+<a href="#569" id="569">569</a>
+<a href="#570" id="570">570</a>
+<a href="#571" id="571">571</a>
+<a href="#572" id="572">572</a>
+<a href="#573" id="573">573</a>
+<a href="#574" id="574">574</a>
+<a href="#575" id="575">575</a>
+<a href="#576" id="576">576</a>
 </pre><pre class="rust"><code><span class="kw">use crate</span>::{
     plugin::{LoadStatus, Runtime},
     <span class="kw-2">*</span>,
@@ -527,8 +583,9 @@
 <span class="kw">use </span>ayaka_plugin::RawModule;
 <span class="kw">use </span>fallback::Fallback;
 <span class="kw">use </span>log::error;
-<span class="kw">use </span>std::{borrow::Cow, collections::HashMap, path::Path, pin::pin, sync::Arc};
-<span class="kw">use </span>stream_future::stream;
+<span class="kw">use </span>serde::Serialize;
+<span class="kw">use </span>std::{borrow::Cow, collections::HashMap, future::Future, path::Path, pin::pin, sync::Arc};
+<span class="kw">use </span>stream_future::{stream, Stream};
 <span class="kw">use </span>trylog::macros::<span class="kw-2">*</span>;
 <span class="kw">use </span>vfs::<span class="kw-2">*</span>;
 <span class="kw">use </span>vfs_tar::TarFS;
@@ -545,7 +602,8 @@
 }
 
 <span class="doccomment">/// The open status when creating [`Context`].
-</span><span class="attr">#[derive(Debug, Clone, PartialEq, Eq)]
+</span><span class="attr">#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+#[serde(tag = <span class="string">&quot;t&quot;</span>, content = <span class="string">&quot;data&quot;</span>)]
 </span><span class="kw">pub enum </span>OpenStatus {
     <span class="doccomment">/// Start loading config file.
     </span>LoadProfile,
@@ -570,24 +628,106 @@
     }
 }
 
-<span class="kw">impl</span>&lt;M: RawModule + Send + Sync + <span class="lifetime">&#39;static</span>&gt; Context&lt;M&gt; {
-    <span class="doccomment">/// Open a config file with frontend type.
+<span class="doccomment">/// Builder of [`Context`].
+</span><span class="kw">pub struct </span>ContextBuilder&lt;M: RawModule + Send + Sync + <span class="lifetime">&#39;static</span>&gt; {
+    frontend: FrontendType,
+    linker: M::Linker,
+}
+
+<span class="kw">impl</span>&lt;M: RawModule + Send + Sync + <span class="lifetime">&#39;static</span>&gt; ContextBuilder&lt;M&gt; {
+    <span class="doccomment">/// Create a new [`ContextBuilder`] with frontend type and plugin runtime linker.
+    </span><span class="kw">pub fn </span>new(frontend: FrontendType, linker: M::Linker) -&gt; <span class="self">Self </span>{
+        <span class="self">Self </span>{ frontend, linker }
+    }
+
+    <span class="kw">fn </span>open_fs_from_paths(paths: <span class="kw-2">&amp;</span>[<span class="kw">impl </span>AsRef&lt;Path&gt;]) -&gt; <span class="prelude-ty">Result</span>&lt;(VfsPath, Cow&lt;str&gt;)&gt; {
+        <span class="kw">let </span>(root_path, filename) = <span class="kw">if </span>paths.len() == <span class="number">1 </span>{
+            <span class="kw">let </span>path = paths[<span class="number">0</span>].as_ref();
+            <span class="kw">let </span>ext = path.extension().unwrap_or_default();
+            <span class="kw">if </span>ext == <span class="string">&quot;yaml&quot; </span>{
+                <span class="kw">let </span>root_path = path
+                    .parent()
+                    .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Cannot get parent from input path.&quot;</span>))<span class="question-mark">?</span>;
+                (
+                    VfsPath::from(PhysicalFS::new(root_path)),
+                    path.file_name().unwrap_or_default().to_string_lossy(),
+                )
+            } <span class="kw">else if </span>ext == <span class="string">&quot;ayapack&quot; </span>{
+                (TarFS::new_mmap(path)<span class="question-mark">?</span>.into(), <span class="string">&quot;config.yaml&quot;</span>.into())
+            } <span class="kw">else </span>{
+                <span class="macro">bail!</span>(<span class="string">&quot;Cannot determine filesystem.&quot;</span>)
+            }
+        } <span class="kw">else </span>{
+            <span class="kw">let </span>files = paths
+                .iter()
+                .rev()
+                .map(|path| TarFS::new_mmap(path.as_ref()).map(VfsPath::from))
+                .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
+            (OverlayFS::new(<span class="kw-2">&amp;</span>files).into(), <span class="string">&quot;config.yaml&quot;</span>.into())
+        };
+        <span class="prelude-val">Ok</span>((root_path, filename))
+    }
+
+    <span class="doccomment">/// Open a context with config paths.
     ///
     /// If the input `paths` contains only one element, it may be a YAML or an FRFS file.
     /// If the input `paths` contains many element, they should all be FRFS files,
     /// and the latter one will override the former one.
-    </span><span class="attr">#[stream(OpenStatus, lifetime = <span class="lifetime">&#39;a</span>)]
-    </span><span class="kw">pub async fn </span>open&lt;<span class="lifetime">&#39;a</span>&gt;(
+    </span><span class="kw">pub fn </span>with_paths&lt;<span class="lifetime">&#39;a</span>&gt;(
+        <span class="self">self</span>,
         paths: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>[<span class="kw">impl </span>AsRef&lt;Path&gt;],
-        frontend: FrontendType,
-        linker: M::Linker,
-    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;ContextBuilderWithPaths&lt;<span class="lifetime">&#39;a</span>, M&gt;&gt; {
         <span class="kw">if </span>paths.is_empty() {
             <span class="macro">bail!</span>(<span class="string">&quot;At least one path should be input.&quot;</span>);
         }
-        <span class="kw">yield </span>OpenStatus::LoadProfile;
         <span class="kw">let </span>(root_path, filename) = <span class="self">Self</span>::open_fs_from_paths(paths)<span class="question-mark">?</span>;
-        <span class="kw">let </span>file = root_path.join(<span class="kw-2">&amp;</span>filename)<span class="question-mark">?</span>.open_file()<span class="question-mark">?</span>;
+        <span class="prelude-val">Ok</span>(ContextBuilderWithPaths {
+            root_path,
+            filename,
+            frontend: <span class="self">self</span>.frontend,
+            linker: <span class="self">self</span>.linker,
+        })
+    }
+
+    <span class="doccomment">/// Open a context with config paths.
+    </span><span class="kw">pub fn </span>with_vfs(<span class="self">self</span>, paths: <span class="kw-2">&amp;</span>[VfsPath]) -&gt; <span class="prelude-ty">Result</span>&lt;ContextBuilderWithPaths&lt;<span class="lifetime">&#39;static</span>, M&gt;&gt; {
+        <span class="kw">if </span>paths.is_empty() {
+            <span class="macro">bail!</span>(<span class="string">&quot;At least one path should be input.&quot;</span>);
+        }
+        <span class="prelude-val">Ok</span>(ContextBuilderWithPaths {
+            root_path: OverlayFS::new(paths).into(),
+            filename: <span class="string">&quot;config.yaml&quot;</span>.into(),
+            frontend: <span class="self">self</span>.frontend,
+            linker: <span class="self">self</span>.linker,
+        })
+    }
+}
+
+<span class="doccomment">/// Builder of [`Context`].
+</span><span class="kw">pub struct </span>ContextBuilderWithPaths&lt;<span class="lifetime">&#39;a</span>, M: RawModule + Send + Sync + <span class="lifetime">&#39;static</span>&gt; {
+    root_path: VfsPath,
+    filename: Cow&lt;<span class="lifetime">&#39;a</span>, str&gt;,
+    frontend: FrontendType,
+    linker: M::Linker,
+}
+
+<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>, M: RawModule + Send + Sync + <span class="lifetime">&#39;static</span>&gt; ContextBuilderWithPaths&lt;<span class="lifetime">&#39;a</span>, M&gt; {
+    <span class="doccomment">/// Open the config and load the [`Context`].
+    </span><span class="kw">pub fn </span>open(<span class="self">self</span>) -&gt; <span class="kw">impl </span>Future&lt;Output = <span class="prelude-ty">Result</span>&lt;Context&lt;M&gt;&gt;&gt; + Stream&lt;Item = OpenStatus&gt; + <span class="lifetime">&#39;a </span>{
+        Context::&lt;M&gt;::open(<span class="self">self</span>.root_path, <span class="self">self</span>.filename, <span class="self">self</span>.frontend, <span class="self">self</span>.linker)
+    }
+}
+
+<span class="kw">impl</span>&lt;M: RawModule + Send + Sync + <span class="lifetime">&#39;static</span>&gt; Context&lt;M&gt; {
+    <span class="attr">#[stream(OpenStatus, lifetime = <span class="lifetime">&#39;a</span>)]
+    </span><span class="kw">async fn </span>open&lt;<span class="lifetime">&#39;a</span>&gt;(
+        root_path: VfsPath,
+        filename: <span class="kw">impl </span>AsRef&lt;str&gt; + <span class="lifetime">&#39;a</span>,
+        frontend: FrontendType,
+        linker: M::Linker,
+    ) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>&gt; {
+        <span class="kw">yield </span>OpenStatus::LoadProfile;
+        <span class="kw">let </span>file = root_path.join(filename.as_ref())<span class="question-mark">?</span>.open_file()<span class="question-mark">?</span>;
         <span class="kw">let </span><span class="kw-2">mut </span>config: GameConfig = serde_yaml::from_reader(file)<span class="question-mark">?</span>;
         <span class="kw">let </span>runtime = {
             <span class="kw">let </span>runtime = Runtime::load(
@@ -621,34 +761,6 @@
             switches: <span class="macro">vec!</span>[],
             vars: VarMap::default(),
         })
-    }
-
-    <span class="kw">fn </span>open_fs_from_paths(paths: <span class="kw-2">&amp;</span>[<span class="kw">impl </span>AsRef&lt;Path&gt;]) -&gt; <span class="prelude-ty">Result</span>&lt;(VfsPath, Cow&lt;str&gt;)&gt; {
-        <span class="kw">let </span>(root_path, filename) = <span class="kw">if </span>paths.len() == <span class="number">1 </span>{
-            <span class="kw">let </span>path = paths[<span class="number">0</span>].as_ref();
-            <span class="kw">let </span>ext = path.extension().unwrap_or_default();
-            <span class="kw">if </span>ext == <span class="string">&quot;yaml&quot; </span>{
-                <span class="kw">let </span>root_path = path
-                    .parent()
-                    .ok_or_else(|| <span class="macro">anyhow!</span>(<span class="string">&quot;Cannot get parent from input path.&quot;</span>))<span class="question-mark">?</span>;
-                (
-                    VfsPath::from(PhysicalFS::new(root_path)),
-                    path.file_name().unwrap_or_default().to_string_lossy(),
-                )
-            } <span class="kw">else if </span>ext == <span class="string">&quot;ayapack&quot; </span>{
-                (TarFS::new(path)<span class="question-mark">?</span>.into(), <span class="string">&quot;config.yaml&quot;</span>.into())
-            } <span class="kw">else </span>{
-                <span class="macro">bail!</span>(<span class="string">&quot;Cannot determine filesystem.&quot;</span>)
-            }
-        } <span class="kw">else </span>{
-            <span class="kw">let </span>files = paths
-                .iter()
-                .rev()
-                .map(|path| TarFS::new(path.as_ref()).map(VfsPath::from))
-                .collect::&lt;<span class="prelude-ty">Result</span>&lt;Vec&lt;<span class="kw">_</span>&gt;, <span class="kw">_</span>&gt;&gt;()<span class="question-mark">?</span>;
-            (OverlayFS::new(<span class="kw-2">&amp;</span>files).into(), <span class="string">&quot;config.yaml&quot;</span>.into())
-        };
-        <span class="prelude-val">Ok</span>((root_path, filename))
     }
 
     <span class="kw">fn </span>preprocess_game(config: <span class="kw-2">&amp;mut </span>GameConfig, runtime: <span class="kw-2">&amp;</span>Runtime&lt;M&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {

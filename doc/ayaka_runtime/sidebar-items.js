@@ -1,1 +1,1 @@
-window.SIDEBAR_ITEMS = {"enum":["OpenStatus"],"fn":["version"],"macro":["locale"],"mod":["plugin"],"struct":["Context","Game","GameConfig","Paragraph","PluginConfig"]};
+window.SIDEBAR_ITEMS = {"enum":["OpenStatus"],"fn":["version"],"macro":["locale"],"mod":["plugin"],"struct":["Context","ContextBuilder","ContextBuilderWithPaths","Game","GameConfig","Paragraph","PluginConfig"]};
