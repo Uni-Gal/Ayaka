@@ -1,24 +1,28 @@
 [package]
 name = "ayaka-gui"
 description = "GUI frontend for Ayaka."
-# TODO: inherit from workspace
-version = "0.2.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+categories.workspace = true
+keywords.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "ayaka_gui_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-# TODO: remove this
-# Avoid 0.13.3, because we use workspace dependencies.
-cargo_toml = "=0.13.2"
-tauri-build = { version = "1.2", features = [] }
+tauri-build = { version = "2.0.0-alpha.2", features = [] }
 
 [dependencies]
 ayaka-plugin-wasmi = { workspace = true }
 ayaka-model = { workspace = true }
-flexi_logger = { workspace = true }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "1.2", features = ["cli", "dialog-open", "window-all"] }
-tauri-plugin-window-state = "0.1"
+tauri = { version = "2.0.0-alpha.4", features = ["cli", "dialog-open", "os-all", "window-all"] }
+tokio = { workspace = true, features = ["sync"] }
 axum = { version = "0.6", default-features = false, features = [
     "http1",
     "tokio",
@@ -26,6 +30,18 @@ axum = { version = "0.6", default-features = false, features = [
 ] }
 tower-http = { version = "0.4", features = ["cors", "trace"] }
 mime_guess = "2.0"
+vfs-tar = { version = "0.4", features = ["mmap"] }
+
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri-plugin-window-state = { git = "https://github.com/tauri-apps/plugins-workspace.git", branch = "next" }
+flexi_logger = { workspace = true }
+
+[target.'cfg(target_os = "ios")'.dependencies]
+file-picker-ios = { git = "https://github.com/Berrysoft/file-picker-ios.git" }
+
+[target.'cfg(target_os = "android")'.dependencies]
+android_logger = "0.13"
+file-picker-android = { git = "https://github.com/Berrysoft/file-picker-android.git" }
 
 [features]
 default = ["custom-protocol"]

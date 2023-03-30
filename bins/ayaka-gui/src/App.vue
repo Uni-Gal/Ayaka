@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import 'bootstrap-dark-5/dist/css/bootstrap-dark.min.css'
 import { appWindow } from "@tauri-apps/api/window"
-import { init, save_all } from './interop'
+import { init } from './interop'
 import { Modal } from 'bootstrap'
 </script>
 
@@ -17,7 +17,6 @@ export default {
             modal.show()
         },
         async quit_direct() {
-            await save_all()
             await appWindow.close()
         }
     }

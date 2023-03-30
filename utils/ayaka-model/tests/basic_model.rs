@@ -92,7 +92,13 @@ async fn progress() {
     let mut model =
         GameViewModel::<NopSettingsManager, WasmiModule>::new(NopSettingsManager::new().unwrap());
     let linker = WasmiLinker::new(()).unwrap();
-    let mut context = model.open_game(&[CONFIG_PATH], FrontendType::Text, linker);
+    let context = ContextBuilder::<WasmiModule>::new(FrontendType::Text, linker)
+        .with_paths(&[CONFIG_PATH])
+        .unwrap()
+        .open()
+        .await
+        .unwrap();
+    let mut context = model.open_game(context);
     let progresses = unsafe { Pin::new_unchecked(&mut context) }
         .collect::<Vec<_>>()
         .await;
@@ -100,11 +106,6 @@ async fn progress() {
     assert_eq!(
         &progresses,
         &[
-            OpenGameStatus::LoadProfile,
-            OpenGameStatus::CreateRuntime,
-            OpenGameStatus::GamePlugin,
-            OpenGameStatus::LoadResource,
-            OpenGameStatus::LoadParagraph,
             OpenGameStatus::LoadSettings,
             OpenGameStatus::LoadGlobalRecords,
             OpenGameStatus::LoadRecords,
@@ -133,10 +134,13 @@ async fn paras() {
     };
     let mut model = GameViewModel::<NopSettingsManager, WasmiModule>::new(manager);
     let linker = WasmiLinker::new(()).unwrap();
-    model
-        .open_game(&[CONFIG_PATH], FrontendType::Text, linker)
+    let context = ContextBuilder::<WasmiModule>::new(FrontendType::Text, linker)
+        .with_paths(&[CONFIG_PATH])
+        .unwrap()
+        .open()
         .await
         .unwrap();
+    model.open_game(context).await.unwrap();
     model.init_new();
     let actions = std::iter::from_fn(|| {
         if model.next_run() {

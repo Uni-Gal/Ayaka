@@ -38,7 +38,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libwebkit2gtk-4.0-dev
+          sudo apt-get install -y libwebkit2gtk-4.1-dev
         if: matrix.platform.name == 'linux-x64'
       - name: Install targets
         run: |

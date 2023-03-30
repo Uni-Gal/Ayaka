@@ -32,7 +32,9 @@ async fn main() -> Result<()> {
         .use_utc()
         .start()?;
     let linker = WasmiLinker::new(())?;
-    let context = Context::<WasmiModule>::open(&opts.input, FrontendType::Latex, linker);
+    let context = ContextBuilder::<WasmiModule>::new(FrontendType::Latex, linker)
+        .with_paths(&opts.input)?
+        .open();
     let mut ctx = context.await?;
 
     let output = tokio::fs::File::create(&opts.output).await?;

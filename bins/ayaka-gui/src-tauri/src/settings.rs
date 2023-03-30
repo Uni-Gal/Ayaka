@@ -1,10 +1,10 @@
+use crate::dir_resolver::DirResolver;
 use ayaka_model::{
     anyhow::{self, Result},
     *,
 };
 use serde::{de::DeserializeOwned, Serialize};
 use std::path::{Path, PathBuf};
-use tauri::PathResolver;
 
 #[derive(Default)]
 pub struct FileSettingsManager {
@@ -13,7 +13,7 @@ pub struct FileSettingsManager {
 }
 
 impl FileSettingsManager {
-    pub fn new(resolver: &PathResolver) -> Self {
+    pub fn new(resolver: &DirResolver) -> Self {
         Self {
             local_data_dir: resolver
                 .app_local_data_dir()

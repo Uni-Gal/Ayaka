@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { listen, Event as TauriEvent, UnlistenFn } from '@tauri-apps/api/event';
 import { OpenGameStatus, OpenGameStatusType, open_game, choose_locale, get_settings, set_locale } from '../interop'
-import { appWindow } from '@tauri-apps/api/window'
 import { Modal } from 'bootstrap'
 </script>
 
@@ -13,31 +12,39 @@ export default {
             text: "",
             error: "",
             progress: 0,
-            unlisten_fn: null as UnlistenFn | null
+            unlisten_fn: undefined as UnlistenFn | undefined,
+            modal: undefined as Modal | undefined
         }
     },
     async mounted() {
+        this.modal = new Modal(this.$refs.errorModal as HTMLElement)
         this.unlisten_fn = await listen('ayaka://open_status', this.on_open_status)
-        try {
-            await open_game()
-        }
-        catch (e) {
-            if (e instanceof Error) {
-                this.error = e.message
-            } else {
-                this.error = JSON.stringify(e)
-            }
-            let modal = new Modal(this.$refs.errorModal as HTMLElement)
-            modal.show()
-        }
+        await this.open_game()
     },
     unmounted() {
         if (this.unlisten_fn) {
             this.unlisten_fn()
-            this.unlisten_fn = null
+            this.unlisten_fn = undefined
         }
     },
     methods: {
+        async open_game() {
+            try {
+                await open_game()
+            }
+            catch (e) {
+                if (e instanceof Error) {
+                    this.error = e.message
+                } else {
+                    this.error = JSON.stringify(e)
+                }
+                this.modal?.show()
+            }
+        },
+        async reopen_game() {
+            this.modal?.hide()
+            await this.open_game()
+        },
         async on_open_status(e: TauriEvent<OpenGameStatus>) {
             console.log(e.payload)
             const status = e.payload;
@@ -126,7 +133,7 @@ export default {
                 </div>
                 <div class="modal-body">{{ error }}</div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" @click="appWindow.close()">
+                    <button type="button" class="btn btn-primary" @click="reopen_game">
                         {{ $t("dialogOk") }}
                     </button>
                 </div>

@@ -146,7 +146,7 @@ async fn resolver<R: Runtime>(app: AppHandle<R>, req: Request<Body>) -> impl Int
 
 pub fn init<R: Runtime>(listener: TcpListener) -> TauriPlugin<R> {
     Builder::new("asset_resolver")
-        .setup(move |app| {
+        .setup(move |app, _| {
             let app = app.clone();
             tauri::async_runtime::spawn(async {
                 let app = Router::new()

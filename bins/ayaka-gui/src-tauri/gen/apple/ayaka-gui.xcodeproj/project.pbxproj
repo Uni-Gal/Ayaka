@@ -1,0 +1,492 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 54;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0CBDD357117FAEC5D89D5482 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = CEBE98C9001BA738BB51E223 /* QuartzCore.framework */; };
+		0FE6867EC84D5801E482C18F /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5D287069D256FE38137744D0 /* MetalKit.framework */; };
+		4917B737EF5837B06C68EEFE /* main.mm in Sources */ = {isa = PBXBuildFile; fileRef = AC0978CE50F1C022143D0BDA /* main.mm */; };
+		50428C9729CC31C9003D4B1A /* UniformTypeIdentifiers.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 50428C9629CC31C9003D4B1A /* UniformTypeIdentifiers.framework */; };
+		8E45888FED210D5D539EA5B5 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 435C8BA84E1A66CBDC0AF268 /* UIKit.framework */; };
+		A97E96E4829B22DADD7A586D /* assets in Resources */ = {isa = PBXBuildFile; fileRef = 742C4E3AE13F30716727AD1E /* assets */; };
+		AD3575B49A10277C11DD3DC6 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7AF4B6880F0FB638558AB0EB /* Security.framework */; };
+		AF4428BF663A847EF29C584B /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = BC18D8216F33DEF5C4D1B05A /* Metal.framework */; };
+		CE55D4488CE2AEFA45553ADD /* libayaka_gui_lib.a in Frameworks */ = {isa = PBXBuildFile; fileRef = C731FF0818A0018979DF7EA7 /* libayaka_gui_lib.a */; };
+		E888DFA3181D1FA78AA16D3C /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FB21B17CE7EF4E6DEF0D7866 /* Assets.xcassets */; };
+		ED86986BA94EB9547130D068 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 00A2B4DAFDAEFB22747D72DF /* CoreGraphics.framework */; };
+		FA5AA78866423126F2650495 /* WebKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 743602BB3ED0EEA7168A12D9 /* WebKit.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		00A2B4DAFDAEFB22747D72DF /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		435C8BA84E1A66CBDC0AF268 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		50428C9629CC31C9003D4B1A /* UniformTypeIdentifiers.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UniformTypeIdentifiers.framework; path = System/Library/Frameworks/UniformTypeIdentifiers.framework; sourceTree = SDKROOT; };
+		590AB4E79B1008E49184AA4D /* ayaka-gui.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ayaka-gui.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		5D287069D256FE38137744D0 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		742C4E3AE13F30716727AD1E /* assets */ = {isa = PBXFileReference; lastKnownFileType = folder; path = assets; sourceTree = SOURCE_ROOT; };
+		743602BB3ED0EEA7168A12D9 /* WebKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WebKit.framework; path = System/Library/Frameworks/WebKit.framework; sourceTree = SDKROOT; };
+		7779FDE860C09A21880BB253 /* main.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = main.rs; sourceTree = "<group>"; };
+		7AF4B6880F0FB638558AB0EB /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
+		9BD1F62E510E0A4862C6AD62 /* lib.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = lib.rs; sourceTree = "<group>"; };
+		9E3A98A865C1823B1C6754B7 /* bindings.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = bindings.h; sourceTree = "<group>"; };
+		AC0978CE50F1C022143D0BDA /* main.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = main.mm; sourceTree = "<group>"; };
+		BA39914C8AE1D42D950C3744 /* settings.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = settings.rs; sourceTree = "<group>"; };
+		BC18D8216F33DEF5C4D1B05A /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		BC26CDE0238E8A8814BD1C52 /* mobile.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = mobile.rs; sourceTree = "<group>"; };
+		C731FF0818A0018979DF7EA7 /* libayaka_gui_lib.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libayaka_gui_lib.a; sourceTree = "<group>"; };
+		CEBE98C9001BA738BB51E223 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		F8437775BA743714F7B3496A /* asset_resolver.rs */ = {isa = PBXFileReference; lastKnownFileType = text; path = asset_resolver.rs; sourceTree = "<group>"; };
+		FB21B17CE7EF4E6DEF0D7866 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		68C91F2ADB689765D20BED9E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CE55D4488CE2AEFA45553ADD /* libayaka_gui_lib.a in Frameworks */,
+				ED86986BA94EB9547130D068 /* CoreGraphics.framework in Frameworks */,
+				AF4428BF663A847EF29C584B /* Metal.framework in Frameworks */,
+				50428C9729CC31C9003D4B1A /* UniformTypeIdentifiers.framework in Frameworks */,
+				0FE6867EC84D5801E482C18F /* MetalKit.framework in Frameworks */,
+				0CBDD357117FAEC5D89D5482 /* QuartzCore.framework in Frameworks */,
+				AD3575B49A10277C11DD3DC6 /* Security.framework in Frameworks */,
+				8E45888FED210D5D539EA5B5 /* UIKit.framework in Frameworks */,
+				FA5AA78866423126F2650495 /* WebKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		25D8D3E3BDDD0E5204B942E8 /* bindings */ = {
+			isa = PBXGroup;
+			children = (
+				9E3A98A865C1823B1C6754B7 /* bindings.h */,
+			);
+			path = bindings;
+			sourceTree = "<group>";
+		};
+		673545F42A53A12CD454362A /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				8405B9C94882DA381657A038 /* ayaka-gui */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		8405B9C94882DA381657A038 /* ayaka-gui */ = {
+			isa = PBXGroup;
+			children = (
+				AC0978CE50F1C022143D0BDA /* main.mm */,
+				25D8D3E3BDDD0E5204B942E8 /* bindings */,
+			);
+			path = "ayaka-gui";
+			sourceTree = "<group>";
+		};
+		B1936D7EE8086293F73C7EFF /* Externals */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Externals;
+			sourceTree = "<group>";
+		};
+		BA23C4293E9A23C4FB4285AE /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				50428C9629CC31C9003D4B1A /* UniformTypeIdentifiers.framework */,
+				00A2B4DAFDAEFB22747D72DF /* CoreGraphics.framework */,
+				C731FF0818A0018979DF7EA7 /* libayaka_gui_lib.a */,
+				BC18D8216F33DEF5C4D1B05A /* Metal.framework */,
+				5D287069D256FE38137744D0 /* MetalKit.framework */,
+				CEBE98C9001BA738BB51E223 /* QuartzCore.framework */,
+				7AF4B6880F0FB638558AB0EB /* Security.framework */,
+				435C8BA84E1A66CBDC0AF268 /* UIKit.framework */,
+				743602BB3ED0EEA7168A12D9 /* WebKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		BAF3CBDDBED020EE0FC84B9C /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				590AB4E79B1008E49184AA4D /* ayaka-gui.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		EBE7D5E3B1F6F0448BC87FCD = {
+			isa = PBXGroup;
+			children = (
+				742C4E3AE13F30716727AD1E /* assets */,
+				FB21B17CE7EF4E6DEF0D7866 /* Assets.xcassets */,
+				B1936D7EE8086293F73C7EFF /* Externals */,
+				673545F42A53A12CD454362A /* Sources */,
+				F3106D15CF02FDFA227B3E3B /* src */,
+				BA23C4293E9A23C4FB4285AE /* Frameworks */,
+				BAF3CBDDBED020EE0FC84B9C /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F3106D15CF02FDFA227B3E3B /* src */ = {
+			isa = PBXGroup;
+			children = (
+				F8437775BA743714F7B3496A /* asset_resolver.rs */,
+				9BD1F62E510E0A4862C6AD62 /* lib.rs */,
+				7779FDE860C09A21880BB253 /* main.rs */,
+				BC26CDE0238E8A8814BD1C52 /* mobile.rs */,
+				BA39914C8AE1D42D950C3744 /* settings.rs */,
+			);
+			name = src;
+			path = ../../src;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		044A0072E0A5766B5A9FE4AE /* ayaka-gui_iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7328ECEA50DDCA89242C10FC /* Build configuration list for PBXNativeTarget "ayaka-gui_iOS" */;
+			buildPhases = (
+				076D75A4ABB4B12D410227B2 /* Build Rust Code */,
+				519B7D1055DDCA0096E66FF5 /* Sources */,
+				9669FC0C8FCAC1F12EE1AD75 /* Resources */,
+				68C91F2ADB689765D20BED9E /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "ayaka-gui_iOS";
+			productName = "ayaka-gui_iOS";
+			productReference = 590AB4E79B1008E49184AA4D /* ayaka-gui.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C409D6CFB5A706F11CE708BE /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1200;
+				TargetAttributes = {
+					044A0072E0A5766B5A9FE4AE = {
+						DevelopmentTeam = DCX6WL5KCS;
+					};
+				};
+			};
+			buildConfigurationList = E9216210172BFBAC7DA498B8 /* Build configuration list for PBXProject "ayaka-gui" */;
+			compatibilityVersion = "Xcode 11.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = EBE7D5E3B1F6F0448BC87FCD;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				044A0072E0A5766B5A9FE4AE /* ayaka-gui_iOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		9669FC0C8FCAC1F12EE1AD75 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E888DFA3181D1FA78AA16D3C /* Assets.xcassets in Resources */,
+				A97E96E4829B22DADD7A586D /* assets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		076D75A4ABB4B12D410227B2 /* Build Rust Code */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Build Rust Code";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(SRCROOT)/target/aarch64-apple-ios/${CONFIGURATION}/deps/libayaka_gui_lib.a",
+				"$(SRCROOT)/target/x86_64-apple-ios/${CONFIGURATION}/deps/libayaka_gui_lib.a",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "tauri ios xcode-script -v --platform ${PLATFORM_DISPLAY_NAME:?} --sdk-root ${SDKROOT:?} --framework-search-paths \"${FRAMEWORK_SEARCH_PATHS:?}\" --header-search-paths \"${HEADER_SEARCH_PATHS:?}\" --gcc-preprocessor-definitions \"${GCC_PREPROCESSOR_DEFINITIONS:-}\" --configuration ${CONFIGURATION:?} ${FORCE_COLOR} ${ARCHS:?}";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		519B7D1055DDCA0096E66FF5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4917B737EF5837B06C68EEFE /* main.mm in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		3C02134CF3636EBC4441D1BE /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+					x86_64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "ayaka-gui_iOS/Entitlements.plist";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = DCX6WL5KCS;
+				ENABLE_BITCODE = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = "ayaka-gui_iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64-sim]" = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Externals/$(CONFIGURATION)",
+					"$(SDKROOT)/usr/lib/swift",
+					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
+					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Externals/$(CONFIGURATION)",
+					"$(SDKROOT)/usr/lib/swift",
+					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
+					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Externals/$(CONFIGURATION)",
+					"$(SDKROOT)/usr/lib/swift",
+					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
+					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.unigal.ayaka-gui";
+				PRODUCT_NAME = "ayaka-gui";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = "arm64  x86_64";
+			};
+			name = release;
+		};
+		4F2B574A2AA2B38236BE7F23 /* release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = release;
+		};
+		55400D12033942D4E23BF738 /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = debug;
+		};
+		9EA1FF93ECA3138DD84E6ACC /* debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				ARCHS = (
+					arm64,
+					x86_64,
+				);
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "ayaka-gui_iOS/Entitlements.plist";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = DCX6WL5KCS;
+				ENABLE_BITCODE = NO;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"\".\"",
+				);
+				INFOPLIST_FILE = "ayaka-gui_iOS/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64-sim]" = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Externals/$(CONFIGURATION)",
+					"$(SDKROOT)/usr/lib/swift",
+					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
+					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=arm64]" = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Externals/$(CONFIGURATION)",
+					"$(SDKROOT)/usr/lib/swift",
+					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
+					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
+				);
+				"LIBRARY_SEARCH_PATHS[arch=x86_64]" = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Externals/$(CONFIGURATION)",
+					"$(SDKROOT)/usr/lib/swift",
+					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
+					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.unigal.ayaka-gui";
+				PRODUCT_NAME = "ayaka-gui";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALID_ARCHS = "arm64  x86_64";
+			};
+			name = debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		7328ECEA50DDCA89242C10FC /* Build configuration list for PBXNativeTarget "ayaka-gui_iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9EA1FF93ECA3138DD84E6ACC /* debug */,
+				3C02134CF3636EBC4441D1BE /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+		E9216210172BFBAC7DA498B8 /* Build configuration list for PBXProject "ayaka-gui" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				55400D12033942D4E23BF738 /* debug */,
+				4F2B574A2AA2B38236BE7F23 /* release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = C409D6CFB5A706F11CE708BE /* Project object */;
+}

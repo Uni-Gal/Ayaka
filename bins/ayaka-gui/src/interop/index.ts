@@ -9,7 +9,7 @@ export async function init(): Promise<void> {
 
 export function conv_src(path?: string): string | undefined {
     if (path) {
-        return decodeURIComponent(`//127.0.0.1:${DIST_PORT}/fs${path}`)
+        return decodeURIComponent(`http://127.0.0.1:${DIST_PORT}/fs${path}`)
     }
     return undefined
 }
@@ -110,16 +110,18 @@ export function get_settings(): Promise<Settings> {
     return invoke("get_settings")
 }
 
-export function set_settings(settings: Settings): Promise<void> {
-    return invoke("set_settings", { settings: settings })
+export async function set_settings(settings: Settings): Promise<void> {
+    await invoke("set_settings", { settings: settings })
+    await save_all()
 }
 
 export function get_records(): Promise<ActionText[]> {
     return invoke("get_records")
 }
 
-export function save_record_to(index: number): Promise<void> {
-    return invoke("save_record_to", { index: index })
+export async function save_record_to(index: number): Promise<void> {
+    await invoke("save_record_to", { index: index })
+    await save_all()
 }
 
 export async function set_locale(loc: Locale): Promise<void> {

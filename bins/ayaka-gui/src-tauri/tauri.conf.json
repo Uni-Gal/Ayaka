@@ -1,5 +1,4 @@
 {
-  "$schema": "../node_modules/@tauri-apps/cli/schema.json",
   "build": {
     "beforeBuildCommand": "npm run build",
     "beforeDevCommand": "npm run dev",
@@ -19,6 +18,9 @@
       "dialog": {
         "all": false,
         "open": true
+      },
+      "os": {
+        "all": true
       }
     },
     "bundle": {
@@ -27,7 +29,7 @@
       "copyright": "",
       "deb": {
         "depends": [
-          "libwebkit2gtk-4.0-37"
+          "libwebkit2gtk-4.1-0"
         ]
       },
       "externalBin": [],

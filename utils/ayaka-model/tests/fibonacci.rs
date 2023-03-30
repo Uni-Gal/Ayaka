@@ -21,7 +21,10 @@ fn custom_default() -> Action {
 #[tokio::test(flavor = "current_thread")]
 async fn calculate() {
     let linker = WasmiLinker::new(()).unwrap();
-    let mut context = Context::<WasmiModule>::open(&[CONFIG_PATH], FrontendType::Text, linker)
+    let mut context = ContextBuilder::<WasmiModule>::new(FrontendType::Text, linker)
+        .with_paths(&[CONFIG_PATH])
+        .unwrap()
+        .open()
         .await
         .unwrap();
     context.set_start_context();

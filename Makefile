@@ -19,7 +19,7 @@ book:
 serve-book:
 	cd book && $(MAKE) serve
 
-.PHONY: plugins debug-cross release release-cross
+.PHONY: plugins debug-cross release release-cross release-android
 plugins:
 	cd plugins && $(MAKE) plugins
 debug-cross:
@@ -28,6 +28,8 @@ release:
 	cd bins && $(MAKE) release
 release-cross:
 	cd bins && $(MAKE) release-cross TARGET=$(TARGET)
+release-android:
+	cd bins && $(MAKE) release-android
 
 examples/plugins.ayapack: plugins
 	(cd -P examples && tar -cf $(abspath $@) -- plugins)
@@ -52,5 +54,11 @@ $(eval $(foreach ex,$(EXAMPLES),$(call example-tpl,$(ex))))
 
 %.pdf: %.tex
 	cd $(dir $<) && latexmk -lualatex $(notdir $<)
+
+.PHONY: example-android example-ios
+example-android:
+	cd bins && $(MAKE) run-android
+example-ios:
+	cd bins && $(MAKE) run-ios
 
 .SECONDARY:
