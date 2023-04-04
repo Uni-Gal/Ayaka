@@ -1,5 +1,5 @@
 #![deny(unsafe_code)]
-#![feature(once_cell)]
+#![feature(lazy_cell)]
 
 mod plugin;
 mod script;

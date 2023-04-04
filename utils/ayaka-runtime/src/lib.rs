@@ -7,7 +7,7 @@
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
 #![feature(generators)]
-#![feature(once_cell)]
+#![feature(lazy_cell)]
 
 mod config;
 mod context;
