@@ -7,7 +7,7 @@ plugins {
 android {
     compileSdk = 33
     defaultConfig {
-        manifestPlaceholders["usesCleartextTraffic"] = "false"
+        manifestPlaceholders["usesCleartextTraffic"] = "true"
         applicationId = "com.unigal.ayaka_gui"
         minSdk = 24
         targetSdk = 33
@@ -21,7 +21,6 @@ android {
     }
     buildTypes {
         getByName("debug") {
-            manifestPlaceholders["usesCleartextTraffic"] = "true"
             isDebuggable = true
             isJniDebuggable = true
             isMinifyEnabled = false
