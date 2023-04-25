@@ -97,10 +97,7 @@ impl<M: RawModule + Send + Sync + 'static> ContextBuilder<M> {
     /// If the input `paths` contains only one element, it may be a YAML or an FRFS file.
     /// If the input `paths` contains many element, they should all be FRFS files,
     /// and the latter one will override the former one.
-    pub fn with_paths<'a>(
-        self,
-        paths: &'a [impl AsRef<Path>],
-    ) -> Result<ContextBuilderWithPaths<'a, M>> {
+    pub fn with_paths(self, paths: &[impl AsRef<Path>]) -> Result<ContextBuilderWithPaths<M>> {
         if paths.is_empty() {
             bail!("At least one path should be input.");
         }

@@ -15,6 +15,7 @@ anyhow = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 trylog = { workspace = true, optional = true }
 lalrpop-util = { version = "0.19", features = ["lexer"], optional = true }
+regex = { version = "1", features = ["unicode-perl"] }
 
 [build-dependencies]
 lalrpop = { version = "0.19", optional = true }

@@ -16,7 +16,7 @@ ayaka-plugin = { workspace = true }
 ayaka-script = { workspace = true, features = ["parser"] }
 fallback = { workspace = true }
 language-matcher = "0.1"
-icu_locid = { version = "1.1", features = ["std"] }
+icu_locid = { version = "1", features = ["std"] }
 sys-locale = "0.3"
 serde = { workspace = true, features = ["derive"] }
 serde_yaml = { workspace = true }
@@ -25,7 +25,7 @@ stream-future = { workspace = true }
 futures-util = "0.3"
 log = { workspace = true }
 trylog = { workspace = true }
-cfg-if = "1.0"
+cfg-if = "1"
 vfs = { workspace = true }
 vfs-tar = { version = "0.4", features = ["mmap"] }
 rand = "0.8"

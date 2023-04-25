@@ -36,7 +36,7 @@ ayaka-plugin-wasmi = { path = "ayaka-plugin-wasmi", version = "0.2.0" }
 ayaka-script = { path = "ayaka-script", version = "0.2.0" }
 ayaka-runtime = { path = "ayaka-runtime", version = "0.2.0" }
 
-anyhow = "1.0"
+anyhow = "1"
 
 fallback = "0.1"
 
@@ -45,9 +45,9 @@ trylog = "0.3"
 
 stream-future = "0.4"
 
-rmp-serde = "1.1"
-serde = "1.0"
-serde_with = "2.2"
+rmp-serde = "1"
+serde = "1"
+serde_with = "2"
 serde_yaml = "0.9"
 
 vfs = "0.9"

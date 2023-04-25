@@ -4,7 +4,6 @@
 #![allow(incomplete_features)]
 
 mod asset_resolver;
-mod dir_resolver;
 mod settings;
 
 #[cfg(mobile)]
@@ -16,7 +15,6 @@ use ayaka_model::{
     *,
 };
 use ayaka_plugin_wasmi::{WasmiLinker, WasmiModule};
-use dir_resolver::DirResolver;
 use serde::{Deserialize, Serialize};
 use settings::*;
 use std::{
@@ -27,7 +25,7 @@ use std::{
     pin::pin,
 };
 use tauri::{
-    async_runtime::RwLock, command, utils::config::AppUrl, AppHandle, Manager, State, Window,
+    async_runtime::RwLock, command, utils::config::AppUrl, App, AppHandle, Manager, State, Window,
     WindowUrl,
 };
 use vfs_tar::TarFS;
@@ -65,8 +63,8 @@ struct Storage {
 }
 
 impl Storage {
-    pub fn new(resolver: &DirResolver, config: Vec<PathBuf>, dist_port: u16) -> Self {
-        let manager = FileSettingsManager::new(resolver);
+    pub fn new(app: &App, config: Vec<PathBuf>, dist_port: u16) -> Self {
+        let manager = FileSettingsManager::new(app);
         Self {
             config,
             dist_port,
@@ -333,7 +331,6 @@ pub fn run() -> Result<()> {
     let builder = builder.plugin(file_picker_android::init());
     builder
         .setup(move |app| {
-            let resolver = DirResolver::new(app);
             #[cfg(target_os = "android")]
             {
                 use android_logger::{Config, FilterBuilder};
@@ -364,7 +361,9 @@ pub fn run() -> Result<()> {
                     Logger::with(spec)
                         .log_to_file(
                             FileSpec::default()
-                                .directory(resolver.app_log_dir().expect("cannot get app log dir"))
+                                .directory(
+                                    app.path().app_log_dir().expect("cannot get app log dir"),
+                                )
                                 .basename("ayaka-gui"),
                         )
                         .use_utc()
@@ -413,7 +412,7 @@ pub fn run() -> Result<()> {
                     paths
                 }
             };
-            app.manage(Storage::new(&resolver, config, port));
+            app.manage(Storage::new(app, config, port));
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

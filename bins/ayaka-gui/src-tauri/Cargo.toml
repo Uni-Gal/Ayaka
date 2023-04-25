@@ -14,14 +14,14 @@ name = "ayaka_gui_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.0.0-alpha.3", features = [] }
+tauri-build = { version = "2.0.0-alpha.4", features = [] }
 
 [dependencies]
 ayaka-plugin-wasmi = { workspace = true }
 ayaka-model = { workspace = true }
-serde_json = "1.0"
-serde = { version = "1.0", features = ["derive"] }
-tauri = { version = "2.0.0-alpha.6", features = ["cli", "dialog-open", "os-all", "window-all"] }
+serde_json = "1"
+serde = { version = "1", features = ["derive"] }
+tauri = { version = "2.0.0-alpha.8", features = ["cli", "dialog-open", "os-all", "window-all"] }
 tokio = { workspace = true, features = ["sync"] }
 axum = { version = "0.6", default-features = false, features = [
     "http1",
@@ -29,7 +29,7 @@ axum = { version = "0.6", default-features = false, features = [
     "headers",
 ] }
 tower-http = { version = "0.4", features = ["cors", "trace"] }
-mime_guess = "2.0"
+mime_guess = "2"
 vfs-tar = { version = "0.4", features = ["mmap"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
