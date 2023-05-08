@@ -18,7 +18,7 @@ lalrpop-util = { version = "0.19", features = ["lexer"], optional = true }
 regex = { version = "1", features = ["unicode-perl"] }
 
 [build-dependencies]
-lalrpop = { version = "0.19", optional = true }
+lalrpop = { version = "0.20", optional = true }
 
 [features]
 default = []
