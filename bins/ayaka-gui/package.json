@@ -27,7 +27,7 @@
   "devDependencies": {
     "@types/bootstrap": "^5.2.6",
     "@types/lodash": "^4.14.194",
-    "@types/node": "^20.1.4",
+    "@types/node": "^20.2.3",
     "@vitejs/plugin-vue": "^3.2.0",
     "@vue/tsconfig": "^0.4.0",
     "internal-ip": "^7.0.0",
