@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { getName, getTauriVersion, getVersion } from '@tauri-apps/api/app'
+import { getName, getTauriVersion, getVersion } from "@tauri-apps/plugin-app"
 import { info, ayaka_version } from '../interop'
 import IconButton from '../components/IconButton.vue';
 </script>

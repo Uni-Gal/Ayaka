@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { conv_src, info, next_run, start_new } from '../interop'
-import { platform, Platform } from '@tauri-apps/api/os'
+import { platform, Platform } from "@tauri-apps/plugin-os"
 </script>
 
 <script lang="ts">

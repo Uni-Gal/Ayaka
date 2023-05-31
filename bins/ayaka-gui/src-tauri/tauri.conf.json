@@ -10,19 +10,6 @@
     "version": "0.2.0"
   },
   "tauri": {
-    "allowlist": {
-      "all": false,
-      "window": {
-        "all": true
-      },
-      "dialog": {
-        "all": false,
-        "open": true
-      },
-      "os": {
-        "all": true
-      }
-    },
     "bundle": {
       "active": true,
       "category": "RolePlayingGame",
@@ -65,9 +52,6 @@
     "security": {
       "csp": null
     },
-    "updater": {
-      "active": false
-    },
     "windows": [
       {
         "label": "main",
@@ -78,16 +62,6 @@
         "title": "Ayaka",
         "center": true
       }
-    ],
-    "cli": {
-      "args": [
-        {
-          "name": "config",
-          "index": 1,
-          "takesValue": true,
-          "multiple": true
-        }
-      ]
-    }
+    ]
   }
 }

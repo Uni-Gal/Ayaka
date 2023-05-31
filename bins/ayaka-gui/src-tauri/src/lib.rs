@@ -15,6 +15,7 @@ use ayaka_model::{
     *,
 };
 use ayaka_plugin_wasmi::{WasmiLinker, WasmiModule};
+use clap::Parser;
 use serde::{Deserialize, Serialize};
 use settings::*;
 use std::{
@@ -95,53 +96,26 @@ fn dist_port(storage: State<Storage>) -> u16 {
     storage.dist_port
 }
 
-#[cfg(desktop)]
-async fn show_pick_files(_handle: &AppHandle, window: &Window) -> Result<Vec<VfsPath>> {
-    tauri::api::dialog::blocking::FileDialogBuilder::new()
+async fn show_pick_files(handle: &AppHandle, window: &Window) -> Result<Vec<VfsPath>> {
+    use tauri_plugin_dialog::DialogExt;
+
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    tauri_plugin_dialog::FileDialogBuilder::new(handle.dialog().clone())
         .add_filter("Ayaka package", &["ayapack"])
         .set_parent(&window)
-        .pick_files()
-        .unwrap_or_default()
-        .into_iter()
-        .map(|p| {
-            TarFS::new_mmap(p)
-                .map(VfsPath::from)
-                .map_err(anyhow::Error::from)
-        })
-        .collect()
-}
-
-#[cfg(target_os = "ios")]
-async fn show_pick_files(_handle: &AppHandle, window: &Window) -> Result<Vec<VfsPath>> {
-    let (tx, rx) = tokio::sync::oneshot::channel();
-    window.with_webview(move |webview| {
-        let picked = file_picker_ios::pick_files(webview.view_controller(), &["ayapack"]);
-        tx.send(picked).ok();
-    })?;
-    let picked = rx.await?;
-    let paths = picked
-        .map(|file| {
-            TarFS::new(file)
-                .map(VfsPath::from)
-                .map_err(anyhow::Error::from)
-        })
-        .try_collect::<Vec<_>>()
-        .await?;
-    Ok(paths)
-}
-
-#[cfg(target_os = "android")]
-async fn show_pick_files(handle: &AppHandle, _window: &Window) -> Result<Vec<VfsPath>> {
-    handle
-        .state::<file_picker_android::PickerPlugin<tauri::Wry>>()
-        .pick_files()?
-        .into_iter()
-        .map(|p| {
-            TarFS::new_mmap(p)
-                .map(VfsPath::from)
-                .map_err(anyhow::Error::from)
-        })
-        .collect()
+        .pick_files(move |files| {
+            let files = files
+                .unwrap_or_default()
+                .into_iter()
+                .map(|p| {
+                    TarFS::new_mmap(p.path)
+                        .map(VfsPath::from)
+                        .map_err(anyhow::Error::from)
+                })
+                .collect::<Vec<_>>();
+            tx.send(files).ok();
+        });
+    rx.await?.into_iter().collect()
 }
 
 #[command]
@@ -321,14 +295,22 @@ async fn history(storage: State<'_, Storage>) -> CommandResult<Vec<(Action, Opti
     Ok(storage.model.read().await.current_history().rev().collect())
 }
 
+#[derive(Debug, Parser)]
+struct Config {
+    #[clap()]
+    config: Option<Vec<PathBuf>>,
+}
+
 pub fn run() -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:0")?;
     let port = listener.local_addr()?.port();
     let builder = tauri::Builder::default().plugin(asset_resolver::init(listener));
     #[cfg(desktop)]
     let builder = builder.plugin(tauri_plugin_window_state::Builder::default().build());
-    #[cfg(target_os = "android")]
-    let builder = builder.plugin(file_picker_android::init());
+    let builder = builder
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_os::init())
+        .plugin(tauri_plugin_window::init());
     builder
         .setup(move |app| {
             #[cfg(target_os = "android")]
@@ -377,16 +359,9 @@ pub fn run() -> Result<()> {
                 window.open_devtools();
             }
 
-            use serde_json::Value;
-
-            let matches = app.get_cli_matches()?;
-            let config = match &matches.args["config"].value {
-                Value::String(s) => vec![PathBuf::from(s)],
-                Value::Array(arr) => arr
-                    .iter()
-                    .filter_map(|v| v.as_str())
-                    .map(PathBuf::from)
-                    .collect::<Vec<_>>(),
+            let args = Config::try_parse()?;
+            let config = match args.config {
+                Some(arr) => arr,
                 _ => {
                     let current = std::env::current_exe()?;
                     let current = current
