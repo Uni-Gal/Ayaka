@@ -96,25 +96,46 @@ fn dist_port(storage: State<Storage>) -> u16 {
     storage.dist_port
 }
 
-async fn show_pick_files(handle: &AppHandle, window: &Window) -> Result<Vec<VfsPath>> {
+async fn show_pick_files(handle: &AppHandle, _window: &Window) -> Result<Vec<VfsPath>> {
     use tauri_plugin_dialog::DialogExt;
 
     let (tx, rx) = tokio::sync::oneshot::channel();
-    tauri_plugin_dialog::FileDialogBuilder::new(handle.dialog().clone())
-        .add_filter("Ayaka package", &["ayapack"])
-        .set_parent(&window)
-        .pick_files(move |files| {
-            let files = files
-                .unwrap_or_default()
-                .into_iter()
-                .map(|p| {
+    let builder = tauri_plugin_dialog::FileDialogBuilder::new(handle.dialog().clone());
+    #[cfg(desktop)]
+    let builder = builder
+        .set_parent(&_window)
+        .add_filter("Ayaka package", &["ayapack"]);
+    builder.pick_files(move |files| {
+        let files = files
+            .unwrap_or_default()
+            .into_iter()
+            .map(|p| {
+                #[cfg(desktop)]
+                {
                     TarFS::new_mmap(p.path)
                         .map(VfsPath::from)
                         .map_err(anyhow::Error::from)
-                })
-                .collect::<Vec<_>>();
-            tx.send(files).ok();
-        });
+                }
+                #[cfg(mobile)]
+                {
+                    if let Some(data) = p.base64_data {
+                        use base64::Engine;
+
+                        TarFS::new(
+                            base64::engine::general_purpose::STANDARD_NO_PAD
+                                .decode(data)
+                                .unwrap(),
+                        )
+                    } else {
+                        TarFS::new(std::fs::read(p.path)?)
+                    }
+                    .map(VfsPath::from)
+                    .map_err(anyhow::Error::from)
+                }
+            })
+            .collect::<Vec<_>>();
+        tx.send(files).ok();
+    });
     rx.await?.into_iter().collect()
 }
 

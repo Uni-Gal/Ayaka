@@ -276,6 +276,7 @@ dependencies = [
  "axum",
  "ayaka-model",
  "ayaka-plugin-wasmi",
+ "base64 0.21.2",
  "clap",
  "flexi_logger",
  "mime_guess",
