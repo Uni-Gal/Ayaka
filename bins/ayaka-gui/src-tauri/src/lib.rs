@@ -96,6 +96,7 @@ fn dist_port(storage: State<Storage>) -> u16 {
     storage.dist_port
 }
 
+#[cfg(any(desktop, target_os = "android"))]
 async fn show_pick_files(handle: &AppHandle, _window: &Window) -> Result<Vec<VfsPath>> {
     use tauri_plugin_dialog::DialogExt;
 
@@ -118,25 +119,34 @@ async fn show_pick_files(handle: &AppHandle, _window: &Window) -> Result<Vec<Vfs
                 }
                 #[cfg(mobile)]
                 {
-                    if let Some(data) = p.base64_data {
-                        use base64::Engine;
-
-                        TarFS::new(
-                            base64::engine::general_purpose::STANDARD_NO_PAD
-                                .decode(data)
-                                .unwrap(),
-                        )
-                    } else {
-                        TarFS::new(std::fs::read(p.path)?)
-                    }
-                    .map(VfsPath::from)
-                    .map_err(anyhow::Error::from)
+                    TarFS::new(std::fs::read(p.path)?)
+                        .map(VfsPath::from)
+                        .map_err(anyhow::Error::from)
                 }
             })
             .collect::<Vec<_>>();
         tx.send(files).ok();
     });
     rx.await?.into_iter().collect()
+}
+
+#[cfg(target_os = "ios")]
+async fn show_pick_files(_handle: &AppHandle, window: &Window) -> Result<Vec<VfsPath>> {
+    let (tx, rx) = tokio::sync::oneshot::channel();
+    window.with_webview(move |webview| {
+        let picked = file_picker_ios::pick_files(webview.view_controller(), &["ayapack"]);
+        tx.send(picked).ok();
+    })?;
+    let picked = rx.await?;
+    let paths = picked
+        .map(|file| {
+            TarFS::new(file)
+                .map(VfsPath::from)
+                .map_err(anyhow::Error::from)
+        })
+        .try_collect::<Vec<_>>()
+        .await?;
+    Ok(paths)
 }
 
 #[command]

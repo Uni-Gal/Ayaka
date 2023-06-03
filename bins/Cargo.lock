@@ -276,8 +276,8 @@ dependencies = [
  "axum",
  "ayaka-model",
  "ayaka-plugin-wasmi",
- "base64 0.21.2",
  "clap",
+ "file-picker-ios",
  "flexi_logger",
  "mime_guess",
  "serde",
@@ -1081,6 +1081,19 @@ checksum = "a3cf3a800ff6e860c863ca6d4b16fd999db8b752819c1606884047b73e468535"
 dependencies = [
  "memoffset",
  "rustc_version",
+]
+
+[[package]]
+name = "file-picker-ios"
+version = "0.1.0"
+source = "git+https://github.com/Berrysoft/file-picker-ios.git#0d4ba9e5345ac85a01c7731fa89e10d01b1260cb"
+dependencies = [
+ "cc",
+ "objc",
+ "pin-project",
+ "stable_deref_trait",
+ "tokio",
+ "tokio-stream",
 ]
 
 [[package]]
@@ -4010,6 +4023,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 2.0.18",
+]
+
+[[package]]
+name = "tokio-stream"
+version = "0.1.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "397c988d37662c7dda6d2208364a706264bf3d6138b11d436cbac0ad38832842"
+dependencies = [
+ "futures-core",
+ "pin-project-lite",
+ "tokio",
+ "tokio-util",
 ]
 
 [[package]]
