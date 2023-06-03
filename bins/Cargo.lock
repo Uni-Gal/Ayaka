@@ -277,6 +277,7 @@ dependencies = [
  "ayaka-model",
  "ayaka-plugin-wasmi",
  "clap",
+ "file-picker-android",
  "file-picker-ios",
  "flexi_logger",
  "mime_guess",
@@ -1081,6 +1082,16 @@ checksum = "a3cf3a800ff6e860c863ca6d4b16fd999db8b752819c1606884047b73e468535"
 dependencies = [
  "memoffset",
  "rustc_version",
+]
+
+[[package]]
+name = "file-picker-android"
+version = "0.1.1"
+source = "git+https://github.com/Berrysoft/file-picker-android.git#dbaac4a0340ea02292143f7512018c97f9ae8338"
+dependencies = [
+ "serde",
+ "tauri",
+ "tauri-build",
 ]
 
 [[package]]

@@ -96,37 +96,26 @@ fn dist_port(storage: State<Storage>) -> u16 {
     storage.dist_port
 }
 
-#[cfg(any(desktop, target_os = "android"))]
+#[cfg(desktop)]
 async fn show_pick_files(handle: &AppHandle, _window: &Window) -> Result<Vec<VfsPath>> {
     use tauri_plugin_dialog::DialogExt;
 
     let (tx, rx) = tokio::sync::oneshot::channel();
-    let builder = tauri_plugin_dialog::FileDialogBuilder::new(handle.dialog().clone());
-    #[cfg(desktop)]
-    let builder = builder
+    tauri_plugin_dialog::FileDialogBuilder::new(handle.dialog().clone())
         .set_parent(&_window)
-        .add_filter("Ayaka package", &["ayapack"]);
-    builder.pick_files(move |files| {
-        let files = files
-            .unwrap_or_default()
-            .into_iter()
-            .map(|p| {
-                #[cfg(desktop)]
-                {
+        .add_filter("Ayaka package", &["ayapack"])
+        .pick_files(move |files| {
+            let files = files
+                .unwrap_or_default()
+                .into_iter()
+                .map(|p| {
                     TarFS::new_mmap(p.path)
                         .map(VfsPath::from)
                         .map_err(anyhow::Error::from)
-                }
-                #[cfg(mobile)]
-                {
-                    TarFS::new(std::fs::read(p.path)?)
-                        .map(VfsPath::from)
-                        .map_err(anyhow::Error::from)
-                }
-            })
-            .collect::<Vec<_>>();
-        tx.send(files).ok();
-    });
+                })
+                .collect::<Vec<_>>();
+            tx.send(files).ok();
+        });
     rx.await?.into_iter().collect()
 }
 
@@ -147,6 +136,20 @@ async fn show_pick_files(_handle: &AppHandle, window: &Window) -> Result<Vec<Vfs
         .try_collect::<Vec<_>>()
         .await?;
     Ok(paths)
+}
+
+#[cfg(target_os = "android")]
+async fn show_pick_files(handle: &AppHandle, _window: &Window) -> Result<Vec<VfsPath>> {
+    handle
+        .state::<file_picker_android::PickerPlugin<tauri::Wry>>()
+        .pick_files()?
+        .into_iter()
+        .map(|p| {
+            TarFS::new_mmap(p)
+                .map(VfsPath::from)
+                .map_err(anyhow::Error::from)
+        })
+        .collect()
 }
 
 #[command]
@@ -337,9 +340,12 @@ pub fn run() -> Result<()> {
     let port = listener.local_addr()?.port();
     let builder = tauri::Builder::default().plugin(asset_resolver::init(listener));
     #[cfg(desktop)]
-    let builder = builder.plugin(tauri_plugin_window_state::Builder::default().build());
     let builder = builder
-        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_window_state::Builder::default().build())
+        .plugin(tauri_plugin_dialog::init());
+    #[cfg(target_os = "android")]
+    let builder = builder.plugin(file_picker_android::init());
+    let builder = builder
         .plugin(tauri_plugin_os::init())
         .plugin(tauri_plugin_window::init());
     builder
