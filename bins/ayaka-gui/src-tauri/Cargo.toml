@@ -14,14 +14,14 @@ name = "ayaka_gui_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.0.0-alpha.5", features = [] }
+tauri-build = { version = "2.0.0-alpha.6", features = [] }
 
 [dependencies]
 ayaka-plugin-wasmi = { workspace = true }
 ayaka-model = { workspace = true }
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }
-tauri = { version = "2.0.0-alpha.9", features = [] }
+tauri = { version = "2.0.0-alpha.10", features = [] }
 clap = { workspace = true, features = ["derive"] }
 tauri-plugin-app = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v2" }
 tauri-plugin-window = { git = "https://github.com/tauri-apps/plugins-workspace", branch = "v2" }
