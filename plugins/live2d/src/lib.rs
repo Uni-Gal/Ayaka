@@ -9,7 +9,7 @@ fn plugin_type() -> PluginType {
 }
 
 fn find_model(ch: &str, game_props: &HashMap<String, String>) -> Option<VfsPath> {
-    let root: VfsPath = HostFS::default().into();
+    let root: VfsPath = HostFS.into();
     game_props.get("ch_models").and_then(|ch_models| {
         let base_dir = root.join(ch_models).ok()?;
         ["model.json", "model3.json"]

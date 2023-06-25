@@ -48,7 +48,7 @@ fn file_ctx(
     exs: &[&str],
     temp: bool,
 ) -> LineProcessResult {
-    let root: VfsPath = HostFS::default().into();
+    let root: VfsPath = HostFS.into();
     let base_dir = ctx
         .game_props
         .get(game_prop)
@@ -79,7 +79,7 @@ fn video(ctx: LineProcessContext) -> LineProcessResult {
 
 #[export]
 fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
-    let root: VfsPath = HostFS::default().into();
+    let root: VfsPath = HostFS.into();
     let voice_id = ctx.ctx.cur_act.to_string();
     let res = file(
         &voice_id,
@@ -97,7 +97,7 @@ fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
 
 #[export]
 fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {
-    let root: VfsPath = HostFS::default().into();
+    let root: VfsPath = HostFS.into();
     let base_dir = ctx.props.get("bgs").and_then(|p| root.join(p).ok());
     if let Some(bg) = ctx.props.get_mut("bg") {
         if let Some(path) = find_exists(bg, base_dir.as_ref(), &["png", "jpg", "gif"]) {
