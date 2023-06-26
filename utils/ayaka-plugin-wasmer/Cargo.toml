@@ -11,4 +11,4 @@ repository.workspace = true
 
 [dependencies]
 ayaka-plugin = { workspace = true }
-wasmer = "3"
+wasmer = "4"
