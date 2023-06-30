@@ -27,7 +27,7 @@
         "icons/icon.icns",
         "icons/icon.ico"
       ],
-      "identifier": "com.unigal.ayaka",
+      "identifier": "org.unigal.ayaka",
       "longDescription": "",
       "macOS": {
         "entitlements": null,

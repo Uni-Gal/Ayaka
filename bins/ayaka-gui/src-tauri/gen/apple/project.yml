@@ -1,6 +1,6 @@
 name: ayaka-gui
 options:
-  bundleIdPrefix: com.unigal
+  bundleIdPrefix: org.unigal
   deploymentTarget:
     iOS: 14.0
 fileGroups: [../../src]
@@ -11,7 +11,7 @@ settingGroups:
   app:
     base:
       PRODUCT_NAME: ayaka-gui
-      PRODUCT_BUNDLE_IDENTIFIER: com.unigal.ayaka-gui
+      PRODUCT_BUNDLE_IDENTIFIER: org.unigal.ayaka-gui
       DEVELOPMENT_TEAM: DCX6WL5KCS
 targetTemplates:
   app:

@@ -287,7 +287,7 @@
 					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
 					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.unigal.ayaka-gui";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.unigal.ayaka-gui";
 				PRODUCT_NAME = "ayaka-gui";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -457,7 +457,7 @@
 					"$(TOOLCHAIN_DIR)/usr/lib/swift/$(PLATFORM_NAME)",
 					"$(TOOLCHAIN_DIR)/usr/lib/swift-5.0/$(PLATFORM_NAME)",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = "com.unigal.ayaka-gui";
+				PRODUCT_BUNDLE_IDENTIFIER = "org.unigal.ayaka-gui";
 				PRODUCT_NAME = "ayaka-gui";
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";

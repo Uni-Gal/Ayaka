@@ -6,10 +6,10 @@ plugins {
 
 android {
     compileSdk = 33
-    namespace = "com.unigal.ayaka_gui"
+    namespace = "org.unigal.ayaka_gui"
     defaultConfig {
         manifestPlaceholders["usesCleartextTraffic"] = "false"
-        applicationId = "com.unigal.ayaka_gui"
+        applicationId = "org.unigal.ayaka_gui"
         minSdk = 24
         targetSdk = 33
         versionCode = 1
