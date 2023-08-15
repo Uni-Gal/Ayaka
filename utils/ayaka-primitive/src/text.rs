@@ -212,7 +212,7 @@ pub mod test {
     #[test]
     fn embedded() {
         assert_eq!(
-            parse(r##"\switch{\exec{114514}}"##),
+            parse(r"\switch{\exec{114514}}"),
             text(vec![cmd("switch", vec![cmd("exec", vec![str("114514")])])])
         );
     }

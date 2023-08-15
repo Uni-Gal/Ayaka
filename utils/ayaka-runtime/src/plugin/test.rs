@@ -92,18 +92,18 @@ mod runtime_tests {
         with_ctx::<M>(|ctx| {
             assert_eq!(
                 ctx.call(
-                    r##"
+                    r#"
                         $a = if(1 + 1 + 4 + 5 + 1 + 4 == 16, "sodayo", ~)
-                    "##
+                    "#
                 )["a"]
                     .get_num(),
                 6
             );
             assert_eq!(
                 ctx.call(
-                    r##"
+                    r#"
                         $a = if(true, "sodayo")
-                    "##
+                    "#
                 )["a"]
                     .get_str(),
                 "sodayo"

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import 'bootstrap-dark-5/dist/css/bootstrap-dark.min.css'
-import { appWindow } from "@tauri-apps/plugin-window"
+import { getCurrent } from "@tauri-apps/plugin-window"
 import { init } from './interop'
 import { Modal } from 'bootstrap'
 </script>
@@ -9,7 +9,7 @@ import { Modal } from 'bootstrap'
 export default {
     async created() {
         await init()
-        appWindow.listen("tauri://close-requested", this.quit)
+        getCurrent().listen("tauri://close-requested", this.quit)
     },
     methods: {
         quit() {
@@ -17,7 +17,7 @@ export default {
             modal.show()
         },
         async quit_direct() {
-            await appWindow.close()
+            await getCurrent().close()
         }
     }
 }
