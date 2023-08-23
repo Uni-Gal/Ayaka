@@ -5,7 +5,6 @@ node_modules: package.json
 clean:
 	rm -rf node_modules
 	rm -rf dist
-	rm -f package-lock.json
 
 .PHONY: run dist
 run: node_modules
