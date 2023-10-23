@@ -15,7 +15,7 @@
     "@tauri-apps/api": "^2.0.0-alpha.8",
     "@tauri-apps/plugin-app": "^2.0.0-alpha.1",
     "@tauri-apps/plugin-window": "^2.0.0-alpha.1",
-    "@tauri-apps/plugin-os": "^2.0.0-alpha.2",
+    "@tauri-apps/plugin-os": "^2.0.0-alpha.3",
     "async-mutex": "^0.4.0",
     "bootstrap": "^5.3.2",
     "bootstrap-dark-5": "^1.1.3",
