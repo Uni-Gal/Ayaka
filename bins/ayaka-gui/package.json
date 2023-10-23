@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@types/bootstrap": "^5.2.7",
-    "@types/lodash": "^4.14.199",
+    "@types/lodash": "^4.14.200",
     "@types/node": "^20.8.6",
     "@vitejs/plugin-vue": "^3.2.0",
     "@vue/tsconfig": "^0.4.0",
