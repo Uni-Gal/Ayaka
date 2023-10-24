@@ -21,6 +21,7 @@ jobs:
         uses: baptiste0928/cargo-install@v2
         with:
           crate: mdbook-graphviz
+          locked: false
       - name: Setup mdbook-i18n
         uses: baptiste0928/cargo-install@v2
         with:
