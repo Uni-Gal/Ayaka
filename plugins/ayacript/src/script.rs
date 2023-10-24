@@ -196,7 +196,7 @@ fn assign(ctx: &mut VarTable, e: &Expr, val: RawValue) -> RawValue {
 fn call(ctx: &mut VarTable, ns: &str, name: &str, args: &[Expr]) -> RawValue {
     if ns.is_empty() {
         match name {
-            "if" => if args.get(0).call(ctx).get_bool() {
+            "if" => if args.first().call(ctx).get_bool() {
                 args.get(1)
             } else {
                 args.get(2)

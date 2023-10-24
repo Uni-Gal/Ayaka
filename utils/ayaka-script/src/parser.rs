@@ -5,6 +5,7 @@ lalrpop_mod!(
     #[allow(missing_docs)]
     #[allow(dead_code)]
     #[allow(clippy::all)]
+    #[allow(unused_imports)]
     grammer
 );
 

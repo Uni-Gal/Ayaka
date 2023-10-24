@@ -355,7 +355,7 @@ impl<M: RawModule + Send + Sync + 'static> Context<M> {
                             if arg_strings.len() != 1 {
                                 log::warn!("Invalid parameter count for `res`: {}", args.len())
                             }
-                            if let Some(n) = arg_strings.get(0) {
+                            if let Some(n) = arg_strings.first() {
                                 if let Some(value) = self.find_res(loc, n) {
                                     action.push_back_block(value.get_str())
                                 } else {
@@ -368,7 +368,7 @@ impl<M: RawModule + Send + Sync + 'static> Context<M> {
                         if arg_strings.len() != 1 {
                             log::warn!("Invalid parameter count for `var`: {}", args.len())
                         }
-                        if let Some(n) = arg_strings.get(0) {
+                        if let Some(n) = arg_strings.first() {
                             if let Some(value) = locals.get(n) {
                                 action.push_back_block(value.get_str())
                             } else {

@@ -6,7 +6,7 @@
 
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
-#![feature(generators)]
+#![feature(coroutines)]
 #![feature(lazy_cell)]
 
 mod config;
