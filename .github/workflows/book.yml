@@ -18,14 +18,14 @@ jobs:
       - name: Setup Graphviz
         uses: ts-graphviz/setup-graphviz@v1
       - name: Setup mdbook-graphviz
-        uses: baptiste0928/cargo-install@v1
+        uses: baptiste0928/cargo-install@v2
         with:
           crate: mdbook-graphviz
       - name: Setup mdbook-i18n
-        uses: baptiste0928/cargo-install@v1
+        uses: baptiste0928/cargo-install@v2
         with:
           crate: mdbook-i18n
-          locked: true
+          git: https://github.com/funkill/mdbook-i18n.git
       - name: Build book
         run: make book
       - name: Build doc
