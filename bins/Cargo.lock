@@ -398,10 +398,8 @@ dependencies = [
  "serde_json",
  "tauri",
  "tauri-build",
- "tauri-plugin-app",
  "tauri-plugin-dialog",
  "tauri-plugin-os",
- "tauri-plugin-window",
  "tauri-plugin-window-state",
  "tokio",
  "tower-http",
@@ -4224,15 +4222,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "tauri-plugin-app"
-version = "2.0.0-alpha.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b55e543dfb0e446657c7ceaccf2f3d7ced42b6cc70b44b227b1981886f00dccd"
-dependencies = [
- "tauri",
-]
-
-[[package]]
 name = "tauri-plugin-dialog"
 version = "2.0.0-alpha.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4277,17 +4266,6 @@ dependencies = [
  "serde_json",
  "serialize-to-javascript",
  "sys-locale",
- "tauri",
- "thiserror",
-]
-
-[[package]]
-name = "tauri-plugin-window"
-version = "2.0.0-alpha.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "646c4d192ac58631b56059b5a3b26b254b42dcae91a455a818a22687bb841c39"
-dependencies = [
- "serde",
  "tauri",
  "thiserror",
 ]

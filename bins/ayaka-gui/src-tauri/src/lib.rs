@@ -343,9 +343,7 @@ pub fn run() -> Result<()> {
         .plugin(tauri_plugin_dialog::init());
     #[cfg(target_os = "android")]
     let builder = builder.plugin(file_picker_android::init());
-    let builder = builder
-        .plugin(tauri_plugin_os::init())
-        .plugin(tauri_plugin_window::init());
+    let builder = builder.plugin(tauri_plugin_os::init());
     builder
         .setup(move |app| {
             #[cfg(target_os = "android")]

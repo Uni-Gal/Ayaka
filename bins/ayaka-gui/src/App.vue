@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import 'bootstrap-dark-5/dist/css/bootstrap-dark.min.css'
-import { getCurrent } from "@tauri-apps/plugin-window"
+import { getCurrent } from "@tauri-apps/api/window"
 import { init } from './interop'
 import { Modal } from 'bootstrap'
 </script>
