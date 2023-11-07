@@ -168,12 +168,12 @@ async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandRes
         let context = builder.open();
         let mut context = pin!(context);
         while let Some(status) = context.next().await {
-            handle.emit_all(OPEN_STATUS_EVENT, status)?;
+            handle.emit(OPEN_STATUS_EVENT, status)?;
         }
         let context = model.open_game(context.await?);
         let mut context = pin!(context);
         while let Some(status) = context.next().await {
-            handle.emit_all(OPEN_STATUS_EVENT, status)?;
+            handle.emit(OPEN_STATUS_EVENT, status)?;
         }
         context.await?;
     }
