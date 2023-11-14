@@ -1,5 +1,5 @@
 #![feature(lazy_cell)]
-#![feature(read_buf)]
+#![feature(read_buf, core_io_borrowed_buf)]
 
 mod asset_resolver;
 mod settings;
