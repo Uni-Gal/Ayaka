@@ -25,12 +25,13 @@ tauri = { version = "2.0.0-alpha.17", features = [] }
 clap = { workspace = true, features = ["derive"] }
 tauri-plugin-os = "2.0.0-alpha.4"
 tokio = { workspace = true, features = ["sync"] }
-axum = { version = "0.6", default-features = false, features = [
+axum = { version = "0.7", default-features = false, features = [
     "http1",
     "tokio",
-    "headers",
 ] }
-tower-http = { version = "0.4", features = ["cors", "trace"] }
+axum-extra = { version = "0.9", features = ["typed-header"] }
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+headers = "0.4"
 mime_guess = "2"
 vfs-tar = { version = "0.4", features = ["mmap"] }
 

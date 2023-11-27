@@ -1,13 +1,14 @@
 use axum::{
     body::Body,
-    extract::{Path, TypedHeader},
-    headers::{ContentRange, ContentType, HeaderMapExt, Range},
+    extract::Path,
     http::{header::CONTENT_TYPE, HeaderMap, Request, StatusCode},
     response::{IntoResponse, Response},
     routing::get,
-    Router, Server,
+    Router,
 };
+use axum_extra::TypedHeader;
 use ayaka_model::vfs::{error::VfsErrorKind, *};
+use headers::{ContentRange, ContentType, HeaderMapExt, Range};
 use std::{
     fmt::Display,
     io::{BorrowedBuf, Read, SeekFrom},
@@ -73,7 +74,7 @@ impl From<RangeNotSatisfiableError> for ResolverError {
 }
 
 fn get_first_range(range: Range, length: u64) -> Option<(u64, u64)> {
-    let mut iter = range.iter();
+    let mut iter = range.satisfiable_ranges(length);
     let (start, end) = iter.next()?;
     // We don't support multiple ranges.
     if iter.next().is_some() {
@@ -160,11 +161,13 @@ pub fn init<R: Runtime>(listener: TcpListener) -> TauriPlugin<R> {
                             .on_eos(()),
                     )
                     .layer(CorsLayer::new().allow_methods(Any).allow_origin(Any));
-                Server::from_tcp(listener)
-                    .expect("cannot create server")
-                    .serve(app.into_make_service())
-                    .await
-                    .expect("cannot serve server")
+                axum::serve(
+                    tokio::net::TcpListener::from_std(listener)
+                        .expect("cannot create tokio TCP listener"),
+                    app.into_make_service(),
+                )
+                .await
+                .expect("cannot serve server")
             });
             Ok(())
         })

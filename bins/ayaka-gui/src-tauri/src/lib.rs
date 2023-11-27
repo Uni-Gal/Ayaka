@@ -335,6 +335,7 @@ struct Config {
 
 pub fn run() -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:0")?;
+    listener.set_nonblocking(true)?;
     let port = listener.local_addr()?.port();
     let builder = tauri::Builder::default().plugin(asset_resolver::init(listener));
     #[cfg(desktop)]
