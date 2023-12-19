@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `ayaka-primitive/src/raw_value.rs`."><title>raw_value.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_primitive" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `ayaka-primitive/src/raw_value.rs`."><title>raw_value.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-804b98a1284a310a.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_primitive" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0-nightly (3f28fe133 2023-12-18)" data-channel="nightly" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -200,10 +201,10 @@
 <span class="doccomment">/// The basic and only type used in scripts.
 /// ```
 /// # use ayaka_primitive::RawValue;
-/// assert_eq!(serde_yaml::from_str::&lt;RawValue&gt;(&quot;~&quot;).unwrap(), RawValue::Unit);
-/// assert_eq!(serde_yaml::from_str::&lt;RawValue&gt;(&quot;true&quot;).unwrap(), RawValue::Bool(true));
-/// assert_eq!(serde_yaml::from_str::&lt;RawValue&gt;(&quot;123&quot;).unwrap(), RawValue::Num(123));
-/// assert_eq!(serde_yaml::from_str::&lt;RawValue&gt;(&quot;\&quot;hello\&quot;&quot;).unwrap(), RawValue::Str(&quot;hello&quot;.to_string()));
+/// assert_eq!(serde_yaml::from_str::&lt;RawValue&gt;("~").unwrap(), RawValue::Unit);
+/// assert_eq!(serde_yaml::from_str::&lt;RawValue&gt;("true").unwrap(), RawValue::Bool(true));
+/// assert_eq!(serde_yaml::from_str::&lt;RawValue&gt;("123").unwrap(), RawValue::Num(123));
+/// assert_eq!(serde_yaml::from_str::&lt;RawValue&gt;("\"hello\"").unwrap(), RawValue::Str("hello".to_string()));
 /// ```
 </span><span class="attr">#[derive(Debug, Default, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize, Serialize)]
 #[serde(untagged)]
@@ -213,7 +214,7 @@
     </span>Unit,
     <span class="doccomment">/// The boolean type.
     </span>Bool(bool),
-    <span class="doccomment">/// The number type. It&#39;s [`i64`].
+    <span class="doccomment">/// The number type. It's [`i64`].
     </span>Num(i64),
     <span class="doccomment">/// The string type.
     </span>Str(String),
@@ -245,8 +246,8 @@
 
     <span class="doccomment">/// Gets a boolean from the value:
     /// * A [`RawValue::Unit`] converts to `false`.
-    /// * A [`RawValue::Num`] converts to `false` if and only if it&#39;s zero.
-    /// * A [`RawValue::Str`] converts to `false` if and only if it&#39;s empty.
+    /// * A [`RawValue::Num`] converts to `false` if and only if it's zero.
+    /// * A [`RawValue::Str`] converts to `false` if and only if it's empty.
     ///
     /// ```
     /// # use ayaka_primitive::RawValue;
@@ -254,7 +255,7 @@
     /// assert!(!unit_value.get_bool());
     /// let num_value = RawValue::Num(123);
     /// assert!(num_value.get_bool());
-    /// let str_value = RawValue::Str(&quot;hello&quot;.to_string());
+    /// let str_value = RawValue::Str("hello".to_string());
     /// assert!(str_value.get_bool());
     /// let empty_str_value = RawValue::Str(String::default());
     /// assert!(!empty_str_value.get_bool());
@@ -279,7 +280,7 @@
     /// assert_eq!(unit_value.get_num(), 0);
     /// let bool_value = RawValue::Bool(true);
     /// assert_eq!(bool_value.get_num(), 1);
-    /// let str_value = RawValue::Str(&quot;hello&quot;.to_string());
+    /// let str_value = RawValue::Str("hello".to_string());
     /// assert_eq!(str_value.get_num(), 5);
     /// ```
     </span><span class="kw">pub fn </span>get_num(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; i64 {
@@ -293,7 +294,7 @@
 
     <span class="doccomment">/// Gets a string from the value:
     /// * A [`RawValue::Unit`] converts to empty string.
-    /// * A [`RawValue::Bool`] converts to &quot;false&quot; or &quot;true&quot;.
+    /// * A [`RawValue::Bool`] converts to "false" or "true".
     /// * A [`RawValue::Num`] converts to the string representation of the number.\
     ///
     /// Be careful to use `get_str().into_owned()`, if possible, use `into_str()` instead.
@@ -301,11 +302,11 @@
     /// ```
     /// # use ayaka_primitive::RawValue;
     /// let unit_value = RawValue::Unit;
-    /// assert_eq!(unit_value.get_str(), &quot;&quot;);
+    /// assert_eq!(unit_value.get_str(), "");
     /// let bool_value = RawValue::Bool(true);
-    /// assert_eq!(bool_value.get_str(), &quot;true&quot;);
+    /// assert_eq!(bool_value.get_str(), "true");
     /// let num_value = RawValue::Num(123);
-    /// assert_eq!(num_value.get_str(), &quot;123&quot;);
+    /// assert_eq!(num_value.get_str(), "123");
     /// ```
     </span><span class="kw">pub fn </span>get_str(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; Cow&lt;str&gt; {
         <span class="kw">match </span><span class="self">self </span>{
@@ -318,7 +319,7 @@
 
     <span class="doccomment">/// Gets a string from the value:
     /// * A [`RawValue::Unit`] converts to empty string.
-    /// * A [`RawValue::Bool`] converts to &quot;false&quot; or &quot;true&quot;.
+    /// * A [`RawValue::Bool`] converts to "false" or "true".
     /// * A [`RawValue::Num`] converts to the string representation of the number.
     </span><span class="kw">pub fn </span>into_str(<span class="self">self</span>) -&gt; String {
         <span class="kw">match </span><span class="self">self </span>{
@@ -337,56 +338,56 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>serde_value() {
         <span class="macro">assert_eq!</span>(
-            serde_yaml::from_str::&lt;RawValue&gt;(<span class="string">&quot;~&quot;</span>).unwrap(),
+            serde_yaml::from_str::&lt;RawValue&gt;(<span class="string">"~"</span>).unwrap(),
             RawValue::Unit
         );
 
         <span class="macro">assert_eq!</span>(
-            serde_yaml::from_str::&lt;RawValue&gt;(<span class="string">&quot;true&quot;</span>).unwrap(),
+            serde_yaml::from_str::&lt;RawValue&gt;(<span class="string">"true"</span>).unwrap(),
             RawValue::Bool(<span class="bool-val">true</span>)
         );
         <span class="macro">assert_eq!</span>(
-            serde_yaml::from_str::&lt;RawValue&gt;(<span class="string">&quot;false&quot;</span>).unwrap(),
+            serde_yaml::from_str::&lt;RawValue&gt;(<span class="string">"false"</span>).unwrap(),
             RawValue::Bool(<span class="bool-val">false</span>)
         );
 
         <span class="macro">assert_eq!</span>(
-            serde_yaml::from_str::&lt;RawValue&gt;(<span class="string">&quot;114514&quot;</span>).unwrap(),
+            serde_yaml::from_str::&lt;RawValue&gt;(<span class="string">"114514"</span>).unwrap(),
             RawValue::Num(<span class="number">114514</span>)
         );
         <span class="macro">assert_eq!</span>(
-            serde_yaml::from_str::&lt;RawValue&gt;(<span class="string">&quot;-1919810&quot;</span>).unwrap(),
+            serde_yaml::from_str::&lt;RawValue&gt;(<span class="string">"-1919810"</span>).unwrap(),
             RawValue::Num(-<span class="number">1919810</span>)
         );
 
         <span class="macro">assert_eq!</span>(
-            serde_yaml::from_str::&lt;RawValue&gt;(<span class="string">&quot;\&quot;Hello world!\&quot;&quot;</span>).unwrap(),
-            RawValue::Str(<span class="string">&quot;Hello world!&quot;</span>.into())
+            serde_yaml::from_str::&lt;RawValue&gt;(<span class="string">"\"Hello world!\""</span>).unwrap(),
+            RawValue::Str(<span class="string">"Hello world!"</span>.into())
         );
 
-        <span class="macro">assert_eq!</span>(serde_yaml::to_string(<span class="kw-2">&amp;</span>RawValue::Unit).unwrap(), <span class="string">&quot;null\n&quot;</span>);
+        <span class="macro">assert_eq!</span>(serde_yaml::to_string(<span class="kw-2">&amp;</span>RawValue::Unit).unwrap(), <span class="string">"null\n"</span>);
 
         <span class="macro">assert_eq!</span>(
             serde_yaml::to_string(<span class="kw-2">&amp;</span>RawValue::Bool(<span class="bool-val">true</span>)).unwrap(),
-            <span class="string">&quot;true\n&quot;
+            <span class="string">"true\n"
         </span>);
         <span class="macro">assert_eq!</span>(
             serde_yaml::to_string(<span class="kw-2">&amp;</span>RawValue::Bool(<span class="bool-val">false</span>)).unwrap(),
-            <span class="string">&quot;false\n&quot;
+            <span class="string">"false\n"
         </span>);
 
         <span class="macro">assert_eq!</span>(
             serde_yaml::to_string(<span class="kw-2">&amp;</span>RawValue::Num(<span class="number">114514</span>)).unwrap(),
-            <span class="string">&quot;114514\n&quot;
+            <span class="string">"114514\n"
         </span>);
         <span class="macro">assert_eq!</span>(
             serde_yaml::to_string(<span class="kw-2">&amp;</span>RawValue::Num(-<span class="number">1919</span>)).unwrap(),
-            <span class="string">&quot;-1919\n&quot;
+            <span class="string">"-1919\n"
         </span>);
 
         <span class="macro">assert_eq!</span>(
-            serde_yaml::to_string(<span class="kw-2">&amp;</span>RawValue::Str(<span class="string">&quot;aaa&quot;</span>.into())).unwrap(),
-            <span class="string">&quot;aaa\n&quot;
+            serde_yaml::to_string(<span class="kw-2">&amp;</span>RawValue::Str(<span class="string">"aaa"</span>.into())).unwrap(),
+            <span class="string">"aaa\n"
         </span>);
     }
 }

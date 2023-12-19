@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `ayaka-primitive/src/text.rs`."><title>text.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_primitive" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `ayaka-primitive/src/text.rs`."><title>text.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-804b98a1284a310a.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_primitive" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0-nightly (3f28fe133 2023-12-18)" data-channel="nightly" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -285,12 +286,12 @@
 }
 
 <span class="kw">fn </span>is_str_end(c: char) -&gt; bool {
-    c.is_whitespace() || c == <span class="string">&#39;\\&#39; </span>|| c == <span class="string">&#39;{&#39; </span>|| c == <span class="string">&#39;}&#39;
+    c.is_whitespace() || c == <span class="string">'\\' </span>|| c == <span class="string">'{' </span>|| c == <span class="string">'}'
 </span>}
 
 <span class="kw">fn </span>parse_arg(i: <span class="kw-2">&amp;</span>str) -&gt; Res&lt;<span class="kw-2">&amp;</span>str, SubText&gt; {
     <span class="kw">let </span>(i, <span class="kw">_</span>) = take_space(i)<span class="question-mark">?</span>;
-    <span class="kw">let </span>(i, sub_text) = delimited(char(<span class="string">&#39;{&#39;</span>), parse_sub_text, char(<span class="string">&#39;}&#39;</span>))(i)<span class="question-mark">?</span>;
+    <span class="kw">let </span>(i, sub_text) = delimited(char(<span class="string">'{'</span>), parse_sub_text, char(<span class="string">'}'</span>))(i)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>((i, sub_text))
 }
 
@@ -301,12 +302,12 @@
 }
 
 <span class="kw">fn </span>parse_escape_char(i: <span class="kw-2">&amp;</span>str) -&gt; Res&lt;<span class="kw-2">&amp;</span>str, SubText&gt; {
-    <span class="kw">let </span>(i, c) = one_of(<span class="string">&quot;\\{}/&quot;</span>)(i)<span class="question-mark">?</span>;
+    <span class="kw">let </span>(i, c) = one_of(<span class="string">"\\{}/"</span>)(i)<span class="question-mark">?</span>;
     <span class="prelude-val">Ok</span>((i, SubText::Char(c)))
 }
 
 <span class="kw">fn </span>parse_sub_text_escape(i: <span class="kw-2">&amp;</span>str) -&gt; Res&lt;<span class="kw-2">&amp;</span>str, SubText&gt; {
-    <span class="kw">let </span>(i, <span class="kw">_</span>) = char(<span class="string">&#39;\\&#39;</span>)(i)<span class="question-mark">?</span>;
+    <span class="kw">let </span>(i, <span class="kw">_</span>) = char(<span class="string">'\\'</span>)(i)<span class="question-mark">?</span>;
     alt((parse_escape_char, parse_escape_command))(i)
 }
 
@@ -319,10 +320,10 @@
     }<span class="question-mark">?</span>;
     <span class="kw">let </span>(i, post_space) = take_space(i)<span class="question-mark">?</span>;
     <span class="kw">let </span>str = <span class="macro">format!</span>(
-        <span class="string">&quot;{}{}{}&quot;</span>,
-        <span class="kw">if </span>!pre_space.is_empty() { <span class="string">&quot; &quot; </span>} <span class="kw">else </span>{ <span class="string">&quot;&quot; </span>},
+        <span class="string">"{}{}{}"</span>,
+        <span class="kw">if </span>!pre_space.is_empty() { <span class="string">" " </span>} <span class="kw">else </span>{ <span class="string">"" </span>},
         str,
-        <span class="kw">if </span>!post_space.is_empty() { <span class="string">&quot; &quot; </span>} <span class="kw">else </span>{ <span class="string">&quot;&quot; </span>}
+        <span class="kw">if </span>!post_space.is_empty() { <span class="string">" " </span>} <span class="kw">else </span>{ <span class="string">"" </span>}
     );
     <span class="prelude-val">Ok</span>((i, SubText::Str(str)))
 }
@@ -349,9 +350,9 @@
 }
 
 <span class="kw">fn </span>parse_text_with_ch(i: <span class="kw-2">&amp;</span>str) -&gt; Res&lt;<span class="kw-2">&amp;</span>str, Text&gt; {
-    <span class="kw">let </span>(i, <span class="kw">_</span>) = char(<span class="string">&#39;/&#39;</span>)(i)<span class="question-mark">?</span>;
-    <span class="kw">let </span>(i, ch_tag) = map(terminated(take_until(<span class="string">&quot;/&quot;</span>), char(<span class="string">&#39;/&#39;</span>)), str::trim)(i)<span class="question-mark">?</span>;
-    <span class="kw">let </span>(i, ch_alias) = map(terminated(take_until(<span class="string">&quot;/&quot;</span>), char(<span class="string">&#39;/&#39;</span>)), str::trim)(i)<span class="question-mark">?</span>;
+    <span class="kw">let </span>(i, <span class="kw">_</span>) = char(<span class="string">'/'</span>)(i)<span class="question-mark">?</span>;
+    <span class="kw">let </span>(i, ch_tag) = map(terminated(take_until(<span class="string">"/"</span>), char(<span class="string">'/'</span>)), str::trim)(i)<span class="question-mark">?</span>;
+    <span class="kw">let </span>(i, ch_alias) = map(terminated(take_until(<span class="string">"/"</span>), char(<span class="string">'/'</span>)), str::trim)(i)<span class="question-mark">?</span>;
     <span class="kw">let </span>(i, <span class="kw-2">mut </span>text) = parse_text_without_ch(i)<span class="question-mark">?</span>;
     <span class="kw">if </span>!ch_tag.is_empty() {
         text.ch_tag = <span class="prelude-val">Some</span>(ch_tag.to_string());
@@ -366,18 +367,18 @@
     all_consuming(alt((parse_text_with_ch, parse_text_without_ch)))(i)
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;a</span>&gt; TryFrom&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt; <span class="kw">for </span>Text {
-    <span class="kw">type </span>Error = VerboseError&lt;<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str&gt;;
+<span class="kw">impl</span>&lt;<span class="lifetime">'a</span>&gt; TryFrom&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>str&gt; <span class="kw">for </span>Text {
+    <span class="kw">type </span>Error = VerboseError&lt;<span class="kw-2">&amp;</span><span class="lifetime">'a </span>str&gt;;
 
-    <span class="kw">fn </span>try_from(value: <span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
+    <span class="kw">fn </span>try_from(value: <span class="kw-2">&amp;</span><span class="lifetime">'a </span>str) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, <span class="self">Self</span>::Error&gt; {
         parse_text(value).finish().map(|(<span class="kw">_</span>, text)| text)
     }
 }
 
-<span class="kw">impl</span>&lt;<span class="lifetime">&#39;de</span>&gt; Deserialize&lt;<span class="lifetime">&#39;de</span>&gt; <span class="kw">for </span>Text {
+<span class="kw">impl</span>&lt;<span class="lifetime">'de</span>&gt; Deserialize&lt;<span class="lifetime">'de</span>&gt; <span class="kw">for </span>Text {
     <span class="kw">fn </span>deserialize&lt;D&gt;(deserializer: D) -&gt; <span class="prelude-ty">Result</span>&lt;<span class="self">Self</span>, D::Error&gt;
     <span class="kw">where
-        </span>D: serde::Deserializer&lt;<span class="lifetime">&#39;de</span>&gt;,
+        </span>D: serde::Deserializer&lt;<span class="lifetime">'de</span>&gt;,
     {
         <span class="kw">let </span>raw_value = RawValue::deserialize(deserializer)<span class="question-mark">?</span>;
         <span class="kw">let </span>text = Text::try_from(raw_value.get_str().as_ref())
@@ -424,26 +425,26 @@
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>basic() {
-        <span class="macro">assert_eq!</span>(parse(<span class="string">&quot;\\\\&quot;</span>), text(<span class="macro">vec!</span>[char(<span class="string">&#39;\\&#39;</span>)]));
-        <span class="macro">assert_eq!</span>(parse(<span class="string">&quot;\\{&quot;</span>), text(<span class="macro">vec!</span>[char(<span class="string">&#39;{&#39;</span>)]));
+        <span class="macro">assert_eq!</span>(parse(<span class="string">"\\\\"</span>), text(<span class="macro">vec!</span>[char(<span class="string">'\\'</span>)]));
+        <span class="macro">assert_eq!</span>(parse(<span class="string">"\\{"</span>), text(<span class="macro">vec!</span>[char(<span class="string">'{'</span>)]));
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>space() {
         <span class="macro">assert_eq!</span>(
-            parse(<span class="string">&quot;\\cmd{123} \\cmd{123}&quot;</span>),
+            parse(<span class="string">"\\cmd{123} \\cmd{123}"</span>),
             text(<span class="macro">vec!</span>[
-                cmd(<span class="string">&quot;cmd&quot;</span>, <span class="macro">vec!</span>[str(<span class="string">&quot;123&quot;</span>)]),
-                str(<span class="string">&quot; &quot;</span>),
-                cmd(<span class="string">&quot;cmd&quot;</span>, <span class="macro">vec!</span>[str(<span class="string">&quot;123&quot;</span>)]),
+                cmd(<span class="string">"cmd"</span>, <span class="macro">vec!</span>[str(<span class="string">"123"</span>)]),
+                str(<span class="string">" "</span>),
+                cmd(<span class="string">"cmd"</span>, <span class="macro">vec!</span>[str(<span class="string">"123"</span>)]),
             ])
         );
         <span class="macro">assert_eq!</span>(
-            parse(<span class="string">&quot;\\par \\cmd{123}&quot;</span>),
+            parse(<span class="string">"\\par \\cmd{123}"</span>),
             text(<span class="macro">vec!</span>[
-                cmd(<span class="string">&quot;par&quot;</span>, <span class="macro">vec!</span>[]),
-                str(<span class="string">&quot; &quot;</span>),
-                cmd(<span class="string">&quot;cmd&quot;</span>, <span class="macro">vec!</span>[str(<span class="string">&quot;123&quot;</span>)])
+                cmd(<span class="string">"par"</span>, <span class="macro">vec!</span>[]),
+                str(<span class="string">" "</span>),
+                cmd(<span class="string">"cmd"</span>, <span class="macro">vec!</span>[str(<span class="string">"123"</span>)])
             ])
         );
     }
@@ -451,29 +452,29 @@
     <span class="attr">#[test]
     </span><span class="kw">fn </span>embedded() {
         <span class="macro">assert_eq!</span>(
-            parse(<span class="string">r&quot;\switch{\exec{114514}}&quot;</span>),
-            text(<span class="macro">vec!</span>[cmd(<span class="string">&quot;switch&quot;</span>, <span class="macro">vec!</span>[cmd(<span class="string">&quot;exec&quot;</span>, <span class="macro">vec!</span>[str(<span class="string">&quot;114514&quot;</span>)])])])
+            parse(<span class="string">r"\switch{\exec{114514}}"</span>),
+            text(<span class="macro">vec!</span>[cmd(<span class="string">"switch"</span>, <span class="macro">vec!</span>[cmd(<span class="string">"exec"</span>, <span class="macro">vec!</span>[str(<span class="string">"114514"</span>)])])])
         );
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>lf() {
-        <span class="macro">assert_eq!</span>(parse(<span class="string">&quot; &quot;</span>), text(<span class="macro">vec!</span>[str(<span class="string">&quot; &quot;</span>)]));
-        <span class="macro">assert_eq!</span>(parse(<span class="string">&quot;  &quot;</span>), text(<span class="macro">vec!</span>[str(<span class="string">&quot; &quot;</span>)]));
-        <span class="macro">assert_eq!</span>(parse(<span class="string">&quot; \n &quot;</span>), text(<span class="macro">vec!</span>[str(<span class="string">&quot; &quot;</span>)]));
-        <span class="macro">assert_eq!</span>(parse(<span class="string">&quot; 123 &quot;</span>), text(<span class="macro">vec!</span>[str(<span class="string">&quot; 123 &quot;</span>)]));
-        <span class="macro">assert_eq!</span>(parse(<span class="string">&quot; \n123\t &quot;</span>), text(<span class="macro">vec!</span>[str(<span class="string">&quot; 123 &quot;</span>)]));
-        <span class="macro">assert_eq!</span>(parse(<span class="string">&quot;123&quot;</span>), text(<span class="macro">vec!</span>[str(<span class="string">&quot;123&quot;</span>)]));
+        <span class="macro">assert_eq!</span>(parse(<span class="string">" "</span>), text(<span class="macro">vec!</span>[str(<span class="string">" "</span>)]));
+        <span class="macro">assert_eq!</span>(parse(<span class="string">"  "</span>), text(<span class="macro">vec!</span>[str(<span class="string">" "</span>)]));
+        <span class="macro">assert_eq!</span>(parse(<span class="string">" \n "</span>), text(<span class="macro">vec!</span>[str(<span class="string">" "</span>)]));
+        <span class="macro">assert_eq!</span>(parse(<span class="string">" 123 "</span>), text(<span class="macro">vec!</span>[str(<span class="string">" 123 "</span>)]));
+        <span class="macro">assert_eq!</span>(parse(<span class="string">" \n123\t "</span>), text(<span class="macro">vec!</span>[str(<span class="string">" 123 "</span>)]));
+        <span class="macro">assert_eq!</span>(parse(<span class="string">"123"</span>), text(<span class="macro">vec!</span>[str(<span class="string">"123"</span>)]));
     }
 
     <span class="attr">#[test]
     </span><span class="kw">fn </span>character() {
-        <span class="macro">assert_eq!</span>(parse(<span class="string">&quot;/ch//&quot;</span>), text_ch(<span class="prelude-val">Some</span>(<span class="string">&quot;ch&quot;</span>), <span class="prelude-val">None</span>, <span class="macro">vec!</span>[]));
+        <span class="macro">assert_eq!</span>(parse(<span class="string">"/ch//"</span>), text_ch(<span class="prelude-val">Some</span>(<span class="string">"ch"</span>), <span class="prelude-val">None</span>, <span class="macro">vec!</span>[]));
         <span class="macro">assert_eq!</span>(
-            parse(<span class="string">&quot;/ch/alias/&quot;</span>),
-            text_ch(<span class="prelude-val">Some</span>(<span class="string">&quot;ch&quot;</span>), <span class="prelude-val">Some</span>(<span class="string">&quot;alias&quot;</span>), <span class="macro">vec!</span>[])
+            parse(<span class="string">"/ch/alias/"</span>),
+            text_ch(<span class="prelude-val">Some</span>(<span class="string">"ch"</span>), <span class="prelude-val">Some</span>(<span class="string">"alias"</span>), <span class="macro">vec!</span>[])
         );
-        <span class="macro">assert_eq!</span>(parse(<span class="string">&quot;/ / /&quot;</span>), text_ch(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="macro">vec!</span>[]));
+        <span class="macro">assert_eq!</span>(parse(<span class="string">"/ / /"</span>), text_ch(<span class="prelude-val">None</span>, <span class="prelude-val">None</span>, <span class="macro">vec!</span>[]));
     }
 }
 </code></pre></div></section></main></body></html>

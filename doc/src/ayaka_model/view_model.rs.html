@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `ayaka-model/src/view_model.rs`."><title>view_model.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Bold-a2c9cd1067f8b328.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-9ee3a5e31a2afa3e.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_model" data-themes="" data-resource-suffix="" data-rustdoc-version="1.75.0-nightly (cd674d617 2023-10-24)" data-channel="nightly" data-search-js="search-8fbf244ebcf71464.js" data-settings-js="settings-74424d7eec62a23e.js" ><script src="../../static.files/storage-fec3eaa3851e447d.js"></script><script defer src="../../static.files/src-script-3280b574d94e47b4.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-5f34af1a0ee6bacd.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-5d8b3c7633ad77ba.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" title="help" tabindex="-1"><a href="../../help.html">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `ayaka-model/src/view_model.rs`."><title>view_model.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceSerif4-Regular-46f98efaafac5295.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Regular-018c141bf0843ffd.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/FiraSans-Medium-8f9a781e4970d388.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Regular-562dcc5011b6de7d.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../static.files/SourceCodePro-Semibold-d899c5a5c4aeb14a.ttf.woff2"><link rel="stylesheet" href="../../static.files/normalize-76eba96aa4d2e634.css"><link rel="stylesheet" href="../../static.files/rustdoc-804b98a1284a310a.css"><meta name="rustdoc-vars" data-root-path="../../" data-static-root-path="../../static.files/" data-current-crate="ayaka_model" data-themes="" data-resource-suffix="" data-rustdoc-version="1.76.0-nightly (3f28fe133 2023-12-18)" data-channel="nightly" data-search-js="search-2b6ce74ff89ae146.js" data-settings-js="settings-4313503d2e1961c2.js" ><script src="../../static.files/storage-f2adc0d6ca4d09fb.js"></script><script defer src="../../static.files/src-script-39ed315d46fb705f.js"></script><script defer src="../../src-files.js"></script><script defer src="../../static.files/main-305769736d49e732.js"></script><noscript><link rel="stylesheet" href="../../static.files/noscript-feafe1bb7466e4bd.css"></noscript><link rel="alternate icon" type="image/png" href="../../static.files/favicon-16x16-8b506e7a72182f1c.png"><link rel="alternate icon" type="image/png" href="../../static.files/favicon-32x32-422f7d1d52889060.png"><link rel="icon" type="image/svg+xml" href="../../static.files/favicon-2c020d218678b618.svg"></head><body class="rustdoc src"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"></nav><div class="sidebar-resizer"></div>
+    <main><nav class="sub"><form class="search-form"><span></span><input class="search-input" name="search" aria-label="Run search in the documentation" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><div id="help-button" tabindex="-1"><a href="../../help.html" title="help">?</a></div><div id="settings-menu" tabindex="-1"><a href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../static.files/wheel-7b819b6101059cd0.svg"></a></div></form></nav><section id="main-content" class="content"><div class="example-wrap"><div data-nosnippet><pre class="src-line-numbers"><a href="#1" id="1">1</a>
 <a href="#2" id="2">2</a>
 <a href="#3" id="3">3</a>
 <a href="#4" id="4">4</a>
@@ -327,7 +328,7 @@
 
 <span class="doccomment">/// The status when calling [`GameViewModel::open_game`].
 </span><span class="attr">#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
-#[serde(tag = <span class="string">&quot;t&quot;</span>, content = <span class="string">&quot;data&quot;</span>)]
+#[serde(tag = <span class="string">"t"</span>, content = <span class="string">"data"</span>)]
 </span><span class="kw">pub enum </span>OpenGameStatus {
     <span class="doccomment">/// Loading the settings.
     </span>LoadSettings,
@@ -341,7 +342,7 @@
 
 <span class="doccomment">/// A view model of Ayaka.
 /// It manages all settings and provides high-level APIs.
-</span><span class="kw">pub struct </span>GameViewModel&lt;S: SettingsManager, M: RawModule + Send + Sync + <span class="lifetime">&#39;static</span>&gt; {
+</span><span class="kw">pub struct </span>GameViewModel&lt;S: SettingsManager, M: RawModule + Send + Sync + <span class="lifetime">'static</span>&gt; {
     context: <span class="prelude-ty">Option</span>&lt;Context&lt;M&gt;&gt;,
     current_record: ActionRecord,
     current_raw_context: <span class="prelude-ty">Option</span>&lt;RawContext&gt;,
@@ -351,7 +352,7 @@
     global_record: <span class="prelude-ty">Option</span>&lt;GlobalRecord&gt;,
 }
 
-<span class="kw">impl</span>&lt;S: SettingsManager, M: RawModule + Send + Sync + <span class="lifetime">&#39;static</span>&gt; GameViewModel&lt;S, M&gt; {
+<span class="kw">impl</span>&lt;S: SettingsManager, M: RawModule + Send + Sync + <span class="lifetime">'static</span>&gt; GameViewModel&lt;S, M&gt; {
     <span class="doccomment">/// Create a [`GameViewModel`] with a settings manager.
     </span><span class="kw">pub fn </span>new(settings_manager: S) -&gt; <span class="self">Self </span>{
         <span class="self">Self </span>{
@@ -366,12 +367,12 @@
     }
 
     <span class="doccomment">/// Open the game with context.
-    </span><span class="attr">#[stream(OpenGameStatus, lifetime = <span class="lifetime">&#39;a</span>)]
-    </span><span class="kw">pub async fn </span>open_game&lt;<span class="lifetime">&#39;a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">&#39;a </span><span class="kw-2">mut </span><span class="self">self</span>, context: Context&lt;M&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
+    </span><span class="attr">#[stream(OpenGameStatus, lifetime = <span class="lifetime">'a</span>)]
+    </span><span class="kw">pub async fn </span>open_game&lt;<span class="lifetime">'a</span>&gt;(<span class="kw-2">&amp;</span><span class="lifetime">'a </span><span class="kw-2">mut </span><span class="self">self</span>, context: Context&lt;M&gt;) -&gt; <span class="prelude-ty">Result</span>&lt;()&gt; {
         <span class="kw">yield </span>OpenGameStatus::LoadSettings;
         <span class="kw">let </span>settings = <span class="macro">unwrap_or_default_log!</span>(
             <span class="self">self</span>.settings_manager.load_settings(),
-            <span class="string">&quot;Load settings failed&quot;
+            <span class="string">"Load settings failed"
         </span>);
         <span class="self">self</span>.settings = <span class="prelude-val">Some</span>(settings);
 
@@ -379,7 +380,7 @@
         <span class="kw">let </span>global_record = <span class="macro">unwrap_or_default_log!</span>(
             <span class="self">self</span>.settings_manager
                 .load_global_record(<span class="kw-2">&amp;</span>context.game().config.title),
-            <span class="string">&quot;Load global records failed&quot;
+            <span class="string">"Load global records failed"
         </span>);
         <span class="self">self</span>.global_record = <span class="prelude-val">Some</span>(global_record);
 
@@ -387,7 +388,7 @@
         <span class="self">self</span>.records = <span class="macro">unwrap_or_default_log!</span>(
             <span class="self">self</span>.settings_manager
                 .load_records(<span class="kw-2">&amp;</span>context.game().config.title),
-            <span class="string">&quot;Load records failed&quot;
+            <span class="string">"Load records failed"
         </span>);
         <span class="self">self</span>.context = <span class="prelude-val">Some</span>(context);
 
@@ -400,14 +401,14 @@
     </span><span class="kw">pub fn </span>context(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Context&lt;M&gt; {
         <span class="self">self</span>.context
             .as_ref()
-            .expect(<span class="string">&quot;should be called after open_game&quot;</span>)
+            .expect(<span class="string">"should be called after open_game"</span>)
     }
 
     <span class="doccomment">/// The [`Context`], should be called after [`Self::open_game`].
     </span><span class="kw">pub fn </span>context_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>Context&lt;M&gt; {
         <span class="self">self</span>.context
             .as_mut()
-            .expect(<span class="string">&quot;should be called after open_game&quot;</span>)
+            .expect(<span class="string">"should be called after open_game"</span>)
     }
 
     <span class="doccomment">/// The current [`ActionRecord`].
@@ -419,7 +420,7 @@
     </span><span class="kw">pub fn </span>settings(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>Settings {
         <span class="self">self</span>.settings
             .as_ref()
-            .expect(<span class="string">&quot;should be called after open_game&quot;</span>)
+            .expect(<span class="string">"should be called after open_game"</span>)
     }
 
     <span class="doccomment">/// Set the [`Settings`].
@@ -436,14 +437,14 @@
     </span><span class="kw">pub fn </span>global_record(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>GlobalRecord {
         <span class="self">self</span>.global_record
             .as_ref()
-            .expect(<span class="string">&quot;should be called after open_game&quot;</span>)
+            .expect(<span class="string">"should be called after open_game"</span>)
     }
 
     <span class="doccomment">/// The loaded [`GlobalRecord`].
     </span><span class="kw">pub fn </span>global_record_mut(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;mut </span>GlobalRecord {
         <span class="self">self</span>.global_record
             .as_mut()
-            .expect(<span class="string">&quot;should be called after open_game&quot;</span>)
+            .expect(<span class="string">"should be called after open_game"</span>)
     }
 
     <span class="doccomment">/// Get the avaliable locales from paragraphs.
@@ -454,7 +455,7 @@
     <span class="doccomment">/// Start a new game.
     /// The state of the model after this call is actually invalid.
     /// You should call `next_run` immediately after this call,
-    /// to ensure there&#39;s content in the game, and switch to the
+    /// to ensure there's content in the game, and switch to the
     /// first line of the first paragraph.
     </span><span class="kw">pub fn </span>init_new(<span class="kw-2">&amp;mut </span><span class="self">self</span>) {
         <span class="kw">let </span>ctx = <span class="self">self</span>.context().game().start_context();
@@ -470,7 +471,7 @@
         <span class="self">self</span>.current_record = record;
         <span class="comment">// Update current raw context.
         </span><span class="self">self</span>.current_raw_context = <span class="self">self</span>.current_record.history.last().cloned();
-        <span class="macro">log::debug!</span>(<span class="string">&quot;Context: {:?}&quot;</span>, <span class="self">self</span>.current_raw_context);
+        <span class="macro">log::debug!</span>(<span class="string">"Context: {:?}"</span>, <span class="self">self</span>.current_raw_context);
         <span class="comment">// `ctx` points to the next raw context.
         </span>ctx.cur_act += <span class="number">1</span>;
         <span class="self">self</span>.context_mut().set_context(ctx);
@@ -505,7 +506,7 @@
         <span class="kw">if let </span><span class="prelude-val">Some</span>(ctx) = <span class="kw-2">&amp;</span>ctx {
             <span class="self">self</span>.push_history(ctx);
             <span class="self">self</span>.global_record_mut().update(ctx);
-            <span class="macro">log::debug!</span>(<span class="string">&quot;{:?}&quot;</span>, ctx);
+            <span class="macro">log::debug!</span>(<span class="string">"{:?}"</span>, ctx);
         }
         <span class="self">self</span>.current_raw_context = ctx;
         <span class="self">self</span>.current_raw_context.is_some()
@@ -514,23 +515,23 @@
     <span class="doccomment">/// Step back to the last run.
     </span><span class="kw">pub fn </span>next_back_run(<span class="kw-2">&amp;mut </span><span class="self">self</span>) -&gt; bool {
         <span class="kw">if </span><span class="self">self</span>.current_record.history.len() &lt;= <span class="number">1 </span>{
-            <span class="macro">log::debug!</span>(<span class="string">&quot;No action in the history.&quot;</span>);
+            <span class="macro">log::debug!</span>(<span class="string">"No action in the history."</span>);
             <span class="bool-val">false
         </span>} <span class="kw">else </span>{
             <span class="comment">// The last entry is the current one.
-            // We don&#39;t assume that a user could call next_back_run when the
+            // We don't assume that a user could call next_back_run when the
             // current run is empty.
             </span><span class="self">self</span>.current_record.history.pop();
             <span class="comment">// When we pop the current run, the last entry is what we want.
             </span><span class="self">self</span>.current_raw_context = <span class="self">self</span>.current_record.history.last().cloned();
             <span class="macro">debug_assert!</span>(<span class="self">self</span>.current_raw_context.is_some());
-            <span class="comment">// We clone the (new) current run to set the &quot;next&quot; raw context.
-            // We don&#39;t use the popped run to set the raw context,
+            <span class="comment">// We clone the (new) current run to set the "next" raw context.
+            // We don't use the popped run to set the raw context,
             // because the empty runs are not recorded.
             </span><span class="kw">let </span><span class="kw-2">mut </span>ctx = <span class="self">self
                 </span>.current_raw_context
                 .clone()
-                .expect(<span class="string">&quot;current raw context cannot be None&quot;</span>);
+                .expect(<span class="string">"current raw context cannot be None"</span>);
             ctx.cur_act += <span class="number">1</span>;
             <span class="self">self</span>.context_mut().set_context(ctx);
             <span class="bool-val">true
@@ -553,7 +554,7 @@
         <span class="self">self</span>.current_run().map(|raw_ctx| {
             <span class="macro">unwrap_or_default_log!</span>(
                 <span class="self">self</span>.context().get_action(<span class="kw-2">&amp;</span><span class="self">self</span>.settings().lang, raw_ctx),
-                <span class="string">&quot;Cannot get action&quot;
+                <span class="string">"Cannot get action"
             </span>)
         })
     }
@@ -566,12 +567,12 @@
     <span class="kw">fn </span>get_actions(<span class="kw-2">&amp;</span><span class="self">self</span>, raw_ctx: <span class="kw-2">&amp;</span>RawContext) -&gt; (Action, <span class="prelude-ty">Option</span>&lt;Action&gt;) {
         <span class="kw">let </span>action = <span class="macro">unwrap_or_default_log!</span>(
             <span class="self">self</span>.context().get_action(<span class="kw-2">&amp;</span><span class="self">self</span>.settings().lang, raw_ctx),
-            <span class="string">&quot;Cannot get action&quot;
+            <span class="string">"Cannot get action"
         </span>);
         <span class="kw">let </span>base_action = <span class="self">self</span>.settings().sub_lang.as_ref().map(|sub_lang| {
             <span class="macro">unwrap_or_default_log!</span>(
                 <span class="self">self</span>.context().get_action(sub_lang, raw_ctx),
-                <span class="string">&quot;Cannot get sub action&quot;
+                <span class="string">"Cannot get sub action"
             </span>)
         });
         (action, base_action)
@@ -579,7 +580,7 @@
 
     <span class="doccomment">/// Choose a switch item by index.
     </span><span class="kw">pub fn </span>switch(<span class="kw-2">&amp;mut </span><span class="self">self</span>, i: usize) {
-        <span class="macro">log::debug!</span>(<span class="string">&quot;Switch {}&quot;</span>, i);
+        <span class="macro">log::debug!</span>(<span class="string">"Switch {}"</span>, i);
         <span class="self">self</span>.context_mut().switch(i);
     }
 
@@ -611,19 +612,19 @@
     }
 
     <span class="doccomment">/// Get the last action text from each record.
-    </span><span class="kw">pub fn </span>records_text(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = ActionText&gt; + <span class="lifetime">&#39;_ </span>{
+    </span><span class="kw">pub fn </span>records_text(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw">impl </span>Iterator&lt;Item = ActionText&gt; + <span class="lifetime">'_ </span>{
         <span class="self">self</span>.records().iter().map(|record| {
             <span class="kw">let </span>raw_ctx = record
                 .last_ctx()
-                .expect(<span class="string">&quot;there should be at least one RawContext in the ActionRecord&quot;</span>);
+                .expect(<span class="string">"there should be at least one RawContext in the ActionRecord"</span>);
             <span class="kw">let </span>action = <span class="macro">unwrap_or_default_log!</span>(
                 <span class="self">self</span>.context().get_action(<span class="kw-2">&amp;</span><span class="self">self</span>.settings().lang, raw_ctx),
-                <span class="string">&quot;Cannot get action&quot;
+                <span class="string">"Cannot get action"
             </span>);
             <span class="kw">if let </span>Action::Text(action) = action {
                 action
             } <span class="kw">else </span>{
-                <span class="macro">panic!</span>(<span class="string">&quot;action in the record should be text action&quot;</span>)
+                <span class="macro">panic!</span>(<span class="string">"action in the record should be text action"</span>)
             }
         })
     }
@@ -631,7 +632,7 @@
     <span class="doccomment">/// Get the current history by language and secondary language.
     </span><span class="kw">pub fn </span>current_history(
         <span class="kw-2">&amp;</span><span class="self">self</span>,
-    ) -&gt; <span class="kw">impl </span>DoubleEndedIterator&lt;Item = (Action, <span class="prelude-ty">Option</span>&lt;Action&gt;)&gt; + <span class="lifetime">&#39;_ </span>{
+    ) -&gt; <span class="kw">impl </span>DoubleEndedIterator&lt;Item = (Action, <span class="prelude-ty">Option</span>&lt;Action&gt;)&gt; + <span class="lifetime">'_ </span>{
         <span class="self">self</span>.record()
             .history
             .iter()
