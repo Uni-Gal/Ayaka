@@ -16,7 +16,7 @@ members = [
 resolver = "2"
 
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Berrysoft <Strawberry_Str@hotmail.com>"]
 categories = ["game-engines"]
@@ -25,16 +25,16 @@ license = "MIT"
 repository = "https://github.com/Uni-Gal/Ayaka"
 
 [workspace.dependencies]
-ayaka-primitive = { path = "ayaka-primitive", version = "0.2.0" }
-ayaka-bindings-types = { path = "ayaka-bindings-types", version = "0.2.0" }
-ayaka-bindings-impl = { path = "ayaka-bindings-impl", version = "0.2.0" }
-ayaka-plugin = { path = "ayaka-plugin", version = "0.2.0" }
-ayaka-plugin-nop = { path = "ayaka-plugin-nop", version = "0.2.0" }
-ayaka-plugin-wasmer = { path = "ayaka-plugin-wasmer", version = "0.2.0" }
-ayaka-plugin-wasmtime = { path = "ayaka-plugin-wasmtime", version = "0.2.0" }
-ayaka-plugin-wasmi = { path = "ayaka-plugin-wasmi", version = "0.2.0" }
-ayaka-script = { path = "ayaka-script", version = "0.2.0" }
-ayaka-runtime = { path = "ayaka-runtime", version = "0.2.0" }
+ayaka-primitive = { path = "ayaka-primitive", version = "0.3.0" }
+ayaka-bindings-types = { path = "ayaka-bindings-types", version = "0.3.0" }
+ayaka-bindings-impl = { path = "ayaka-bindings-impl", version = "0.3.0" }
+ayaka-plugin = { path = "ayaka-plugin", version = "0.3.0" }
+ayaka-plugin-nop = { path = "ayaka-plugin-nop", version = "0.3.0" }
+ayaka-plugin-wasmer = { path = "ayaka-plugin-wasmer", version = "0.3.0" }
+ayaka-plugin-wasmtime = { path = "ayaka-plugin-wasmtime", version = "0.3.0" }
+ayaka-plugin-wasmi = { path = "ayaka-plugin-wasmi", version = "0.3.0" }
+ayaka-script = { path = "ayaka-script", version = "0.3.0" }
+ayaka-runtime = { path = "ayaka-runtime", version = "0.3.0" }
 
 anyhow = "1"
 
@@ -50,4 +50,4 @@ serde = "1"
 serde_with = "3"
 serde_yaml = "0.9"
 
-vfs = "0.9"
+vfs = "0.10"

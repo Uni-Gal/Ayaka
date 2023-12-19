@@ -4,7 +4,7 @@ members = ["ayaka-check", "ayaka-gui/src-tauri", "ayaka-latex"]
 resolver = "2"
 
 [workspace.package]
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Berrysoft <Strawberry_Str@hotmail.com>"]
 categories = ["game-development"]
@@ -23,6 +23,6 @@ ayaka-runtime = { path = "../utils/ayaka-runtime" }
 ayaka-model = { path = "../utils/ayaka-model" }
 tokio = { version = "1" }
 clap = { version = "4" }
-flexi_logger = { version = "0.26", default-features = false, features = [
+flexi_logger = { version = "0.27", default-features = false, features = [
     "colors",
 ] }

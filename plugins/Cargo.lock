@@ -40,7 +40,7 @@ checksum = "d468802bab17cbc0cc575e9b053f41e72aa36bfa6b7f55e3529ffa43161b97fa"
 
 [[package]]
 name = "ayaka-bindings"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "ayaka-bindings-impl",
  "ayaka-bindings-types",
@@ -53,7 +53,7 @@ dependencies = [
 
 [[package]]
 name = "ayaka-bindings-impl"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -63,7 +63,7 @@ dependencies = [
 
 [[package]]
 name = "ayaka-bindings-types"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "ayaka-primitive",
  "fallback",
@@ -74,7 +74,7 @@ dependencies = [
 
 [[package]]
 name = "ayaka-plugin"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "rmp-serde",
@@ -83,28 +83,28 @@ dependencies = [
 
 [[package]]
 name = "ayaka-plugin-basictex"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "ayaka-bindings",
 ]
 
 [[package]]
 name = "ayaka-plugin-live2d"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "ayaka-bindings",
 ]
 
 [[package]]
 name = "ayaka-plugin-log"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "ayaka-bindings",
 ]
 
 [[package]]
 name = "ayaka-plugin-markdown"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "ayaka-bindings",
  "pulldown-cmark",
@@ -112,21 +112,21 @@ dependencies = [
 
 [[package]]
 name = "ayaka-plugin-media"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "ayaka-bindings",
 ]
 
 [[package]]
 name = "ayaka-plugin-random"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "ayaka-bindings",
 ]
 
 [[package]]
 name = "ayaka-plugin-script"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "ayaka-bindings",
  "ayaka-bindings-types",
@@ -137,7 +137,7 @@ dependencies = [
 
 [[package]]
 name = "ayaka-primitive"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "nom",
  "serde",
@@ -146,7 +146,7 @@ dependencies = [
 
 [[package]]
 name = "ayaka-script"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "ayaka-primitive",
@@ -448,11 +448,11 @@ checksum = "439ee305def115ba05938db6eb1644ff94165c5ab5e9420d1c1bcedbba909391"
 
 [[package]]
 name = "proc-macro-crate"
-version = "1.3.1"
+version = "2.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f4c021e1093a56626774e81216a4ce732a735e5bad4868a03f3ed65ca0c3919"
+checksum = "97dc5fea232fc28d2f597b37c4876b348a40e33f3b02cc975c8d006d78d94b1a"
 dependencies = [
- "once_cell",
+ "toml_datetime",
  "toml_edit",
 ]
 
@@ -622,9 +622,9 @@ dependencies = [
 
 [[package]]
 name = "time"
-version = "0.3.30"
+version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c4a34ab300f2dee6e562c10a046fc05e358b29f9bf92277f30c3c8d82275f6f5"
+checksum = "f657ba42c3f86e7680e53c8cd3af8abbe56b5491790b46e22e19c0d57463583e"
 dependencies = [
  "deranged",
  "itoa",
@@ -642,24 +642,24 @@ checksum = "ef927ca75afb808a4d64dd374f00a2adf8d0fcff8e7b184af886c3c87ec4a3f3"
 
 [[package]]
 name = "time-macros"
-version = "0.2.15"
+version = "0.2.16"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ad70d68dba9e1f8aceda7aa6711965dfec1cac869f311a51bd08b3a2ccbce20"
+checksum = "26197e33420244aeb70c3e8c78376ca46571bc4e701e4791c2cd9f57dcb3a43f"
 dependencies = [
  "time-core",
 ]
 
 [[package]]
 name = "toml_datetime"
-version = "0.6.5"
+version = "0.6.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3550f4e9685620ac18a50ed434eb3aec30db8ba93b0287467bca5826ea25baf1"
+checksum = "7cda73e2f1397b1262d6dfdcef8aafae14d1de7748d66822d3bfeeb6d03e5e4b"
 
 [[package]]
 name = "toml_edit"
-version = "0.19.15"
+version = "0.20.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
+checksum = "396e4d48bbb2b7554c944bde63101b5ae446cff6ec4a24227428f15eb72ef338"
 dependencies = [
  "indexmap 2.1.0",
  "toml_datetime",
@@ -704,9 +704,9 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 
 [[package]]
 name = "vfs"
-version = "0.9.0"
+version = "0.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ded573c92d7b32013bdab82676be59f56106895e837504568f32804980ec7868"
+checksum = "2e4fe92cfc1bad19c19925d5eee4b30584dbbdee4ff10183b261acccbef74e2d"
 
 [[package]]
 name = "wasm-bindgen"
