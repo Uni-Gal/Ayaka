@@ -8,7 +8,6 @@
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
 #![feature(coroutines)]
-#![allow(incomplete_features)]
 
 mod settings;
 pub use settings::*;
