@@ -28,8 +28,8 @@
   "devDependencies": {
     "@types/bootstrap": "^5.2.10",
     "@types/lodash": "^4.14.202",
-    "@types/node": "^20.10.7",
-    "@vitejs/plugin-vue": "^5.0.2",
+    "@types/node": "^20.11.2",
+    "@vitejs/plugin-vue": "^5.0.3",
     "@vue/tsconfig": "^0.5.1",
     "internal-ip": "^7.0.0",
     "process": "^0.11.10",
