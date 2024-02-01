@@ -1,29 +1,29 @@
 [package]
 name = "ayaka-gui"
 description = "GUI frontend for Ayaka."
-version.workspace = true
-edition.workspace = true
-authors.workspace = true
-categories.workspace = true
-keywords.workspace = true
-license.workspace = true
-repository.workspace = true
+version = "0.3.0"
+edition = "2021"
+authors = ["Berrysoft <Strawberry_Str@hotmail.com>"]
+categories = ["game-development"]
+keywords = ["game", "engine", "galgame"]
+license = "MIT"
+repository = "https://github.com/Uni-Gal/Ayaka"
 
 [lib]
 name = "ayaka_gui_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.0.0-alpha.11", features = [] }
+tauri-build = { version = "2.0.0-alpha.14", features = [] }
 
 [dependencies]
 ayaka-plugin-wasmi = { workspace = true }
 ayaka-model = { workspace = true }
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }
-tauri = { version = "2.0.0-alpha.17", features = [] }
+tauri = { version = "2.0.0-alpha.21", features = [] }
 clap = { workspace = true, features = ["derive"] }
-tauri-plugin-os = "2.0.0-alpha.4"
+tauri-plugin-os = "2.0.0-alpha.6"
 tokio = { workspace = true, features = ["sync"] }
 axum = { version = "0.7", default-features = false, features = [
     "http1",
@@ -36,8 +36,8 @@ mime_guess = "2"
 vfs-tar = { version = "0.4", features = ["mmap"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-dialog = "2.0.0-alpha.4"
-tauri-plugin-window-state = "2.0.0-alpha.4"
+tauri-plugin-dialog = "2.0.0-alpha.7"
+tauri-plugin-window-state = "2.0.0-alpha.6"
 flexi_logger = { workspace = true }
 
 [target.'cfg(target_os = "ios")'.dependencies]
