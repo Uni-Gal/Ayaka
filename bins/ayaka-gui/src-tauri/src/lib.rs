@@ -1,4 +1,5 @@
 #![feature(read_buf, core_io_borrowed_buf)]
+#![feature(min_specialization)]
 
 mod asset_resolver;
 mod settings;
@@ -23,8 +24,8 @@ use std::{
     pin::pin,
 };
 use tauri::{
-    async_runtime::RwLock, command, utils::config::AppUrl, App, AppHandle, Manager, State, Window,
-    WindowUrl,
+    async_runtime::RwLock, command, utils::config::FrontendDist, webview::Url, App, AppHandle,
+    Manager, State, WebviewWindow,
 };
 use vfs_tar::TarFS;
 
@@ -35,8 +36,8 @@ struct CommandError {
     msg: String,
 }
 
-impl<E: Into<anyhow::Error>> From<E> for CommandError {
-    fn from(e: E) -> Self {
+impl<E: Into<tauri::Error>> From<E> for CommandError {
+    default fn from(e: E) -> Self {
         Self {
             msg: e.into().to_string(),
         }
@@ -94,7 +95,7 @@ fn dist_port(storage: State<Storage>) -> u16 {
 }
 
 #[cfg(desktop)]
-async fn show_pick_files(handle: &AppHandle, _window: &Window) -> Result<Vec<VfsPath>> {
+async fn show_pick_files(handle: &AppHandle, _window: &WebviewWindow) -> Result<Vec<VfsPath>> {
     use tauri_plugin_dialog::DialogExt;
 
     let (tx, rx) = tokio::sync::oneshot::channel();
@@ -117,7 +118,7 @@ async fn show_pick_files(handle: &AppHandle, _window: &Window) -> Result<Vec<Vfs
 }
 
 #[cfg(target_os = "ios")]
-async fn show_pick_files(_handle: &AppHandle, window: &Window) -> Result<Vec<VfsPath>> {
+async fn show_pick_files(_handle: &AppHandle, window: &WebviewWindow) -> Result<Vec<VfsPath>> {
     let (tx, rx) = tokio::sync::oneshot::channel();
     window.with_webview(move |webview| {
         let picked = file_picker_ios::pick_files(webview.view_controller(), &["ayapack"]);
@@ -136,7 +137,7 @@ async fn show_pick_files(_handle: &AppHandle, window: &Window) -> Result<Vec<Vfs
 }
 
 #[cfg(target_os = "android")]
-async fn show_pick_files(handle: &AppHandle, _window: &Window) -> Result<Vec<VfsPath>> {
+async fn show_pick_files(handle: &AppHandle, _window: &WebviewWindow) -> Result<Vec<VfsPath>> {
     handle
         .state::<file_picker_android::PickerPlugin<tauri::Wry>>()
         .pick_files()?
@@ -151,7 +152,9 @@ async fn show_pick_files(handle: &AppHandle, _window: &Window) -> Result<Vec<Vfs
 
 #[command]
 async fn open_game(handle: AppHandle, storage: State<'_, Storage>) -> CommandResult<()> {
-    let window = handle.get_window("main").expect("cannot get main window");
+    let window = handle
+        .get_webview_window("main")
+        .expect("cannot get main window");
 
     const OPEN_STATUS_EVENT: &str = "ayaka://open_status";
     let mut model = storage.model.write().await;
@@ -332,7 +335,7 @@ struct Config {
     config: Option<Vec<PathBuf>>,
 }
 
-pub fn run() -> Result<()> {
+pub fn run() -> tauri::Result<()> {
     let listener = TcpListener::bind("127.0.0.1:0")?;
     listener.set_nonblocking(true)?;
     let port = listener.local_addr()?.port();
@@ -388,7 +391,9 @@ pub fn run() -> Result<()> {
             }
             #[cfg(debug_assertions)]
             {
-                let window = app.get_window("main").expect("cannot get main window");
+                let window = app
+                    .get_webview_window("main")
+                    .expect("cannot get main window");
                 window.open_devtools();
             }
 
@@ -448,10 +453,8 @@ pub fn run() -> Result<()> {
         ])
         .run({
             let mut context = tauri::generate_context!();
-            context.config_mut().build.dist_dir = AppUrl::Url(WindowUrl::External(
-                format!("http://127.0.0.1:{port}")
-                    .parse()
-                    .expect("cannot parse url"),
+            context.config_mut().build.frontend_dist = Some(FrontendDist::Url(
+                Url::parse(&format!("http://127.0.0.1:{port}")).expect("cannot parse url"),
             ));
             context
         })?;

@@ -1,0 +1,17 @@
+{
+    "$schema": "../gen/schemas/desktop-schema.json",
+    "identifier": "default-plugins",
+    "description": "enables the default permissions",
+    "windows": [
+        "main"
+    ],
+    "permissions": [
+        "app:default",
+        "app:allow-name",
+        "event:default",
+        "os:allow-platform",
+        "window:default",
+        "window:allow-close",
+        "window:allow-destroy"
+    ]
+}
