@@ -1499,12 +1499,12 @@ dependencies = [
 
 [[package]]
 name = "file-picker-android"
-version = "0.1.1"
-source = "git+https://github.com/Berrysoft/file-picker-android.git#dbaac4a0340ea02292143f7512018c97f9ae8338"
+version = "0.1.2"
+source = "git+https://github.com/Berrysoft/file-picker-android.git#54db797c59c353115007af6674c62194df153d17"
 dependencies = [
  "serde",
  "tauri",
- "tauri-build",
+ "tauri-plugin",
 ]
 
 [[package]]

@@ -15,5 +15,5 @@ build
 local.properties
 key.properties
 
-/.tauri
+generated
 /tauri.settings.gradle
