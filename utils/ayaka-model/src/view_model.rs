@@ -1,6 +1,5 @@
 use crate::*;
 use anyhow::Result;
-use ayaka_plugin::RawModule;
 use serde::Serialize;
 use stream_future::stream;
 use trylog::macros::*;

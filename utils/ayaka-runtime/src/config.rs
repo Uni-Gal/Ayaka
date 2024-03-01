@@ -1,5 +1,4 @@
 use crate::*;
-use ayaka_bindings_types::VarMap;
 use fallback::Fallback;
 use serde::Deserialize;
 use std::collections::HashMap;

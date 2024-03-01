@@ -7,11 +7,7 @@ mod settings;
 #[cfg(mobile)]
 mod mobile;
 
-use ayaka_model::{
-    anyhow::{self, Result},
-    vfs::VfsPath,
-    *,
-};
+use ayaka_model::{anyhow::Result, vfs::VfsPath, *};
 use ayaka_plugin_wasmi::{WasmiLinker, WasmiModule};
 use clap::Parser;
 use serde::{Deserialize, Serialize};

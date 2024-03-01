@@ -4,7 +4,6 @@ use crate::{
 };
 use anyhow::{anyhow, bail, Result};
 use ayaka_bindings_types::*;
-use ayaka_plugin::RawModule;
 use fallback::Fallback;
 use log::error;
 use serde::Serialize;
