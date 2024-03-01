@@ -11,6 +11,9 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+-keep class org.unigal.ayaka_gui.RustWebView {
+    public void evalScript(int, java.lang.String);
+}
 
 # Uncomment this to preserve the line number information for
 # debugging stack traces.

@@ -1,4 +1,4 @@
-import { invoke } from "@tauri-apps/api/primitives"
+import { invoke } from "@tauri-apps/api/core"
 import { Locale } from 'vue-i18n'
 
 export var DIST_PORT: number = -1

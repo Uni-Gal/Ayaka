@@ -1,7 +1,6 @@
 use crate::*;
 use ayaka_plugin::*;
 use ayaka_script::*;
-use std::collections::HashMap;
 
 #[import("plugin")]
 extern "C" {

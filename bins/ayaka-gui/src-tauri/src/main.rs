@@ -3,7 +3,7 @@
     windows_subsystem = "windows"
 )]
 
-use ayaka_model::anyhow::Result;
+use tauri::Result;
 
 pub fn main() -> Result<()> {
     ayaka_gui_lib::run()

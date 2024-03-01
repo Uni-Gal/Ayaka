@@ -17,7 +17,7 @@ export default {
             modal.show()
         },
         async quit_direct() {
-            await getCurrent().close()
+            await getCurrent().destroy()
         }
     }
 }

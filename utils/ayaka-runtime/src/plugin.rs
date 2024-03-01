@@ -10,7 +10,6 @@ mod script_interop;
 mod test;
 
 use crate::*;
-use anyhow::Result;
 use ayaka_plugin::*;
 use std::{
     collections::HashMap,

@@ -1,7 +1,4 @@
-use ayaka_model::{
-    anyhow::{self, Result},
-    *,
-};
+use ayaka_model::{anyhow::Result, *};
 use serde::{de::DeserializeOwned, Serialize};
 use std::path::{Path, PathBuf};
 use tauri::{App, Manager};
