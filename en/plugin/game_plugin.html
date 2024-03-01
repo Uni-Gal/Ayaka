@@ -185,7 +185,7 @@ fn plugin_type() -&gt; PluginType {
 
 #[export]
 fn process_game(mut ctx: GameProcessContext) -&gt; GameProcessResult {
-    ctx.props.insert(&quot;hello&quot;.to_string(), &quot;Hello world!&quot;.to_string());
+    ctx.props.insert("hello".to_string(), "Hello world!".to_string());
     GameProcessResult { props: ctx.props }
 }</code></pre>
 <h2 id="existing-plugins"><a class="header" href="#existing-plugins">Existing plugins</a></h2>

@@ -200,18 +200,18 @@ Therefore, the files should be placed under the root directory.
 Symbolic links may not work if they point to directories outside the root directory.</p>
 <h2 id="the-text-processing-workflow"><a class="header" href="#the-text-processing-workflow">The text processing workflow</a></h2>
 <pre><code class="language-dot process">digraph {
-  ori[label=&quot;Raw text&quot;];
-  lines[label=&quot;Structural lines&quot;];
-  exec[label=&quot;Run scripts&quot;];
-  cmd[label=&quot;Custom commands&quot;];
-  texts[label=&quot;Final texts&quot;];
-  history[label=&quot;Record history&quot;];
-  output[label=&quot;Output&quot;];
+  ori[label="Raw text"];
+  lines[label="Structural lines"];
+  exec[label="Run scripts"];
+  cmd[label="Custom commands"];
+  texts[label="Final texts"];
+  history[label="Record history"];
+  output[label="Output"];
 
-  ori -&gt; lines [label=&quot;TextParser&quot;];
-  lines -&gt; exec [label=&quot;ProgramParser&quot;];
-  exec -&gt; cmd [label=&quot;text plugins&quot;];
-  cmd -&gt; texts [label=&quot;action plugins&quot;];
+  ori -&gt; lines [label="TextParser"];
+  lines -&gt; exec [label="ProgramParser"];
+  exec -&gt; cmd [label="text plugins"];
+  cmd -&gt; texts [label="action plugins"];
   texts -&gt; history;
   history -&gt; output;
 }

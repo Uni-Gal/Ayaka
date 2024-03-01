@@ -182,13 +182,13 @@ You also need <code>plugin_type</code> to specify that it is a text plugin.</p>
 
 #[export]
 fn plugin_type() -&gt; PluginType {
-    PluginType::builder().text([&quot;hello&quot;]).build()
+    PluginType::builder().text(["hello"]).build()
 }
 
 #[export]
 fn hello(_args: Vec&lt;String&gt;, _ctx: TextProcessContext) -&gt; TextProcessResult {
     let mut res = TextProcessResult::default();
-    res.line.push_back_chars(&quot;Hello&quot;);
+    res.line.push_back_chars("Hello");
     res
 }</code></pre>
 <p>Call the command in the config file:</p>

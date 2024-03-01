@@ -177,7 +177,7 @@
 <p>The CLI tool in <code>bins/ayaka-check</code> is a full example to run a game.</p>
 <h2 id="open-a-config-file"><a class="header" href="#open-a-config-file">Open a config file</a></h2>
 <pre><code class="language-rust ignore">use ayaka_runtime::*;
-let mut context = Context::open(&quot;../../../examples/Fibonacci/config.yaml&quot;, FrontendType::Text).await?;</code></pre>
+let mut context = Context::open("../../../examples/Fibonacci/config.yaml", FrontendType::Text).await?;</code></pre>
 <p>The context object should be initialized first to start from an initial record.</p>
 <pre><code class="language-rust ignore">context.init_new();</code></pre>
 <p>Then you can iterate the actions:</p>
@@ -188,10 +188,10 @@ let mut context = Context::open(&quot;../../../examples/Fibonacci/config.yaml&qu
 <p>The <code>context</code> also implements <code>Stream</code>.
 The <code>OpenStatus</code> could be iterated before the future awaited.</p>
 <pre><code class="language-rust ignore">use ayaka_runtime::*;
-let context = Context::open(&quot;../../../examples/Fibonacci/config.yaml&quot;, FrontendType::Text);
+let context = Context::open("../../../examples/Fibonacci/config.yaml", FrontendType::Text);
 let mut context = std::pin::pin!(context);
 while let Some(status) = context.next().await {
-    println!(&quot;{:?}&quot;, status);
+    println!("{:?}", status);
 }
 let mut context = context.await?;</code></pre>
 

@@ -185,7 +185,7 @@ If you would like to call the <code>rnd</code> function in <code>random</code> m
 <p>As the scripts are calculated at runtime, if there's no plugin called <code>random</code>,
 or no method called <code>rnd</code> inside <code>random</code>, it will give a warning, and continue with <code>RawValue::Unit</code>.</p>
 <h2 id="author-a-script-plugin"><a class="header" href="#author-a-script-plugin">Author a script plugin</a></h2>
-<p>Here we're going to author a script plugin <code>meet</code> to return a string &quot;Hello&quot;.</p>
+<p>Here we're going to author a script plugin <code>meet</code> to return a string "Hello".</p>
 <pre><code class="language-rust ignore">use ayaka_bindings::*;
 
 #[export]
@@ -195,7 +195,7 @@ fn plugin_type() -&gt; PluginType {
 
 #[export]
 fn hello(_args: Vec&lt;RawValue&gt;) -&gt; RawValue {
-    RawValue::Str(&quot;Hello&quot;.to_string())
+    RawValue::Str("Hello".to_string())
 }</code></pre>
 <p>And call the function:</p>
 <pre><code class="language-yaml">- exec: $hello = meet.hello()

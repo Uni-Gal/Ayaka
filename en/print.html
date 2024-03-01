@@ -507,17 +507,17 @@ It is then converted to string and appended to the text.</p>
   texts:
     - exec: c = $b; $b += $a; $a = c; $i += 1;
     - \var{b}
-    - exec: $next = if($i &lt; $n, &quot;loop&quot;)
+    - exec: $next = if($i &lt; $n, "loop")
   next: \var{next}
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="runtime"><a class="header" href="#runtime">Runtime</a></h1>
-<p>The runtime, aka &quot;backend&quot;, is the engine of a game.
+<p>The runtime, aka "backend", is the engine of a game.
 It provides functionality to load config, settings, plugins, and control the full status.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="run-a-game"><a class="header" href="#run-a-game">Run a game</a></h1>
 <p>The CLI tool in <code>bins/ayaka-check</code> is a full example to run a game.</p>
 <h2 id="open-a-config-file"><a class="header" href="#open-a-config-file">Open a config file</a></h2>
 <pre><code class="language-rust ignore">use ayaka_runtime::*;
-let mut context = Context::open(&quot;../../../examples/Fibonacci/config.yaml&quot;, FrontendType::Text).await?;</code></pre>
+let mut context = Context::open("../../../examples/Fibonacci/config.yaml", FrontendType::Text).await?;</code></pre>
 <p>The context object should be initialized first to start from an initial record.</p>
 <pre><code class="language-rust ignore">context.init_new();</code></pre>
 <p>Then you can iterate the actions:</p>
@@ -528,10 +528,10 @@ let mut context = Context::open(&quot;../../../examples/Fibonacci/config.yaml&qu
 <p>The <code>context</code> also implements <code>Stream</code>.
 The <code>OpenStatus</code> could be iterated before the future awaited.</p>
 <pre><code class="language-rust ignore">use ayaka_runtime::*;
-let context = Context::open(&quot;../../../examples/Fibonacci/config.yaml&quot;, FrontendType::Text);
+let context = Context::open("../../../examples/Fibonacci/config.yaml", FrontendType::Text);
 let mut context = std::pin::pin!(context);
 while let Some(status) = context.next().await {
-    println!(&quot;{:?}&quot;, status);
+    println!("{:?}", status);
 }
 let mut context = context.await?;</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="plugin"><a class="header" href="#plugin">Plugin</a></h1>
@@ -561,18 +561,18 @@ Therefore, the files should be placed under the root directory.
 Symbolic links may not work if they point to directories outside the root directory.</p>
 <h2 id="the-text-processing-workflow"><a class="header" href="#the-text-processing-workflow">The text processing workflow</a></h2>
 <pre><code class="language-dot process">digraph {
-  ori[label=&quot;Raw text&quot;];
-  lines[label=&quot;Structural lines&quot;];
-  exec[label=&quot;Run scripts&quot;];
-  cmd[label=&quot;Custom commands&quot;];
-  texts[label=&quot;Final texts&quot;];
-  history[label=&quot;Record history&quot;];
-  output[label=&quot;Output&quot;];
+  ori[label="Raw text"];
+  lines[label="Structural lines"];
+  exec[label="Run scripts"];
+  cmd[label="Custom commands"];
+  texts[label="Final texts"];
+  history[label="Record history"];
+  output[label="Output"];
 
-  ori -&gt; lines [label=&quot;TextParser&quot;];
-  lines -&gt; exec [label=&quot;ProgramParser&quot;];
-  exec -&gt; cmd [label=&quot;text plugins&quot;];
-  cmd -&gt; texts [label=&quot;action plugins&quot;];
+  ori -&gt; lines [label="TextParser"];
+  lines -&gt; exec [label="ProgramParser"];
+  exec -&gt; cmd [label="text plugins"];
+  cmd -&gt; texts [label="action plugins"];
   texts -&gt; history;
   history -&gt; output;
 }
@@ -589,7 +589,7 @@ If you would like to call the <code>rnd</code> function in <code>random</code> m
 <p>As the scripts are calculated at runtime, if there's no plugin called <code>random</code>,
 or no method called <code>rnd</code> inside <code>random</code>, it will give a warning, and continue with <code>RawValue::Unit</code>.</p>
 <h2 id="author-a-script-plugin"><a class="header" href="#author-a-script-plugin">Author a script plugin</a></h2>
-<p>Here we're going to author a script plugin <code>meet</code> to return a string &quot;Hello&quot;.</p>
+<p>Here we're going to author a script plugin <code>meet</code> to return a string "Hello".</p>
 <pre><code class="language-rust ignore">use ayaka_bindings::*;
 
 #[export]
@@ -599,7 +599,7 @@ fn plugin_type() -&gt; PluginType {
 
 #[export]
 fn hello(_args: Vec&lt;RawValue&gt;) -&gt; RawValue {
-    RawValue::Str(&quot;Hello&quot;.to_string())
+    RawValue::Str("Hello".to_string())
 }</code></pre>
 <p>And call the function:</p>
 <pre><code class="language-yaml">- exec: $hello = meet.hello()
@@ -623,13 +623,13 @@ You also need <code>plugin_type</code> to specify that it is a text plugin.</p>
 
 #[export]
 fn plugin_type() -&gt; PluginType {
-    PluginType::builder().text([&quot;hello&quot;]).build()
+    PluginType::builder().text(["hello"]).build()
 }
 
 #[export]
 fn hello(_args: Vec&lt;String&gt;, _ctx: TextProcessContext) -&gt; TextProcessResult {
     let mut res = TextProcessResult::default();
-    res.line.push_back_chars(&quot;Hello&quot;);
+    res.line.push_back_chars("Hello");
     res
 }</code></pre>
 <p>Call the command in the config file:</p>
@@ -654,13 +654,13 @@ You also need <code>plugin_type</code> to specify that it is a line plugin.</p>
 
 #[export]
 fn plugin_type() -&gt; PluginType {
-    PluginType::builder().line([&quot;hello&quot;]).build()
+    PluginType::builder().line(["hello"]).build()
 }
 
 #[export]
 fn hello(_ctx: LineProcessContext) -&gt; LineProcessResult {
     let mut res = LineProcessResult::default();
-    res.locals.insert(&quot;hello&quot;.to_string(), RawValue::Str(&quot;Hello&quot;.to_string()));
+    res.locals.insert("hello".to_string(), RawValue::Str("Hello".to_string()));
     res
 }</code></pre>
 <p>Call the command in the config file:</p>
@@ -727,7 +727,7 @@ fn plugin_type() -&gt; PluginType {
 
 #[export]
 fn process_game(mut ctx: GameProcessContext) -&gt; GameProcessResult {
-    ctx.props.insert(&quot;hello&quot;.to_string(), &quot;Hello world!&quot;.to_string());
+    ctx.props.insert("hello".to_string(), "Hello world!".to_string());
     GameProcessResult { props: ctx.props }
 }</code></pre>
 <h2 id="existing-plugins-4"><a class="header" href="#existing-plugins-4">Existing plugins</a></h2>
