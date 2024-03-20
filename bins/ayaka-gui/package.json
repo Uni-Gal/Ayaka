@@ -1,7 +1,7 @@
 {
   "name": "ayaka-gui",
   "private": true,
-  "version": "0.2.0",
+  "version": "0.3.0",
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
@@ -18,10 +18,10 @@
     "bootstrap": "^5.3.2",
     "bootstrap-dark-5": "^1.1.3",
     "lodash": "^4.17.21",
-    "pixi-live2d-display": "^0.4.0",
-    "pixi.js": "^6.5.8",
+    "pixi-live2d-display": "^0.5.0-beta",
+    "pixi.js": "^7.4.0",
     "timers-promises": "^1.0.1",
-    "vue": "^3.3.9",
+    "vue": "^3.4.21",
     "vue-i18n": "^9.9.1",
     "vue-router": "^4.3.0"
   },

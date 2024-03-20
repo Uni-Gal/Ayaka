@@ -11,7 +11,8 @@ export default {
     data() {
         return {
             game: {} as GameInfo,
-            models: new Map<string, Live2DModel>(),
+            // Use any to make vue-tsc happy.
+            models: new Map<string, any>(),
             app: undefined as PIXI.Application | undefined,
             mutex: new Mutex(),
         }
@@ -61,7 +62,7 @@ export default {
             if (this.app) {
                 let canvas_scale = window.innerHeight / 600.0
                 const count = this.app.stage.children.length
-                const width_per_ch = this.app.view.clientWidth / count
+                const width_per_ch = this.app.view.width / count
                 this.app.stage.children.forEach((c, i) => {
                     let m = c as Live2DModel;
                     m.x = width_per_ch * (i as number) + width_per_ch / 2
@@ -70,7 +71,7 @@ export default {
                 })
             }
         },
-        model_scale(key?: string): number {
+        model_scale(key: string | null): number {
             if (key) {
                 return parseFloat((this.game.props as any)["ch_" + key + "_scale"])
             }
