@@ -1,7 +1,5 @@
 use crate::{plugin::*, *};
-use ayaka_plugin::RawModule;
 use std::{
-    collections::HashMap,
     path::Path,
     sync::atomic::{AtomicUsize, Ordering},
 };
