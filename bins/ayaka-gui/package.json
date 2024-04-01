@@ -22,7 +22,7 @@
     "pixi.js": "^7.4.0",
     "timers-promises": "^1.0.1",
     "vue": "^3.4.21",
-    "vue-i18n": "^9.9.1",
+    "vue-i18n": "^9.10.2",
     "vue-router": "^4.3.0"
   },
   "devDependencies": {
