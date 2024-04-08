@@ -12,7 +12,7 @@
     "@fortawesome/fontawesome-svg-core": "^6.5.1",
     "@fortawesome/free-solid-svg-icons": "^6.5.1",
     "@fortawesome/vue-fontawesome": "^3.0.6",
-    "@tauri-apps/api": "^2.0.0-beta.6",
+    "@tauri-apps/api": "^2.0.0-beta.7",
     "@tauri-apps/plugin-os": "^2.0.0-beta.2",
     "async-mutex": "^0.5.0",
     "bootstrap": "^5.3.3",
