@@ -43,7 +43,7 @@ fallback = "0.1"
 log = "0.4"
 trylog = "0.3"
 
-stream-future = "0.4"
+stream-future = "0.5"
 
 rmp-serde = "1"
 serde = "1"
