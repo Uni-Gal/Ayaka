@@ -179,14 +179,20 @@
 <ul>
 <li>Rust: nightly toolchain.</li>
 <li>Nodejs: <a href="https://vitejs.dev/">Vite</a>需要14.18+/16+。</li>
+<li><code>tauri-cli</code>: <a href="https://tauri.app/">Tauri</a>要求保证是最新的beta版本<code>2.0.0-beta.18</code>。</li>
 </ul>
+<pre><code class="language-bash">$ cargo install tauri-cli --version 2.0.0-beta.18
+...
+$ cargo tauri --version
+tauri-cli 2.0.0-beta.18
+</code></pre>
 <h3 id="windows"><a class="header" href="#windows">Windows</a></h3>
 <p>建议使用Windows 10+，但Rust支持的任何Windows版本皆可。</p>
 <p><a href="https://tauri.app/">Tauri</a>需要<a href="https://developer.microsoft.com/en-us/microsoft-edge/webview2/">WebView2</a>。最新的Edge浏览器已包含它。</p>
 <p>要运行Makefile工具链，您需要来自<a href="https://www.msys2.org/">MSYS2</a>项目的GNU Make，Msys2(<code>make</code>)或Mingw64(<code>mingw32-make</code>)皆可。</p>
 <p>请注意，如果在您的PATH中来自WSL的<code>bash.exe</code>位于MSYS2之前，则<code>npm</code>命令可能会失败。</p>
 <h3 id="linux"><a class="header" href="#linux">Linux</a></h3>
-<p>需要<code>webkit2gtk</code>。我们仅支持<a href="https://tauri.app/">Tauri</a>锁依赖的<code>webkit2gtk-4.0</code>。</p>
+<p>需要<code>webkit2gtk</code>。我们仅支持<a href="https://tauri.app/">Tauri</a>所依赖的<code>webkit2gtk-4.0</code>。</p>
 <h3 id="macos"><a class="header" href="#macos">macOS</a></h3>
 <p>通常我们不需要更多依赖，但你应该确保至少有<code>make</code>。</p>
 <h2 id="从源代码clone"><a class="header" href="#从源代码clone">从源代码Clone</a></h2>
