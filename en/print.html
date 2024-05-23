@@ -247,7 +247,13 @@ rustup default nightly
 <ul>
 <li>Rust: nightly toolchain.</li>
 <li>Nodejs: 14.18+/16+ required by <a href="https://vitejs.dev/">Vite</a>.</li>
+<li><code>tauri-cli</code>: <code>2.0.0-beta.18</code> ensure latest beta version, required by <a href="https://tauri.app/">Tauri</a>.</li>
 </ul>
+<pre><code class="language-bash">$ cargo install tauri-cli --version 2.0.0-beta.18
+...
+$ cargo tauri --version
+tauri-cli 2.0.0-beta.18
+</code></pre>
 <h3 id="windows"><a class="header" href="#windows">Windows</a></h3>
 <p>Windows 10+ is recommended but any Windows that Rust supports is OK.</p>
 <p><a href="https://developer.microsoft.com/en-us/microsoft-edge/webview2/">WebView2</a> is required by <a href="https://tauri.app/">Tauri</a>. It comes with the latest Edge browser.</p>
@@ -256,7 +262,7 @@ rustup default nightly
 <h3 id="linux"><a class="header" href="#linux">Linux</a></h3>
 <p><code>webkit2gtk</code> is needed. We only support <code>webkit2gtk-4.0</code> required by <a href="https://tauri.app/">Tauri</a>.</p>
 <h3 id="macos"><a class="header" href="#macos">macOS</a></h3>
-<p>Generally we don't need anything more, but you should ensure there a <code>make</code>.</p>
+<p>Generally we don't need anything more, but you should ensure that <code>make</code> is installed.</p>
 <h2 id="clone-from-source"><a class="header" href="#clone-from-source">Clone from source</a></h2>
 <pre><code class="language-bash">$ git clone https://github.com/Uni-Gal/Ayaka.git
 $ cd Ayaka
