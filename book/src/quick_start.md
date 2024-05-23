@@ -4,7 +4,7 @@
 All platforms need [Rust](https://www.rust-lang.org/) and [Nodejs](https://nodejs.org/) installed.
 * Rust: nightly toolchain.
 * Nodejs: 14.18+/16+ required by [Vite](https://vitejs.dev/).
-* `tauri-cli`: ensure latest beta version. `2.0.0-beta.18`
+* `tauri-cli`: ensure latest beta version. `2.0.0-beta.18`.
 ``` bash
 $ cargo install tauri-cli --version 2.0.0-beta.18
 ...
