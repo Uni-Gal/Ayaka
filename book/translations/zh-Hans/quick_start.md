@@ -4,6 +4,13 @@
 所有平台都需要安装有[Rust](https://www.rust-lang.org/)和[Nodejs](https://nodejs.org/)。
 * Rust: nightly toolchain.
 * Nodejs: [Vite](https://vitejs.dev/)需要14.18+/16+。
+* `tauri-cli`: [Tauri](https://tauri.app/)要求保证是最新的beta版本`2.0.0-beta.18`。
+``` bash
+$ cargo install tauri-cli --version 2.0.0-beta.18
+...
+$ cargo tauri --version
+tauri-cli 2.0.0-beta.18
+```
 
 ### Windows
 建议使用Windows 10+，但Rust支持的任何Windows版本皆可。
@@ -15,7 +22,7 @@
 请注意，如果在您的PATH中来自WSL的`bash.exe`位于MSYS2之前，则`npm`命令可能会失败。
 
 ### Linux
-需要`webkit2gtk`。我们仅支持[Tauri](https://tauri.app/)锁依赖的`webkit2gtk-4.0`。
+需要`webkit2gtk`。我们仅支持[Tauri](https://tauri.app/)所依赖的`webkit2gtk-4.0`。
 
 ### macOS
 通常我们不需要更多依赖，但你应该确保至少有`make`。
