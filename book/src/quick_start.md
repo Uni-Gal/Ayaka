@@ -4,6 +4,13 @@
 All platforms need [Rust](https://www.rust-lang.org/) and [Nodejs](https://nodejs.org/) installed.
 * Rust: nightly toolchain.
 * Nodejs: 14.18+/16+ required by [Vite](https://vitejs.dev/).
+* `tauri-cli`: `2.0.0-beta.18` ensure latest beta version, required by [Tauri](https://tauri.app/). 
+``` bash
+$ cargo install tauri-cli --version 2.0.0-beta.18
+...
+$ cargo tauri --version
+tauri-cli 2.0.0-beta.18
+```
 
 ### Windows
 Windows 10+ is recommended but any Windows that Rust supports is OK.
@@ -18,7 +25,7 @@ Note that if you have a WSL `bash.exe` in PATH before MSYS2 one, the `npm` comma
 `webkit2gtk` is needed. We only support `webkit2gtk-4.0` required by [Tauri](https://tauri.app/).
 
 ### macOS
-Generally we don't need anything more, but you should ensure there a `make`.
+Generally we don't need anything more, but you should ensure that `make` is installed.
 
 ## Clone from source
 ``` bash
