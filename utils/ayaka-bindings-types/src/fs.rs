@@ -53,6 +53,9 @@ impl From<FileMetadata> for VfsMetadata {
         Self {
             file_type: value.file_type.into(),
             len: value.len,
+            created: None,
+            modified: None,
+            accessed: None,
         }
     }
 }

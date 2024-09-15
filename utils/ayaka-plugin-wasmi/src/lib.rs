@@ -7,7 +7,7 @@ use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
 };
-use wasmi::{core::Trap, *};
+use wasmi::*;
 
 unsafe fn mem_slice<'a, T: 'a>(
     store: impl Into<StoreContext<'a, T>>,
@@ -171,21 +171,21 @@ impl ayaka_plugin::Linker<WasmiModule> for WasmiLinker {
             move |mut store: Caller<()>, len: i32, data: i32| unsafe {
                 let memory = store
                     .get_export(MEMORY_NAME)
-                    .ok_or_else(|| Trap::new("cannot get memory"))?
+                    .ok_or_else(|| wasmi::Error::new("cannot get memory"))?
                     .into_memory()
-                    .ok_or_else(|| Trap::new("memory is not Memory"))?;
+                    .ok_or_else(|| wasmi::Error::new("memory is not Memory"))?;
                 let data = {
                     let store = store.as_context_mut();
                     let handle = WasmiLinkerHandle { store, memory };
-                    f(handle, data, len).map_err(|e| Trap::new(e.to_string()))?
+                    f(handle, data, len).map_err(|e| wasmi::Error::new(e.to_string()))?
                 };
                 let abi_alloc = store
                     .get_export(ABI_ALLOC_NAME)
-                    .ok_or_else(|| Trap::new("cannot get abi_alloc"))?
+                    .ok_or_else(|| wasmi::Error::new("cannot get abi_alloc"))?
                     .into_func()
-                    .ok_or_else(|| Trap::new("abi_alloc is not Func"))?
+                    .ok_or_else(|| wasmi::Error::new("abi_alloc is not Func"))?
                     .typed::<i32, i32>(store.as_context())
-                    .map_err(|e| Trap::new(e.to_string()))?;
+                    .map_err(|e| wasmi::Error::new(e.to_string()))?;
                 let ptr = abi_alloc.call(store.as_context_mut(), data.len() as i32)?;
                 mem_slice_mut(store.as_context_mut(), &memory, ptr, data.len() as i32)
                     .copy_from_slice(&data);

@@ -7,7 +7,6 @@
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
 #![feature(coroutines)]
-#![feature(lazy_cell)]
 
 mod config;
 mod context;

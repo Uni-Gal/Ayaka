@@ -7,4 +7,5 @@
     - '**Bold**'
     - '`code`'
     - Mixed normal *italic* **bold** `code`.
+    - 'Math: $E=mc^2$'
   next: tex

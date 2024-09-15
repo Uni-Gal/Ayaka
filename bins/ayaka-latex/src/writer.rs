@@ -56,7 +56,7 @@ impl LaTeXWriter {
                 .write_all(format!("[{}]", attr.as_ref()).as_bytes())
                 .await?;
         }
-        self.file.write_all(&[b'\n']).await?;
+        self.file.write_all(b"\n").await?;
         Ok(self)
     }
 

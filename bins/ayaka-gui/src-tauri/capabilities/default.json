@@ -6,12 +6,12 @@
         "main"
     ],
     "permissions": [
-        "app:default",
-        "app:allow-name",
-        "event:default",
+        "core:app:default",
+        "core:app:allow-name",
+        "core:event:default",
         "os:allow-platform",
-        "window:default",
-        "window:allow-close",
-        "window:allow-destroy"
+        "core:window:default",
+        "core:window:allow-close",
+        "core:window:allow-destroy"
     ]
 }

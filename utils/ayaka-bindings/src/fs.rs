@@ -1,6 +1,6 @@
 use crate::import;
 use ayaka_bindings_types::{FileMetadata, FileSeekFrom};
-use std::io::{Read, Result, Seek, SeekFrom, Write};
+use std::io::{Read, Result, Seek, SeekFrom};
 use vfs::{error::VfsErrorKind, *};
 
 #[import("fs")]
@@ -38,11 +38,11 @@ impl FileSystem for HostFS {
         }
     }
 
-    fn create_file(&self, _path: &str) -> VfsResult<Box<dyn Write + Send>> {
+    fn create_file(&self, _path: &str) -> VfsResult<Box<dyn SeekAndWrite + Send>> {
         Err(VfsErrorKind::NotSupported.into())
     }
 
-    fn append_file(&self, _path: &str) -> VfsResult<Box<dyn Write + Send>> {
+    fn append_file(&self, _path: &str) -> VfsResult<Box<dyn SeekAndWrite + Send>> {
         Err(VfsErrorKind::NotSupported.into())
     }
 

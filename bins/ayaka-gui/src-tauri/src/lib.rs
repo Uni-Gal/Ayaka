@@ -21,7 +21,7 @@ use std::{
 };
 use tauri::{
     async_runtime::RwLock, command, utils::config::FrontendDist, webview::Url, App, AppHandle,
-    Manager, State, WebviewWindow,
+    Emitter, Manager, State, WebviewWindow,
 };
 use vfs_tar::TarFS;
 
@@ -103,7 +103,7 @@ async fn show_pick_files(handle: &AppHandle, _window: &WebviewWindow) -> Result<
                 .unwrap_or_default()
                 .into_iter()
                 .map(|p| {
-                    TarFS::new_mmap(p.path)
+                    TarFS::new_mmap(p.into_path()?)
                         .map(VfsPath::from)
                         .map_err(anyhow::Error::from)
                 })

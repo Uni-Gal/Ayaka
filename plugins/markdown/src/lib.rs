@@ -1,6 +1,7 @@
 #![deny(unsafe_code)]
 
 use ayaka_bindings::*;
+use latex2mathml::{latex_to_mathml, DisplayStyle};
 use pulldown_cmark::{Event::*, *};
 use std::{
     borrow::Cow,
@@ -21,7 +22,7 @@ fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
         .map(|s| s.into_string())
         .collect::<Vec<_>>()
         .concat();
-    let parser = Parser::new(&line);
+    let parser = Parser::new_ext(&line, Options::all());
     let writer = Writer::new(parser);
     ctx.action.text = match ctx.frontend {
         FrontendType::Html => writer.run_html().into_lines(),
@@ -35,7 +36,7 @@ fn process_action(mut ctx: ActionProcessContext) -> ActionProcessResult {
 
 fn escape_html(s: &str) -> String {
     let mut buffer = String::new();
-    pulldown_cmark::escape::escape_html(&mut buffer, s).expect("cannot write escaped HTML");
+    pulldown_cmark_escape::escape_html(&mut buffer, s).expect("cannot write escaped HTML");
     buffer
 }
 
@@ -105,7 +106,7 @@ where
                     self.write_chars(escape_html(&text));
                     self.write_block("</code>");
                 }
-                Html(html) => {
+                Html(html) | InlineHtml(html) => {
                     self.write_block(html);
                 }
                 SoftBreak => {
@@ -129,6 +130,20 @@ where
                 TaskListMarker(false) => {
                     self.write_block("<input disabled=\"\" type=\"checkbox\"/>");
                 }
+                InlineMath(text) => {
+                    if let Ok(mathml) = latex_to_mathml(&text, DisplayStyle::Inline) {
+                        self.write_block(mathml);
+                    } else {
+                        self.write_block(text)
+                    }
+                }
+                DisplayMath(text) => {
+                    if let Ok(mathml) = latex_to_mathml(&text, DisplayStyle::Block) {
+                        self.write_block(mathml);
+                    } else {
+                        self.write_block(text)
+                    }
+                }
             }
         }
         self
@@ -138,12 +153,14 @@ where
     fn start_tag(&mut self, tag: Tag<'a>) {
         match tag {
             Tag::Paragraph => self.write_block("<p>"),
-            Tag::Heading(level, id, classes) => {
+            Tag::Heading {
+                level, id, classes, ..
+            } => {
                 self.write_block("<");
                 self.write_block(level.to_string());
                 if let Some(id) = id {
                     self.write_block(" id=\"");
-                    self.write_block(escape_html(id));
+                    self.write_block(escape_html(&id));
                     self.write_block("\"");
                 }
                 let mut classes = classes.iter();
@@ -187,7 +204,7 @@ where
                     _ => self.write_block(">"),
                 }
             }
-            Tag::BlockQuote => self.write_block("<blockquote>"),
+            Tag::BlockQuote(_) => self.write_block("<blockquote>"),
             Tag::CodeBlock(info) => match info {
                 CodeBlockKind::Fenced(info) => {
                     let lang = info.split(' ').next().unwrap_or_default();
@@ -212,27 +229,28 @@ where
             Tag::Emphasis => self.write_block("<em>"),
             Tag::Strong => self.write_block("<strong>"),
             Tag::Strikethrough => self.write_block("<del>"),
-            Tag::Link(LinkType::Email, dest, title) => {
-                self.write_block("<a href=\"mailto:");
-                self.write_block(escape_html(&dest));
+            Tag::Link {
+                link_type,
+                dest_url,
+                title,
+                ..
+            } => {
+                match link_type {
+                    LinkType::Email => self.write_block("<a href=\"mailto:"),
+                    _ => self.write_block("<a href=\""),
+                }
+                self.write_block(escape_html(&dest_url));
                 if !title.is_empty() {
                     self.write_block("\" title=\"");
                     self.write_block(escape_html(&title));
                 }
                 self.write_block("\">")
             }
-            Tag::Link(_link_type, dest, title) => {
-                self.write_block("<a href=\"");
-                self.write_block(escape_html(&dest));
-                if !title.is_empty() {
-                    self.write_block("\" title=\"");
-                    self.write_block(escape_html(&title));
-                }
-                self.write_block("\">")
-            }
-            Tag::Image(_link_type, dest, title) => {
+            Tag::Image {
+                dest_url, title, ..
+            } => {
                 self.write_block("<img src=\"");
-                self.write_block(escape_html(&dest));
+                self.write_block(escape_html(&dest_url));
                 self.write_block("\" alt=\"");
                 self.raw_text();
                 if !title.is_empty() {
@@ -250,30 +268,35 @@ where
                 self.write_chars(number.to_string());
                 self.write_block("</sup>")
             }
+            Tag::HtmlBlock => {}
+            Tag::DefinitionList => self.write_block("<dl>"),
+            Tag::DefinitionListTitle => self.write_block("<dt>"),
+            Tag::DefinitionListDefinition => self.write_block("<dd>"),
+            Tag::MetadataBlock(_) => {}
         }
     }
 
-    fn end_tag(&mut self, tag: Tag) {
+    fn end_tag(&mut self, tag: TagEnd) {
         match tag {
-            Tag::Paragraph => {
+            TagEnd::Paragraph => {
                 self.write_block("</p>");
             }
-            Tag::Heading(level, _id, _classes) => {
+            TagEnd::Heading(level) => {
                 self.write_block("</");
                 self.write_block(level.to_string());
                 self.write_block(">");
             }
-            Tag::Table(_) => {
+            TagEnd::Table => {
                 self.write_block("</tbody></table>");
             }
-            Tag::TableHead => {
+            TagEnd::TableHead => {
                 self.write_block("</tr></thead><tbody>");
                 self.table_state = TableState::Body;
             }
-            Tag::TableRow => {
+            TagEnd::TableRow => {
                 self.write_block("</tr>");
             }
-            Tag::TableCell => {
+            TagEnd::TableCell => {
                 match self.table_state {
                     TableState::Head => {
                         self.write_block("</th>");
@@ -284,37 +307,42 @@ where
                 }
                 self.table_cell_index += 1;
             }
-            Tag::BlockQuote => {
+            TagEnd::BlockQuote(_) => {
                 self.write_block("</blockquote>");
             }
-            Tag::CodeBlock(_) => {
+            TagEnd::CodeBlock => {
                 self.write_block("</code></pre>");
             }
-            Tag::List(Some(_)) => {
+            TagEnd::List(true) => {
                 self.write_block("</ol>");
             }
-            Tag::List(None) => {
+            TagEnd::List(false) => {
                 self.write_block("</ul>");
             }
-            Tag::Item => {
+            TagEnd::Item => {
                 self.write_block("</li>");
             }
-            Tag::Emphasis => {
+            TagEnd::Emphasis => {
                 self.write_block("</em>");
             }
-            Tag::Strong => {
+            TagEnd::Strong => {
                 self.write_block("</strong>");
             }
-            Tag::Strikethrough => {
+            TagEnd::Strikethrough => {
                 self.write_block("</del>");
             }
-            Tag::Link(_, _, _) => {
+            TagEnd::Link => {
                 self.write_block("</a>");
             }
-            Tag::Image(_, _, _) => (), // shouldn't happen, handled in start
-            Tag::FootnoteDefinition(_) => {
+            TagEnd::Image => {}
+            TagEnd::FootnoteDefinition => {
                 self.write_block("</div>");
             }
+            TagEnd::HtmlBlock => {}
+            TagEnd::DefinitionList => self.write_block("</dl>"),
+            TagEnd::DefinitionListTitle => self.write_block("</dt>"),
+            TagEnd::DefinitionListDefinition => self.write_block("</dd>"),
+            TagEnd::MetadataBlock(_) => {}
         }
     }
 
@@ -330,7 +358,7 @@ where
                     }
                     nest -= 1;
                 }
-                Html(text) | Code(text) | Text(text) => {
+                Html(text) | InlineHtml(text) | Code(text) | Text(text) => {
                     self.write_chars(escape_html(&text));
                 }
                 SoftBreak | HardBreak | Rule => {
@@ -343,6 +371,7 @@ where
                 }
                 TaskListMarker(true) => self.write_chars("[x]"),
                 TaskListMarker(false) => self.write_chars("[ ]"),
+                InlineMath(text) | DisplayMath(text) => self.write_block(text),
             }
         }
     }
@@ -363,6 +392,16 @@ where
                 }
                 HardBreak | Rule => {
                     self.write_block("\\par ");
+                }
+                InlineMath(text) => {
+                    self.write_block("\\(");
+                    self.write_block(text);
+                    self.write_block("\\)");
+                }
+                DisplayMath(text) => {
+                    self.write_block("\\[");
+                    self.write_block(text);
+                    self.write_block("\\]");
                 }
                 _ => {}
             }

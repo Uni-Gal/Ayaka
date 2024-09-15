@@ -27,7 +27,7 @@ log = { workspace = true }
 trylog = { workspace = true }
 cfg-if = "1"
 vfs = { workspace = true }
-vfs-tar = { version = "0.4", features = ["mmap"] }
+vfs-tar = { version = "0.5", features = ["mmap"] }
 rand = "0.8"
 slab = "0.4"
 
