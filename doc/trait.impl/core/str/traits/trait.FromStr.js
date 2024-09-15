@@ -1,3 +1,9 @@
-(function() {var implementors = {
-"ayaka_script":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/str/traits/trait.FromStr.html\" title=\"trait core::str::traits::FromStr\">FromStr</a> for <a class=\"struct\" href=\"ayaka_script/struct.Program.html\" title=\"struct ayaka_script::Program\">Program</a>"]]
-};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
+(function() {
+    var implementors = Object.fromEntries([["ayaka_script",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/str/traits/trait.FromStr.html\" title=\"trait core::str::traits::FromStr\">FromStr</a> for <a class=\"struct\" href=\"ayaka_script/struct.Program.html\" title=\"struct ayaka_script::Program\">Program</a>"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[296]}

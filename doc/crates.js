@@ -1,1 +1,2 @@
 window.ALL_CRATES = ["ayaka_bindings","ayaka_bindings_impl","ayaka_bindings_types","ayaka_model","ayaka_plugin","ayaka_plugin_wasmer","ayaka_plugin_wasmi","ayaka_plugin_wasmtime","ayaka_primitive","ayaka_runtime","ayaka_script"];
+//{"start":21,"fragment_lengths":[16,22,23,14,15,22,21,24,18,16,15]}

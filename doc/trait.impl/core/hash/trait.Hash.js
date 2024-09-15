@@ -1,3 +1,9 @@
-(function() {var implementors = {
-"ayaka_primitive":[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html\" title=\"trait core::hash::Hash\">Hash</a> for <a class=\"enum\" href=\"ayaka_primitive/enum.RawValue.html\" title=\"enum ayaka_primitive::RawValue\">RawValue</a>"]]
-};if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
+(function() {
+    var implementors = Object.fromEntries([["ayaka_primitive",[["impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/hash/trait.Hash.html\" title=\"trait core::hash::Hash\">Hash</a> for <a class=\"enum\" href=\"ayaka_primitive/enum.RawValue.html\" title=\"enum ayaka_primitive::RawValue\">RawValue</a>"]]]]);
+    if (window.register_implementors) {
+        window.register_implementors(implementors);
+    } else {
+        window.pending_implementors = implementors;
+    }
+})()
+//{"start":57,"fragment_lengths":[280]}
