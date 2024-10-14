@@ -34,7 +34,7 @@
     "internal-ip": "^8.0.0",
     "process": "^0.11.10",
     "typescript": "~5.6.2",
-    "vite": "^5.4.5",
+    "vite": "^5.4.9",
     "vue-tsc": "^2.1.6"
   }
 }
