@@ -11,4 +11,4 @@ repository.workspace = true
 
 [dependencies]
 ayaka-plugin = { workspace = true }
-wasmi = "0.36"
+wasmi = "0.38"

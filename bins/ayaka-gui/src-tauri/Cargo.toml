@@ -14,15 +14,15 @@ name = "ayaka_gui_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = { version = "2.0.0-rc.10", features = [] }
+tauri-build = { version = "2.0.0", features = [] }
 
 [dependencies]
 ayaka-plugin-wasmi = { workspace = true }
 ayaka-model = { workspace = true }
 serde_json = "1"
 serde = { version = "1", features = ["derive"] }
-tauri = { version = "2.0.0-rc.11", features = [] }
-tauri-plugin-os = "2.0.0-rc.1"
+tauri = { version = "2.0.0", features = [] }
+tauri-plugin-os = "2.0.0"
 clap = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["sync"] }
 axum = { version = "0.7", default-features = false, features = [
@@ -30,14 +30,14 @@ axum = { version = "0.7", default-features = false, features = [
     "tokio",
 ] }
 axum-extra = { version = "0.9", features = ["typed-header"] }
-tower-http = { version = "0.5", features = ["cors", "trace"] }
+tower-http = { version = "0.6", features = ["cors", "trace"] }
 headers = "0.4"
 mime_guess = "2"
 vfs-tar = { version = "0.5", features = ["mmap"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
-tauri-plugin-dialog = "2.0.0-rc.6"
-tauri-plugin-window-state = "2.0.0-rc.3"
+tauri-plugin-dialog = "2.0.0"
+tauri-plugin-window-state = "2.0.0"
 flexi_logger = { workspace = true }
 
 [target.'cfg(target_os = "ios")'.dependencies]
