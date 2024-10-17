@@ -24,7 +24,7 @@
   },
   "productName": "ayaka-gui",
   "version": "0.2.0",
-  "identifier": "org.unigal.ayaka",
+  "identifier": "org.unigal.ayaka_gui",
   "bundle": {
     "active": true,
     "category": "RolePlayingGame",
