@@ -24,8 +24,17 @@
         devShells.default = pkgs.mkShell {
           buildInputs = [
             rust
+            pkgs.cargo-tauri
+            pkgs.glib
+            pkgs.gobject-introspection
             pkgs.wasm-pack
+            pkgs.pango
+            pkgs.atkmm
+            pkgs.webkitgtk_4_1
             pkgs.pkg-config
+            pkgs.gtk3.out
+            pkgs.mesa
+            pkgs.gsettings-desktop-schemas
             pkgs.openssl
             pkgs.nodejs
           ];
@@ -34,6 +43,8 @@
           CARGO_TARGET_DIR = "target";
 
           shellHook = ''
+            export LIBGL_ALWAYS_SOFTWARE=1
+            export GTK_PATH="${pkgs.gtk3}/lib/gtk-3.0"
             echo "Welcome to Ayaka dev shell"
           '';
         };
