@@ -1,5 +1,5 @@
 [toolchain]
 channel = "nightly-2024-12-15"
-targets = ["wasm32-unknown-unknown"]
+targets = ["wasm32-unknown-unknown", "aarch64-linux-android"]
 components = ["rust-src", "rustc", "cargo"]
 
