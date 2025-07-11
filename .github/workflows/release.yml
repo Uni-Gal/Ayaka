@@ -50,7 +50,7 @@ jobs:
       - name: Build
         run: make release-cross TARGET=${{ matrix.platform.target }}
       - name: Publish plugins
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         if: matrix.platform.name == 'linux-x64'
         with:
           name: plugins
