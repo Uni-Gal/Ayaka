@@ -369,7 +369,7 @@ where
                 FootnoteReference(name) => {
                     let len = self.numbers.len() + 1;
                     let number = *self.numbers.entry(name).or_insert(len);
-                    self.write_chars(format!("[{}]", number));
+                    self.write_chars(format!("[{number}]"));
                 }
                 TaskListMarker(true) => self.write_chars("[x]"),
                 TaskListMarker(false) => self.write_chars("[ ]"),

@@ -12,7 +12,7 @@ fn log_impl(level: log::Level, args: Vec<RawValue>) -> RawValue {
     for arg in args.into_iter() {
         buffer.push_str(&arg.get_str());
     }
-    log::log!(level, "{}", buffer);
+    log::log!(level, "{buffer}");
     RawValue::Unit
 }
 

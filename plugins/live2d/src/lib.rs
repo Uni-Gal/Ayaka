@@ -14,7 +14,7 @@ fn find_model(ch: &str, game_props: &HashMap<String, String>) -> Option<VfsPath>
         let base_dir = root.join(ch_models).ok()?;
         ["model.json", "model3.json"]
             .iter()
-            .filter_map(|ex| base_dir.join(ch).ok()?.join(format!("{}.{}", ch, ex)).ok())
+            .filter_map(|ex| base_dir.join(ch).ok()?.join(format!("{ch}.{ex}")).ok())
             .find(|p| p.exists().unwrap_or_default())
     })
 }
@@ -33,7 +33,7 @@ fn show(ctx: LineProcessContext) -> LineProcessResult {
         .chain(
             models
                 .split(',')
-                .filter(|name| ctx.game_props.contains_key(&format!("ch_{}_model", name))),
+                .filter(|name| ctx.game_props.contains_key(&format!("ch_{name}_model"))),
         )
         .collect::<Vec<_>>();
     let mut res = LineProcessResult::default();
@@ -74,7 +74,7 @@ fn process_game(mut ctx: GameProcessContext) -> GameProcessResult {
         for name in names.split(',') {
             if let Some(path) = find_model(name, &ctx.props) {
                 ctx.props
-                    .insert(format!("ch_{}_model", name), path.as_str().to_string());
+                    .insert(format!("ch_{name}_model"), path.as_str().to_string());
             }
         }
     }

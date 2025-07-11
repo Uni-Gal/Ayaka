@@ -111,7 +111,7 @@ impl RawValue {
     /// let num_value = RawValue::Num(123);
     /// assert_eq!(num_value.get_str(), "123");
     /// ```
-    pub fn get_str(&self) -> Cow<str> {
+    pub fn get_str(&self) -> Cow<'_, str> {
         match self {
             Self::Unit => Cow::default(),
             Self::Bool(b) => b.to_string().into(),

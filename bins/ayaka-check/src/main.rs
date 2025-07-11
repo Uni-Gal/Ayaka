@@ -70,7 +70,7 @@ async fn main() -> Result<()> {
             Action::Empty | Action::Custom(_) => {}
             Action::Text(action) => {
                 if let Some(name) = &action.character {
-                    print!("_{}_", name);
+                    print!("_{name}_");
                 }
                 for s in &action.text {
                     print!("{}", s.as_str());

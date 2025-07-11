@@ -148,7 +148,7 @@ impl<'de> Deserialize<'de> for Text {
 }
 
 #[cfg(test)]
-pub mod test {
+pub(crate) mod test {
     use crate::text::{SubText, Text};
 
     pub fn parse(s: &str) -> Text {

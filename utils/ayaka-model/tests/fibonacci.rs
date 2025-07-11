@@ -48,7 +48,7 @@ async fn calculate() {
     }
 
     for (i, (left, right)) in actions.into_iter().zip(expected_actions).enumerate() {
-        println!("{}", i);
+        println!("{i}");
         assert_eq!(left, right);
     }
 }

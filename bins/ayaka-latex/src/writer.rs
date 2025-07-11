@@ -14,11 +14,7 @@ impl LaTeXWriter {
 
     async fn write_spaces(&mut self) -> Result<&mut Self> {
         self.file
-            .write_all(
-                &std::iter::repeat(b' ')
-                    .take(self.ident * 4)
-                    .collect::<Vec<_>>(),
-            )
+            .write_all(&std::iter::repeat_n(b' ', self.ident * 4).collect::<Vec<_>>())
             .await?;
         Ok(self)
     }

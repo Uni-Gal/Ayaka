@@ -14,7 +14,7 @@ fn plugin_type() -> PluginType {
 fn find_exists(name: &str, base_dir: Option<&VfsPath>, exs: &[&str]) -> Option<VfsPath> {
     base_dir.and_then(|base_dir| {
         exs.iter()
-            .filter_map(|ex| base_dir.join(format!("{}.{}", name, ex)).ok())
+            .filter_map(|ex| base_dir.join(format!("{name}.{ex}")).ok())
             .find(|p| p.exists().unwrap_or_default())
     })
 }

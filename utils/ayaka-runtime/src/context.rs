@@ -63,7 +63,7 @@ impl<M: RawModule + Send + Sync + 'static> ContextBuilder<M> {
         Self { frontend, linker }
     }
 
-    fn open_fs_from_paths(paths: &[impl AsRef<Path>]) -> Result<(VfsPath, Cow<str>)> {
+    fn open_fs_from_paths(paths: &'_ [impl AsRef<Path>]) -> Result<(VfsPath, Cow<'_, str>)> {
         let (root_path, filename) = if paths.len() == 1 {
             let path = paths[0].as_ref();
             let ext = path.extension().unwrap_or_default();
@@ -96,7 +96,10 @@ impl<M: RawModule + Send + Sync + 'static> ContextBuilder<M> {
     /// If the input `paths` contains only one element, it may be a YAML or an FRFS file.
     /// If the input `paths` contains many element, they should all be FRFS files,
     /// and the latter one will override the former one.
-    pub fn with_paths(self, paths: &[impl AsRef<Path>]) -> Result<ContextBuilderWithPaths<M>> {
+    pub fn with_paths(
+        self,
+        paths: &'_ [impl AsRef<Path>],
+    ) -> Result<ContextBuilderWithPaths<'_, M>> {
         if paths.is_empty() {
             bail!("At least one path should be input.");
         }
@@ -358,7 +361,7 @@ impl<M: RawModule + Send + Sync + 'static> Context<M> {
                                 if let Some(value) = self.find_res(loc, n) {
                                     action.push_back_block(value.get_str())
                                 } else {
-                                    log::warn!("Cannot find resource {}", n);
+                                    log::warn!("Cannot find resource {n}");
                                 }
                             }
                         }
@@ -371,7 +374,7 @@ impl<M: RawModule + Send + Sync + 'static> Context<M> {
                             if let Some(value) = locals.get(n) {
                                 action.push_back_block(value.get_str())
                             } else {
-                                log::warn!("Cannot find variable {}", n)
+                                log::warn!("Cannot find variable {n}")
                             }
                         }
                     }

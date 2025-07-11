@@ -9,7 +9,7 @@ pub fn export(_attr: TokenStream, input: TokenStream) -> TokenStream {
     let func = parse_macro_input!(func as ItemFn);
     let name = func.sig.ident;
     let name_str = name.to_string();
-    let expname = parse_str::<Ident>(&format!("__export_{}", name_str)).unwrap();
+    let expname = parse_str::<Ident>(&format!("__export_{name_str}")).unwrap();
     let input = proc_macro2::TokenStream::from(input);
     let export_func = quote! {
         #[doc(hidden)]
@@ -49,7 +49,7 @@ pub fn import(attr: TokenStream, input: TokenStream) -> TokenStream {
 
                 let name = sig.ident.clone();
                 let name_str = name.to_string();
-                let impname = parse_str::<Ident>(&format!("__import_{}", name_str)).unwrap();
+                let impname = parse_str::<Ident>(&format!("__import_{name_str}")).unwrap();
                 let bindings_crate_name = match crate_name("ayaka-bindings").unwrap() {
                     FoundCrate::Itself => quote!(crate),
                     FoundCrate::Name(name) => {

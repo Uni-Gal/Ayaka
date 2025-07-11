@@ -32,13 +32,12 @@ fn text_font(
     match ctx.frontend {
         FrontendType::Text => res.text.push_back_chars(&args[0]),
         FrontendType::Html => {
-            res.text
-                .push_back_block(format!("<font face=\"{}\">", fonts));
+            res.text.push_back_block(format!("<font face=\"{fonts}\">"));
             res.text.push_back_chars(&args[0]);
             res.text.push_back_block("</font>");
         }
         FrontendType::Latex => {
-            res.text.push_back_block(format!("\\{}{{", cmd));
+            res.text.push_back_block(format!("\\{cmd}{{"));
             res.text.push_back_chars(&args[0]);
             res.text.push_back_block("}");
         }
