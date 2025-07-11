@@ -6,6 +6,6 @@ nextest:
 clean:
 	cargo clean
 update:
-	cargo update
+	cargo update --verbose
 doc:
 	cargo doc --no-deps

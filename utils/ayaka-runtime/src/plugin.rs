@@ -155,7 +155,7 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
                 .iter()
                 .filter_map(|name| {
                     let name = name.as_ref();
-                    let p = path.join(format!("{}.wasm", name)).ok()?;
+                    let p = path.join(format!("{name}.wasm")).ok()?;
                     if p.exists().unwrap_or_default() {
                         Some((name.to_string(), p))
                     } else {
@@ -176,23 +176,13 @@ impl<M: RawModule + Send + Sync + 'static> Runtime<M> {
         for cmd in plugin_type.text {
             let res = self.text_modules.insert(cmd.clone(), name.clone());
             if let Some(old_module) = res {
-                log::warn!(
-                    "Text command `{}` is overrided by \"{}\" over \"{}\"",
-                    cmd,
-                    name,
-                    old_module
-                );
+                log::warn!("Text command `{cmd}` is overrided by \"{name}\" over \"{old_module}\"");
             }
         }
         for cmd in plugin_type.line {
             let res = self.line_modules.insert(cmd.clone(), name.clone());
             if let Some(old_module) = res {
-                log::warn!(
-                    "Line command `{}` is overrided by \"{}\" over \"{}\"",
-                    cmd,
-                    name,
-                    old_module
-                );
+                log::warn!("Line command `{cmd}` is overrided by \"{name}\" over \"{old_module}\"");
             }
         }
         if plugin_type.game {

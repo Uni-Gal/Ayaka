@@ -184,7 +184,7 @@ impl<S: SettingsManager, M: RawModule + Send + Sync + 'static> GameViewModel<S, 
         if let Some(ctx) = &ctx {
             self.push_history(ctx);
             self.global_record_mut().update(ctx);
-            log::debug!("{:?}", ctx);
+            log::debug!("{ctx:?}");
         }
         self.current_raw_context = ctx;
         self.current_raw_context.is_some()
@@ -258,7 +258,7 @@ impl<S: SettingsManager, M: RawModule + Send + Sync + 'static> GameViewModel<S, 
 
     /// Choose a switch item by index.
     pub fn switch(&mut self, i: usize) {
-        log::debug!("Switch {}", i);
+        log::debug!("Switch {i}");
         self.context_mut().switch(i);
     }
 

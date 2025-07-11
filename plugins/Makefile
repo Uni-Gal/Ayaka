@@ -4,7 +4,7 @@ PLUGIN_TARGET:=wasm32-unknown-unknown
 clean:
 	cargo clean
 update:
-	cargo update
+	cargo update --verbose
 
 .PHONY: plugins
 plugins:

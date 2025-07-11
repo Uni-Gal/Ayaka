@@ -9,7 +9,7 @@ use std::{
 };
 use wasmtime::*;
 
-unsafe fn mem_slice<'a, T: 'a>(
+unsafe fn mem_slice<'a, T: 'static>(
     store: impl Into<StoreContext<'a, T>>,
     memory: &Memory,
     start: i32,
@@ -21,7 +21,7 @@ unsafe fn mem_slice<'a, T: 'a>(
         .get_unchecked(..len as usize)
 }
 
-unsafe fn mem_slice_mut<'a, T: 'a>(
+unsafe fn mem_slice_mut<'a, T: 'static>(
     store: impl Into<StoreContextMut<'a, T>>,
     memory: &Memory,
     start: i32,

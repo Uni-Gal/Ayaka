@@ -28,11 +28,10 @@ trylog = { workspace = true }
 cfg-if = "1"
 vfs = { workspace = true }
 vfs-tar = { version = "0.5", features = ["mmap"] }
-rand = "0.8"
+rand = "0.9"
 slab = "0.4"
 
 [dev-dependencies]
-ayaka-plugin-wasmer = { workspace = true }
 ayaka-plugin-wasmtime = { workspace = true }
 ayaka-plugin-wasmi = { workspace = true }
 tokio = { version = "1", features = ["macros", "parking_lot", "rt"] }
