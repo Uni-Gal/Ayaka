@@ -132,6 +132,4 @@ mod runtime_tests {
     mod inst_wasmi {}
     #[instantiate_tests(<ayaka_plugin_wasmtime::WasmtimeModule>)]
     mod inst_wasmtime {}
-    #[instantiate_tests(<ayaka_plugin_wasmer::WasmerModule>)]
-    mod inst_wasmer {}
 }

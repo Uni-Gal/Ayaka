@@ -151,7 +151,7 @@ pub fn init<R: Runtime>(listener: TcpListener) -> TauriPlugin<R> {
             let app = app.clone();
             tauri::async_runtime::spawn(async {
                 let app = Router::new()
-                    .route("/fs/*path", get(fs_resolver))
+                    .route("/fs/{*path}", get(fs_resolver))
                     .fallback(move |req| resolver(app, req))
                     .layer(
                         TraceLayer::new_for_http()

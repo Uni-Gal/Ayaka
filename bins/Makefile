@@ -3,7 +3,7 @@ clean:
 	cargo clean
 	cd ayaka-gui && $(MAKE) clean
 update:
-	cargo update
+	cargo update --verbose
 
 .PHONY: dist debug-cross release release-cross release-android
 dist:

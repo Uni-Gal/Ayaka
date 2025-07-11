@@ -25,11 +25,11 @@ tauri = { version = "2.0.0", features = [] }
 tauri-plugin-os = "2.0.0"
 clap = { workspace = true, features = ["derive"] }
 tokio = { workspace = true, features = ["sync"] }
-axum = { version = "0.7", default-features = false, features = [
+axum = { version = "0.8", default-features = false, features = [
     "http1",
     "tokio",
 ] }
-axum-extra = { version = "0.9", features = ["typed-header"] }
+axum-extra = { version = "0.10", features = ["typed-header"] }
 tower-http = { version = "0.6", features = ["cors", "trace"] }
 headers = "0.4"
 mime_guess = "2"
@@ -44,7 +44,7 @@ flexi_logger = { workspace = true }
 file-picker-ios = { git = "https://github.com/Berrysoft/file-picker-ios.git" }
 
 [target.'cfg(target_os = "android")'.dependencies]
-android_logger = "0.14"
+android_logger = "0.15"
 file-picker-android = { git = "https://github.com/Berrysoft/file-picker-android.git" }
 
 [features]

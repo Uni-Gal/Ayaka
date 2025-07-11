@@ -6,7 +6,7 @@ use std::{
     sync::{LazyLock, Mutex},
 };
 
-static RNG: LazyLock<Mutex<StdRng>> = LazyLock::new(|| Mutex::new(StdRng::from_entropy()));
+static RNG: LazyLock<Mutex<StdRng>> = LazyLock::new(|| Mutex::new(StdRng::from_os_rng()));
 
 pub fn register<M: RawModule>(store: &mut impl Linker<M>) -> Result<()> {
     let rnd_func = store.wrap(|(start, end): (i64, i64)| {

@@ -23,6 +23,6 @@ ayaka-runtime = { path = "../utils/ayaka-runtime" }
 ayaka-model = { path = "../utils/ayaka-model" }
 tokio = { version = "1" }
 clap = { version = "4" }
-flexi_logger = { version = "0.29", default-features = false, features = [
+flexi_logger = { version = "0.31", default-features = false, features = [
     "colors",
 ] }

@@ -273,6 +273,7 @@ where
             Tag::DefinitionListTitle => self.write_block("<dt>"),
             Tag::DefinitionListDefinition => self.write_block("<dd>"),
             Tag::MetadataBlock(_) => {}
+            _ => {}
         }
     }
 
@@ -343,6 +344,7 @@ where
             TagEnd::DefinitionListTitle => self.write_block("</dt>"),
             TagEnd::DefinitionListDefinition => self.write_block("</dd>"),
             TagEnd::MetadataBlock(_) => {}
+            _ => {}
         }
     }
 
