@@ -37,7 +37,7 @@ vfs-tar = { version = "0.5", features = ["mmap"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-dialog = "2.0.0"
-tauri-plugin-window-state = "2.0.0"
+tauri-plugin-window-state = "2.4.0"
 flexi_logger = { workspace = true }
 
 [target.'cfg(target_os = "ios")'.dependencies]
